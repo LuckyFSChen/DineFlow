@@ -1,7 +1,19 @@
 <?php
 
+use App\Http\Controllers\Customer\MenuController;
+use App\Http\Controllers\Customer\OrderController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/menu/{token}', [MenuController::class, 'index'])->name('customer.menu');
+
+Route::prefix('cart')->group(function () {
+    Route::post('/add', [OrderController::class, 'addToCart'])->name('customer.cart.add');
+    Route::get('/{token}', [OrderController::class, 'cart'])->name('customer.cart');
+    Route::post('/submit/{token}', [OrderController::class, 'submit'])->name('customer.cart.submit');
+});
+
+Route::get('/order/success/{order}', [OrderController::class, 'success'])->name('customer.order.success');
 
 Route::get('/', function () {
     return view('welcome');
