@@ -6,27 +6,28 @@ use App\Http\Controllers\Controller;
 use App\Models\DiningTable;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
-    public function addToCart(Request $request)
+    public function addToCart(Request $request, Store $store, DiningTable $table)
     {
+        abort_unless($table->store_id === $store->id, 404);
+
         $validated = $request->validate([
-            'token' => 'required|string',
-            'product_id' => 'required|integer|exists:products,id',
-            'qty' => 'required|integer|min:1',
+            'product_id' => ['required', 'integer', 'exists:products,id'],
+            'qty' => ['required', 'integer', 'min:1'],
         ]);
 
-        $table = DiningTable::with('store')->where('qr_token', $validated['token'])->firstOrFail();
         $product = Product::where('id', $validated['product_id'])
             ->where('store_id', $table->store_id)
             ->where('is_active', true)
             ->where('is_sold_out', false)
             ->firstOrFail();
 
-        $cartKey = 'cart_' . $validated['token'];
+        $cartKey = "cart:store:{$table->store_id}:table:{$table->id}";
         $cart = session()->get($cartKey, []);
 
         if(isset($cart[$product->id])) {
@@ -45,23 +46,26 @@ class OrderController extends Controller
         session()->put($cartKey, $cart);
 
         return redirect()
-            ->route('customer.menu', ['token' => $validated['token']])
+            ->route('customer.menu', [
+                'store' => $store->slug,
+                'table' => $table->qr_token,
+            ])
             ->with('success', '已加入購物車');
     }
 
     public function cart(string $token)
     {
         $table = DiningTable::with('store')->where('qr_token', $token)->firstOrFail();
-        $cartKey = 'cart_' . $token;
+        $cartKey = "cart:store:{$table->store_id}:table:{$table->id}";
         $cart = session()->get($cartKey, []);
         $total = collect($cart)->sum('subtotal');
 
         return view('customer.cart', compact('table', 'cart', 'total', 'token'));
     }
 
-    public function submit(Request $request, string $token)
+    public function submit(Request $request, Store $store, DiningTable $table)
     {
-        $table = DiningTable::with('store')->where('qr_token', $token)->firstOrFail();
+        abort_unless($table->store_id === $store->id, 404);
 
         $validated = $request->validate([
             'customer_name' => 'nullable|string|max:255',
@@ -70,20 +74,23 @@ class OrderController extends Controller
             'note' => 'nullable|string',
         ]);
 
-        $cartKey = 'cart_' . $token;
+        $cartKey = "cart:store:{$store->id}:table:{$table->id}";
         $cart = session()->get($cartKey, []);
 
         if (empty($cart)) {
             return redirect()
-                ->route('customer.cart', ['token' => $token])
+                ->route('customer.cart.show', [
+                    'store' => $store->slug,
+                    'table' => $table->qr_token,
+                ])
                 ->with('error', '購物車為空');
         }
 
         $total = collect($cart)->sum('subtotal');
 
-        $order = DB::transaction(function () use ($table, $validated, $cart, $total) {
+        $order = DB::transaction(function () use ($store, $table, $validated, $cart, $total) {
             $order = Order::create([
-                'store_id' => $table->store_id,
+                'store_id' => $store->id,
                 'dining_table_id' => $table->id,
                 'order_no' => $this->generateOrderNo(),
                 'status' => 'pending',
@@ -105,13 +112,16 @@ class OrderController extends Controller
                     'note' => null,
                 ]);
             }
-            
+
             return $order;
         });
 
         session()->forget($cartKey);
 
-        return redirect()->route('customer.order.success', $order->id);
+        return redirect()->route('customer.order.success', [
+            'store' => $store->slug,
+            'order' => $order->uuid,
+        ]);
     }
 
     public function success(Order $order)
@@ -121,8 +131,17 @@ class OrderController extends Controller
         return view('customer.success', compact('order'));
     }
 
-    private function generateOrderNo()
+    private function generateOrderNo(Store $store): string
     {
-        return 'ORD' . now()->format('YmdHis') . random_int(1000, 9999);
+        return DB::transaction(function () use ($store) {
+            $date = now()->format('md');
+
+            $count = Order::where('store_id', $store->id)
+                ->whereDate('created_at', today())
+                ->lockForUpdate()
+                ->count() + 1;
+
+            return $date . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
+        });
     }
 }

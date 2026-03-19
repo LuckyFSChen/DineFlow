@@ -2,22 +2,41 @@
 
 use App\Http\Controllers\Customer\MenuController;
 use App\Http\Controllers\Customer\OrderController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\StoreController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/menu/{token}', [MenuController::class, 'index'])->name('customer.menu');
+/*
+|--------------------------------------------------------------------------
+| Public Website
+|--------------------------------------------------------------------------
+*/
 
-Route::prefix('cart')->group(function () {
-    Route::post('/add', [OrderController::class, 'addToCart'])->name('customer.cart.add');
-    Route::get('/{token}', [OrderController::class, 'cart'])->name('customer.cart');
-    Route::post('/submit/{token}', [OrderController::class, 'submit'])->name('customer.cart.submit');
-});
+Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/stores/{store:slug}', [StoreController::class, 'show'])->name('stores.show');
+Route::get('/stores/{store:slug}/menu', [StoreController::class, 'menu'])->name('stores.menu');
 
-Route::get('/order/success/{order}', [OrderController::class, 'success'])->name('customer.order.success');
+/*
+|--------------------------------------------------------------------------
+| QR Code / Dine-in Ordering
+|--------------------------------------------------------------------------
+*/
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::prefix('s/{store:slug}/t/{table:qr_token}')
+    ->as('customer.')
+    ->group(function () {
+        Route::get('/menu', [MenuController::class, 'index'])->name('menu');
+
+        Route::prefix('cart')->group(function () {
+            Route::post('/items', [OrderController::class, 'addToCart'])->name('cart.items.store');
+            Route::get('/', [OrderController::class, 'cart'])->name('cart.show');
+            Route::post('/checkout', [OrderController::class, 'submit'])->name('cart.checkout');
+        });
+    });
+
+Route::get('/s/{store:slug}/orders/{order}', [OrderController::class, 'success'])
+    ->name('customer.order.success');
 
 Route::get('/dashboard', function () {
     return view('dashboard');
@@ -29,4 +48,4 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

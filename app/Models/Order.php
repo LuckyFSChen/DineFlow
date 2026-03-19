@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Order extends Model
 {
@@ -29,5 +30,19 @@ class Order extends Model
 
     public function items() {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function getRouteKeyName()
+    {
+        return 'uuid';
+    }
+
+    protected static function booted()
+    {
+        static::creating(function ($order) {
+            if (empty($order->uuid)) {
+                $order->uuid = (string) Str::uuid();
+            }
+        });
     }
 }
