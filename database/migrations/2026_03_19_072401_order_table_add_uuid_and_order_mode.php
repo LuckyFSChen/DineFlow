@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::table('orders', function (Blueprint $table) {
             $table->uuid('uuid')->after('id')->unique();
+            $table->string('order_mode')->after('status')->default('dine_in')->comment('訂單模式：dine_in - 內用, take_out - 外帶');
         });
     }
 
@@ -23,6 +24,7 @@ return new class extends Migration
     {
         Schema::table('orders', function (Blueprint $table) {
             $table->dropColumn('uuid');
+            $table->dropColumn('order_mode');
         });
     }
 };

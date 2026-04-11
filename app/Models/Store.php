@@ -18,6 +18,23 @@ class Store extends Model
         'is_active',
     ];
 
+    protected static function booted()
+    {
+        static::creating(function ($store){
+            $store->slug = "temp";
+        });
+
+        static::created(function ($store){
+            $store->slug = 'store-' . $store->id;
+            $store->saveQuietly();
+        });
+    }
+
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }    
+
     public function tables() {
         return $this->hasMany(DiningTable::class);
     }

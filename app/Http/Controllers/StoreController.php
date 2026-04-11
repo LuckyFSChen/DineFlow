@@ -6,40 +6,20 @@ use App\Models\Store;
 
 class StoreController extends Controller
 {
-    public function show(Store $store)
+    public function enter(Store $store)
     {
         abort_unless($store->is_active, 404);
 
-        $store->loadCount([
-            'products as active_products_count' => function ($query) {
-                $query->where('is_active', true)->where('is_sold_out', false);
-            },
-            'categories as active_categories_count' => function ($query) {
-                $query->where('is_active', true);
-            },
+        $takeoutTable = $store->tables()
+            ->where('is_active', true)
+            ->where('name', '外帶')
+            ->first();
+
+        abort_unless($takeoutTable, 404, '此餐廳尚未設定外帶桌號');
+
+        return redirect()->route('customer.menu', [
+            'store' => $store->slug,
+            'table' => $takeoutTable->qr_token,
         ]);
-
-        return view('stores.show', compact('store'));
-    }
-
-    public function menu(Store $store)
-    {
-        abort_unless($store->is_active, 404);
-
-        $store->load([
-            'categories' => function ($query) {
-                $query->where('is_active', true)->orderBy('sort');
-            },
-            'products' => function ($query) {
-                $query->where('is_active', true)
-                    ->where('is_sold_out', false)
-                    ->orderBy('sort');
-            },
-        ]);
-
-        $categories = $store->categories;
-        $products = $store->products->groupBy('category_id');
-
-        return view('stores.menu', compact('store', 'categories', 'products'));
     }
 }

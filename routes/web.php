@@ -14,8 +14,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('/stores/{store:slug}', [StoreController::class, 'show'])->name('stores.show');
-Route::get('/stores/{store:slug}/menu', [StoreController::class, 'menu'])->name('stores.menu');
+Route::get('/stores/{store:slug}', [StoreController::class, 'enter'])->name('stores.enter');
 
 /*
 |--------------------------------------------------------------------------
