@@ -1,11 +1,11 @@
 <section>
     <header>
         <h2 class="text-lg font-medium text-gray-900">
-            基本資料
+            {{ __('profile.basic_info') }}
         </h2>
 
         <p class="mt-1 text-sm text-gray-600">
-            更新你的帳號姓名與 Email。
+            {{ __('profile.basic_info_desc') }}
         </p>
     </header>
 
@@ -18,41 +18,41 @@
         @method('patch')
 
         <div>
-            <x-input-label for="role" value="帳號角色" />
+            <x-input-label for="role" :value="__('profile.role_label')" />
             <x-text-input id="role" type="text" class="mt-1 block w-full bg-slate-50" :value="strtoupper((string) $user->role)" readonly />
         </div>
 
         @if($user->isMerchant())
             <div>
-                <x-input-label for="subscription_ends_at" value="訂閱到期日" />
-                <x-text-input id="subscription_ends_at" type="text" class="mt-1 block w-full bg-slate-50" :value="$user->subscription_ends_at ? $user->subscription_ends_at->format('Y-m-d H:i') : '尚未啟用'" readonly />
+                <x-input-label for="subscription_ends_at" :value="__('profile.subscription_end')" />
+                <x-text-input id="subscription_ends_at" type="text" class="mt-1 block w-full bg-slate-50" :value="$user->subscription_ends_at ? $user->subscription_ends_at->format('Y-m-d H:i') : __('profile.not_activated')" readonly />
             </div>
         @endif
 
         <div>
-            <x-input-label for="name" value="姓名" />
+            <x-input-label for="name" :value="__('profile.name_label')" />
             <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>
 
         <div>
-            <x-input-label for="email" value="Email" />
+            <x-input-label for="email" :value="__('profile.email_label')" />
             <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
 
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
                 <div>
                     <p class="text-sm mt-2 text-gray-800">
-                        你的 Email 尚未驗證。
+                        {{ __('profile.unverified_hint') }}
 
                         <button form="send-verification" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            點這裡重新寄送驗證信。
+                            {{ __('profile.resend_verification') }}
                         </button>
                     </p>
 
                     @if (session('status') === 'verification-link-sent')
                         <p class="mt-2 font-medium text-sm text-green-600">
-                            已重新寄送驗證信到你的 Email。
+                            {{ __('profile.verification_sent') }}
                         </p>
                     @endif
                 </div>
@@ -60,7 +60,7 @@
         </div>
 
         <div class="flex items-center gap-4">
-            <x-primary-button>儲存變更</x-primary-button>
+            <x-primary-button>{{ __('profile.save_changes') }}</x-primary-button>
 
             @if (session('status') === 'profile-updated')
                 <p
@@ -69,7 +69,7 @@
                     x-transition
                     x-init="setTimeout(() => show = false, 2000)"
                     class="text-sm text-gray-600"
-                >已儲存。</p>
+                >{{ __('profile.saved') }}</p>
             @endif
         </div>
     </form>

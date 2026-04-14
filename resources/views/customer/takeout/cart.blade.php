@@ -14,13 +14,13 @@
             <div class="mb-2">
                 <a href="{{ route('customer.takeout.menu', ['store' => $store]) }}"
                    class="inline-flex items-center text-sm font-medium text-white/70 transition hover:text-white">
-                    ← 回外帶菜單
+                    ← {{ __('customer.back_to_takeout_menu') }}
                 </a>
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
                 <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold tracking-[0.2em] text-brand-highlight">
-                    外帶購物車
+                    {{ __('customer.takeout_cart_badge') }}
                 </span>
             </div>
 
@@ -29,7 +29,7 @@
             </h1>
 
             <p class="mt-3 text-sm leading-6 text-white/75 sm:text-base">
-                確認餐點內容後即可送出外帶訂單。
+                {{ __('customer.confirm_before_submit') }}
             </p>
                 </div>
             </div>
@@ -50,7 +50,7 @@
 
         @if($errors->any())
             <div class="mb-6 rounded-2xl border border-brand-soft bg-brand-soft/30 px-4 py-4 text-sm text-brand-dark shadow-sm">
-                <div class="mb-2 font-semibold">請先確認以下欄位：</div>
+                <div class="mb-2 font-semibold">{{ __('customer.confirm_fields') }}</div>
                 <ul class="space-y-1">
                     @foreach($errors->all() as $error)
                         <li>• {{ $error }}</li>
@@ -61,7 +61,7 @@
 
         @if(isset($orderHistory) && $orderHistory->isNotEmpty())
             <div class="mb-6 rounded-2xl border border-brand-soft/60 bg-white p-4 shadow-sm">
-                <p class="text-sm font-semibold text-brand-dark">近期訂單狀態</p>
+                <p class="text-sm font-semibold text-brand-dark">{{ __('customer.recent_orders') }}</p>
                 <div class="mt-2 flex flex-wrap gap-2">
                     @foreach($orderHistory->take(5) as $historyOrder)
                         <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="inline-flex items-center rounded-xl border border-brand-soft bg-brand-soft/20 px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-highlight/50">{{ $historyOrder->order_no }} ・ {{ $historyOrder->customer_status_label }}</a>
@@ -76,9 +76,9 @@
                 <div class="lg:col-span-2">
                     <div class="overflow-hidden rounded-3xl border border-brand-soft/60 bg-white shadow-[0_18px_44px_rgba(90,30,14,0.1)]">
                         <div class="border-b border-brand-soft/60 px-6 py-5">
-                            <h2 class="text-xl font-bold text-brand-dark">購物車內容</h2>
+                            <h2 class="text-xl font-bold text-brand-dark">{{ __('customer.cart_contents') }}</h2>
                             <p class="mt-1 text-sm text-brand-primary/70">
-                                共 {{ count($cart) }} 項商品
+                                {{ __('customer.total_products_prefix') }} {{ count($cart) }} {{ __('customer.total_products_suffix') }}
                             </p>
                         </div>
 
@@ -93,8 +93,8 @@
                                             <p class="mt-1 text-xs text-brand-primary">{{ $item['option_label'] }}</p>
                                         @endif
                                         <div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-brand-primary/75">
-                                            <span>單價 NT$ {{ number_format($item['price']) }}</span>
-                                            <span>數量 × {{ $item['qty'] }}</span>
+                                            <span>{{ __('customer.unit_price') }} NT$ {{ number_format($item['price']) }}</span>
+                                            <span>{{ __('customer.qty') }} × {{ $item['qty'] }}</span>
                                         </div>
                                     </div>
 
@@ -111,17 +111,17 @@
                 <div class="lg:col-span-1">
                     <div class="sticky top-6 space-y-6">
                         <div class="rounded-3xl border border-brand-soft/60 bg-white p-6 shadow-[0_18px_44px_rgba(90,30,14,0.1)]">
-                            <h2 class="text-xl font-bold text-brand-dark">訂單摘要</h2>
+                            <h2 class="text-xl font-bold text-brand-dark">{{ __('customer.order_summary') }}</h2>
 
                             <div class="mt-5 space-y-4 text-sm">
                                 <div class="flex items-center justify-between text-brand-primary/80">
-                                    <span>商品小計</span>
+                                    <span>{{ __('customer.subtotal') }}</span>
                                     <span>NT$ {{ number_format($total) }}</span>
                                 </div>
 
                                 <div class="border-t border-brand-soft/60 pt-4">
                                     <div class="flex items-center justify-between text-lg font-bold text-brand-dark">
-                                        <span>總計</span>
+                                        <span>{{ __('customer.total_amount') }}</span>
                                         <span>NT$ {{ number_format($total) }}</span>
                                     </div>
                                 </div>
@@ -129,7 +129,7 @@
                         </div>
 
                         <div class="rounded-3xl border border-brand-soft/60 bg-white p-6 shadow-[0_18px_44px_rgba(90,30,14,0.1)]">
-                            <h2 class="text-xl font-bold text-brand-dark">填寫訂單資訊</h2>
+                            <h2 class="text-xl font-bold text-brand-dark">{{ __('customer.fill_order_info') }}</h2>
 
                             <form method="POST"
                                   action="{{ route('customer.takeout.cart.checkout', ['store' => $store]) }}"
@@ -138,7 +138,7 @@
 
                                 <div>
                                     <label for="customer_name" class="mb-2 block text-sm font-medium text-brand-dark">
-                                        姓名
+                                        {{ __('customer.name') }}
                                     </label>
                                     <input id="customer_name"
                                            type="text"
@@ -149,7 +149,7 @@
 
                                 <div>
                                     <label for="customer_email" class="mb-2 block text-sm font-medium text-brand-dark">
-                                        Email
+                                        {{ __('auth.Email') }}
                                     </label>
                                     <input id="customer_email"
                                            type="email"
@@ -160,7 +160,7 @@
 
                                 <div>
                                     <label for="customer_phone" class="mb-2 block text-sm font-medium text-brand-dark">
-                                        電話
+                                        {{ __('customer.phone') }}
                                     </label>
                                     <input id="customer_phone"
                                            type="text"
@@ -169,9 +169,9 @@
                                            inputmode="numeric"
                                            maxlength="12"
                                            pattern="09[0-9]{2}-[0-9]{3}-[0-9]{3}"
-                                           placeholder="例如：0922-333-444"
+                                         placeholder="{{ __('customer.phone_placeholder') }}"
                                            class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">
-                                    <p class="mt-1 text-xs text-brand-primary/70">請輸入格式：0922-333-444</p>
+                                     <p class="mt-1 text-xs text-brand-primary/70">{{ __('customer.phone_format_hint') }}</p>
                                 </div>
 
                                 <div>
@@ -183,7 +183,7 @@
                                             @checked(old('remember_customer_info', !empty($rememberedCustomerInfo)))
                                             class="h-4 w-4 rounded border-brand-soft text-brand-primary focus:ring-brand-highlight"
                                         >
-                                        記住這次填寫的訂單資訊（姓名 / Email / 電話）
+                                        {{ __('customer.remember_info') }}
                                     </label>
 
                                     @if(!empty($rememberedCustomerInfo))
@@ -193,7 +193,7 @@
                                                 type="submit"
                                                 class="inline-flex items-center rounded-xl border border-brand-soft bg-white px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30"
                                             >
-                                                清除已記住資訊
+                                                {{ __('customer.clear_remembered_info') }}
                                             </button>
                                         </form>
                                     @endif
@@ -201,7 +201,7 @@
 
                                 <div>
                                     <label for="note" class="mb-2 block text-sm font-medium text-brand-dark">
-                                        備註
+                                        {{ __('customer.note') }}
                                     </label>
                                     <textarea id="note"
                                               name="note"
@@ -211,7 +211,7 @@
 
                                 <button type="submit"
                                         class="inline-flex w-full items-center justify-center rounded-2xl bg-brand-primary px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:bg-brand-accent hover:text-brand-dark">
-                                    送出外帶訂單
+                                    {{ __('customer.submit_order') }}
                                 </button>
                             </form>
                         </div>
@@ -223,15 +223,15 @@
             <div class="rounded-3xl border border-brand-soft/60 bg-white px-6 py-16 text-center shadow-[0_18px_44px_rgba(90,30,14,0.1)]">
                 <div class="mx-auto max-w-md">
                     <div class="text-5xl">🛒</div>
-                    <h2 class="mt-4 text-2xl font-bold text-brand-dark">購物車目前是空的</h2>
+                    <h2 class="mt-4 text-2xl font-bold text-brand-dark">{{ __('customer.cart_empty') }}</h2>
                     <p class="mt-3 text-brand-primary/75">
-                        先回到菜單挑選幾樣餐點，再回來確認訂單內容。
+                        {{ __('customer.cart_empty_hint') }}
                     </p>
 
                     <div class="mt-6">
                         <a href="{{ route('customer.takeout.menu', ['store' => $store]) }}"
                            class="inline-flex items-center rounded-2xl bg-brand-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-accent hover:text-brand-dark">
-                            回到菜單
+                            {{ __('customer.back_to_menu') }}
                         </a>
                     </div>
                 </div>

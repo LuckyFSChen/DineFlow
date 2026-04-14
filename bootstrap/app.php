@@ -13,6 +13,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(\App\Http\Middleware\ForceHttps::class);
 
+        // Set locale after session is started by the web middleware group.
+        $middleware->web(append: [
+            \App\Http\Middleware\SetLocale::class,
+        ]);
+
         $middleware->validateCsrfTokens(except: [
             'ecpay/subscription/notify',
             'ecpay/subscription/result',

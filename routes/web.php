@@ -8,6 +8,7 @@ use App\Http\Controllers\Customer\DineInMenuController;
 use App\Http\Controllers\Customer\DineInOrderController;
 use App\Http\Controllers\Customer\TakeoutOrderingController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Merchant\FinancialReportController;
 use App\Http\Controllers\Merchant\SubscriptionController as MerchantSubscriptionController;
 use App\Http\Controllers\ProfileController;
@@ -60,6 +61,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('super-admin')->na
 |--------------------------------------------------------------------------
 */
 
+Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/stores/{store:slug}', [StoreController::class, 'enter'])->name('stores.enter');
 

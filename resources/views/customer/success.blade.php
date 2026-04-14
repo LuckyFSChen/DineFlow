@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>訂單成功｜DineFlow</title>
+    <title>{{ __('customer.success_page_title') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-orange-50 text-gray-900">
@@ -17,15 +17,15 @@
                             ✓
                         </div>
                         <h1 class="text-2xl font-bold tracking-tight text-gray-900">
-                            訂單送出成功
+                            {{ __('customer.order_success_title') }}
                         </h1>
                         <p class="mt-2 text-sm leading-6 text-gray-500">
-                            您的訂單已成功送出，店家將開始處理。若有填寫 Email，後續可用來接收訂單通知。
+                            {{ __('customer.order_success_hint') }}
                         </p>
                     </div>
 
                     <div class="rounded-2xl border border-orange-100 bg-orange-50 px-4 py-3 text-left sm:min-w-[220px]">
-                        <p class="text-xs font-medium uppercase tracking-wide text-orange-500">Order No.</p>
+                        <p class="text-xs font-medium uppercase tracking-wide text-orange-500">{{ __('customer.order_no') }}</p>
                         <p class="mt-1 text-lg font-bold text-gray-900">{{ $order->order_no }}</p>
                     </div>
                 </div>
@@ -33,7 +33,7 @@
 
             {{-- Order Summary --}}
             <section class="mt-6 rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
-                <h2 class="text-lg font-bold">訂單資訊</h2>
+                <h2 class="text-lg font-bold">{{ __('customer.order_info_section') }}</h2>
 
                 @php
                     $isTakeout = ($order->order_type ?? null) === 'takeout';
@@ -41,22 +41,22 @@
 
                 <div class="mt-4 grid gap-4 sm:grid-cols-2">
                     <div class="rounded-2xl bg-orange-50 px-4 py-4">
-                        <p class="text-sm text-gray-500">店家</p>
+                        <p class="text-sm text-gray-500">{{ __('customer.store') }}</p>
                         <p class="mt-1 font-semibold text-gray-900">{{ $order->store->name }}</p>
                     </div>
 
                     <div class="rounded-2xl bg-orange-50 px-4 py-4">
-                        <p class="text-sm text-gray-500">桌號</p>
+                        <p class="text-sm text-gray-500">{{ __('customer.table_no') }}</p>
                         <p class="mt-1 font-semibold text-gray-900">{{ $isTakeout ? 'takeout' : ($order->table->table_no ?? '-') }}</p>
                     </div>
 
                     <div class="rounded-2xl bg-orange-50 px-4 py-4">
-                        <p class="text-sm text-gray-500">訂單狀態</p>
+                        <p class="text-sm text-gray-500">{{ __('customer.order_status') }}</p>
                         <p class="mt-1 font-semibold text-orange-600">{{ $order->customer_status_label }}</p>
                     </div>
 
                     <div class="rounded-2xl bg-orange-50 px-4 py-4">
-                        <p class="text-sm text-gray-500">訂單金額</p>
+                        <p class="text-sm text-gray-500">{{ __('customer.order_amount') }}</p>
                         <p class="mt-1 font-semibold text-gray-900">NT$ {{ number_format($order->total) }}</p>
                     </div>
                 </div>
@@ -65,8 +65,8 @@
             {{-- Items --}}
             <section class="mt-6 rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
                 <div class="mb-5 flex items-center justify-between">
-                    <h2 class="text-lg font-bold">餐點明細</h2>
-                    <span class="text-sm text-gray-400">{{ $order->items->count() }} 項</span>
+                    <h2 class="text-lg font-bold">{{ __('customer.order_items_title') }}</h2>
+                    <span class="text-sm text-gray-400">{{ $order->items->count() }} {{ __('customer.items') }}</span>
                 </div>
 
                 <div class="space-y-4">
@@ -80,7 +80,7 @@
                                     <p class="mt-1 text-xs text-orange-600">{{ $item->note }}</p>
                                 @endif
                                 <p class="mt-1 text-sm text-gray-500">
-                                    單價 NT$ {{ number_format($item->price) }}
+                                    {{ __('customer.unit_price') }} NT$ {{ number_format($item->price) }}
                                 </p>
                             </div>
 
@@ -96,7 +96,7 @@
 
                 <div class="mt-6 border-t border-orange-100 pt-4">
                     <div class="flex items-center justify-between">
-                        <span class="text-base font-medium text-gray-600">總計</span>
+                        <span class="text-base font-medium text-gray-600">{{ __('customer.total_label') }}</span>
                         <span class="text-2xl font-bold text-orange-600">
                             NT$ {{ number_format($order->total) }}
                         </span>
@@ -108,12 +108,12 @@
             <section class="mt-6">
                 <div class="rounded-3xl border border-orange-100 bg-white p-5 text-center shadow-sm">
                     <p class="text-sm text-gray-500">
-                        您可以返回菜單繼續加點，或等待店家出餐。
+                        {{ __('customer.continue_ordering') }}
                     </p>
 
                     <a href="{{ $isTakeout ? route('customer.takeout.menu', ['store' => $store]) : route('customer.dinein.menu', ['store' => $store, 'table' => $order->table]) }}"
                        class="mt-4 inline-flex h-11 items-center justify-center rounded-2xl bg-orange-500 px-5 text-sm font-semibold text-white hover:bg-orange-600">
-                        返回菜單
+                        {{ __('customer.back_to_menu') }}
                     </a>
                 </div>
             </section>

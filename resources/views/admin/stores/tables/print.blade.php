@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $store->name }} 桌位 QR 列印</title>
+    <title>{{ __('admin.table_print_page_title', ['store' => $store->name]) }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -138,13 +138,13 @@
 </head>
 <body>
     <div class="toolbar">
-        <div class="title">{{ $store->name }} / 桌位 QR 列印（{{ $tables->count() }} 筆）</div>
-        <button class="btn" type="button" onclick="window.print()">列印</button>
+        <div class="title">{{ __('admin.table_print_title', ['store' => $store->name, 'count' => $tables->count()]) }}</div>
+        <button class="btn" type="button" onclick="window.print()">{{ __('admin.print') }}</button>
     </div>
 
     <div class="container">
         @if($tables->isEmpty())
-            <div class="empty">未選擇要列印的桌位，請回到桌位管理頁勾選後再列印。</div>
+            <div class="empty">{{ __('admin.table_print_empty') }}</div>
         @else
             <div class="grid">
                 @foreach($tables as $table)

@@ -13,11 +13,11 @@
     <div class="min-vh-100">
         @include('layouts.navigation')
 
-        {{-- 給 extends / section 用 --}}
+        {{-- For extends/section templates --}}
         @hasSection('content')
             @yield('content')
         @else
-            {{-- 給 x-app-layout 用 --}}
+            {{-- For x-app-layout slot content --}}
             {{ $slot ?? '' }}
         @endif
     </div>

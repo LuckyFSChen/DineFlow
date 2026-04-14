@@ -10,18 +10,18 @@
                 <div class="mb-2">
                     <a href="{{ route('home') }}"
                        class="inline-flex items-center text-sm font-medium text-slate-500 transition hover:text-slate-700">
-                        ← 回首頁
+                        ← {{ __('customer.back_home') }}
                     </a>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3">
                     <span class="inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200">
-                        外帶點餐
+                        {{ __('customer.takeout') }}
                     </span>
 
                     @if($store->is_active)
                         <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                            營業中
+                            {{ __('customer.open') }}
                         </span>
                     @endif
                 </div>
@@ -31,14 +31,14 @@
                 </h1>
 
                 <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                    歡迎使用 DineFlow 外帶點餐。請選擇想要的餐點加入購物車，確認後即可送出訂單。
+                    {{ __('customer.welcome_takeout_desc') }}
                 </p>
             </div>
 
             <div class="flex shrink-0 items-center gap-3">
                 <a href="{{ route('customer.takeout.cart.show', ['store' => $store]) }}"
                    class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">
-                    查看購物車
+                    {{ __('customer.view_cart') }}
                 </a>
             </div>
         </div>
@@ -58,7 +58,7 @@
 
         @if($errors->any())
             <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800 shadow-sm">
-                <div class="mb-2 font-semibold">請先確認以下欄位：</div>
+                <div class="mb-2 font-semibold">{{ __('customer.confirm_fields') }}</div>
                 <ul class="space-y-1">
                     @foreach($errors->all() as $error)
                         <li>• {{ $error }}</li>
@@ -72,14 +72,14 @@
             <div class="rounded-3xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
                 <div class="mx-auto max-w-md">
                     <div class="text-5xl">🍽️</div>
-                    <h2 class="mt-4 text-2xl font-bold text-slate-900">目前尚未上架商品</h2>
+                    <h2 class="mt-4 text-2xl font-bold text-slate-900">{{ __('customer.no_products_available') }}</h2>
                     <p class="mt-3 text-slate-600">
-                        此餐廳目前沒有可顯示的分類與商品，請稍後再試。
+                        {{ __('customer.no_products_try_later') }}
                     </p>
                     <div class="mt-6">
                         <a href="{{ route('home') }}"
                            class="inline-flex items-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-                            返回首頁
+                            {{ __('customer.back_home') }}
                         </a>
                     </div>
                 </div>
@@ -108,7 +108,7 @@
                                     {{ $category->name }}
                                 </h2>
                                 <p class="mt-1 text-sm text-slate-500">
-                                    共 {{ $category->products->count() }} 項商品
+                                    {{ __('customer.total_products_prefix') }} {{ $category->products->count() }} {{ __('customer.total_products_suffix') }}
                                 </p>
                             </div>
                         </div>
@@ -117,7 +117,7 @@
                             <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                                 @foreach($category->products as $product)
                                     <div class="group overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
-                                        {{-- 圖片 --}}
+                                        {{-- Image --}}
                                         <div class="relative h-48 w-full overflow-hidden">
                                             <img src="{{ $product->image ?? 'https://source.unsplash.com/400x300/?food' }}"
                                                 class="h-full w-full object-cover transition duration-500 group-hover:scale-110">
@@ -125,13 +125,13 @@
                                             {{-- overlay --}}
                                             <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
 
-                                            {{-- 價格 --}}
+                                            {{-- Price --}}
                                             <div class="absolute bottom-3 right-3 rounded-full bg-white/90 px-3 py-1 text-sm font-bold text-brand-primary shadow">
                                                 NT$ {{ number_format($product->price) }}
                                             </div>
                                         </div>
 
-                                        {{-- 內容 --}}
+                                        {{-- Content --}}
                                         <div class="p-5 flex flex-col h-full">
 
                                             <div class="flex-1">
@@ -140,7 +140,7 @@
                                                 </h3>
                                             </div>
 
-                                            {{-- 按鈕 --}}
+                                            {{-- Actions --}}
                                             <div class="mt-4">
                                                 @if(!$product->is_sold_out)
                                                     <form method="POST"
@@ -158,12 +158,12 @@
 
                                                         <button type="submit"
                                                                 class="flex-1 rounded-xl bg-brand-primary px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark">
-                                                            加入
+                                                            {{ __('customer.add_to_cart') }}
                                                         </button>
                                                     </form>
                                                 @else
                                                     <div class="rounded-xl bg-gray-200 px-3 py-2 text-center text-sm text-gray-500">
-                                                        已售完
+                                                        {{ __('customer.sold_out') }}
                                                     </div>
                                                 @endif
                                             </div>
@@ -173,7 +173,7 @@
                             </div>
                         @else
                             <div class="rounded-2xl border border-slate-200 bg-white px-5 py-8 text-sm text-slate-500 shadow-sm">
-                                此分類目前沒有可販售商品。
+                                {{ __('customer.no_products_in_category') }}
                             </div>
                         @endif
                     </section>

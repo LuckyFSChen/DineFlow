@@ -4,9 +4,9 @@
 @php
     $storeQuery = $selectedStoreId ? ['store_id' => $selectedStoreId] : [];
     $quickRanges = [
-        ['label' => '今天', 'start' => now()->toDateString(), 'end' => now()->toDateString()],
-        ['label' => '近 7 天', 'start' => now()->subDays(6)->toDateString(), 'end' => now()->toDateString()],
-        ['label' => '近 30 天', 'start' => now()->subDays(29)->toDateString(), 'end' => now()->toDateString()],
+        ['label' => __('merchant.today'), 'start' => now()->toDateString(), 'end' => now()->toDateString()],
+        ['label' => __('merchant.last_7_days'), 'start' => now()->subDays(6)->toDateString(), 'end' => now()->toDateString()],
+        ['label' => __('merchant.last_30_days'), 'start' => now()->subDays(29)->toDateString(), 'end' => now()->toDateString()],
     ];
 @endphp
 
@@ -14,14 +14,14 @@
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div class="flex flex-wrap items-center gap-2 text-xs">
-                <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-600">區間：{{ $startDate }} 至 {{ $endDate }}</span>
-                <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-600">門市：{{ $selectedStoreId ? ($stores->firstWhere('id', $selectedStoreId)->name ?? '未知門市') : '全部門市' }}</span>
+                <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-600">{{ __('merchant.range') }}：{{ $startDate }} 至 {{ $endDate }}</span>
+                <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-slate-600">{{ __('merchant.store') }}：{{ $selectedStoreId ? ($stores->firstWhere('id', $selectedStoreId)->name ?? __('merchant.unknown_store')) : __('merchant.all_stores') }}</span>
             </div>
 
             <div class="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-                <h1 class="text-3xl font-bold tracking-tight text-slate-900">店家財務報表</h1>
-                    <p class="mt-2 text-slate-600">即時檢視營收、商品與門市表現，快速找到重點變化。</p>
+                <h1 class="text-3xl font-bold tracking-tight text-slate-900">{{ __('merchant.financial_title') }}</h1>
+                    <p class="mt-2 text-slate-600">{{ __('merchant.financial_desc') }}</p>
             </div>
 
                 <form method="GET" class="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-3 {{ $stores->count() > 1 ? 'lg:grid-cols-4' : '' }}">
@@ -30,14 +30,14 @@
 
                     @if($stores->count() > 1)
                         <select name="store_id" class="rounded-lg border-slate-300 bg-white text-sm">
-                            <option value="">全部門市</option>
+                            <option value="">{{ __('merchant.all_stores') }}</option>
                             @foreach($stores as $store)
                                 <option value="{{ $store->id }}" @selected((int) $selectedStoreId === (int) $store->id)>{{ $store->name }}</option>
                             @endforeach
                         </select>
                     @endif
 
-                    <button type="submit" class="rounded-lg bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-accent hover:text-brand-dark">套用篩選</button>
+                    <button type="submit" class="rounded-lg bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-accent hover:text-brand-dark">{{ __('merchant.apply_filter') }}</button>
                 </form>
             </div>
 
@@ -53,41 +53,41 @@
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">總營收</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('merchant.total_revenue') }}</p>
                 <p class="mt-2 text-2xl font-bold text-slate-900">NT$ {{ number_format($totalRevenue) }}</p>
-                <p class="mt-1 text-xs text-slate-500">已排除取消訂單</p>
+                <p class="mt-1 text-xs text-slate-500">{{ __('merchant.exclude_cancelled') }}</p>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">訂單數</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('merchant.total_orders') }}</p>
                 <p class="mt-2 text-2xl font-bold text-slate-900">{{ number_format($totalOrders) }}</p>
-                <p class="mt-1 text-xs text-slate-500">完成、處理中與待處理</p>
+                <p class="mt-1 text-xs text-slate-500">{{ __('merchant.order_status_scope') }}</p>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">平均客單</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('merchant.avg_order_value') }}</p>
                 <p class="mt-2 text-2xl font-bold text-slate-900">NT$ {{ number_format($avgOrderValue) }}</p>
-                <p class="mt-1 text-xs text-slate-500">總營收 / 訂單數</p>
+                <p class="mt-1 text-xs text-slate-500">{{ __('merchant.avg_formula') }}</p>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">售出件數</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('merchant.items_sold') }}</p>
                 <p class="mt-2 text-2xl font-bold text-slate-900">{{ number_format($itemsSold) }}</p>
-                <p class="mt-1 text-xs text-slate-500">商品銷量總和</p>
+                <p class="mt-1 text-xs text-slate-500">{{ __('merchant.items_sold_hint') }}</p>
             </div>
         </div>
 
         <div class="mt-4 grid gap-4 md:grid-cols-2">
             <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-                <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">內用營收</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">{{ __('merchant.dinein_revenue') }}</p>
                 <p class="mt-2 text-2xl font-bold text-amber-900">NT$ {{ number_format($dineInRevenue) }}</p>
             </div>
             <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-                <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">外帶營收</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">{{ __('merchant.takeout_revenue') }}</p>
                 <p class="mt-2 text-2xl font-bold text-emerald-900">NT$ {{ number_format($takeoutRevenue) }}</p>
             </div>
         </div>
 
         <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 class="text-lg font-semibold text-slate-900">營收趨勢</h2>
-            <p class="mt-1 text-sm text-slate-500">依日期查看營收與訂單變化。</p>
+            <h2 class="text-lg font-semibold text-slate-900">{{ __('merchant.revenue_trend') }}</h2>
+            <p class="mt-1 text-sm text-slate-500">{{ __('merchant.revenue_trend_desc') }}</p>
             <div class="mt-4 h-[320px]">
                 <canvas id="revenue-chart"></canvas>
             </div>
@@ -95,15 +95,15 @@
 
         <div class="mt-6 grid gap-6 lg:grid-cols-2">
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h2 class="text-lg font-semibold text-slate-900">熱銷商品排行</h2>
+                <h2 class="text-lg font-semibold text-slate-900">{{ __('merchant.top_products') }}</h2>
                 <div class="mt-4 overflow-x-auto">
                     <table class="min-w-full text-sm">
                         <thead class="bg-slate-100 text-slate-600">
                             <tr>
-                                <th class="px-3 py-2 text-left">排名</th>
-                                <th class="px-3 py-2 text-left">商品</th>
-                                <th class="px-3 py-2 text-right">售出數量</th>
-                                <th class="px-3 py-2 text-right">銷售額</th>
+                                <th class="px-3 py-2 text-left">{{ __('merchant.rank') }}</th>
+                                <th class="px-3 py-2 text-left">{{ __('merchant.product') }}</th>
+                                <th class="px-3 py-2 text-right">{{ __('merchant.qty') }}</th>
+                                <th class="px-3 py-2 text-right">{{ __('merchant.amount') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -116,7 +116,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="px-3 py-6 text-center text-slate-500">此區間尚無銷售資料</td>
+                                    <td colspan="4" class="px-3 py-6 text-center text-slate-500">{{ __('merchant.no_sales_data') }}</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -125,14 +125,14 @@
             </div>
 
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h2 class="text-lg font-semibold text-slate-900">門市營收分佈</h2>
+                <h2 class="text-lg font-semibold text-slate-900">{{ __('merchant.store_revenue_distribution') }}</h2>
                 <div class="mt-4 overflow-x-auto">
                     <table class="min-w-full text-sm">
                         <thead class="bg-slate-100 text-slate-600">
                             <tr>
-                                <th class="px-3 py-2 text-left">門市</th>
-                                <th class="px-3 py-2 text-right">訂單數</th>
-                                <th class="px-3 py-2 text-right">營收</th>
+                                <th class="px-3 py-2 text-left">{{ __('merchant.store') }}</th>
+                                <th class="px-3 py-2 text-right">{{ __('merchant.orders') }}</th>
+                                <th class="px-3 py-2 text-right">{{ __('merchant.revenue') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -144,7 +144,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="3" class="px-3 py-6 text-center text-slate-500">此區間尚無門市營收資料</td>
+                                    <td colspan="3" class="px-3 py-6 text-center text-slate-500">{{ __('merchant.no_store_revenue_data') }}</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -154,16 +154,16 @@
         </div>
 
         <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 class="text-lg font-semibold text-slate-900">商品銷售占比圓餅圖</h2>
-            <p class="mt-1 text-sm text-slate-500">先勾選要分析的商品，再看占比與明細。</p>
+            <h2 class="text-lg font-semibold text-slate-900">{{ __('merchant.product_share_title') }}</h2>
+            <p class="mt-1 text-sm text-slate-500">{{ __('merchant.product_share_desc') }}</p>
 
             <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <div class="mb-2 flex items-center justify-between">
-                    <p class="text-xs font-semibold tracking-wide text-slate-600">選擇要納入圓餅圖的商品 <span id="product-share-selected-count" class="ms-1 rounded-full bg-slate-200 px-2 py-0.5 text-[11px] text-slate-700">0</span></p>
+                    <p class="text-xs font-semibold tracking-wide text-slate-600">{{ __('merchant.product_share_picker_title') }} <span id="product-share-selected-count" class="ms-1 rounded-full bg-slate-200 px-2 py-0.5 text-[11px] text-slate-700">0</span></p>
                     <div class="flex items-center gap-3">
-                        <button type="button" id="product-share-select-all" class="text-xs font-semibold text-slate-700 hover:text-slate-900">全選</button>
-                        <button type="button" id="product-share-select-top5" class="text-xs font-semibold text-slate-700 hover:text-slate-900">勾選前五名</button>
-                        <button type="button" id="product-share-reset" class="text-xs font-semibold text-brand-primary hover:text-brand-accent">全部重設</button>
+                        <button type="button" id="product-share-select-all" class="text-xs font-semibold text-slate-700 hover:text-slate-900">{{ __('merchant.select_all') }}</button>
+                        <button type="button" id="product-share-select-top5" class="text-xs font-semibold text-slate-700 hover:text-slate-900">{{ __('merchant.select_top5') }}</button>
+                        <button type="button" id="product-share-reset" class="text-xs font-semibold text-brand-primary hover:text-brand-accent">{{ __('merchant.reset_all') }}</button>
                     </div>
                 </div>
                 <div id="product-share-picker" class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"></div>
@@ -173,11 +173,11 @@
                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                     <div class="mb-3 flex items-start justify-between gap-3">
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">排行商品總銷售額</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('merchant.rank_total_sales') }}</p>
                             <p id="product-share-total" class="mt-1 text-xl font-bold text-slate-900">NT$ 0</p>
                         </div>
                         <div class="text-right">
-                            <p class="text-xs text-slate-500">占比最高</p>
+                            <p class="text-xs text-slate-500">{{ __('merchant.top_ratio') }}</p>
                             <p id="product-share-top" class="text-sm font-semibold text-slate-800">-</p>
                         </div>
                     </div>
@@ -187,12 +187,12 @@
                     </div>
 
                     <div id="product-share-empty" class="hidden rounded-lg border border-dashed border-slate-300 bg-white px-4 py-10 text-center text-sm text-slate-500">
-                        此區間沒有可視化商品占比資料
+                        {{ __('merchant.no_share_data') }}
                     </div>
                 </div>
 
                 <div class="rounded-2xl border border-slate-200 bg-white p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">商品占比明細</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('merchant.share_legend') }}</p>
                     <div id="product-share-legend" class="mt-3 grid gap-2 sm:grid-cols-2"></div>
                 </div>
             </div>
@@ -206,6 +206,8 @@
     const labels = @json($chartLabels);
     const revenue = @json($chartRevenue);
     const orders = @json($chartOrders);
+    const chartRevenueLabel = @json(__('merchant.chart_revenue_label'));
+    const chartOrdersLabel = @json(__('merchant.chart_orders_label'));
     const productShareLabels = @json($topProducts->pluck('display_name')->values());
     const productShareValues = @json($topProducts->pluck('sold_amount')->map(fn($v) => (int) $v)->values());
 
@@ -220,7 +222,7 @@
             labels,
             datasets: [
                 {
-                    label: '營收 (NT$)',
+                    label: chartRevenueLabel,
                     data: revenue,
                     yAxisID: 'yRevenue',
                     borderColor: '#ec9057',
@@ -229,7 +231,7 @@
                     tension: 0.3,
                 },
                 {
-                    label: '訂單數',
+                    label: chartOrdersLabel,
                     data: orders,
                     yAxisID: 'yOrders',
                     borderColor: '#5A1E0E',
@@ -251,14 +253,14 @@
                     type: 'linear',
                     position: 'left',
                     beginAtZero: true,
-                    title: { display: true, text: '營收 (NT$)' }
+                    title: { display: true, text: chartRevenueLabel }
                 },
                 yOrders: {
                     type: 'linear',
                     position: 'right',
                     beginAtZero: true,
                     grid: { drawOnChartArea: false },
-                    title: { display: true, text: '訂單數' }
+                    title: { display: true, text: chartOrdersLabel }
                 }
             }
         }

@@ -5,27 +5,27 @@
     <div class="mx-auto max-w-7xl px-6 py-10 lg:px-8">
         <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-                <h1 class="text-3xl font-bold tracking-tight text-slate-900">商品管理中心</h1>
-                <p class="mt-2 text-slate-600">店家：{{ $store->name }}，依分類管理商品，使用彈窗快速編輯。</p>
+                <h1 class="text-3xl font-bold tracking-tight text-slate-900">{{ __('admin.products_page_title') }}</h1>
+                <p class="mt-2 text-slate-600">{{ $store->name }} · {{ __('admin.products_page_description') }}</p>
             </div>
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">回店家列表</a>
-                <button type="button" id="create-category-btn" class="inline-flex items-center justify-center rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">新增分類</button>
-                <button type="button" id="create-product-btn" class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500">新增商品</button>
+                <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">{{ __('admin.products_back_to_stores') }}</a>
+                <button type="button" id="create-category-btn" class="inline-flex items-center justify-center rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">{{ __('admin.products_btn_add_category') }}</button>
+                <button type="button" id="create-product-btn" class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500">{{ __('admin.products_btn_add_product') }}</button>
             </div>
         </div>
 
         <div class="mb-8 grid gap-4 md:grid-cols-3">
             <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">總商品數</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ __('admin.products_stats_total') }}</p>
                 <p class="mt-2 text-2xl font-bold text-slate-900">{{ $totalProducts }}</p>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">可販售</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ __('admin.products_stats_available') }}</p>
                 <p class="mt-2 text-2xl font-bold text-emerald-700">{{ $activeProducts }}</p>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">有選配</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ __('admin.products_stats_with_options') }}</p>
                 <p class="mt-2 text-2xl font-bold text-indigo-700">{{ $optionEnabledProducts }}</p>
             </div>
         </div>
@@ -38,13 +38,13 @@
                     <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 class="text-xl font-bold text-slate-900">{{ $category->name }}</h2>
-                            <p class="mt-1 text-sm text-slate-500">{{ $category->products->count() }} 項商品 ・ 排序 {{ $category->sort ?? 1 }}</p>
+                            <p class="mt-1 text-sm text-slate-500">{{ $category->products->count() }} {{ __('admin.products_items_count_suffix') }} ・ {{ __('admin.products_sort_label') }} {{ $category->sort ?? 1 }}</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
-                            <button type="button" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100" data-edit-category="{{ $category->id }}">編輯分類</button>
-                            <button type="button" class="inline-flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100" data-disable-category="{{ $category->id }}" data-category-name="{{ $category->name }}">停用分類</button>
-                            <button type="button" class="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100" data-delete-category="{{ $category->id }}" data-category-name="{{ $category->name }}">刪除分類</button>
-                            <button type="button" class="inline-flex items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100" data-create-in-category="{{ $category->id }}">新增商品</button>
+                            <button type="button" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100" data-edit-category="{{ $category->id }}">{{ __('admin.products_btn_edit_category') }}</button>
+                            <button type="button" class="inline-flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100" data-disable-category="{{ $category->id }}" data-category-name="{{ $category->name }}">{{ __('admin.products_btn_disable_category') }}</button>
+                            <button type="button" class="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100" data-delete-category="{{ $category->id }}" data-category-name="{{ $category->name }}">{{ __('admin.products_btn_delete_category') }}</button>
+                            <button type="button" class="inline-flex items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100" data-create-in-category="{{ $category->id }}">{{ __('admin.products_btn_add_product') }}</button>
                         </div>
                     </div>
 
@@ -55,35 +55,35 @@
                                     <div class="flex items-start justify-between gap-3">
                                         <div>
                                             <h3 class="text-base font-semibold text-slate-900">{{ $product->name }}</h3>
-                                            <p class="mt-1 text-sm text-slate-500">NT$ {{ number_format($product->price) }} ・ <span data-product-sort>排序 {{ $product->sort }}</span></p>
+                                            <p class="mt-1 text-sm text-slate-500">NT$ {{ number_format($product->price) }} ・ <span data-product-sort>{{ __('admin.products_sort_label') }} {{ $product->sort }}</span></p>
                                         </div>
                                         <div class="flex items-center gap-2">
-                                            <span class="inline-flex cursor-grab rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 active:cursor-grabbing" data-drag-product-handle>拖曳排序</span>
+                                            <span class="inline-flex cursor-grab rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 active:cursor-grabbing" data-drag-product-handle>{{ __('admin.products_drag_to_sort') }}</span>
                                             <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $product->is_active && ! $product->is_sold_out ? 'bg-emerald-50 text-emerald-700' : ($product->is_sold_out ? 'bg-amber-50 text-amber-700' : 'bg-slate-200 text-slate-600') }}">
-                                                {{ $product->is_active && ! $product->is_sold_out ? '可販售' : ($product->is_sold_out ? '售完' : '下架') }}
+                                                {{ $product->is_active && ! $product->is_sold_out ? __('admin.products_stats_available') : ($product->is_sold_out ? __('admin.products_status_sold_out') : __('admin.products_status_inactive')) }}
                                             </span>
                                         </div>
                                     </div>
 
-                                    <p class="mt-3 line-clamp-2 text-sm text-slate-600">{{ $product->description ?: '尚未填寫描述' }}</p>
-                                    <p class="mt-2 text-xs font-medium text-indigo-700">{{ !empty($product->option_groups) ? '已設定選配' : '無選配' }}</p>
+                                    <p class="mt-3 line-clamp-2 text-sm text-slate-600">{{ $product->description ?: __('admin.products_empty_no_description') }}</p>
+                                    <p class="mt-2 text-xs font-medium text-indigo-700">{{ !empty($product->option_groups) ? __('admin.products_status_has_options') : __('admin.products_status_no_options') }}</p>
 
                                     <div class="mt-4 flex gap-2">
-                                        <button type="button" class="inline-flex flex-1 items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100" data-edit-product="{{ $product->id }}">編輯</button>
-                                        <button type="button" class="inline-flex flex-1 items-center justify-center rounded-xl bg-rose-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-rose-500" data-delete-product="{{ $product->id }}" data-product-name="{{ $product->name }}">刪除</button>
+                                        <button type="button" class="inline-flex flex-1 items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100" data-edit-product="{{ $product->id }}">{{ __('admin.products_btn_edit') }}</button>
+                                        <button type="button" class="inline-flex flex-1 items-center justify-center rounded-xl bg-rose-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-rose-500" data-delete-product="{{ $product->id }}" data-product-name="{{ $product->name }}">{{ __('admin.products_btn_delete') }}</button>
                                     </div>
                                 </article>
                             @endforeach
                         </div>
                     @else
                         <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500" data-category-products data-category-id="{{ $category->id }}">
-                            <div data-empty-placeholder>這個分類還沒有商品，點右上角「新增商品」快速建立。</div>
+                            <div data-empty-placeholder>{{ __('admin.products_empty_no_products_in_category') }}</div>
                         </div>
                     @endif
                 </section>
             @empty
                 <div class="rounded-3xl border border-slate-200 bg-white px-6 py-12 text-center shadow-sm">
-                    <p class="text-slate-600">目前沒有可用分類，請先建立分類再新增商品。</p>
+                    <p class="text-slate-600">{{ __('admin.products_empty_no_categories') }}</p>
                 </div>
             @endforelse
 
@@ -91,17 +91,17 @@
                 <section class="rounded-3xl border border-amber-200 bg-amber-50/40 p-5 shadow-sm">
                     <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h2 class="text-xl font-bold text-amber-900">已停用分類</h2>
-                            <p class="mt-1 text-sm text-amber-700">需要恢復時可直接重新啟用，不會刪除原本分類與商品關聯。</p>
+                            <h2 class="text-xl font-bold text-amber-900">{{ __('admin.products_inactive_categories_title') }}</h2>
+                            <p class="mt-1 text-sm text-amber-700">{{ __('admin.products_inactive_categories_description') }}</p>
                         </div>
-                        <span class="inline-flex w-fit items-center rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-semibold text-amber-700">{{ $inactiveCategories->count() }} 筆</span>
+                        <span class="inline-flex w-fit items-center rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-semibold text-amber-700">{{ $inactiveCategories->count() }} {{ __('admin.products_unit_count') }}</span>
                     </div>
 
                     <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                         @foreach($inactiveCategories as $inactiveCategory)
                             <article class="rounded-2xl border border-amber-200 bg-white p-4">
                                 <h3 class="text-base font-semibold text-slate-900">{{ $inactiveCategory->name }}</h3>
-                                <p class="mt-1 text-sm text-slate-500">排序 {{ $inactiveCategory->sort ?? 1 }} ・ {{ $inactiveCategory->products_count }} 項商品</p>
+                                <p class="mt-1 text-sm text-slate-500">{{ __('admin.products_sort_label') }} {{ $inactiveCategory->sort ?? 1 }} ・ {{ $inactiveCategory->products_count }} {{ __('admin.products_items_count_suffix') }}</p>
                                 <div class="mt-3 flex gap-2">
                                     <button
                                         type="button"
@@ -109,7 +109,7 @@
                                         data-enable-category="{{ $inactiveCategory->id }}"
                                         data-category-name="{{ $inactiveCategory->name }}"
                                     >
-                                        重新啟用
+                                        {{ __('admin.products_btn_reactivate_category') }}
                                     </button>
                                 </div>
                             </article>
@@ -125,8 +125,8 @@
     <div class="w-full max-w-3xl rounded-3xl bg-white shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
             <div>
-                <h3 id="product-modal-title" class="text-lg font-bold text-slate-900">新增商品</h3>
-                <p class="text-xs text-slate-500">使用彈窗快速維護商品資料</p>
+                <h3 id="product-modal-title" class="text-lg font-bold text-slate-900">{{ __('admin.products_modal_product_title') }}</h3>
+                <p class="text-xs text-slate-500">{{ __('admin.products_modal_product_description') }}</p>
             </div>
             <button type="button" id="product-modal-close" class="rounded-full p-2 text-slate-500 hover:bg-slate-100">✕</button>
         </div>
@@ -136,12 +136,12 @@
 
             <div class="grid gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">商品名稱</label>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.products_form_product_name') }}</label>
                     <input type="text" name="name" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100" required>
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">分類</label>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.products_form_category') }}</label>
                     <select name="category_id" id="modal-category" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100" required>
                         @foreach($categoryOptions as $option)
                             <option value="{{ $option['id'] }}">{{ $option['name'] }}</option>
@@ -150,22 +150,22 @@
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">價格 (NT$)</label>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.products_form_price') }}</label>
                     <input type="number" name="price" min="0" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100" required>
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">排序</label>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.products_form_sort') }}</label>
                     <input type="number" name="sort" min="1" value="1" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100">
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">圖片 URL</label>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.products_form_image_url') }}</label>
                     <input type="text" name="image" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100">
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">描述</label>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.products_form_description') }}</label>
                     <textarea name="description" rows="3" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"></textarea>
                 </div>
 
@@ -173,27 +173,27 @@
                     <input type="hidden" name="option_groups_json" id="option-groups-json-input" value="[]">
 
                     <div class="mb-2 flex flex-wrap gap-2">
-                        <button type="button" data-option-template="steak" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">套用牛排範本</button>
-                        <button type="button" data-option-template="combo" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">套用套餐範本</button>
-                        <button type="button" data-option-clear-all class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">清空</button>
-                        <button type="button" data-option-add-group class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500">新增群組</button>
+                        <button type="button" data-option-template="steak" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">{{ __('admin.products_options_template_steak') }}</button>
+                        <button type="button" data-option-template="combo" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">{{ __('admin.products_options_template_combo') }}</button>
+                        <button type="button" data-option-clear-all class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">{{ __('admin.products_options_clear_all') }}</button>
+                        <button type="button" data-option-add-group class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500">{{ __('admin.products_options_add_group') }}</button>
                     </div>
 
-                    <p class="mb-2 text-xs text-slate-600">選配樹狀編輯：先建立群組，再新增群組內選項。</p>
+                    <p class="mb-2 text-xs text-slate-600">{{ __('admin.products_options_tree_edit_hint') }}</p>
                     <div id="option-groups-editor" class="space-y-3"></div>
                 </div>
 
                 <div>
                     <label class="inline-flex items-center gap-2 text-sm text-slate-700">
                         <input type="checkbox" name="is_active" id="modal-is-active" value="1" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-                        上架
+                        {{ __('admin.products_form_published') }}
                     </label>
                 </div>
 
                 <div>
                     <label class="inline-flex items-center gap-2 text-sm text-slate-700">
                         <input type="checkbox" name="is_sold_out" id="modal-is-sold-out" value="1" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-                        售完
+                        {{ __('admin.products_form_sold_out') }}
                     </label>
                 </div>
             </div>
@@ -201,8 +201,8 @@
             <div id="product-modal-error" class="mt-4 hidden rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"></div>
 
             <div class="mt-6 flex gap-2">
-                <button type="submit" id="product-modal-submit" class="inline-flex flex-1 items-center justify-center rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500">儲存商品</button>
-                <button type="button" id="product-modal-cancel" class="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">取消</button>
+                <button type="submit" id="product-modal-submit" class="inline-flex flex-1 items-center justify-center rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500">{{ __('admin.products_btn_save_product') }}</button>
+                <button type="button" id="product-modal-cancel" class="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">{{ __('admin.products_btn_cancel') }}</button>
             </div>
         </form>
     </div>
@@ -212,8 +212,8 @@
     <div class="w-full max-w-xl rounded-3xl bg-white shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
             <div>
-                <h3 id="category-modal-title" class="text-lg font-bold text-slate-900">新增分類</h3>
-                <p class="text-xs text-slate-500">建立或修改商品分類</p>
+                <h3 id="category-modal-title" class="text-lg font-bold text-slate-900">{{ __('admin.products_modal_category_title') }}</h3>
+                <p class="text-xs text-slate-500">{{ __('admin.products_modal_category_description') }}</p>
             </div>
             <button type="button" id="category-modal-close" class="rounded-full p-2 text-slate-500 hover:bg-slate-100">✕</button>
         </div>
@@ -223,12 +223,12 @@
 
             <div class="space-y-4">
                 <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">分類名稱</label>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.products_form_category_name') }}</label>
                     <input type="text" name="name" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" required>
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">排序</label>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.products_form_sort') }}</label>
                     <input type="number" name="sort" min="1" value="1" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                 </div>
             </div>
@@ -236,8 +236,8 @@
             <div id="category-modal-error" class="mt-4 hidden rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"></div>
 
             <div class="mt-6 flex gap-2">
-                <button type="submit" id="category-modal-submit" class="inline-flex flex-1 items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500">儲存分類</button>
-                <button type="button" id="category-modal-cancel" class="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">取消</button>
+                <button type="submit" id="category-modal-submit" class="inline-flex flex-1 items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500">{{ __('admin.products_btn_save_category') }}</button>
+                <button type="button" id="category-modal-cancel" class="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">{{ __('admin.products_btn_cancel') }}</button>
             </div>
         </form>
     </div>
@@ -259,6 +259,79 @@
     const disableCategoryUrlTemplate = '{{ route('admin.stores.categories.disable', [$store, '__CATEGORY__']) }}';
     const enableCategoryUrlTemplate = '{{ route('admin.stores.categories.enable', [$store, '__CATEGORY__']) }}';
     const deleteCategoryUrlTemplate = '{{ route('admin.stores.categories.destroy', [$store, '__CATEGORY__']) }}';
+
+    const i18n = {
+        modalCategoryTitleCreate: @json(__('admin.products_modal_category_title')),
+        modalCategoryTitleEdit: @json(__('admin.products_btn_edit_category')),
+        modalCategorySubmitCreate: @json(__('admin.products_btn_create_category')),
+        modalCategorySubmitEdit: @json(__('admin.products_btn_update_category')),
+        modalProductTitleCreate: @json(__('admin.products_modal_product_title')),
+        modalProductTitleEdit: @json(__('admin.products_modal_product_title_edit')),
+        modalProductSubmitCreate: @json(__('admin.products_btn_create_product')),
+        modalProductSubmitEdit: @json(__('admin.products_btn_update_product')),
+        readCategoryFailed: @json(__('admin.products_error_read_category_failed')),
+        saveCategoryFailed: @json(__('admin.products_error_save_category_failed')),
+        deleteCategoryFailed: @json(__('admin.products_error_delete_category_failed')),
+        disableCategoryFailed: @json(__('admin.products_error_disable_category_failed')),
+        enableCategoryFailed: @json(__('admin.products_error_enable_category_failed')),
+        readProductFailed: @json(__('admin.products_error_read_product_failed')),
+        sortUpdateFailed: @json(__('admin.products_error_sort_update_failed')),
+        moveAcrossCategoryFailed: @json(__('admin.products_error_move_across_categories_failed')),
+        moveUpdateFailed: @json(__('admin.products_error_move_update_failed')),
+        saveFailed: @json(__('admin.products_error_save_failed')),
+        deleteFailed: @json(__('admin.products_error_delete_failed')),
+        categorySaved: @json(__('admin.products_success_category_saved')),
+        categoryDeleted: @json(__('admin.products_success_category_deleted')),
+        categoryDisabled: @json(__('admin.products_success_category_disabled')),
+        categoryEnabled: @json(__('admin.products_success_category_enabled')),
+        sortUpdated: @json(__('admin.products_success_sort_updated')),
+        moveUpdated: @json(__('admin.products_success_move_updated')),
+        saved: @json(__('admin.products_success_saved')),
+        productDeleted: @json(__('admin.products_success_product_deleted')),
+        sortLabel: @json(__('admin.products_sort_label')),
+        dragShort: @json(__('admin.products_drag_short')),
+        groupLabel: @json(__('admin.products_group_label')),
+        removeGroup: @json(__('admin.products_group_delete')),
+        groupNamePlaceholder: @json(__('admin.products_group_name_placeholder')),
+        groupIdPlaceholder: @json(__('admin.products_group_id_placeholder')),
+        singleChoice: @json(__('admin.products_group_type_single')),
+        multipleChoice: @json(__('admin.products_group_type_multiple')),
+        requiredGroup: @json(__('admin.products_group_required')),
+        optionsLabel: @json(__('admin.products_group_choices_list')),
+        addChoice: @json(__('admin.products_group_add_choice')),
+        choiceName: @json(__('admin.products_choice_name')),
+        choiceId: @json(__('admin.products_choice_id')),
+        choicePrice: @json(__('admin.products_choice_price')),
+        delete: @json(__('admin.products_btn_delete')),
+        fallbackProduct: @json(__('admin.products_fallback_product')),
+        fallbackCategory: @json(__('admin.products_fallback_category')),
+        confirmDeleteCategory: @json(__('admin.products_confirm_delete_category', ['name' => '__name__'])),
+        confirmDisableCategory: @json(__('admin.products_confirm_disable_category', ['name' => '__name__'])),
+        confirmEnableCategory: @json(__('admin.products_confirm_enable_category', ['name' => '__name__'])),
+        confirmDeleteProduct: @json(__('admin.products_confirm_delete_product', ['name' => '__name__'])),
+        confirmClearAllOptions: @json(__('admin.products_confirm_clear_all_options')),
+        confirmApplyTemplate: @json(__('admin.products_confirm_apply_template')),
+        templateSteakDoneness: @json(__('admin.products_template_steak_doneness')),
+        templateSteakRare: @json(__('admin.products_template_steak_rare')),
+        templateSteakMedium: @json(__('admin.products_template_steak_medium')),
+        templateSteakWell: @json(__('admin.products_template_steak_well')),
+        templateSteakExtras: @json(__('admin.products_template_steak_extras')),
+        templateSteakEgg: @json(__('admin.products_template_steak_egg')),
+        templateSteakCheese: @json(__('admin.products_template_steak_cheese')),
+        templateSteakSauce: @json(__('admin.products_template_steak_sauce')),
+        templateComboMain: @json(__('admin.products_template_combo_main_choice')),
+        templateComboChicken: @json(__('admin.products_template_combo_chicken')),
+        templateComboPork: @json(__('admin.products_template_combo_pork')),
+        templateComboFish: @json(__('admin.products_template_combo_fish')),
+        templateComboSide: @json(__('admin.products_template_combo_side_choice')),
+        templateComboFries: @json(__('admin.products_template_combo_fries')),
+        templateComboSalad: @json(__('admin.products_template_combo_salad')),
+        templateComboSoup: @json(__('admin.products_template_combo_soup')),
+        templateComboDrink: @json(__('admin.products_template_combo_drink_choice')),
+        templateComboBlackTea: @json(__('admin.products_template_combo_black_tea')),
+        templateComboGreenTea: @json(__('admin.products_template_combo_green_tea')),
+        templateComboMilkTea: @json(__('admin.products_template_combo_milk_tea')),
+    };
 
     const flash = document.getElementById('product-flash');
     const modal = document.getElementById('product-modal');
@@ -295,32 +368,32 @@
 
     const optionTemplates = {
         steak: [
-            { id: 'doneness', name: '熟度', type: 'single', required: true, choices: [
-                { id: 'rare', name: '三分熟', price: 0 },
-                { id: 'medium', name: '五分熟', price: 0 },
-                { id: 'well', name: '全熟', price: 0 },
+            { id: 'doneness', name: i18n.templateSteakDoneness, type: 'single', required: true, choices: [
+                { id: 'rare', name: i18n.templateSteakRare, price: 0 },
+                { id: 'medium', name: i18n.templateSteakMedium, price: 0 },
+                { id: 'well', name: i18n.templateSteakWell, price: 0 },
             ] },
-            { id: 'extras', name: '加購配料', type: 'multiple', required: false, max_select: 3, choices: [
-                { id: 'egg', name: '加蛋', price: 20 },
-                { id: 'cheese', name: '加起司', price: 25 },
-                { id: 'sauce', name: '蘑菇醬', price: 15 },
+            { id: 'extras', name: i18n.templateSteakExtras, type: 'multiple', required: false, max_select: 3, choices: [
+                { id: 'egg', name: i18n.templateSteakEgg, price: 20 },
+                { id: 'cheese', name: i18n.templateSteakCheese, price: 25 },
+                { id: 'sauce', name: i18n.templateSteakSauce, price: 15 },
             ] },
         ],
         combo: [
-            { id: 'main_choice', name: '主餐', type: 'single', required: true, choices: [
-                { id: 'chicken', name: '雞腿排', price: 0 },
-                { id: 'pork', name: '豬排', price: 0 },
-                { id: 'fish', name: '烤魚', price: 20 },
+            { id: 'main_choice', name: i18n.templateComboMain, type: 'single', required: true, choices: [
+                { id: 'chicken', name: i18n.templateComboChicken, price: 0 },
+                { id: 'pork', name: i18n.templateComboPork, price: 0 },
+                { id: 'fish', name: i18n.templateComboFish, price: 20 },
             ] },
-            { id: 'side_choice', name: '附餐', type: 'single', required: true, choices: [
-                { id: 'fries', name: '薯條', price: 0 },
-                { id: 'salad', name: '沙拉', price: 0 },
-                { id: 'soup', name: '濃湯', price: 0 },
+            { id: 'side_choice', name: i18n.templateComboSide, type: 'single', required: true, choices: [
+                { id: 'fries', name: i18n.templateComboFries, price: 0 },
+                { id: 'salad', name: i18n.templateComboSalad, price: 0 },
+                { id: 'soup', name: i18n.templateComboSoup, price: 0 },
             ] },
-            { id: 'drink_choice', name: '飲料', type: 'single', required: true, choices: [
-                { id: 'black_tea', name: '紅茶', price: 0 },
-                { id: 'green_tea', name: '綠茶', price: 0 },
-                { id: 'milk_tea', name: '奶茶', price: 10 },
+            { id: 'drink_choice', name: i18n.templateComboDrink, type: 'single', required: true, choices: [
+                { id: 'black_tea', name: i18n.templateComboBlackTea, price: 0 },
+                { id: 'green_tea', name: i18n.templateComboGreenTea, price: 0 },
+                { id: 'milk_tea', name: i18n.templateComboMilkTea, price: 10 },
             ] },
         ],
     };
@@ -396,26 +469,26 @@
 
             wrapper.innerHTML = `
                 <div class="mb-3 flex items-center justify-between">
-                    <p class="text-xs font-semibold text-slate-700">群組 #${groupIndex + 1}</p>
-                    <button type="button" data-remove-group class="rounded-lg bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100">刪除群組</button>
+                    <p class="text-xs font-semibold text-slate-700">${i18n.groupLabel} #${groupIndex + 1}</p>
+                    <button type="button" data-remove-group class="rounded-lg bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100">${i18n.removeGroup}</button>
                 </div>
                 <div class="grid gap-2 md:grid-cols-2">
-                    <input type="text" value="${esc(group.name || '')}" data-group-field="name" placeholder="群組名稱，例如：熟度" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                    <input type="text" value="${esc(group.id || '')}" data-group-field="id" placeholder="群組 ID，例如：doneness" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <input type="text" value="${esc(group.name || '')}" data-group-field="name" placeholder="${esc(i18n.groupNamePlaceholder)}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <input type="text" value="${esc(group.id || '')}" data-group-field="id" placeholder="${esc(i18n.groupIdPlaceholder)}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <select data-group-field="type" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                        <option value="single" ${group.type === 'single' ? 'selected' : ''}>單選</option>
-                        <option value="multiple" ${group.type === 'multiple' ? 'selected' : ''}>多選</option>
+                        <option value="single" ${group.type === 'single' ? 'selected' : ''}>${i18n.singleChoice}</option>
+                        <option value="multiple" ${group.type === 'multiple' ? 'selected' : ''}>${i18n.multipleChoice}</option>
                     </select>
                     <input type="number" min="1" value="${group.max_select || 1}" data-group-field="max_select" ${group.type === 'single' ? 'disabled' : ''} class="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100">
                 </div>
                 <label class="mt-2 inline-flex items-center gap-2 text-xs text-slate-700">
                     <input type="checkbox" data-group-field="required" ${group.required ? 'checked' : ''} class="h-4 w-4 rounded border-slate-300 text-indigo-600">
-                    必選群組
+                    ${i18n.requiredGroup}
                 </label>
                 <div class="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-2">
                     <div class="mb-2 flex items-center justify-between">
-                        <p class="text-xs font-semibold text-slate-600">選項</p>
-                        <button type="button" data-add-choice class="rounded-md bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white hover:bg-slate-800">新增選項</button>
+                        <p class="text-xs font-semibold text-slate-600">${i18n.optionsLabel}</p>
+                        <button type="button" data-add-choice class="rounded-md bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white hover:bg-slate-800">${i18n.addChoice}</button>
                     </div>
                     <div class="space-y-2" data-choices-list="1"></div>
                 </div>
@@ -427,10 +500,10 @@
                 row.className = 'grid gap-2 rounded-lg border border-slate-200 bg-white p-2 md:grid-cols-[1fr,1fr,130px,auto]';
                 row.dataset.choiceIndex = String(choiceIndex);
                 row.innerHTML = `
-                    <input type="text" value="${esc(choice.name || '')}" data-choice-field="name" placeholder="選項名稱" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                    <input type="text" value="${esc(choice.id || '')}" data-choice-field="id" placeholder="選項 ID" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                    <input type="number" min="0" value="${Number(choice.price || 0)}" data-choice-field="price" placeholder="加價" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                    <button type="button" data-remove-choice class="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100">刪除</button>
+                    <input type="text" value="${esc(choice.name || '')}" data-choice-field="name" placeholder="${esc(i18n.choiceName)}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <input type="text" value="${esc(choice.id || '')}" data-choice-field="id" placeholder="${esc(i18n.choiceId)}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <input type="number" min="0" value="${Number(choice.price || 0)}" data-choice-field="price" placeholder="${esc(i18n.choicePrice)}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <button type="button" data-remove-choice class="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100">${i18n.delete}</button>
                 `;
                 choicesList.appendChild(row);
             });
@@ -507,8 +580,8 @@
     const openCreateCategoryModal = () => {
         categoryMode = 'create';
         currentCategoryId = null;
-        categoryModalTitle.textContent = '新增分類';
-        categoryModalSubmit.textContent = '建立分類';
+        categoryModalTitle.textContent = i18n.modalCategoryTitleCreate;
+        categoryModalSubmit.textContent = i18n.modalCategorySubmitCreate;
         setCategoryFormValues(null);
         openCategoryModal();
     };
@@ -516,8 +589,8 @@
     const openEditCategoryModal = async (categoryId) => {
         categoryMode = 'edit';
         currentCategoryId = categoryId;
-        categoryModalTitle.textContent = '編輯分類';
-        categoryModalSubmit.textContent = '更新分類';
+        categoryModalTitle.textContent = i18n.modalCategoryTitleEdit;
+        categoryModalSubmit.textContent = i18n.modalCategorySubmitEdit;
 
         try {
             const url = editCategoryUrlTemplate.replace('__CATEGORY__', String(categoryId));
@@ -530,13 +603,13 @@
 
             const data = await res.json();
             if (!res.ok || !data.ok) {
-                throw new Error(data.message || '讀取分類資料失敗');
+                throw new Error(data.message || i18n.readCategoryFailed);
             }
 
             setCategoryFormValues(data.category);
             openCategoryModal();
         } catch (e) {
-            showFlash(e.message || '讀取分類資料失敗', 'error');
+            showFlash(e.message || i18n.readCategoryFailed, 'error');
         }
     };
 
@@ -567,20 +640,20 @@
             const data = await res.json();
             if (!res.ok || !data.ok) {
                 const validationMessage = Object.values(data.errors || {}).flat().join('，');
-                throw new Error(data.message || validationMessage || '儲存分類失敗');
+                throw new Error(data.message || validationMessage || i18n.saveCategoryFailed);
             }
 
             closeCategoryModal();
-            showFlash(data.message || '分類已儲存');
+            showFlash(data.message || i18n.categorySaved);
             window.location.reload();
         } catch (e) {
             categoryModalError.classList.remove('hidden');
-            categoryModalError.textContent = e.message || '儲存分類失敗';
+            categoryModalError.textContent = e.message || i18n.saveCategoryFailed;
         }
     };
 
     const deleteCategory = async (categoryId, categoryName) => {
-        if (!confirm(`確定要刪除分類「${categoryName}」嗎？`)) {
+        if (!confirm(i18n.confirmDeleteCategory.replace('__name__', categoryName))) {
             return;
         }
 
@@ -602,18 +675,18 @@
             const data = await res.json();
             if (!res.ok || !data.ok) {
                 const validationMessage = Object.values(data.errors || {}).flat().join('，');
-                throw new Error(data.message || validationMessage || '刪除分類失敗');
+                throw new Error(data.message || validationMessage || i18n.deleteCategoryFailed);
             }
 
-            showFlash(data.message || '分類已刪除');
+            showFlash(data.message || i18n.categoryDeleted);
             window.location.reload();
         } catch (e) {
-            showFlash(e.message || '刪除分類失敗', 'error');
+            showFlash(e.message || i18n.deleteCategoryFailed, 'error');
         }
     };
 
     const disableCategory = async (categoryId, categoryName) => {
-        if (!confirm(`確定要停用分類「${categoryName}」嗎？停用後此分類將不顯示於商品管理中心。`)) {
+        if (!confirm(i18n.confirmDisableCategory.replace('__name__', categoryName))) {
             return;
         }
 
@@ -635,18 +708,18 @@
             const data = await res.json();
             if (!res.ok || !data.ok) {
                 const validationMessage = Object.values(data.errors || {}).flat().join('，');
-                throw new Error(data.message || validationMessage || '停用分類失敗');
+                throw new Error(data.message || validationMessage || i18n.disableCategoryFailed);
             }
 
-            showFlash(data.message || '分類已停用');
+            showFlash(data.message || i18n.categoryDisabled);
             window.location.reload();
         } catch (e) {
-            showFlash(e.message || '停用分類失敗', 'error');
+            showFlash(e.message || i18n.disableCategoryFailed, 'error');
         }
     };
 
     const enableCategory = async (categoryId, categoryName) => {
-        if (!confirm(`確定要重新啟用分類「${categoryName}」嗎？`)) {
+        if (!confirm(i18n.confirmEnableCategory.replace('__name__', categoryName))) {
             return;
         }
 
@@ -668,13 +741,13 @@
             const data = await res.json();
             if (!res.ok || !data.ok) {
                 const validationMessage = Object.values(data.errors || {}).flat().join('，');
-                throw new Error(data.message || validationMessage || '啟用分類失敗');
+                throw new Error(data.message || validationMessage || i18n.enableCategoryFailed);
             }
 
-            showFlash(data.message || '分類已重新啟用');
+            showFlash(data.message || i18n.categoryEnabled);
             window.location.reload();
         } catch (e) {
-            showFlash(e.message || '啟用分類失敗', 'error');
+            showFlash(e.message || i18n.enableCategoryFailed, 'error');
         }
     };
 
@@ -709,8 +782,8 @@
 
     const openCreateModal = (categoryId = null) => {
         currentMode = 'create';
-        modalTitle.textContent = '新增商品';
-        modalSubmit.textContent = '建立商品';
+        modalTitle.textContent = i18n.modalProductTitleCreate;
+        modalSubmit.textContent = i18n.modalProductSubmitCreate;
         setFormValues(null, categoryId);
         openModal();
     };
@@ -718,8 +791,8 @@
     const openEditModal = async (productId) => {
         currentMode = 'edit';
         currentProductId = productId;
-        modalTitle.textContent = '編輯商品';
-        modalSubmit.textContent = '更新商品';
+        modalTitle.textContent = i18n.modalProductTitleEdit;
+        modalSubmit.textContent = i18n.modalProductSubmitEdit;
 
         try {
             const url = editUrlTemplate.replace('__PRODUCT__', String(productId));
@@ -731,14 +804,14 @@
             });
 
             if (!res.ok) {
-                throw new Error('讀取商品資料失敗。');
+                throw new Error(i18n.readProductFailed);
             }
 
             const data = await res.json();
             setFormValues(data.product);
             openModal();
         } catch (e) {
-            showFlash(e.message || '讀取商品資料失敗。', 'error');
+            showFlash(e.message || i18n.readProductFailed, 'error');
         }
     };
 
@@ -765,7 +838,7 @@
         cards.forEach((card, index) => {
             const label = card.querySelector('[data-product-sort]');
             if (label) {
-                label.textContent = `排序 ${index + 1}`;
+                label.textContent = `${i18n.sortLabel} ${index + 1}`;
             }
         });
     };
@@ -810,19 +883,19 @@
 
             const data = await res.json();
             if (!res.ok || !data.ok) {
-                throw new Error(data.message || '排序更新失敗');
+                throw new Error(data.message || i18n.sortUpdateFailed);
             }
 
             updateSortLabels(container);
             if (notify) {
-                showFlash(data.message || '排序已更新。');
+                showFlash(data.message || i18n.sortUpdated);
             }
         } catch (e) {
             if (e.name === 'AbortError') {
                 return;
             }
             if (notify) {
-                showFlash(e.message || '排序更新失敗', 'error');
+                showFlash(e.message || i18n.sortUpdateFailed, 'error');
             }
         } finally {
             reorderAbortControllers.delete(String(categoryId));
@@ -843,7 +916,7 @@
 
         const data = await res.json();
         if (!res.ok || !data.ok) {
-            throw new Error(data.message || '跨分類排序更新失敗');
+            throw new Error(data.message || i18n.moveAcrossCategoryFailed);
         }
 
         return data;
@@ -864,7 +937,7 @@
             const dragIndex = allCards.indexOf(draggingCard);
             const pointedId = pointed.getAttribute('data-product-id') || '';
 
-            // 進入目標卡時只決定一次方向，避免同一卡片上反覆切換造成排序不生效。
+            // Decide direction once per hovered card to keep drag ordering stable.
             if (hoverState.targetId !== pointedId || !hoverState.decision) {
                 hoverState.targetId = pointedId;
                 hoverState.decision = dragIndex < targetIndex ? 'after' : 'before';
@@ -1017,9 +1090,9 @@
                                 source_product_ids: sourceIds,
                                 target_product_ids: targetIds,
                             });
-                            showFlash(data.message || '分類與排序已更新。');
+                            showFlash(data.message || i18n.moveUpdated);
                         } catch (e) {
-                            showFlash(e.message || '分類與排序更新失敗', 'error');
+                            showFlash(e.message || i18n.moveUpdateFailed, 'error');
                             window.location.reload();
                         }
                     }
@@ -1132,20 +1205,20 @@
 
             const data = await res.json();
             if (!res.ok || !data.ok) {
-                throw new Error(data.message || Object.values(data.errors || {}).flat().join('，') || '儲存失敗');
+                throw new Error(data.message || Object.values(data.errors || {}).flat().join('，') || i18n.saveFailed);
             }
 
             closeModal();
-            showFlash(data.message || '已儲存');
+            showFlash(data.message || i18n.saved);
             window.location.reload();
         } catch (e) {
             modalError.classList.remove('hidden');
-            modalError.textContent = e.message || '儲存失敗';
+            modalError.textContent = e.message || i18n.saveFailed;
         }
     };
 
     const deleteProduct = async (productId, productName) => {
-        if (!confirm(`確定要刪除「${productName}」嗎？`)) {
+        if (!confirm(i18n.confirmDeleteProduct.replace('__name__', productName))) {
             return;
         }
 
@@ -1166,13 +1239,13 @@
 
             const data = await res.json();
             if (!res.ok || !data.ok) {
-                throw new Error(data.message || '刪除失敗');
+                throw new Error(data.message || i18n.deleteFailed);
             }
 
-            showFlash(data.message || '商品已刪除');
+            showFlash(data.message || i18n.productDeleted);
             window.location.reload();
         } catch (e) {
-            showFlash(e.message || '刪除失敗', 'error');
+            showFlash(e.message || i18n.deleteFailed, 'error');
         }
     };
 
@@ -1199,7 +1272,7 @@
 
     document.querySelectorAll('[data-delete-product]').forEach((button) => {
         button.addEventListener('click', () => {
-            deleteProduct(button.getAttribute('data-delete-product'), button.getAttribute('data-product-name') || '商品');
+            deleteProduct(button.getAttribute('data-delete-product'), button.getAttribute('data-product-name') || i18n.fallbackProduct);
         });
     });
 
@@ -1211,19 +1284,19 @@
 
     document.querySelectorAll('[data-delete-category]').forEach((button) => {
         button.addEventListener('click', () => {
-            deleteCategory(button.getAttribute('data-delete-category'), button.getAttribute('data-category-name') || '分類');
+            deleteCategory(button.getAttribute('data-delete-category'), button.getAttribute('data-category-name') || i18n.fallbackCategory);
         });
     });
 
     document.querySelectorAll('[data-disable-category]').forEach((button) => {
         button.addEventListener('click', () => {
-            disableCategory(button.getAttribute('data-disable-category'), button.getAttribute('data-category-name') || '分類');
+            disableCategory(button.getAttribute('data-disable-category'), button.getAttribute('data-category-name') || i18n.fallbackCategory);
         });
     });
 
     document.querySelectorAll('[data-enable-category]').forEach((button) => {
         button.addEventListener('click', () => {
-            enableCategory(button.getAttribute('data-enable-category'), button.getAttribute('data-category-name') || '分類');
+            enableCategory(button.getAttribute('data-enable-category'), button.getAttribute('data-category-name') || i18n.fallbackCategory);
         });
     });
 
@@ -1233,7 +1306,7 @@
     });
 
     clearAllBtn?.addEventListener('click', () => {
-        if (!confirm('確定要清空所有選配群組嗎？')) {
+        if (!confirm(i18n.confirmClearAllOptions)) {
             return;
         }
 
@@ -1248,7 +1321,7 @@
                 return;
             }
 
-            if (optionGroups.length > 0 && !confirm('套用範本會覆蓋目前選配設定，是否繼續？')) {
+            if (optionGroups.length > 0 && !confirm(i18n.confirmApplyTemplate)) {
                 return;
             }
 

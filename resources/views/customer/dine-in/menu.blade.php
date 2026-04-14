@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $store->name }}｜菜單</title>
+    <title>{{ __('customer.menu_page_title', ['store' => $store->name]) }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-orange-50 text-gray-900">
@@ -16,16 +16,19 @@
                         <div>
                             <p class="text-sm font-medium text-orange-500">DineFlow</p>
                             <h1 class="mt-1 text-2xl font-bold tracking-tight">{{ $store->name }}</h1>
-                            <p class="mt-1 text-sm text-gray-500">桌號：{{ $table->table_no }}</p>
+                            <p class="mt-1 text-sm text-gray-500">{{ __('customer.table_no') }}：{{ $table->table_no }}</p>
                         </div>
-                        <a href="{{ route('customer.cart', $table->qr_token) }}"
-                        class="inline-flex items-center rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-600 hover:bg-orange-100">
-                            購物車
-                        </a>
+                        <div class="flex flex-col items-end gap-2">
+                            <a href="{{ route('customer.cart', $table->qr_token) }}"
+                            class="inline-flex items-center rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-600 hover:bg-orange-100">
+                                {{ __('customer.cart') }}
+                            </a>
+                            <x-lang-switcher />
+                        </div>
                     </div>
 
                     <div class="mt-4 rounded-2xl border border-orange-100 bg-orange-50 px-4 py-3 text-sm text-gray-600">
-                        請直接點選餐點加入購物車，送出後店家就會收到您的訂單。
+                        {{ __('customer.select_instruction') }}
                     </div>
 
                     @if (session('success'))
@@ -66,7 +69,7 @@
                     <div class="mb-4 flex items-center justify-between">
                         <h2 class="text-xl font-bold">{{ $category->name }}</h2>
                         <span class="text-sm text-gray-400">
-                            {{ count($products[$category->id] ?? []) }} 項
+                            {{ count($products[$category->id] ?? []) }}{{ __('customer.items') }}
                         </span>
                     </div>
 
@@ -85,7 +88,7 @@
                                             </p>
                                         @else
                                             <p class="mt-1 text-sm leading-6 text-gray-400">
-                                                熱門餐點，現點現做。
+                                                {{ __('customer.popular_item') }}
                                             </p>
                                         @endif
 
@@ -96,7 +99,7 @@
 
                                             @if ($product->is_sold_out)
                                                 <span class="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
-                                                    已售完
+                                                    {{ __('customer.sold_out') }}
                                                 </span>
                                             @endif
                                         </div>
@@ -112,7 +115,7 @@
 
                                     <div class="flex items-center gap-2">
                                         <label for="qty_{{ $product->id }}" class="text-sm font-medium text-gray-600">
-                                            數量
+                                            {{ __('customer.qty') }}
                                         </label>
                                         <input id="qty_{{ $product->id }}"
                                                type="number"
@@ -124,13 +127,13 @@
 
                                     <button type="submit"
                                             class="inline-flex h-11 items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 active:scale-[0.98]">
-                                        加入購物車
+                                        {{ __('customer.add_to_cart') }}
                                     </button>
                                 </form>
                             </div>
                         @empty
                             <div class="rounded-3xl border border-dashed border-orange-200 bg-white px-5 py-8 text-center text-sm text-gray-500">
-                                目前這個分類尚未上架商品
+                                {{ __('customer.no_products_in_category') }}
                             </div>
                         @endforelse
                     </div>
@@ -142,13 +145,13 @@
         <div class="fixed inset-x-0 bottom-0 z-40 border-t border-orange-100 bg-white/95 px-4 py-4 backdrop-blur">
             <div class="mx-auto flex max-w-3xl items-center justify-between gap-3 rounded-2xl bg-gray-900 px-4 py-3 text-white shadow-lg">
                 <div>
-                    <p class="text-xs text-gray-300">準備好了就前往購物車</p>
-                    <p class="text-sm font-semibold">查看已選餐點與送出訂單</p>
+                    <p class="text-xs text-gray-300">{{ __('customer.ready_go_to_cart') }}</p>
+                    <p class="text-sm font-semibold">{{ __('customer.view_selected_items') }}</p>
                 </div>
 
                 <a href="{{ route('customer.cart', $table->qr_token) }}"
                    class="inline-flex h-11 items-center justify-center rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white hover:bg-orange-600">
-                    查看購物車
+                    {{ __('customer.view_cart') }}
                 </a>
             </div>
         </div>

@@ -1,0 +1,442 @@
+{
+  "analysis_metadata": {
+    "name": "Blade 模板中文本地化替換清單",
+    "namespace_prefix": "admin.products_*",
+    "total_replacements": 67,
+    "files": [
+      "resources/views/admin/products/index.blade.php",
+      "resources/views/admin/products/_form.blade.php"
+    ],
+    "created_at": "2026-04-15"
+  },
+  "groups": [
+    {
+      "group_id": "index_page_headers",
+      "group_name": "index.blade.php - 頁面標題與導航",
+      "file": "resources/views/admin/products/index.blade.php",
+      "replacements": [
+        {
+          "key": "admin.products_title",
+          "original": "商品管理中心",
+          "context": "頁面 H1 標題",
+          "oldString": "        <div class=\"mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between\">\n            <div>\n                <h1 class=\"text-3xl font-bold tracking-tight text-slate-900\">商品管理中心</h1>\n                <p class=\"mt-2 text-slate-600\">店家：{{ $store->name }}，依分類管理商品，使用彈窗快速編輯。</p>",
+          "newString": "        <div class=\"mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between\">\n            <div>\n                <h1 class=\"text-3xl font-bold tracking-tight text-slate-900\">{{ __('admin.products_title') }}</h1>\n                <p class=\"mt-2 text-slate-600\">{{ __('admin.products_subtitle', ['store' => $store->name]) }}</p>"
+        },
+        {
+          "key": "admin.products_back_to_stores",
+          "original": "回店家列表",
+          "context": "返回按鈕文本",
+          "oldString": "            <div class=\"flex flex-wrap gap-2\">\n                <a href=\"{{ route('admin.stores.index') }}\" class=\"inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100\">回店家列表</a>\n                <button type=\"button\" id=\"create-category-btn\" class=\"inline-flex items-center justify-center rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100\">新增分類</button>",
+          "newString": "            <div class=\"flex flex-wrap gap-2\">\n                <a href=\"{{ route('admin.stores.index') }}\" class=\"inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100\">{{ __('admin.products_back_to_stores') }}</a>\n                <button type=\"button\" id=\"create-category-btn\" class=\"inline-flex items-center justify-center rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100\">{{ __('admin.products_add_category') }}</button>"
+        }
+      ]
+    },
+    {
+      "group_id": "index_buttons_main",
+      "group_name": "index.blade.php - 主要按鈕群組",
+      "file": "resources/views/admin/products/index.blade.php",
+      "replacements": [
+        {
+          "key": "admin.products_add_product",
+          "original": "新增商品",
+          "context": "主頁面新增商品按鈕",
+          "oldString": "                <button type=\"button\" id=\"create-category-btn\" class=\"inline-flex items-center justify-center rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100\">{{ __('admin.products_add_category') }}</button>\n                <button type=\"button\" id=\"create-product-btn\" class=\"inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500\">新增商品</button>",
+          "newString": "                <button type=\"button\" id=\"create-category-btn\" class=\"inline-flex items-center justify-center rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100\">{{ __('admin.products_add_category') }}</button>\n                <button type=\"button\" id=\"create-product-btn\" class=\"inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500\">{{ __('admin.products_add_product') }}</button>"
+        }
+      ]
+    },
+    {
+      "group_id": "index_stats_cards",
+      "group_name": "index.blade.php - 統計卡片",
+      "file": "resources/views/admin/products/index.blade.php",
+      "replacements": [
+        {
+          "key": "admin.products_total_count",
+          "original": "總商品數",
+          "context": "統計卡片標籤",
+          "oldString": "        <div class=\"mb-8 grid gap-4 md:grid-cols-3\">\n            <div class=\"rounded-2xl border border-slate-200 bg-white p-4 shadow-sm\">\n                <p class=\"text-xs font-semibold uppercase tracking-[0.2em] text-slate-500\">總商品數</p>\n                <p class=\"mt-2 text-2xl font-bold text-slate-900\">{{ $totalProducts }}</p>",
+          "newString": "        <div class=\"mb-8 grid gap-4 md:grid-cols-3\">\n            <div class=\"rounded-2xl border border-slate-200 bg-white p-4 shadow-sm\">\n                <p class=\"text-xs font-semibold uppercase tracking-[0.2em] text-slate-500\">{{ __('admin.products_total_count') }}</p>\n                <p class=\"mt-2 text-2xl font-bold text-slate-900\">{{ $totalProducts }}</p>"
+        },
+        {
+          "key": "admin.products_active_status",
+          "original": "可販售",
+          "context": "統計卡片標籤（第二個）",
+          "oldString": "            <div class=\"rounded-2xl border border-slate-200 bg-white p-4 shadow-sm\">\n                <p class=\"text-xs font-semibold uppercase tracking-[0.2em] text-slate-500\">可販售</p>\n                <p class=\"mt-2 text-2xl font-bold text-emerald-700\">{{ $activeProducts }}</p>",
+          "newString": "            <div class=\"rounded-2xl border border-slate-200 bg-white p-4 shadow-sm\">\n                <p class=\"text-xs font-semibold uppercase tracking-[0.2em] text-slate-500\">{{ __('admin.products_active_status') }}</p>\n                <p class=\"mt-2 text-2xl font-bold text-emerald-700\">{{ $activeProducts }}</p>"
+        },
+        {
+          "key": "admin.products_with_options",
+          "original": "有選配",
+          "context": "統計卡片標籤（第三個）",
+          "oldString": "            <div class=\"rounded-2xl border border-slate-200 bg-white p-4 shadow-sm\">\n                <p class=\"text-xs font-semibold uppercase tracking-[0.2em] text-slate-500\">有選配</p>\n                <p class=\"mt-2 text-2xl font-bold text-indigo-700\">{{ $optionEnabledProducts }}</p>",
+          "newString": "            <div class=\"rounded-2xl border border-slate-200 bg-white p-4 shadow-sm\">\n                <p class=\"text-xs font-semibold uppercase tracking-[0.2em] text-slate-500\">{{ __('admin.products_with_options') }}</p>\n                <p class=\"mt-2 text-2xl font-bold text-indigo-700\">{{ $optionEnabledProducts }}</p>"
+        }
+      ]
+    },
+    {
+      "group_id": "index_category_section",
+      "group_name": "index.blade.php - 分類卡片按鈕",
+      "file": "resources/views/admin/products/index.blade.php",
+      "replacements": [
+        {
+          "key": "admin.products_edit_category",
+          "original": "編輯分類",
+          "context": "分類卡片編輯按鈕",
+          "oldString": "                        <div class=\"flex flex-wrap items-center gap-2\">\n                            <button type=\"button\" class=\"inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100\" data-edit-category=\"{{ $category->id }}\">編輯分類</button>\n                            <button type=\"button\" class=\"inline-flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100\" data-disable-category=\"{{ $category->id }}\" data-category-name=\"{{ $category->name }}\">停用分類</button>",
+          "newString": "                        <div class=\"flex flex-wrap items-center gap-2\">\n                            <button type=\"button\" class=\"inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100\" data-edit-category=\"{{ $category->id }}\">{{ __('admin.products_edit_category') }}</button>\n                            <button type=\"button\" class=\"inline-flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100\" data-disable-category=\"{{ $category->id }}\" data-category-name=\"{{ $category->name }}\">{{ __('admin.products_disable_category') }}</button>"
+        },
+        {
+          "key": "admin.products_delete_category",
+          "original": "刪除分類",
+          "context": "分類卡片刪除按鈕",
+          "oldString": "                            <button type=\"button\" class=\"inline-flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100\" data-disable-category=\"{{ $category->id }}\" data-category-name=\"{{ $category->name }}\">{{ __('admin.products_disable_category') }}</button>\n                            <button type=\"button\" class=\"inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100\" data-delete-category=\"{{ $category->id }}\" data-category-name=\"{{ $category->name }}\">刪除分類</button>\n                            <button type=\"button\" class=\"inline-flex items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100\" data-create-in-category=\"{{ $category->id }}\">新增商品</button>",
+          "newString": "                            <button type=\"button\" class=\"inline-flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100\" data-disable-category=\"{{ $category->id }}\" data-category-name=\"{{ $category->name }}\">{{ __('admin.products_disable_category') }}</button>\n                            <button type=\"button\" class=\"inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100\" data-delete-category=\"{{ $category->id }}\" data-category-name=\"{{ $category->name }}\">{{ __('admin.products_delete_category') }}</button>\n                            <button type=\"button\" class=\"inline-flex items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100\" data-create-in-category=\"{{ $category->id }}\">{{ __('admin.products_add_product') }}</button>"
+        }
+      ]
+    },
+    {
+      "group_id": "index_sort_and_status",
+      "group_name": "index.blade.php - 排序標籤與狀態",
+      "file": "resources/views/admin/products/index.blade.php",
+      "replacements": [
+        {
+          "key": "admin.products_sort",
+          "original": "排序",
+          "context": "商品卡片排序標籤",
+          "oldString": "                                            <h3 class=\"text-base font-semibold text-slate-900\">{{ $product->name }}</h3>\n                                            <p class=\"mt-1 text-sm text-slate-500\">NT$ {{ number_format($product->price) }} ・ <span data-product-sort>排序 {{ $product->sort }}</span></p>",
+          "newString": "                                            <h3 class=\"text-base font-semibold text-slate-900\">{{ $product->name }}</h3>\n                                            <p class=\"mt-1 text-sm text-slate-500\">NT$ {{ number_format($product->price) }} ・ <span data-product-sort>{{ __('admin.products_sort') }} {{ $product->sort }}</span></p>"
+        },
+        {
+          "key": "admin.products_drag_to_sort",
+          "original": "拖曳排序",
+          "context": "商品卡片拖曳排序按鈕",
+          "oldString": "                                        <div class=\"flex items-center gap-2\">\n                                            <span class=\"inline-flex cursor-grab rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 active:cursor-grabbing\" data-drag-product-handle>拖曳排序</span>\n                                            <span class=\"inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $product->is_active && ! $product->is_sold_out ? 'bg-emerald-50 text-emerald-700' : ($product->is_sold_out ? 'bg-amber-50 text-amber-700' : 'bg-slate-200 text-slate-600') }}\">",
+          "newString": "                                        <div class=\"flex items-center gap-2\">\n                                            <span class=\"inline-flex cursor-grab rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 active:cursor-grabbing\" data-drag-product-handle>{{ __('admin.products_drag_to_sort') }}</span>\n                                            <span class=\"inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $product->is_active && ! $product->is_sold_out ? 'bg-emerald-50 text-emerald-700' : ($product->is_sold_out ? 'bg-amber-50 text-amber-700' : 'bg-slate-200 text-slate-600') }}\">"
+        },
+        {
+          "key": "admin.products_status_active",
+          "original": "可販售",
+          "context": "商品狀態標籤（可販售）",
+          "oldString": "                                            <span class=\"inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $product->is_active && ! $product->is_sold_out ? 'bg-emerald-50 text-emerald-700' : ($product->is_sold_out ? 'bg-amber-50 text-amber-700' : 'bg-slate-200 text-slate-600') }}\">\n                                                {{ $product->is_active && ! $product->is_sold_out ? '可販售' : ($product->is_sold_out ? '售完' : '下架') }}\n                                            </span>",
+          "newString": "                                            <span class=\"inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $product->is_active && ! $product->is_sold_out ? 'bg-emerald-50 text-emerald-700' : ($product->is_sold_out ? 'bg-amber-50 text-amber-700' : 'bg-slate-200 text-slate-600') }}\">\n                                                {{ $product->is_active && ! $product->is_sold_out ? __('admin.products_status_available') : ($product->is_sold_out ? __('admin.products_status_sold_out') : __('admin.products_status_inactive')) }}\n                                            </span>"
+        },
+        {
+          "key": "admin.products_description_empty",
+          "original": "尚未填寫描述",
+          "context": "商品描述空值提示",
+          "oldString": "                                    <p class=\"mt-3 line-clamp-2 text-sm text-slate-600\">{{ $product->description ?: '尚未填寫描述' }}</p>\n                                    <p class=\"mt-2 text-xs font-medium text-indigo-700\">{{ !empty($product->option_groups) ? '已設定選配' : '無選配' }}</p>",
+          "newString": "                                    <p class=\"mt-3 line-clamp-2 text-sm text-slate-600\">{{ $product->description ?: __('admin.products_description_empty') }}</p>\n                                    <p class=\"mt-2 text-xs font-medium text-indigo-700\">{{ !empty($product->option_groups) ? __('admin.products_has_options') : __('admin.products_no_options') }}</p>"
+        },
+        {
+          "key": "admin.products_edit_and_delete",
+          "original": "編輯",
+          "context": "商品卡片編輯刪除按鈕",
+          "oldString": "                                    <div class=\"mt-4 flex gap-2\">\n                                        <button type=\"button\" class=\"inline-flex flex-1 items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100\" data-edit-product=\"{{ $product->id }}\">編輯</button>\n                                        <button type=\"button\" class=\"inline-flex flex-1 items-center justify-center rounded-xl bg-rose-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-rose-500\" data-delete-product=\"{{ $product->id }}\" data-product-name=\"{{ $product->name }}\">刪除</button>\n                                    </div>",
+          "newString": "                                    <div class=\"mt-4 flex gap-2\">\n                                        <button type=\"button\" class=\"inline-flex flex-1 items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100\" data-edit-product=\"{{ $product->id }}\">{{ __('admin.products_edit') }}</button>\n                                        <button type=\"button\" class=\"inline-flex flex-1 items-center justify-center rounded-xl bg-rose-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-rose-500\" data-delete-product=\"{{ $product->id }}\" data-product-name=\"{{ $product->name }}\">{{ __('admin.products_delete') }}</button>\n                                    </div>"
+        }
+      ]
+    },
+    {
+      "group_id": "index_empty_states",
+      "group_name": "index.blade.php - 空狀態提示",
+      "file": "resources/views/admin/products/index.blade.php",
+      "replacements": [
+        {
+          "key": "admin.products_empty_category",
+          "original": "這個分類還沒有商品，點右上角「新增商品」快速建立。",
+          "context": "分類為空時的提示",
+          "oldString": "                    @else\n                        <div class=\"rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500\" data-category-products data-category-id=\"{{ $category->id }}\">\n                            <div data-empty-placeholder>這個分類還沒有商品，點右上角「新增商品」快速建立。</div>\n                        </div>",
+          "newString": "                    @else\n                        <div class=\"rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500\" data-category-products data-category-id=\"{{ $category->id }}\">\n                            <div data-empty-placeholder>{{ __('admin.products_empty_category') }}</div>\n                        </div>"
+        },
+        {
+          "key": "admin.products_no_categories",
+          "original": "目前沒有可用分類，請先建立分類再新增商品。",
+          "context": "沒有分類時的提示",
+          "oldString": "            @empty\n                <div class=\"rounded-3xl border border-slate-200 bg-white px-6 py-12 text-center shadow-sm\">\n                    <p class=\"text-slate-600\">目前沒有可用分類，請先建立分類再新增商品。</p>\n                </div>",
+          "newString": "            @empty\n                <div class=\"rounded-3xl border border-slate-200 bg-white px-6 py-12 text-center shadow-sm\">\n                    <p class=\"text-slate-600\">{{ __('admin.products_no_categories') }}</p>\n                </div>"
+        }
+      ]
+    },
+    {
+      "group_id": "index_inactive_categories",
+      "group_name": "index.blade.php - 已停用分類區塊",
+      "file": "resources/views/admin/products/index.blade.php",
+      "replacements": [
+        {
+          "key": "admin.products_inactive_title",
+          "original": "已停用分類",
+          "context": "已停用分類區塊標題",
+          "oldString": "            @if($inactiveCategories->isNotEmpty())\n                <section class=\"rounded-3xl border border-amber-200 bg-amber-50/40 p-5 shadow-sm\">\n                    <div class=\"mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between\">\n                        <div>\n                            <h2 class=\"text-xl font-bold text-amber-900\">已停用分類</h2>\n                            <p class=\"mt-1 text-sm text-amber-700\">需要恢復時可直接重新啟用，不會刪除原本分類與商品關聯。</p>",
+          "newString": "            @if($inactiveCategories->isNotEmpty())\n                <section class=\"rounded-3xl border border-amber-200 bg-amber-50/40 p-5 shadow-sm\">\n                    <div class=\"mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between\">\n                        <div>\n                            <h2 class=\"text-xl font-bold text-amber-900\">{{ __('admin.products_inactive_title') }}</h2>\n                            <p class=\"mt-1 text-sm text-amber-700\">{{ __('admin.products_inactive_desc') }}</p>"
+        },
+        {
+          "key": "admin.products_count_unit",
+          "original": "筆",
+          "context": "計數單位",
+          "oldString": "                        <span class=\"inline-flex w-fit items-center rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-semibold text-amber-700\">{{ $inactiveCategories->count() }} 筆</span>\n                    </div>\n\n                    <div class=\"grid gap-3 md:grid-cols-2 xl:grid-cols-3\">\n                        @foreach($inactiveCategories as $inactiveCategory)\n                            <article class=\"rounded-2xl border border-amber-200 bg-white p-4\">\n                                <h3 class=\"text-base font-semibold text-slate-900\">{{ $inactiveCategory->name }}</h3>\n                                <p class=\"mt-1 text-sm text-slate-500\">排序 {{ $inactiveCategory->sort ?? 1 }} ・ {{ $inactiveCategory->products_count }} 項商品</p>",
+          "newString": "                        <span class=\"inline-flex w-fit items-center rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-semibold text-amber-700\">{{ $inactiveCategories->count() }} {{ __('admin.products_count_unit') }}</span>\n                    </div>\n\n                    <div class=\"grid gap-3 md:grid-cols-2 xl:grid-cols-3\">\n                        @foreach($inactiveCategories as $inactiveCategory)\n                            <article class=\"rounded-2xl border border-amber-200 bg-white p-4\">\n                                <h3 class=\"text-base font-semibold text-slate-900\">{{ $inactiveCategory->name }}</h3>\n                                <p class=\"mt-1 text-sm text-slate-500\">{{ __('admin.products_sort') }} {{ $inactiveCategory->sort ?? 1 }} ・ {{ $inactiveCategory->products_count }} {{ __('admin.products_items') }}</p>"
+        },
+        {
+          "key": "admin.products_enable_category",
+          "original": "重新啟用",
+          "context": "已停用分類的啟用按鈕",
+          "oldString": "                                <div class=\"mt-3 flex gap-2\">\n                                    <button\n                                        type=\"button\"\n                                        class=\"inline-flex flex-1 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100\"\n                                        data-enable-category=\"{{ $inactiveCategory->id }}\"\n                                        data-category-name=\"{{ $inactiveCategory->name }}\"\n                                    >\n                                        重新啟用\n                                    </button>",
+          "newString": "                                <div class=\"mt-3 flex gap-2\">\n                                    <button\n                                        type=\"button\"\n                                        class=\"inline-flex flex-1 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100\"\n                                        data-enable-category=\"{{ $inactiveCategory->id }}\"\n                                        data-category-name=\"{{ $inactiveCategory->name }}\"\n                                    >\n                                        {{ __('admin.products_enable_category') }}\n                                    </button>"
+        }
+      ]
+    },
+    {
+      "group_id": "index_product_modal_header",
+      "group_name": "index.blade.php - 商品模態標題",
+      "file": "resources/views/admin/products/index.blade.php",
+      "replacements": [
+        {
+          "key": "admin.products_modal_product_title",
+          "original": "新增商品",
+          "context": "商品模態標題",
+          "oldString": "<div id=\"product-modal\" class=\"fixed inset-0 z-[120] hidden items-end justify-center bg-black/50 p-4 sm:items-center\">\n    <div class=\"w-full max-w-3xl rounded-3xl bg-white shadow-2xl\">\n        <div class=\"flex items-center justify-between border-b border-slate-200 px-6 py-4\">\n            <div>\n                <h3 id=\"product-modal-title\" class=\"text-lg font-bold text-slate-900\">新增商品</h3>\n                <p class=\"text-xs text-slate-500\">使用彈窗快速維護商品資料</p>",
+          "newString": "<div id=\"product-modal\" class=\"fixed inset-0 z-[120] hidden items-end justify-center bg-black/50 p-4 sm:items-center\">\n    <div class=\"w-full max-w-3xl rounded-3xl bg-white shadow-2xl\">\n        <div class=\"flex items-center justify-between border-b border-slate-200 px-6 py-4\">\n            <div>\n                <h3 id=\"product-modal-title\" class=\"text-lg font-bold text-slate-900\">{{ __('admin.products_modal_product_title') }}</h3>\n                <p class=\"text-xs text-slate-500\">{{ __('admin.products_modal_subtitle') }}</p>"
+        }
+      ]
+    },
+    {
+      "group_id": "index_product_modal_form",
+      "group_name": "index.blade.php - 商品模態表單標籤",
+      "file": "resources/views/admin/products/index.blade.php",
+      "replacements": [
+        {
+          "key": "admin.products_form_name",
+          "original": "商品名稱",
+          "context": "商品模態表單 - 商品名稱標籤",
+          "oldString": "            <div class=\"grid gap-4 md:grid-cols-2\">\n                <div class=\"md:col-span-2\">\n                    <label class=\"mb-1 block text-xs font-semibold text-slate-600\">商品名稱</label>\n                    <input type=\"text\" name=\"name\" class=\"w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100\" required>",
+          "newString": "            <div class=\"grid gap-4 md:grid-cols-2\">\n                <div class=\"md:col-span-2\">\n                    <label class=\"mb-1 block text-xs font-semibold text-slate-600\">{{ __('admin.products_form_name') }}</label>\n                    <input type=\"text\" name=\"name\" class=\"w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100\" required>"
+        },
+        {
+          "key": "admin.products_form_category",
+          "original": "分類",
+          "context": "商品模態表單 - 分類標籤",
+          "oldString": "                <div>\n                    <label class=\"mb-1 block text-xs font-semibold text-slate-600\">分類</label>\n                    <select name=\"category_id\" id=\"modal-category\" class=\"w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100\" required>",
+          "newString": "                <div>\n                    <label class=\"mb-1 block text-xs font-semibold text-slate-600\">{{ __('admin.products_form_category') }}</label>\n                    <select name=\"category_id\" id=\"modal-category\" class=\"w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100\" required>"
+        },
+        {
+          "key": "admin.products_form_price",
+          "original": "價格 (NT$)",
+          "context": "商品模態表單 - 價格標籤",
+          "oldString": "                <div>\n                    <label class=\"mb-1 block text-xs font-semibold text-slate-600\">價格 (NT$)</label>\n                    <input type=\"number\" name=\"price\" min=\"0\" class=\"w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100\" required>",
+          "newString": "                <div>\n                    <label class=\"mb-1 block text-xs font-semibold text-slate-600\">{{ __('admin.products_form_price') }}</label>\n                    <input type=\"number\" name=\"price\" min=\"0\" class=\"w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100\" required>"
+        },
+        {
+          "key": "admin.products_form_sort",
+          "original": "排序",
+          "context": "商品模態表單 - 排序標籤",
+          "oldString": "                <div>\n                    <label class=\"mb-1 block text-xs font-semibold text-slate-600\">排序</label>\n                    <input type=\"number\" name=\"sort\" min=\"1\" value=\"1\" class=\"w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100\">\n                </div>\n\n                <div>\n                    <label class=\"mb-1 block text-xs font-semibold text-slate-600\">圖片 URL</label>",
+          "newString": "                <div>\n                    <label class=\"mb-1 block text-xs font-semibold text-slate-600\">{{ __('admin.products_form_sort') }}</label>\n                    <input type=\"number\" name=\"sort\" min=\"1\" value=\"1\" class=\"w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100\">\n                </div>\n\n                <div>\n                    <label class=\"mb-1 block text-xs font-semibold text-slate-600\">{{ __('admin.products_form_image') }}</label>"
+        },
+        {
+          "key": "admin.products_form_description",
+          "original": "描述",
+          "context": "商品模態表單 - 描述標籤",
+          "oldString": "                <div class=\"md:col-span-2\">\n                    <label class=\"mb-1 block text-xs font-semibold text-slate-600\">描述</label>\n                    <textarea name=\"description\" rows=\"3\" class=\"w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100\"></textarea>",
+          "newString": "                <div class=\"md:col-span-2\">\n                    <label class=\"mb-1 block text-xs font-semibold text-slate-600\">{{ __('admin.products_form_description') }}</label>\n                    <textarea name=\"description\" rows=\"3\" class=\"w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100\"></textarea>"
+        }
+      ]
+    },
+    {
+      "group_id": "index_product_modal_buttons",
+      "group_name": "index.blade.php - 商品選配按鈕",
+      "file": "resources/views/admin/products/index.blade.php",
+      "replacements": [
+        {
+          "key": "admin.products_template_steak",
+          "original": "套用牛排範本",
+          "context": "商品模態選配 - 牛排範本按鈕",
+          "oldString": "                    <div class=\"mb-2 flex flex-wrap gap-2\">\n                        <button type=\"button\" data-option-template=\"steak\" class=\"rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100\">套用牛排範本</button>\n                        <button type=\"button\" data-option-template=\"combo\" class=\"rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100\">套用套餐範本</button>\n                        <button type=\"button\" data-option-clear-all class=\"rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100\">清空</button>\n                        <button type=\"button\" data-option-add-group class=\"rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500\">新增群組</button>",
+          "newString": "                    <div class=\"mb-2 flex flex-wrap gap-2\">\n                        <button type=\"button\" data-option-template=\"steak\" class=\"rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100\">{{ __('admin.products_template_steak') }}</button>\n                        <button type=\"button\" data-option-template=\"combo\" class=\"rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100\">{{ __('admin.products_template_combo') }}</button>\n                        <button type=\"button\" data-option-clear-all class=\"rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100\">{{ __('admin.products_clear') }}</button>\n                        <button type=\"button\" data-option-add-group class=\"rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500\">{{ __('admin.products_add_group') }}</button>"
+        },
+        {
+          "key": "admin.products_option_edit_hint",
+          "original": "選配樹狀編輯：先建立群組，再新增群組內選項。",
+          "context": "商品模態選配 - 提示文本",
+          "oldString": "                    <p class=\"mb-2 text-xs text-slate-600\">選配樹狀編輯：先建立群組，再新增群組內選項。</p>\n                    <div id=\"option-groups-editor\" class=\"space-y-3\"></div>"
+        }
+      ]
+    },
+    {
+      "group_id": "index_product_modal_checkboxes",
+      "group_name": "index.blade.php - 商品模態複選框",
+      "file": "resources/views/admin/products/index.blade.php",
+      "replacements": [
+        {
+          "key": "admin.products_checkbox_active",
+          "original": "上架",
+          "context": "商品模態 - 上架複選框標籤",
+          "oldString": "                <div>\n                    <label class=\"inline-flex items-center gap-2 text-sm text-slate-700\">\n                        <input type=\"checkbox\" name=\"is_active\" id=\"modal-is-active\" value=\"1\" class=\"h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500\">\n                        上架\n                    </label>\n                </div>\n\n                <div>\n                    <label class=\"inline-flex items-center gap-2 text-sm text-slate-700\">\n                        <input type=\"checkbox\" name=\"is_sold_out\" id=\"modal-is-sold-out\" value=\"1\" class=\"h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500\">\n                        售完\n                    </label>",
+          "newString": "                <div>\n                    <label class=\"inline-flex items-center gap-2 text-sm text-slate-700\">\n                        <input type=\"checkbox\" name=\"is_active\" id=\"modal-is-active\" value=\"1\" class=\"h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500\">\n                        {{ __('admin.products_checkbox_active') }}\n                    </label>\n                </div>\n\n                <div>\n                    <label class=\"inline-flex items-center gap-2 text-sm text-slate-700\">\n                        <input type=\"checkbox\" name=\"is_sold_out\" id=\"modal-is-sold-out\" value=\"1\" class=\"h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500\">\n                        {{ __('admin.products_checkbox_sold_out') }}\n                    </label>"
+        }
+      ]
+    },
+    {
+      "group_id": "index_product_modal_footer",
+      "group_name": "index.blade.php - 商品模態按鈕",
+      "file": "resources/views/admin/products/index.blade.php",
+      "replacements": [
+        {
+          "key": "admin.products_save_product",
+          "original": "儲存商品",
+          "context": "商品模態 - 儲存按鈕",
+          "oldString": "            <div class=\"mt-6 flex gap-2\">\n                <button type=\"submit\" id=\"product-modal-submit\" class=\"inline-flex flex-1 items-center justify-center rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500\">儲存商品</button>\n                <button type=\"button\" id=\"product-modal-cancel\" class=\"inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100\">取消</button>\n            </div>"
+        }
+      ]
+    },
+    {
+      "group_id": "index_category_modal",
+      "group_name": "index.blade.php - 分類模態",
+      "file": "resources/views/admin/products/index.blade.php",
+      "replacements": [
+        {
+          "key": "admin.products_modal_category_title",
+          "original": "新增分類",
+          "context": "分類模態標題",
+          "oldString": "<div id=\"category-modal\" class=\"fixed inset-0 z-[130] hidden items-end justify-center bg-black/50 p-4 sm:items-center\">\n    <div class=\"w-full max-w-xl rounded-3xl bg-white shadow-2xl\">\n        <div class=\"flex items-center justify-between border-b border-slate-200 px-6 py-4\">\n            <div>\n                <h3 id=\"category-modal-title\" class=\"text-lg font-bold text-slate-900\">新增分類</h3>\n                <p class=\"text-xs text-slate-500\">建立或修改商品分類</p>",
+          "newString": "<div id=\"category-modal\" class=\"fixed inset-0 z-[130] hidden items-end justify-center bg-black/50 p-4 sm:items-center\">\n    <div class=\"w-full max-w-xl rounded-3xl bg-white shadow-2xl\">\n        <div class=\"flex items-center justify-between border-b border-slate-200 px-6 py-4\">\n            <div>\n                <h3 id=\"category-modal-title\" class=\"text-lg font-bold text-slate-900\">{{ __('admin.products_modal_category_title') }}</h3>\n                <p class=\"text-xs text-slate-500\">{{ __('admin.products_modal_category_subtitle') }}</p>"
+        },
+        {
+          "key": "admin.products_form_category_name",
+          "original": "分類名稱",
+          "context": "分類模態 - 分類名稱標籤",
+          "oldString": "            <div class=\"space-y-4\">\n                <div>\n                    <label class=\"mb-1 block text-xs font-semibold text-slate-600\">分類名稱</label>\n                    <input type=\"text\" name=\"name\" class=\"w-full rounded-xl border border-slate-300 px-3 py-2 text-sm\" required>",
+          "newString": "            <div class=\"space-y-4\">\n                <div>\n                    <label class=\"mb-1 block text-xs font-semibold text-slate-600\">{{ __('admin.products_form_category_name') }}</label>\n                    <input type=\"text\" name=\"name\" class=\"w-full rounded-xl border border-slate-300 px-3 py-2 text-sm\" required>"
+        },
+        {
+          "key": "admin.products_save_category",
+          "original": "儲存分類",
+          "context": "分類模態 - 儲存按鈕",
+          "oldString": "            <div class=\"mt-6 flex gap-2\">\n                <button type=\"submit\" id=\"category-modal-submit\" class=\"inline-flex flex-1 items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500\">儲存分類</button>\n                <button type=\"button\" id=\"category-modal-cancel\" class=\"inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100\">取消</button>\n            </div>"
+        }
+      ]
+    },
+    {
+      "group_id": "form_basic_section",
+      "group_name": "_form.blade.php - 基本資訊章節",
+      "file": "resources/views/admin/products/_form.blade.php",
+      "replacements": [
+        {
+          "key": "admin.products_form_suggestion",
+          "original": "建議流程：\\n        1. 先填商品基本資訊。\\n        2. 設定銷售狀態。\\n        3. 最後用下方「選配設定」加上必選與加購項目。",
+          "context": "表單建議提示框",
+          "oldString": "    <div class=\"lg:col-span-2 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-800\">\n        建議流程：\n        1. 先填商品基本資訊。\n        2. 設定銷售狀態。\n        3. 最後用下方「選配設定」加上必選與加購項目。\n    </div>"
+        },
+        {
+          "key": "admin.products_form_basic_title",
+          "original": "基本資訊",
+          "context": "基本資訊章節標題",
+          "oldString": "    <div class=\"lg:col-span-2 mt-2\">\n        <h2 class=\"text-base font-bold text-slate-900\">基本資訊</h2>\n        <p class=\"mt-1 text-xs text-slate-500\">顧客第一眼會看到的名稱、分類、價格與描述。</p>\n    </div>"
+        },
+        {
+          "key": "admin.products_form_name",
+          "original": "商品名稱",
+          "context": "_form.blade.php 商品名稱標籤",
+          "oldString": "    <div class=\"lg:col-span-2\">\n        <label class=\"mb-2 block text-sm font-semibold text-slate-700\">商品名稱</label>\n        <input type=\"text\" name=\"name\" value=\"{{ old('name', $product->name) }}\"\n               class=\"w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200\">"
+        },
+        {
+          "key": "admin.products_form_category",
+          "original": "分類",
+          "context": "_form.blade.php 分類標籤",
+          "oldString": "    <div>\n        <label class=\"mb-2 block text-sm font-semibold text-slate-700\">分類</label>\n        <select name=\"category_id\"\n                class=\"w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200\">"
+        },
+        {
+          "key": "admin.products_form_price",
+          "original": "價格 (NT$)",
+          "context": "_form.blade.php 價格標籤",
+          "oldString": "    <div>\n        <label class=\"mb-2 block text-sm font-semibold text-slate-700\">價格 (NT$)</label>\n        <input type=\"number\" name=\"price\" min=\"0\" value=\"{{ old('price', $product->price) }}\"\n               class=\"w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200\">"
+        },
+        {
+          "key": "admin.products_form_sort",
+          "original": "排序",
+          "context": "_form.blade.php 排序標籤",
+          "oldString": "    <div>\n        <label class=\"mb-2 block text-sm font-semibold text-slate-700\">排序</label>\n        <input type=\"number\" name=\"sort\" min=\"1\" value=\"{{ old('sort', $product->sort ?? 1) }}\"\n               class=\"w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200\">"
+        },
+        {
+          "key": "admin.products_form_image",
+          "original": "圖片 URL (可留空)",
+          "context": "_form.blade.php 圖片標籤",
+          "oldString": "    <div>\n        <label class=\"mb-2 block text-sm font-semibold text-slate-700\">圖片 URL (可留空)</label>\n        <input type=\"text\" name=\"image\" value=\"{{ old('image', $product->image) }}\"\n               class=\"w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200\">"
+        },
+        {
+          "key": "admin.products_form_description",
+          "original": "商品描述",
+          "context": "_form.blade.php 描述標籤",
+          "oldString": "    <div class=\"lg:col-span-2\">\n        <label class=\"mb-2 block text-sm font-semibold text-slate-700\">商品描述</label>\n        <textarea name=\"description\" rows=\"3\"\n                  class=\"w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200\">{{ old('description', $product->description) }}</textarea>"
+        }
+      ]
+    },
+    {
+      "group_id": "form_options_section",
+      "group_name": "_form.blade.php - 選配設定章節",
+      "file": "resources/views/admin/products/_form.blade.php",
+      "replacements": [
+        {
+          "key": "admin.products_form_options_title",
+          "original": "選配設定",
+          "context": "選配設定章節標題",
+          "oldString": "    <div class=\"lg:col-span-2\">\n        <h2 class=\"text-base font-bold text-slate-900\">選配設定</h2>\n        <p class=\"mt-1 text-xs text-slate-500\">可建立必選、單選、多選與加價項目。</p>"
+        },
+        {
+          "key": "admin.products_form_group_list",
+          "original": "群組清單",
+          "context": "選配群組標籤",
+          "oldString": "        <div class=\"mb-2 flex items-center justify-between gap-3\">\n            <label class=\"block text-sm font-semibold text-slate-700\">群組清單</label>\n            <div class=\"flex flex-wrap gap-2\">\n                <button\n                    type=\"button\"\n                    data-option-template=\"steak\"\n                    class=\"inline-flex items-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100\">\n                    套用牛排範本\n                </button>\n                <button\n                    type=\"button\"\n                    data-option-template=\"combo\"\n                    class=\"inline-flex items-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100\">\n                    套用套餐範本\n                </button>\n                <button\n                    type=\"button\"\n                    data-option-clear-all\n                    class=\"inline-flex items-center rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100\">\n                    清空\n                </button>\n                <button\n                    type=\"button\"\n                    data-option-add-group\n                    class=\"inline-flex items-center rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-500\">\n                    新增群組\n                </button>\n            </div>\n        </div>"
+        },
+        {
+          "key": "admin.products_form_options_hint",
+          "original": "提示：\\n            群組可設為單選或多選，必選群組會在前台要求顧客一定要選。\\n            多選群組可設定最多可選幾項。",
+          "context": "選配設定提示框",
+          "oldString": "        <div class=\"mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600\">\n            提示：\n            群組可設為單選或多選，必選群組會在前台要求顧客一定要選。\n            多選群組可設定最多可選幾項。\n        </div>"
+        }
+      ]
+    },
+    {
+      "group_id": "form_status_section",
+      "group_name": "_form.blade.php - 銷售狀態章節",
+      "file": "resources/views/admin/products/_form.blade.php",
+      "replacements": [
+        {
+          "key": "admin.products_form_status_title",
+          "original": "銷售狀態",
+          "context": "銷售狀態章節標題",
+          "oldString": "    <div class=\"lg:col-span-2 mt-2\">\n        <h2 class=\"text-base font-bold text-slate-900\">銷售狀態</h2>\n        <p class=\"mt-1 text-xs text-slate-500\">控制是否上架、或暫時標記售完。</p>\n    </div>"
+        },
+        {
+          "key": "admin.products_checkbox_active",
+          "original": "上架",
+          "context": "_form.blade.php 上架複選框",
+          "oldString": "    <div>\n        <label class=\"inline-flex items-center gap-3\">\n            <input type=\"checkbox\" name=\"is_active\" value=\"1\" {{ old('is_active', $product->is_active ?? true) ? 'checked' : '' }}\n                   class=\"h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500\">\n            <span class=\"text-sm font-semibold text-slate-700\">上架</span>\n        </label>\n    </div>\n\n    <div>\n        <label class=\"inline-flex items-center gap-3\">\n            <input type=\"checkbox\" name=\"is_sold_out\" value=\"1\" {{ old('is_sold_out', $product->is_sold_out ?? false) ? 'checked' : '' }}\n                   class=\"h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500\">\n            <span class=\"text-sm font-semibold text-slate-700\">售完</span>\n        </label>\n    </div>"
+        }
+      ]
+    },
+    {
+      "group_id": "form_buttons",
+      "group_name": "_form.blade.php - 表單按鈕",
+      "file": "resources/views/admin/products/_form.blade.php",
+      "replacements": [
+        {
+          "key": "admin.products_submit",
+          "original": "儲存",
+          "context": "表單儲存按鈕",
+          "oldString": "<div class=\"mt-8 flex gap-3\">\n    <button type=\"submit\"\n            class=\"inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500\">\n        儲存\n    </button>\n\n    <a href=\"{{ route('admin.stores.products.index', $store) }}\"\n       class=\"inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100\">\n        返回商品列表\n    </a>\n</div>"
+        }
+      ]
+    }
+  ],
+  "usage_instructions": {
+    "approach": "按邏輯分組的 multi_replace_string_in_file 操作",
+    "total_groups": 20,
+    "skip_rules": [
+      "JavaScript 代碼中的中文字符串（在 <script> 標籤內）",
+      "route()、csrf_token() 等函數呼叫",
+      "{ ... } 佔位符內的變數（但保留包含它們的完整文本）"
+    ],
+    "translation_key_pattern": "admin.products_*",
+    "context_lines": "前後各 2-3 行上下文"
+  }
+}

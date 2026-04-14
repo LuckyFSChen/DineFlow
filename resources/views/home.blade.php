@@ -13,18 +13,15 @@
                     <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fill-rule="evenodd" d="M3 3h5v5H3V3zm1.5 1.5v2h2v-2h-2zM12 3h5v5h-5V3zm1.5 1.5v2h2v-2h-2zM3 12h5v5H3v-5zm1.5 1.5v2h2v-2h-2zM11.5 12a.5.5 0 01.5-.5h1v-1a.5.5 0 011 0v1h1a.5.5 0 010 1h-1v1a.5.5 0 01-1 0v-1h-1a.5.5 0 01-.5-.5zm3 3a.5.5 0 01.5-.5h1a.5.5 0 010 1h-1a.5.5 0 01-.5-.5z" clip-rule="evenodd"/>
                     </svg>
-                    DineFlow QR Ordering
+                    {{ __('home.badge_qr_ordering') }}
                 </span>
 
                 <h1 class="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">
-                    讓店家點餐流程更快速
-                    <br>
-                    也更一致直覺
+                    {!! nl2br(e(__('home.hero_title'))) !!}
                 </h1>
 
                 <p class="mt-5 max-w-2xl text-xl leading-9 text-white/75">
-                    掃描 QR Code 後，顧客可直接進入店家專屬點餐頁，從瀏覽菜單、加入購物車到送出訂單，
-                    全部都在一套清楚一致的體驗裡完成。
+                    {{ __('home.hero_desc') }}
                 </p>
 
                 <div class="mt-8 flex flex-wrap gap-4">
@@ -32,13 +29,13 @@
                         <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fill-rule="evenodd" d="M10 2a6 6 0 00-6 6c0 4.03 4.86 8.84 5.07 9.04a1.3 1.3 0 001.86 0c.2-.2 5.07-5.01 5.07-9.04a6 6 0 00-6-6zm0 8a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                         </svg>
-                        查看店家
+                        {{ __('home.view_stores') }}
                     </a>
                     <a href="#how-it-works" class="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-base font-semibold text-white transition hover:bg-white/15">
                         <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.5a.75.75 0 10-1.5 0v3.25c0 .2.08.39.22.53l2 2a.75.75 0 101.06-1.06l-1.78-1.78V6.5z" clip-rule="evenodd"/>
                         </svg>
-                        了解流程
+                        {{ __('home.learn_flow') }}
                     </a>
                 </div>
             </div>
@@ -46,13 +43,13 @@
             <div class="rounded-[2rem] border border-white/10 bg-white/10 p-8 shadow-[0_30px_80px_rgba(0,0,0,0.28)] backdrop-blur">
                 <div class="mb-6">
                     <div class="text-base font-semibold uppercase tracking-[0.2em] text-brand-highlight/80">
-                        Product Feel
+                        {{ __('home.product_feel') }}
                     </div>
                     <h2 class="mt-3 text-2xl font-bold text-white">
-                        從掃碼到結帳，維持同一套風格
+                        {{ __('home.product_feel_title') }}
                     </h2>
                     <p class="mt-3 text-lg leading-8 text-white/70">
-                        不只是能點餐，而是讓整體前台體驗看起來更完整。
+                        {{ __('home.product_feel_desc') }}
                     </p>
                 </div>
 
@@ -65,8 +62,8 @@
                                 </svg>
                             </span>
                             <div>
-                                <div class="text-lg font-semibold text-white">掃碼後立即進入菜單</div>
-                                <div class="mt-1 text-base leading-7 text-white/70">快速查看分類、價格、商品圖片與購物車狀態。</div>
+                                <div class="text-lg font-semibold text-white">{{ __('home.feature_card_1_title') }}</div>
+                                <div class="mt-1 text-base leading-7 text-white/70">{{ __('home.feature_card_1_desc') }}</div>
                             </div>
                         </div>
                     </div>
@@ -78,8 +75,8 @@
                                 </svg>
                             </span>
                             <div>
-                                <div class="text-lg font-semibold text-white">一致的點餐流程</div>
-                                <div class="mt-1 text-base leading-7 text-white/70">店家首頁、菜單、購物車與成功頁都使用一致的暖色系視覺。</div>
+                                <div class="text-lg font-semibold text-white">{{ __('home.feature_card_2_title') }}</div>
+                                <div class="mt-1 text-base leading-7 text-white/70">{{ __('home.feature_card_2_desc') }}</div>
                             </div>
                         </div>
                     </div>
@@ -91,8 +88,8 @@
                                 </svg>
                             </span>
                             <div>
-                                <div class="text-lg font-semibold text-white">完成後立即看到訂單</div>
-                                <div class="mt-1 text-base leading-7 text-white/70">送出訂單後，顧客可以立刻看到清楚的訂單摘要與編號。</div>
+                                <div class="text-lg font-semibold text-white">{{ __('home.feature_card_3_title') }}</div>
+                                <div class="mt-1 text-base leading-7 text-white/70">{{ __('home.feature_card_3_desc') }}</div>
                             </div>
                         </div>
                     </div>
@@ -108,10 +105,10 @@
                     <svg class="h-7 w-7 text-brand-primary" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fill-rule="evenodd" d="M10 2a6 6 0 00-6 6c0 4.03 4.86 8.84 5.07 9.04a1.3 1.3 0 001.86 0c.2-.2 5.07-5.01 5.07-9.04a6 6 0 00-6-6zm0 8a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                     </svg>
-                    可點餐店家
+                    {{ __('home.orderable_stores') }}
                 </h2>
                 <p class="mt-3 text-lg text-brand-primary/75">
-                    選擇一間店家，立即進入專屬點餐頁。
+                    {{ __('home.choose_store_desc') }}
                 </p>
             </div>
 
@@ -121,7 +118,7 @@
                         type="text"
                         name="keyword"
                         value="{{ $keyword ?? '' }}"
-                        placeholder="搜尋店家名稱、地址或電話"
+                        placeholder="{{ __('home.search_placeholder') }}"
                         class="min-w-0 flex-1 rounded-2xl border border-brand-soft/70 px-4 py-3 text-lg text-brand-dark placeholder:text-brand-primary/80 focus:border-brand-accent focus:outline-none focus:ring-2 focus:ring-brand-highlight/40"
                     >
                     <button
@@ -131,7 +128,7 @@
                         <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fill-rule="evenodd" d="M8.5 3a5.5 5.5 0 014.46 8.72l3.16 3.16a1 1 0 01-1.41 1.41l-3.16-3.16A5.5 5.5 0 118.5 3zm0 2a3.5 3.5 0 100 7 3.5 3.5 0 000-7z" clip-rule="evenodd"/>
                         </svg>
-                        搜尋
+                        {{ __('home.search') }}
                     </button>
                 </form>
             </div>
@@ -153,33 +150,33 @@
                                             <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                 <path fill-rule="evenodd" d="M7.3 10.7a1 1 0 011.4 0l.8.8 2.8-2.8a1 1 0 111.4 1.4l-3.5 3.5a1 1 0 01-1.4 0l-1.5-1.5a1 1 0 010-1.4z" clip-rule="evenodd"/>
                                             </svg>
-                                            可點餐
+                                            {{ __('home.status_orderable') }}
                                         </span>
                                     @elseif($store->is_active)
                                         <span class="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-dark shadow">
                                             <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                 <circle cx="10" cy="10" r="4"/>
                                             </svg>
-                                            營業中
+                                            {{ __('home.status_open') }}
                                         </span>
                                     @else
                                         <span class="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-brand-dark shadow">
                                             <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                 <path fill-rule="evenodd" d="M4.3 4.3a1 1 0 011.4 0L10 8.6l4.3-4.3a1 1 0 111.4 1.4L11.4 10l4.3 4.3a1 1 0 01-1.4 1.4L10 11.4l-4.3 4.3a1 1 0 01-1.4-1.4L8.6 10 4.3 5.7a1 1 0 010-1.4z" clip-rule="evenodd"/>
                                             </svg>
-                                            未開放
+                                            {{ __('home.status_closed') }}
                                         </span>
                                     @endif
                                 </div>
                                 <div class="absolute bottom-4 left-4 right-4 text-white">
-                                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-highlight/80">Store</p>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-highlight/80">{{ __('home.store_label') }}</p>
                                     <h3 class="mt-2 text-2xl font-bold">{{ $store->name }}</h3>
                                 </div>
                             </div>
 
                             <div class="flex flex-1 flex-col p-6">
                                 <p class="text-base leading-7 text-brand-primary/75">
-                                    {{ $store->description ? \Illuminate\Support\Str::limit($store->description, 100) : '歡迎使用 DineFlow 進入店家專屬點餐體驗。' }}
+                                    {{ $store->description ? \Illuminate\Support\Str::limit($store->description, 100) : __('home.default_store_desc') }}
                                 </p>
 
                                 <div class="mt-5 space-y-2 text-base text-brand-primary/70">
@@ -187,14 +184,14 @@
                                         <svg class="h-4 w-4 text-brand-primary/70" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.5a.75.75 0 10-1.5 0v3.25c0 .2.08.39.22.53l2 2a.75.75 0 101.06-1.06l-1.78-1.78V6.5z" clip-rule="evenodd"/>
                                         </svg>
-                                        <span>營業時段 {{ $store->businessHoursLabel() }}</span>
+                                        <span>{{ __('home.business_hours') }} {{ $store->businessHoursLabel() }}</span>
                                     </div>
                                     @if(!empty($store->address))
                                         <div class="flex items-center gap-2">
                                             <svg class="h-4 w-4 text-brand-primary/70" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                 <path fill-rule="evenodd" d="M10 2a6 6 0 00-6 6c0 4.03 4.86 8.84 5.07 9.04a1.3 1.3 0 001.86 0c.2-.2 5.07-5.01 5.07-9.04a6 6 0 00-6-6zm0 8a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                                             </svg>
-                                            <span>地址 {{ $store->address }}</span>
+                                            <span>{{ __('home.address') }} {{ $store->address }}</span>
                                         </div>
                                     @endif
                                     @if(!empty($store->phone))
@@ -202,7 +199,7 @@
                                             <svg class="h-4 w-4 text-brand-primary/70" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                 <path d="M2.4 2.9a1 1 0 011.1-.3l2.2.7a1 1 0 01.7 1v2a1 1 0 01-.3.7l-1 1a12.5 12.5 0 005 5l1-1a1 1 0 01.7-.3h2a1 1 0 011 .7l.7 2.2a1 1 0 01-.3 1.1l-1.4 1.1a2 2 0 01-1.8.3A16.3 16.3 0 012.9 7.1a2 2 0 01.3-1.8L4.3 3.9z"/>
                                             </svg>
-                                            <span>電話 {{ $store->phone }}</span>
+                                            <span>{{ __('home.phone') }} {{ $store->phone }}</span>
                                         </div>
                                     @endif
                                 </div>
@@ -213,11 +210,11 @@
                                             <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                 <path fill-rule="evenodd" d="M10.3 4.3a1 1 0 011.4 0l5 5a1 1 0 010 1.4l-5 5a1 1 0 01-1.4-1.4L13.59 11H4a1 1 0 110-2h9.59l-3.3-3.3a1 1 0 010-1.4z" clip-rule="evenodd"/>
                                             </svg>
-                                            進入店家
+                                            {{ __('home.enter_store') }}
                                         </a>
                                     @else
                                         <button disabled class="inline-flex w-full cursor-not-allowed items-center justify-center rounded-2xl bg-slate-200 px-4 py-3 text-base font-semibold text-slate-500">
-                                            尚未開放
+                                            {{ __('home.not_open_yet') }}
                                         </button>
                                     @endif
                                 </div>
@@ -236,13 +233,13 @@
                             <path fill-rule="evenodd" d="M10 2a6 6 0 00-6 6c0 4.03 4.86 8.84 5.07 9.04a1.3 1.3 0 001.86 0c.2-.2 5.07-5.01 5.07-9.04a6 6 0 00-6-6zm0 8a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-brand-dark">找不到符合條件的店家</h3>
+                    <h3 class="text-xl font-bold text-brand-dark">{{ __('home.no_store_found_title') }}</h3>
                     <p class="mt-3 text-lg text-brand-primary/75">
-                        可以換個關鍵字，或先看看首頁推薦的店家。
+                        {{ __('home.no_store_found_desc') }}
                     </p>
                     <div class="mt-6">
                         <a href="{{ route('home') }}" class="inline-flex items-center rounded-2xl border border-brand-soft/70 bg-white px-5 py-3 text-base font-semibold text-brand-primary transition hover:bg-brand-soft/20">
-                            查看全部店家
+                            {{ __('home.view_all_stores') }}
                         </a>
                     </div>
                 </div>
@@ -257,9 +254,9 @@
                     <svg class="h-7 w-7 text-brand-primary" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h2a1 1 0 010 2H5v10h1a1 1 0 110 2H4a1 1 0 01-1-1V4zm4 1a1 1 0 011-1h8a1 1 0 011 1v2.5a1 1 0 11-2 0V6H9v2.5a1 1 0 11-2 0V5zm0 7a1 1 0 011-1h6a1 1 0 110 2H8a1 1 0 01-1-1zm0 4a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" clip-rule="evenodd"/>
                     </svg>
-                    點餐流程
+                    {{ __('home.ordering_flow_title') }}
                 </h2>
-                <p class="mt-3 text-lg text-brand-primary/75">三個步驟就能完成從掃碼到送單的整體體驗。</p>
+                <p class="mt-3 text-lg text-brand-primary/75">{{ __('home.ordering_flow_desc') }}</p>
             </div>
 
             <div class="grid gap-6 md:grid-cols-3">
@@ -270,8 +267,8 @@
                             <path fill-rule="evenodd" d="M3 3h6v6H3V3zm1.5 1.5v3h3v-3h-3zM11 3h6v6h-6V3zm1.5 1.5v3h3v-3h-3zM3 11h6v6H3v-6zm1.5 1.5v3h3v-3h-3zM12 11a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1a1 1 0 10-2 0v1h-1z" clip-rule="evenodd"/>
                         </svg>
                     </div>
-                    <h3 class="mt-4 text-xl font-bold text-brand-dark">掃描 QR Code</h3>
-                    <p class="mt-3 text-base leading-7 text-brand-primary/75">顧客掃碼後直接進入店家專屬點餐頁，無需下載 App。</p>
+                    <h3 class="mt-4 text-xl font-bold text-brand-dark">{{ __('home.step_1_title') }}</h3>
+                    <p class="mt-3 text-base leading-7 text-brand-primary/75">{{ __('home.step_1_desc') }}</p>
                 </div>
                 <div class="rounded-[1.75rem] border border-brand-soft/60 bg-brand-soft/18 p-8 text-center">
                     <div class="text-3xl font-bold text-brand-primary">02</div>
@@ -280,8 +277,8 @@
                             <path fill-rule="evenodd" d="M2 4a1 1 0 011-1h8a1 1 0 110 2H4v9h9v-7a1 1 0 112 0v8a1 1 0 01-1 1H3a1 1 0 01-1-1V4zm11.3-.7a1 1 0 011.4 0l3 3a1 1 0 01-1.4 1.4L15 6.4V14a1 1 0 11-2 0V6.4l-1.3 1.3a1 1 0 01-1.4-1.4l3-3z" clip-rule="evenodd"/>
                         </svg>
                     </div>
-                    <h3 class="mt-4 text-xl font-bold text-brand-dark">瀏覽菜單並加入購物車</h3>
-                    <p class="mt-3 text-base leading-7 text-brand-primary/75">透過分類、商品圖片與數量控制，快速完成點餐。</p>
+                    <h3 class="mt-4 text-xl font-bold text-brand-dark">{{ __('home.step_2_title') }}</h3>
+                    <p class="mt-3 text-base leading-7 text-brand-primary/75">{{ __('home.step_2_desc') }}</p>
                 </div>
                 <div class="rounded-[1.75rem] border border-brand-soft/60 bg-brand-soft/18 p-8 text-center">
                     <div class="text-3xl font-bold text-brand-primary">03</div>
@@ -290,8 +287,8 @@
                             <path fill-rule="evenodd" d="M2.6 9.2a1 1 0 01.42-1.75l13-4a1 1 0 011.25 1.25l-4 13a1 1 0 01-1.75.42l-2.6-3.45a1 1 0 01-.18-.52l-.18-2.12-2.12-.18a1 1 0 01-.52-.18L2.6 9.2zm3.48.16l3.43.3a1 1 0 01.9.9l.3 3.43 2.59-8.41-8.41 2.59z" clip-rule="evenodd"/>
                         </svg>
                     </div>
-                    <h3 class="mt-4 text-xl font-bold text-brand-dark">送出訂單</h3>
-                    <p class="mt-3 text-base leading-7 text-brand-primary/75">系統立即產生訂單摘要與編號，前後台都能快速對單。</p>
+                    <h3 class="mt-4 text-xl font-bold text-brand-dark">{{ __('home.step_3_title') }}</h3>
+                    <p class="mt-3 text-base leading-7 text-brand-primary/75">{{ __('home.step_3_desc') }}</p>
                 </div>
             </div>
         </div>
@@ -300,7 +297,7 @@
     <footer class="border-t border-brand-soft/60 bg-brand-dark">
         <div class="mx-auto max-w-7xl px-6 py-8 text-center text-white/80 lg:px-8">
             <div class="text-base font-semibold text-white">DineFlow</div>
-            <div class="mt-2 text-base">QR Code 點餐體驗平台</div>
+            <div class="mt-2 text-base">{{ __('home.footer_subtitle') }}</div>
         </div>
     </footer>
 </div>

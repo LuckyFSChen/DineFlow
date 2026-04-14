@@ -28,13 +28,13 @@
                 <div class="absolute -bottom-14 left-10 h-32 w-32 rounded-full bg-brand-accent/20 blur-3xl"></div>
                 <div class="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                     <div class="max-w-3xl">
-                        <a href="{{ route('home') }}" class="inline-flex items-center text-sm font-medium text-white/70 transition hover:text-white">返回首頁</a>
+                        <a href="{{ route('home') }}" class="inline-flex items-center text-sm font-medium text-white/70 transition hover:text-white">{{ __('customer.back_home_btn') }}</a>
                         <div class="mt-4 flex flex-wrap items-center gap-3">
-                            <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold tracking-[0.2em] text-brand-highlight">外帶</span>
-                            <span class="inline-flex rounded-full border border-brand-soft/30 bg-white/10 px-3 py-1 text-xs font-semibold text-white/80">營業時間 {{ $store->businessHoursLabel() }}</span>
+                            <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold tracking-[0.2em] text-brand-highlight">{{ __('customer.takeout') }}</span>
+                            <span class="inline-flex rounded-full border border-brand-soft/30 bg-white/10 px-3 py-1 text-xs font-semibold text-white/80">{{ __('customer.business_hours') }} {{ $store->businessHoursLabel() }}</span>
                         </div>
                         <h1 class="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">{{ $store->name }}</h1>
-                        <p class="mt-3 max-w-2xl text-sm leading-7 text-white/75 sm:text-base">{{ $store->description ?: '選好餐點後即可加入購物車，快速完成外帶點餐。' }}</p>
+                        <p class="mt-3 max-w-2xl text-sm leading-7 text-white/75 sm:text-base">{{ $store->description ?: __('customer.welcome_takeout_desc') }}</p>
                     </div>
 
                     <div class="hidden md:flex">
@@ -42,11 +42,11 @@
                             @if(isset($orderHistory) && $orderHistory->isNotEmpty())
                                 <div class="flex items-center gap-2">
                                     @foreach($orderHistory->take(3) as $historyOrder)
-                                        <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="inline-flex items-center justify-center rounded-2xl border border-white/25 bg-white/10 px-4 py-3 text-xs font-semibold text-white transition hover:-translate-y-0.5 hover:bg-white/20">狀態 {{ $historyOrder->order_no }}</a>
+                                        <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="inline-flex items-center justify-center rounded-2xl border border-white/25 bg-white/10 px-4 py-3 text-xs font-semibold text-white transition hover:-translate-y-0.5 hover:bg-white/20">{{ __('customer.status_prefix') }} {{ $historyOrder->order_no }}</a>
                                     @endforeach
                                 </div>
                             @endif
-                            <a href="{{ route('customer.takeout.cart.show', ['store' => $store]) }}" class="inline-flex items-center justify-center rounded-2xl bg-brand-highlight px-5 py-3 text-sm font-semibold text-brand-dark shadow-lg shadow-brand-highlight/30 transition hover:-translate-y-0.5 hover:bg-brand-soft">查看購物車</a>
+                            <a href="{{ route('customer.takeout.cart.show', ['store' => $store]) }}" class="inline-flex items-center justify-center rounded-2xl bg-brand-highlight px-5 py-3 text-sm font-semibold text-brand-dark shadow-lg shadow-brand-highlight/30 transition hover:-translate-y-0.5 hover:bg-brand-soft">{{ __('customer.view_cart') }}</a>
                         </div>
                     </div>
                 </div>
@@ -67,7 +67,7 @@
 
         @if($errors->any())
             <div class="mb-6 rounded-2xl border border-brand-soft bg-brand-soft/30 px-4 py-4 text-sm text-brand-dark shadow-sm">
-                <div class="mb-2 font-semibold">請先確認以下資訊</div>
+                <div class="mb-2 font-semibold">{{ __('customer.confirm_fields') }}</div>
                 <ul class="space-y-1">
                     @foreach($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -78,8 +78,8 @@
 
         @if($categories->isEmpty())
             <div class="rounded-[2rem] border border-brand-soft/60 bg-white px-6 py-16 text-center shadow-[0_20px_40px_rgba(90,30,14,0.08)]">
-                <h2 class="text-2xl font-bold text-brand-dark">目前還沒有上架商品</h2>
-                <p class="mt-3 text-brand-primary/80">請稍後再回來看看，或聯繫店家確認菜單。</p>
+                <h2 class="text-2xl font-bold text-brand-dark">{{ __('customer.no_products_available') }}</h2>
+                <p class="mt-3 text-brand-primary/80">{{ __('customer.no_products_try_later') }}</p>
             </div>
         @else
             <div class="mb-8 hidden overflow-x-auto rounded-[1.75rem] border border-brand-soft/60 bg-white px-4 py-4 shadow-[0_12px_32px_rgba(90,30,14,0.08)] md:block">
@@ -114,7 +114,7 @@
                                 <div>
                                     <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brand-accent">Menu Section</p>
                                     <h2 class="mt-2 text-2xl font-bold tracking-tight text-brand-dark">{{ $category->name }}</h2>
-                                    <p class="mt-1 text-sm text-brand-primary/70">{{ $category->products->count() }} 項餐點</p>
+                                    <p class="mt-1 text-sm text-brand-primary/70">{{ $category->products->count() }} {{ __('customer.items_in_menu') }}</p>
                                 </div>
                             </div>
 
@@ -138,18 +138,18 @@
                                                 <div class="flex items-start justify-between gap-4">
                                                     <div class="min-w-0">
                                                         <h3 class="text-lg font-bold text-brand-dark">{{ $product->name }}</h3>
-                                                        <p class="mt-2 line-clamp-2 text-sm leading-6 text-brand-primary/75">{{ $product->description ?: '精選現做餐點，快加入購物車！' }}</p>
+                                                        <p class="mt-2 line-clamp-2 text-sm leading-6 text-brand-primary/75">{{ $product->description ?: __('customer.fresh_made') }}</p>
                                                     </div>
                                                     @if($product->is_sold_out)
-                                                        <div class="shrink-0 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">已售完</div>
+                                                        <div class="shrink-0 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">{{ __('customer.sold_out') }}</div>
                                                     @endif
                                                 </div>
 
                                                 <div class="mt-5">
                                                     @if(! $orderingAvailable)
-                                                        <div class="rounded-2xl bg-brand-soft/25 px-3 py-3 text-center text-sm font-medium text-brand-dark">目前不在營業時間，暫停點餐</div>
+                                                        <div class="rounded-2xl bg-brand-soft/25 px-3 py-3 text-center text-sm font-medium text-brand-dark">{{ __('customer.ordering_closed') }}</div>
                                                     @elseif($product->is_sold_out)
-                                                        <div class="rounded-2xl bg-slate-100 px-3 py-3 text-center text-sm font-medium text-slate-500">本品項目前無法點餐</div>
+                                                        <div class="rounded-2xl bg-slate-100 px-3 py-3 text-center text-sm font-medium text-slate-500">{{ __('customer.item_not_available') }}</div>
                                                     @else
                                                         <form method="POST" action="{{ route('customer.takeout.cart.items.store', ['store' => $store]) }}" class="flex items-center gap-2" data-add-to-cart-form>
                                                             @csrf
@@ -161,7 +161,7 @@
                                                                 <span class="flex min-w-[2.8rem] items-center justify-center text-sm font-semibold text-brand-dark" data-qty-display>1</span>
                                                                 <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold text-brand-primary transition hover:bg-white" data-qty-increment>+</button>
                                                             </div>
-                                                            <button type="submit" class="flex-1 rounded-2xl bg-brand-primary px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:-translate-y-0.5 hover:bg-brand-accent hover:text-brand-dark" data-add-to-cart-button data-option-groups='@json($product->option_groups ?? [])' data-product-name="{{ $product->name }}">加入購物車</button>
+                                                            <button type="submit" class="flex-1 rounded-2xl bg-brand-primary px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:-translate-y-0.5 hover:bg-brand-accent hover:text-brand-dark" data-add-to-cart-button data-option-groups='@json($product->option_groups ?? [])' data-product-name="{{ $product->name }}">{{ __('customer.add_to_cart') }}</button>
                                                         </form>
                                                     @endif
                                                 </div>
@@ -170,7 +170,7 @@
                                     @endforeach
                                 </div>
                             @else
-                                <div class="rounded-[1.75rem] border border-brand-soft/60 bg-white px-5 py-8 text-sm text-brand-primary/70 shadow-[0_18px_40px_rgba(90,30,14,0.08)]">這個分類目前還沒有可點的商品。</div>
+                                <div class="rounded-[1.75rem] border border-brand-soft/60 bg-white px-5 py-8 text-sm text-brand-primary/70 shadow-[0_18px_40px_rgba(90,30,14,0.08)]">{{ __('customer.no_products_in_cat2') }}</div>
                             @endif
                         </section>
                     @endforeach
@@ -185,35 +185,35 @@
 <aside class="fixed right-6 top-24 z-30 hidden w-80 xl:block">
     <div class="overflow-hidden rounded-[1.5rem] border border-brand-soft/70 bg-white shadow-[0_18px_40px_rgba(90,30,14,0.1)]">
         <div class="border-b border-brand-soft/60 bg-brand-dark px-4 py-4 text-white">
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-highlight/80">購物車預覽</p>
-            <p class="mt-1 text-sm font-semibold">{{ $cartCount > 0 ? $cartCount . ' 項 | NT$ ' . number_format($cartTotal) : '購物車目前是空的' }}</p>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-highlight/80">{{ __('customer.cart') }}</p>
+            <p class="mt-1 text-sm font-semibold">{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
         </div>
 
         <div class="max-h-[52vh] space-y-3 overflow-y-auto px-4 py-4">
             @forelse($cartPreviewItems->take(6) as $item)
                 <article class="rounded-2xl border border-brand-soft/70 bg-brand-soft/15 px-3 py-3">
                     <div class="flex items-start justify-between gap-2">
-                        <p class="text-sm font-semibold text-brand-dark">{{ $item['product_name'] ?? '商品' }}</p>
+                        <p class="text-sm font-semibold text-brand-dark">{{ $item['product_name'] ?? __('customer.product_default_name') }}</p>
                         <p class="shrink-0 text-xs font-semibold text-brand-primary">x{{ $item['qty'] ?? 1 }}</p>
                     </div>
                     @if(!empty($item['option_label']))
                         <p class="mt-1 text-xs text-brand-primary/75">{{ $item['option_label'] }}</p>
                     @endif
-                    <p class="mt-2 text-xs font-semibold text-brand-accent">小計 NT$ {{ number_format((int) ($item['subtotal'] ?? 0)) }}</p>
+                    <p class="mt-2 text-xs font-semibold text-brand-accent">{{ __('customer.subtotal') }} NT$ {{ number_format((int) ($item['subtotal'] ?? 0)) }}</p>
                 </article>
             @empty
                 <div class="rounded-2xl border border-dashed border-brand-soft/80 bg-brand-soft/10 px-3 py-8 text-center text-sm text-brand-primary/75">
-                    尚未加入商品
+                    {{ __('customer.no_products_available') }}
                 </div>
             @endforelse
 
             @if($cartPreviewItems->count() > 6)
-                <p class="text-center text-xs font-semibold text-brand-primary/70">還有 {{ $cartPreviewItems->count() - 6 }} 項，請前往購物車查看</p>
+                <p class="text-center text-xs font-semibold text-brand-primary/70">{{ __('customer.more_items_in_cart', ['count' => $cartPreviewItems->count() - 6]) }}</p>
             @endif
         </div>
 
         <div class="border-t border-brand-soft/60 p-4">
-            <a href="{{ route('customer.takeout.cart.show', ['store' => $store]) }}" class="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-brand-highlight px-4 text-sm font-semibold text-brand-dark transition hover:bg-brand-soft">查看購物車{{ $cartCount > 0 ? ' (' . $cartCount . ')' : '' }}</a>
+            <a href="{{ route('customer.takeout.cart.show', ['store' => $store]) }}" class="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-brand-highlight px-4 text-sm font-semibold text-brand-dark transition hover:bg-brand-soft">{{ __('customer.view_cart') }}{{ $cartCount > 0 ? ' (' . $cartCount . ')' : '' }}</a>
         </div>
     </div>
 </aside>
@@ -222,30 +222,30 @@
 <div class="fixed inset-x-0 bottom-0 z-40 border-t border-brand-soft/60 bg-white/95 px-4 py-4 backdrop-blur">
     <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-[1.75rem] bg-brand-dark px-4 py-3 text-white shadow-[0_18px_44px_rgba(90,30,14,0.24)] transition-transform duration-200" data-cart-bar>
         <div>
-            <p class="text-xs uppercase tracking-[0.2em] text-brand-highlight/80">{{ $orderingAvailable ? '營業中' : '暫停點餐' }}</p>
-            <p class="mt-1 text-sm font-semibold">{{ $cartCount > 0 ? $cartCount . ' 項 | NT$ ' . number_format($cartTotal) : '購物車目前是空的' }}</p>
+            <p class="text-xs uppercase tracking-[0.2em] text-brand-highlight/80">{{ $orderingAvailable ? __('customer.open') : __('customer.ordering_closed') }}</p>
+            <p class="mt-1 text-sm font-semibold">{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
             @if(isset($orderHistory) && $orderHistory->isNotEmpty())
                 <div class="mt-1 flex flex-wrap gap-2">
                     @foreach($orderHistory->take(2) as $historyOrder)
-                        <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="inline-flex text-xs font-semibold text-brand-highlight underline-offset-2 hover:underline">狀態 {{ $historyOrder->order_no }}</a>
+                        <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="inline-flex text-xs font-semibold text-brand-highlight underline-offset-2 hover:underline">{{ __('customer.status_prefix') }} {{ $historyOrder->order_no }}</a>
                     @endforeach
                 </div>
             @endif
         </div>
-        <a href="{{ route('customer.takeout.cart.show', ['store' => $store]) }}" class="inline-flex h-11 items-center justify-center rounded-2xl bg-brand-highlight px-4 text-sm font-semibold text-brand-dark transition hover:bg-brand-soft" data-cart-target>查看購物車{{ $cartCount > 0 ? ' (' . $cartCount . ')' : '' }}</a>
+        <a href="{{ route('customer.takeout.cart.show', ['store' => $store]) }}" class="inline-flex h-11 items-center justify-center rounded-2xl bg-brand-highlight px-4 text-sm font-semibold text-brand-dark transition hover:bg-brand-soft" data-cart-target>{{ __('customer.view_cart') }}{{ $cartCount > 0 ? ' (' . $cartCount . ')' : '' }}</a>
     </div>
 </div>
 
 <div id="option-modal" class="fixed inset-0 z-[90] hidden items-center justify-center bg-black/45 p-4">
     <div class="w-full max-w-lg rounded-3xl bg-white p-5 shadow-2xl">
         <div class="flex items-center justify-between">
-            <h3 id="option-modal-title" class="text-lg font-bold text-brand-dark">選擇搭配</h3>
+            <h3 id="option-modal-title" class="text-lg font-bold text-brand-dark">{{ __('customer.select_options_title') }}</h3>
             <button type="button" id="option-modal-close" class="rounded-full p-2 text-slate-500 hover:bg-slate-100">✕</button>
         </div>
         <div id="option-modal-body" class="mt-4 max-h-[60vh] space-y-4 overflow-y-auto"></div>
         <div class="mt-5 flex gap-3">
-            <button type="button" id="option-modal-cancel" class="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">取消</button>
-            <button type="button" id="option-modal-confirm" class="inline-flex flex-1 items-center justify-center rounded-2xl bg-brand-primary px-4 py-3 text-sm font-semibold text-white hover:bg-brand-accent hover:text-brand-dark">確認加入</button>
+            <button type="button" id="option-modal-cancel" class="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">{{ __('customer.cancel') }}</button>
+            <button type="button" id="option-modal-confirm" class="inline-flex flex-1 items-center justify-center rounded-2xl bg-brand-primary px-4 py-3 text-sm font-semibold text-white hover:bg-brand-accent hover:text-brand-dark">{{ __('customer.confirm_add') }}</button>
         </div>
     </div>
 </div>
@@ -261,6 +261,14 @@
     const modalClose = document.getElementById('option-modal-close');
     const modalCancel = document.getElementById('option-modal-cancel');
     const modalConfirm = document.getElementById('option-modal-confirm');
+    const i18n = {
+        optionsTitleWithProduct: @json(__('customer.select_options_title_with_product', ['product' => '__product__'])),
+        requiredSuffix: @json(__('customer.required_suffix')),
+        free: @json(__('customer.free')),
+        requiredError: @json(__('customer.option_required_error', ['group' => '__group__'])),
+        maxSelectError: @json(__('customer.option_max_select_error', ['group' => '__group__', 'max' => '__max__'])),
+        unnamedProduct: @json(__('customer.product_default_name')),
+    };
 
     let activeForm = null;
     let activeGroups = [];
@@ -276,7 +284,7 @@
     const openModal = (form, productName, groups) => {
         activeForm = form;
         activeGroups = groups;
-        modalTitle.textContent = `選擇搭配：${productName}`;
+        modalTitle.textContent = i18n.optionsTitleWithProduct.replace('__product__', productName);
         modalBody.innerHTML = '';
 
         groups.forEach((group) => {
@@ -298,7 +306,7 @@
 
             const title = document.createElement('div');
             title.className = 'mb-2 text-sm font-semibold text-slate-800';
-            title.textContent = `${group.name || groupId}${required ? '（必選）' : ''}`;
+            title.textContent = `${group.name || groupId}${required ? i18n.requiredSuffix : ''}`;
             wrapper.appendChild(title);
 
             const choices = Array.isArray(group.choices) ? group.choices : [];
@@ -330,7 +338,7 @@
                 const price = document.createElement('span');
                 const p = Number(choice.price || 0);
                 price.className = 'text-xs font-semibold ' + (p > 0 ? 'text-brand-primary' : 'text-slate-500');
-                price.textContent = p > 0 ? `+NT$ ${p}` : '免費';
+                price.textContent = p > 0 ? `+NT$ ${p}` : i18n.free;
 
                 row.appendChild(left);
                 row.appendChild(price);
@@ -373,12 +381,12 @@
             const checked = Array.from(wrapper.querySelectorAll('input:checked')).map((input) => input.value);
 
             if (required && checked.length === 0) {
-                alert(`${group.name || groupId} 為必選`);
+                alert(i18n.requiredError.replace('__group__', group.name || groupId));
                 return;
             }
 
             if (type === 'multiple' && checked.length > maxSelect) {
-                alert(`${group.name || groupId} 最多可選 ${maxSelect} 項`);
+                alert(i18n.maxSelectError.replace('__group__', group.name || groupId).replace('__max__', maxSelect));
                 return;
             }
 
@@ -432,7 +440,7 @@
 
             if (Array.isArray(groups) && groups.length > 0 && form.dataset.confirmed !== '1') {
                 event.preventDefault();
-                openModal(form, submitButton.dataset.productName || '商品', groups);
+                openModal(form, submitButton.dataset.productName || i18n.unnamedProduct, groups);
                 return;
             }
 

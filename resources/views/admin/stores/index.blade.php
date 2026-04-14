@@ -5,8 +5,8 @@
     <div class="mx-auto max-w-7xl px-6 py-10 lg:px-8">
         <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-                <h1 class="text-3xl font-bold tracking-tight text-slate-900">店家管理</h1>
-                <p class="mt-2 text-slate-600">管理店家基本資料、上架狀態與入口資訊。</p>
+                <h1 class="text-3xl font-bold tracking-tight text-slate-900">{{ __('admin.store_management') }}</h1>
+                <p class="mt-2 text-slate-600">{{ __('admin.store_management_desc') }}</p>
             </div>
 
             @if(isset($canCreateStore) && ! $canCreateStore)
@@ -15,26 +15,26 @@
                     id="open-store-modal-btn"
                     disabled
                     class="inline-flex cursor-not-allowed items-center justify-center rounded-2xl bg-slate-300 px-5 py-3 text-sm font-semibold text-slate-500">
-                    新增店家（已達上限）
+                    {{ __('admin.add_store_limit') }}
                 </button>
             @else
                 <button
                     type="button"
                     id="open-store-modal-btn"
                     class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500">
-                    新增店家
+                    {{ __('admin.add_store') }}
                 </button>
             @endif
         </div>
 
         @if(isset($usedStores))
             <div class="mb-6 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
-                方案店家額度：
-                已使用 {{ $usedStores }} 間
+                {{ __('admin.quota_label') }}
+                {{ __('admin.used_stores', ['count' => $usedStores]) }}
                 @if($maxStores === null)
-                    / 不限
+                    / {{ __('admin.no_limit') }}
                 @else
-                    / 上限 {{ $maxStores }} 間（剩餘 {{ $remainingStores }} 間）
+                    / {{ __('admin.limit_stores', ['max' => $maxStores]) }}（{{ __('admin.remaining_stores', ['count' => $remainingStores]) }}）
                 @endif
             </div>
         @endif
@@ -57,13 +57,13 @@
                     type="text"
                     name="keyword"
                     value="{{ $keyword ?? '' }}"
-                    placeholder="搜尋店家名稱 / slug / 地址 / 電話"
+                    placeholder="{{ __('admin.search_placeholder') }}"
                     class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
                 >
                 <button
                     type="submit"
                     class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
-                    搜尋
+                    {{ __('admin.search') }}
                 </button>
             </form>
         </div>
@@ -73,12 +73,12 @@
                 <table class="min-w-full divide-y divide-slate-200 text-sm">
                     <thead class="bg-slate-50">
                         <tr>
-                            <th class="px-6 py-4 text-left font-semibold text-slate-700">店家名稱</th>
+                            <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.store_name') }}</th>
                             <th class="px-6 py-4 text-left font-semibold text-slate-700">Slug</th>
-                            <th class="px-6 py-4 text-left font-semibold text-slate-700">電話</th>
-                            <th class="px-6 py-4 text-left font-semibold text-slate-700">地址</th>
-                            <th class="px-6 py-4 text-left font-semibold text-slate-700">狀態</th>
-                            <th class="px-6 py-4 text-right font-semibold text-slate-700">操作</th>
+                            <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.phone') }}</th>
+                            <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.address') }}</th>
+                            <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.status') }}</th>
+                            <th class="px-6 py-4 text-right font-semibold text-slate-700">{{ __('admin.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -87,17 +87,17 @@
                                 <td class="px-6 py-4">
                                     <div class="flex items-start gap-3">
                                         @if($store->banner_image)
-                                            <img src="{{ asset('storage/' . ltrim($store->banner_image, '/')) }}" alt="{{ $store->name }} 橫幅" class="h-12 w-20 rounded-lg object-cover ring-1 ring-slate-200">
+                                            <img src="{{ asset('storage/' . ltrim($store->banner_image, '/')) }}" alt="{{ $store->name }} {{ __('admin.no_banner') }}" class="h-12 w-20 rounded-lg object-cover ring-1 ring-slate-200">
                                         @else
                                             <div class="flex h-12 w-20 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-100 text-[11px] text-slate-500">
-                                                無橫幅
+                                                {{ __('admin.no_banner') }}
                                             </div>
                                         @endif
 
                                         <div>
                                             <div class="font-semibold text-slate-900">{{ $store->name }}</div>
                                             <div class="mt-1 text-xs text-slate-500">
-                                                {{ \Illuminate\Support\Str::limit($store->description, 50) ?: '尚未填寫描述' }}
+                                                {{ \Illuminate\Support\Str::limit($store->description, 50) ?: __('admin.no_description') }}
                                             </div>
                                         </div>
                                     </div>
@@ -108,11 +108,11 @@
                                 <td class="px-6 py-4">
                                     @if($store->is_active)
                                         <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                                            營業中
+                                            {{ __('admin.active') }}
                                         </span>
                                     @else
                                         <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-200">
-                                            未開放
+                                            {{ __('admin.inactive') }}
                                         </span>
                                     @endif
                                 </td>
@@ -120,27 +120,27 @@
                                     <div class="flex justify-end gap-2">
                                         <a href="{{ route('admin.stores.products.index', $store) }}"
                                            class="inline-flex items-center rounded-xl border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100">
-                                            商品
+                                            {{ __('admin.products') }}
                                         </a>
 
                                         <a href="{{ route('admin.stores.tables.index', $store) }}"
                                            class="inline-flex items-center rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100">
-                                            桌位QR
+                                            {{ __('admin.tables_qr') }}
                                         </a>
 
                                                      <button
                                                          type="button"
                                                          data-edit-store="{{ $store->slug }}"
                                                          class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-                                            編輯
+                                            {{ __('admin.edit') }}
                                                      </button>
 
-                                        <form method="POST" action="{{ route('admin.stores.destroy', $store) }}" onsubmit="return confirm('確定要刪除此店家嗎？')">
+                                        <form method="POST" action="{{ route('admin.stores.destroy', $store) }}" onsubmit="return confirm('{{ __('admin.delete_confirm') }}')">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit"
                                                 class="inline-flex items-center rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-500">
-                                                刪除
+                                                {{ __('admin.delete') }}
                                             </button>
                                         </form>
                                     </div>
@@ -149,7 +149,7 @@
                         @empty
                             <tr>
                                 <td colspan="6" class="px-6 py-12 text-center text-slate-500">
-                                    目前沒有店家資料
+                                    {{ __('admin.no_stores') }}
                                 </td>
                             </tr>
                         @endforelse
@@ -168,8 +168,8 @@
     <div class="w-full max-w-4xl rounded-3xl bg-white shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
             <div>
-                <h3 id="store-modal-title" class="text-lg font-bold text-slate-900">新增店家</h3>
-                <p class="text-xs text-slate-500">彈窗即時編輯，儲存後自動更新</p>
+                <h3 id="store-modal-title" class="text-lg font-bold text-slate-900">{{ __('admin.add_store_modal_title') }}</h3>
+                <p class="text-xs text-slate-500">{{ __('admin.modal_subtitle') }}</p>
             </div>
             <button type="button" id="store-modal-close" class="rounded-full p-2 text-slate-500 hover:bg-slate-100">✕</button>
         </div>
@@ -179,52 +179,52 @@
 
             <div class="grid gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">店家名稱</label>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.store_name') }}</label>
                     <input type="text" name="name" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" required>
                 </div>
 
                 <div>
                     <label class="mb-1 block text-xs font-semibold text-slate-600">Slug</label>
-                    <input type="text" name="slug" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="可留空，自動產生">
+                    <input type="text" name="slug" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="{{ __('admin.slug_placeholder') }}">
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">電話</label>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.phone') }}</label>
                     <input type="text" name="phone" id="store-modal-phone" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="0922-333-444" maxlength="12">
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">地址</label>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.address') }}</label>
                     <input type="text" name="address" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                 </div>
 
                 <div class="md:col-span-2">
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">店家描述</label>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.store_description') }}</label>
                     <textarea name="description" rows="4" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"></textarea>
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">開始營業</label>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.opening_time') }}</label>
                     <input type="time" name="opening_time" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">結束營業</label>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.closing_time') }}</label>
                     <input type="time" name="closing_time" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                 </div>
 
                 <div class="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                    <label class="mb-2 block text-xs font-semibold text-slate-600">橫幅圖片</label>
+                    <label class="mb-2 block text-xs font-semibold text-slate-600">{{ __('admin.banner_image') }}</label>
                     <div id="store-banner-dropzone" class="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-white p-5 text-center transition hover:border-indigo-400 hover:bg-indigo-50">
                         <input type="file" id="store-banner-input" name="banner_image" accept="image/*" class="hidden">
-                        <p class="text-sm text-slate-600">拖曳圖片到這裡，或 <span class="font-semibold text-indigo-600">點擊上傳</span></p>
-                        <p class="mt-1 text-xs text-slate-400">JPG / PNG / WEBP，最大 2MB</p>
+                        <p class="text-sm text-slate-600">{{ __('admin.banner_dropzone') }} <span class="font-semibold text-indigo-600">{{ __('admin.click_to_upload') }}</span></p>
+                        <p class="mt-1 text-xs text-slate-400">{{ __('admin.banner_file_hint') }}</p>
                     </div>
 
                     <div id="store-banner-preview-wrapper" class="mt-3 hidden">
                         <div class="relative">
                             <img id="store-banner-preview" src="" class="h-40 w-full rounded-xl object-cover">
-                            <button type="button" id="store-banner-remove" class="absolute right-2 top-2 rounded-full bg-black/60 px-3 py-1 text-xs text-white hover:bg-black">移除</button>
+                            <button type="button" id="store-banner-remove" class="absolute right-2 top-2 rounded-full bg-black/60 px-3 py-1 text-xs text-white hover:bg-black">{{ __('admin.remove') }}</button>
                         </div>
                     </div>
                 </div>
@@ -232,7 +232,7 @@
                 <div>
                     <label class="inline-flex items-center gap-2 text-sm text-slate-700">
                         <input type="checkbox" name="is_active" id="store-modal-is-active" value="1" class="h-4 w-4 rounded border-slate-300 text-indigo-600">
-                        啟用店家
+                        {{ __('admin.enable_store') }}
                     </label>
                 </div>
             </div>
@@ -240,8 +240,8 @@
             <div id="store-modal-error" class="mt-4 hidden rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"></div>
 
             <div class="mt-6 flex gap-2">
-                <button type="submit" id="store-modal-submit" class="inline-flex flex-1 items-center justify-center rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500">儲存店家</button>
-                <button type="button" id="store-modal-cancel" class="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">取消</button>
+                <button type="submit" id="store-modal-submit" class="inline-flex flex-1 items-center justify-center rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500">{{ __('admin.save_store') }}</button>
+                <button type="button" id="store-modal-cancel" class="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">{{ __('admin.cancel') }}</button>
             </div>
         </form>
     </div>
@@ -284,6 +284,17 @@
 
     let currentMode = 'create';
     let currentStoreId = null;
+    const i18n = {
+        imageOnly: @json(__('admin.error_image_only')),
+        imageTooLarge: @json(__('admin.error_image_too_large')),
+        createTitle: @json(__('admin.add_store_modal_title')),
+        createSubmit: @json(__('admin.create_store')),
+        editTitle: @json(__('admin.edit_store_modal_title')),
+        editSubmit: @json(__('admin.update_store')),
+        fetchStoreFailed: @json(__('admin.fetch_store_failed')),
+        saveFailed: @json(__('admin.save_failed')),
+        storeSaved: @json(__('admin.store_saved')),
+    };
 
     const showFlash = (message, type = 'success') => {
         if (!flash) {
@@ -335,12 +346,12 @@
         }
 
         if (!file.type.startsWith('image/')) {
-            showFlash('請上傳圖片檔。', 'error');
+            showFlash(i18n.imageOnly, 'error');
             return;
         }
 
         if (file.size > 2 * 1024 * 1024) {
-            showFlash('圖片不能超過 2MB。', 'error');
+            showFlash(i18n.imageTooLarge, 'error');
             return;
         }
 
@@ -385,8 +396,8 @@
         }
         currentMode = 'create';
         currentStoreId = null;
-        modalTitle.textContent = '新增店家';
-        modalSubmit.textContent = '建立店家';
+        modalTitle.textContent = i18n.createTitle;
+        modalSubmit.textContent = i18n.createSubmit;
         setFormValues(null);
         openModal();
     };
@@ -394,8 +405,8 @@
     const openEditModal = async (storeId) => {
         currentMode = 'edit';
         currentStoreId = storeId;
-        modalTitle.textContent = '編輯店家';
-        modalSubmit.textContent = '更新店家';
+        modalTitle.textContent = i18n.editTitle;
+        modalSubmit.textContent = i18n.editSubmit;
 
         try {
             const url = editUrlTemplate.replace('__STORE__', String(storeId));
@@ -408,13 +419,13 @@
 
             const data = await res.json();
             if (!res.ok || !data.ok) {
-                throw new Error(data.message || '讀取店家資料失敗');
+                throw new Error(data.message || i18n.fetchStoreFailed);
             }
 
             setFormValues(data.store);
             openModal();
         } catch (e) {
-            showFlash(e.message || '讀取店家資料失敗', 'error');
+            showFlash(e.message || i18n.fetchStoreFailed, 'error');
         }
     };
 
@@ -448,15 +459,15 @@
             const data = await res.json();
             if (!res.ok || !data.ok) {
                 const validationMessage = Object.values(data.errors || {}).flat().join('，');
-                throw new Error(data.message || validationMessage || '儲存失敗');
+                throw new Error(data.message || validationMessage || i18n.saveFailed);
             }
 
             closeModal();
-            showFlash(data.message || '店家已儲存');
+            showFlash(data.message || i18n.storeSaved);
             window.location.reload();
         } catch (e) {
             modalError.classList.remove('hidden');
-            modalError.textContent = e.message || '儲存失敗';
+            modalError.textContent = e.message || i18n.saveFailed;
         }
     };
 
