@@ -11,6 +11,9 @@ return [
     'address'               => 'Địa Chỉ',
     'status'                => 'Trạng Thái',
     'actions'               => 'Thao Tác',
+    'checkout_timing'       => 'Thời điểm thanh toán',
+    'checkout_postpay'      => 'Thanh toán sau bữa',
+    'checkout_prepay'       => 'Thanh toán trước bữa',
     'search'                => 'Tìm Kiếm',
     'search_placeholder'    => 'Tìm tên cửa hàng / slug / địa chỉ / điện thoại',
     'active'                => 'Đang Hoạt Động',
@@ -20,6 +23,7 @@ return [
     'delete_confirm'        => 'Bạn có chắc muốn xóa cửa hàng này?',
     'products'              => 'Sản Phẩm',
     'tables_qr'             => 'QR Bàn',
+    'kitchen'               => 'Bảng Bếp',
     'no_description'        => 'Chưa có mô tả',
     'no_banner'             => 'Không Có Banner',
     'quota_label'           => 'Hạn Ngạch: ',
@@ -177,6 +181,7 @@ return [
     'products_form_category_name'           => 'Tên Danh mục',
     'products_form_published'               => 'Xuất bản',
     'products_form_sold_out'                => 'Hết hàng',
+    'products_form_allow_item_note'         => 'Cho phép khách ghi chú món ăn',
     
     // Empty states
     'products_empty_no_description'         => 'Chưa có mô tả',

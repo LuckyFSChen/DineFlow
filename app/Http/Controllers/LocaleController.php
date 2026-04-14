@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class LocaleController extends Controller
 {
-    private const SUPPORTED = ['zh_TW', 'en', 'vi'];
+    private const SUPPORTED = ['zh_TW', 'zh_CN', 'en', 'vi'];
 
     public function switch(Request $request, string $locale): RedirectResponse
     {

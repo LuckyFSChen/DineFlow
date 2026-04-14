@@ -21,6 +21,7 @@ class Store extends Model
         'notification_email',
         'is_active',
         'takeout_qr_enabled',
+        'checkout_timing',
         'banner_image',
         'opening_time',
         'closing_time',
@@ -135,6 +136,16 @@ class Store extends Model
         return '';
     }
 
+    public function isPrepayCheckout(): bool
+    {
+        return $this->checkout_timing === 'prepay';
+    }
+
+    public function checkoutTimingLabel(): string
+    {
+        return $this->isPrepayCheckout() ? '餐前結帳' : '餐後結帳';
+    }
+
     public function tables()
     {
         return $this->hasMany(DiningTable::class);
@@ -143,6 +154,11 @@ class Store extends Model
     public function owner()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function chefs()
+    {
+        return $this->hasMany(User::class, 'store_id')->where('role', 'chef');
     }
 
     public function categories()

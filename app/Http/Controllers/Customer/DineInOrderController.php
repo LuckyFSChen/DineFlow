@@ -8,7 +8,9 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Store;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class DineInOrderController extends Controller
@@ -36,6 +38,7 @@ class DineInOrderController extends Controller
             'product_id' => ['required', 'integer', 'exists:products,id'],
             'qty' => ['required', 'integer', 'min:1'],
             'option_payload' => ['nullable', 'string'],
+            'item_note' => ['nullable', 'string', 'max:255'],
         ]);
 
         $product = Product::where('id', $validated['product_id'])
@@ -48,8 +51,9 @@ class DineInOrderController extends Controller
         $cart = session()->get($cartKey, []);
 
         $optionResult = $this->resolveSelectedOptions($product, $validated['option_payload'] ?? null);
+        $itemNote = $this->sanitizeItemNote($validated['item_note'] ?? null, (bool) $product->allow_item_note);
         $unitPrice = (int) $product->price + (int) $optionResult['extra_price'];
-        $lineKey = $this->cartLineKey($product->id, $optionResult['selected']);
+        $lineKey = $this->cartLineKey($product->id, $optionResult['selected'], $itemNote);
 
         if (isset($cart[$lineKey])) {
             $cart[$lineKey]['qty'] += $validated['qty'];
@@ -63,6 +67,7 @@ class DineInOrderController extends Controller
                 'price' => $unitPrice,
                 'option_items' => $optionResult['selected'],
                 'option_label' => $optionResult['label'],
+                'item_note' => $itemNote,
                 'qty' => $validated['qty'],
                 'subtotal' => 0,
             ];
@@ -143,6 +148,7 @@ class DineInOrderController extends Controller
                 'cart_token' => null,
                 'order_no' => $this->generateOrderNo($store),
                 'status' => 'pending',
+                'payment_status' => 'unpaid',
                 'customer_name' => $validated['customer_name'] ?? null,
                 'customer_email' => $validated['customer_email'] ?? null,
                 'customer_phone' => $validated['customer_phone'] ?? null,
@@ -158,7 +164,7 @@ class DineInOrderController extends Controller
                     'price' => $item['price'],
                     'qty' => $item['qty'],
                     'subtotal' => $item['subtotal'],
-                    'note' => $item['option_label'] ?? null,
+                    'note' => $this->composeOrderItemNote($item['option_label'] ?? null, $item['item_note'] ?? null),
                 ]);
             }
 
@@ -183,6 +189,78 @@ class DineInOrderController extends Controller
         return view('customer.success', compact('order', 'store'));
     }
 
+    public function orderStatus(Store $store, Order $order): JsonResponse
+    {
+        abort_unless($order->store_id === $store->id, 404);
+
+        return response()->json([
+            'ok' => true,
+            'status' => $order->status,
+            'payment_status' => $order->payment_status,
+            'customer_status_label' => $order->customer_status_label,
+        ]);
+    }
+
+    public function history(Request $request, Store $store)
+    {
+        $remembered = session()->get(self::CUSTOMER_PROFILE_SESSION_KEY, []);
+
+        $email = trim((string) $request->query('customer_email', $remembered['customer_email'] ?? ''));
+        $phoneRaw = trim((string) $request->query('customer_phone', $remembered['customer_phone'] ?? ''));
+
+        $validator = Validator::make([
+            'customer_email' => $email,
+            'customer_phone' => $phoneRaw,
+        ], [
+            'customer_email' => ['nullable', 'email', 'max:255'],
+            'customer_phone' => ['nullable', 'regex:/^09\d{2}-?\d{3}-?\d{3}$/'],
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $phone = $this->normalizeTaiwanMobilePhone($phoneRaw);
+        $hasFilters = $email !== '' || $phone !== null;
+
+        $orders = collect();
+        if ($hasFilters) {
+            $orders = Order::query()
+                ->where('store_id', $store->id)
+                ->where(function ($query) use ($email, $phone) {
+                    if ($email !== '') {
+                        $query->where('customer_email', $email);
+                    }
+
+                    if ($phone !== null) {
+                        if ($email !== '') {
+                            $query->orWhere('customer_phone', $phone);
+                        } else {
+                            $query->where('customer_phone', $phone);
+                        }
+                    }
+                })
+                ->with('table')
+                ->orderByDesc('created_at')
+                ->limit(50)
+                ->get();
+
+            session()->put(self::CUSTOMER_PROFILE_SESSION_KEY, [
+                'customer_name' => $remembered['customer_name'] ?? '',
+                'customer_email' => $email,
+                'customer_phone' => $phone ?? '',
+            ]);
+        }
+
+        return view('customer.history', [
+            'store' => $store,
+            'orders' => $orders,
+            'customerEmail' => $email,
+            'customerPhone' => $phoneRaw,
+            'hasFilters' => $hasFilters,
+        ]);
+    }
+
     public function clearRememberedCustomerInfo(Store $store, DiningTable $table)
     {
         abort_unless($table->store_id === $store->id, 404);
@@ -205,11 +283,48 @@ class DineInOrderController extends Controller
         return $date . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
     }
 
-    private function cartLineKey(int $productId, array $selectedOptions): string
+    private function cartLineKey(int $productId, array $selectedOptions, ?string $itemNote): string
     {
-        $json = json_encode($selectedOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $json = json_encode([
+            'options' => $selectedOptions,
+            'item_note' => $itemNote,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         return $productId . '_' . md5($json ?: '[]');
+    }
+
+    private function sanitizeItemNote(?string $note, bool $allowItemNote): ?string
+    {
+        if (! $allowItemNote) {
+            return null;
+        }
+
+        if ($note === null) {
+            return null;
+        }
+
+        $trimmed = trim($note);
+
+        return $trimmed === '' ? null : $trimmed;
+    }
+
+    private function composeOrderItemNote(?string $optionLabel, ?string $itemNote): ?string
+    {
+        $parts = [];
+
+        if ($optionLabel !== null && trim($optionLabel) !== '') {
+            $parts[] = trim($optionLabel);
+        }
+
+        if ($itemNote !== null && trim($itemNote) !== '') {
+            $parts[] = '備註：' . trim($itemNote);
+        }
+
+        if (count($parts) === 0) {
+            return null;
+        }
+
+        return implode(' | ', $parts);
     }
 
     private function resolveSelectedOptions(Product $product, ?string $optionPayload): array

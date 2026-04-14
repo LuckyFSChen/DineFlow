@@ -64,6 +64,7 @@ class ProductManagementController extends Controller
         $product = new Product([
             'is_active' => true,
             'is_sold_out' => false,
+            'allow_item_note' => false,
         ]);
 
         $categories = Category::query()
@@ -444,6 +445,7 @@ class ProductManagementController extends Controller
             'sort' => ['nullable', 'integer', 'min:1'],
             'image' => ['nullable', 'string', 'max:2048'],
             'option_groups_json' => ['nullable', 'string'],
+            'allow_item_note' => ['nullable', 'boolean'],
         ]);
 
         $categoryBelongsStore = Category::query()
@@ -461,6 +463,7 @@ class ProductManagementController extends Controller
         $data['sort'] = $data['sort'] ?? 1;
         $data['is_active'] = $request->boolean('is_active');
         $data['is_sold_out'] = $request->boolean('is_sold_out');
+        $data['allow_item_note'] = $request->boolean('allow_item_note');
         $data['option_groups'] = $this->parseOptionGroupsJson($data['option_groups_json'] ?? null);
 
         unset($data['option_groups_json']);
@@ -541,6 +544,7 @@ class ProductManagementController extends Controller
             'image' => $product->image,
             'is_active' => (bool) $product->is_active,
             'is_sold_out' => (bool) $product->is_sold_out,
+            'allow_item_note' => (bool) $product->allow_item_note,
             'option_groups' => $product->option_groups,
             'option_groups_json' => $product->option_groups
                 ? json_encode($product->option_groups, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)

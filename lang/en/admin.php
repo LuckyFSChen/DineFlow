@@ -11,6 +11,9 @@ return [
     'address'               => 'Address',
     'status'                => 'Status',
     'actions'               => 'Actions',
+    'checkout_timing'       => 'Checkout Timing',
+    'checkout_postpay'      => 'Pay After Meal',
+    'checkout_prepay'       => 'Pay Before Meal',
     'search'                => 'Search',
     'search_placeholder'    => 'Search store name / slug / address / phone',
     'active'                => 'Active',
@@ -20,6 +23,7 @@ return [
     'delete_confirm'        => 'Are you sure you want to delete this store?',
     'products'              => 'Products',
     'tables_qr'             => 'Tables QR',
+    'kitchen'               => 'Kitchen Board',
     'no_description'        => 'No description',
     'no_banner'             => 'No Banner',
     'quota_label'           => 'Plan Quota: ',
@@ -178,6 +182,7 @@ return [
     'products_form_category_name'           => 'Category Name',
     'products_form_published'               => 'Published',
     'products_form_sold_out'                => 'Sold Out',
+    'products_form_allow_item_note'         => 'Allow customer item notes',
     
     // Empty states
     'products_empty_no_description'         => 'No description yet',

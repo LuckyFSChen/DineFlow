@@ -12,7 +12,7 @@
         <header class="sticky top-0 z-30 border-b border-orange-100 bg-white/95 backdrop-blur">
             <div class="mx-auto max-w-3xl px-4 py-4">
                 <div class="mb-3 flex items-center justify-between">
-                    <a href="{{ route('customer.menu', $token) }}"
+                    <a href="{{ route('customer.dinein.menu', ['store' => $store, 'table' => $table]) }}"
                        class="inline-flex items-center text-sm font-medium text-orange-600 hover:text-orange-700">
                         ← {{ __('customer.back_to_menu') }}
                     </a>
@@ -41,6 +41,7 @@
                             <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="inline-flex items-center rounded-xl border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700 transition hover:bg-orange-100">{{ $historyOrder->order_no }} ・ {{ $historyOrder->customer_status_label }}</a>
                         @endforeach
                     </div>
+                    <a href="{{ route('customer.order.history', ['store' => $store]) }}" class="mt-3 inline-flex items-center rounded-xl border border-orange-200 bg-white px-3 py-1.5 text-xs font-semibold text-orange-700 transition hover:bg-orange-50">{{ __('customer.view_my_order_history') }}</a>
                 </div>
             @endif
 
@@ -52,7 +53,7 @@
                             {{ __('customer.cart_empty_hint') }}
                         </p>
 
-                        <a href="{{ route('customer.menu', $token) }}"
+                        <a href="{{ route('customer.dinein.menu', ['store' => $store, 'table' => $table]) }}"
                            class="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-orange-500 px-5 text-sm font-semibold text-white hover:bg-orange-600">
                             {{ __('customer.go_to_menu') }}
                         </a>
@@ -76,6 +77,9 @@
                                         </h3>
                                         @if(!empty($item['option_label']))
                                             <p class="mt-1 text-xs text-orange-600">{{ $item['option_label'] }}</p>
+                                        @endif
+                                        @if(!empty($item['item_note']))
+                                            <p class="mt-1 text-xs text-amber-700">{{ __('customer.item_note_prefix') }} {{ $item['item_note'] }}</p>
                                         @endif
                                         <p class="mt-1 text-sm text-gray-500">
                                             {{ __('customer.unit_price') }} NT$ {{ number_format($item['price']) }}
@@ -111,7 +115,7 @@
                             </p>
                         </div>
 
-                        <form method="POST" action="{{ route('customer.cart.submit', $token) }}" class="space-y-5">
+                        <form method="POST" action="{{ route('customer.dinein.cart.checkout', ['store' => $store, 'table' => $table]) }}" class="space-y-5">
                             @csrf
 
                             <div>
@@ -158,15 +162,17 @@
                                 </label>
 
                                 @if(!empty($rememberedCustomerInfo))
-                                    <form method="POST" action="{{ route('customer.dinein.customer-info.clear', ['store' => $store, 'table' => $table]) }}" class="mt-2">
-                                        @csrf
+                                    <div class="mt-2">
                                         <button
                                             type="submit"
+                                            formaction="{{ route('customer.dinein.customer-info.clear', ['store' => $store, 'table' => $table]) }}"
+                                            formmethod="POST"
+                                            formnovalidate
                                             class="inline-flex items-center rounded-xl border border-orange-200 bg-white px-3 py-1.5 text-xs font-semibold text-orange-600 transition hover:bg-orange-50"
                                         >
                                             {{ __('customer.clear_remembered_info') }}
                                         </button>
-                                    </form>
+                                    </div>
                                 @endif
                             </div>
 

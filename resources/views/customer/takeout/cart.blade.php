@@ -67,6 +67,7 @@
                         <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="inline-flex items-center rounded-xl border border-brand-soft bg-brand-soft/20 px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-highlight/50">{{ $historyOrder->order_no }} ・ {{ $historyOrder->customer_status_label }}</a>
                     @endforeach
                 </div>
+                <a href="{{ route('customer.order.history', ['store' => $store]) }}" class="mt-3 inline-flex items-center rounded-xl border border-brand-soft bg-white px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30">{{ __('customer.view_my_order_history') }}</a>
             </div>
         @endif
 
@@ -91,6 +92,9 @@
                                         </h3>
                                         @if(!empty($item['option_label']))
                                             <p class="mt-1 text-xs text-brand-primary">{{ $item['option_label'] }}</p>
+                                        @endif
+                                        @if(!empty($item['item_note']))
+                                            <p class="mt-1 text-xs text-amber-700">{{ __('customer.item_note_prefix') }} {{ $item['item_note'] }}</p>
                                         @endif
                                         <div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-brand-primary/75">
                                             <span>{{ __('customer.unit_price') }} NT$ {{ number_format($item['price']) }}</span>
@@ -187,15 +191,17 @@
                                     </label>
 
                                     @if(!empty($rememberedCustomerInfo))
-                                        <form method="POST" action="{{ route('customer.takeout.customer-info.clear', ['store' => $store]) }}" class="mt-2">
-                                            @csrf
-                                            <button
-                                                type="submit"
-                                                class="inline-flex items-center rounded-xl border border-brand-soft bg-white px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30"
-                                            >
-                                                {{ __('customer.clear_remembered_info') }}
-                                            </button>
-                                        </form>
+                                            <div class="mt-2">
+                                                <button
+                                                    type="submit"
+                                                    formaction="{{ route('customer.takeout.customer-info.clear', ['store' => $store]) }}"
+                                                    formmethod="POST"
+                                                    formnovalidate
+                                                    class="inline-flex items-center rounded-xl border border-brand-soft bg-white px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30"
+                                                >
+                                                    {{ __('customer.clear_remembered_info') }}
+                                                </button>
+                                            </div>
                                     @endif
                                 </div>
 

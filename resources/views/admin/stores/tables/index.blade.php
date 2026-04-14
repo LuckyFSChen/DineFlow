@@ -8,10 +8,16 @@
                 <h1 class="text-3xl font-bold tracking-tight text-slate-900">{{ __('admin.tables_qr_title') }}</h1>
                 <p class="mt-2 text-slate-600">{{ __('admin.store_label') }}{{ $store->name }}（{{ $store->slug }}）</p>
             </div>
-            <a href="{{ route('admin.stores.index') }}"
-               class="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-                {{ __('admin.back_to_stores') }}
-            </a>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('admin.stores.index') }}"
+                   class="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+                    {{ __('admin.back_to_stores') }}
+                </a>
+                <a href="{{ route('admin.stores.kitchen', $store) }}"
+                   class="inline-flex items-center justify-center rounded-2xl border border-orange-300 bg-orange-50 px-5 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">
+                    🍳 {{ __('admin.kitchen') }}
+                </a>
+            </div>
         </div>
 
         @if(session('success'))

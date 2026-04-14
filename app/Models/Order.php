@@ -14,6 +14,7 @@ class Order extends Model
         'cart_token',
         'order_no',
         'status',
+        'payment_status',
         'customer_name',
         'customer_phone',
         'customer_email',
@@ -50,12 +51,17 @@ class Order extends Model
 
     public function getCustomerStatusLabelAttribute(): string
     {
-        return self::customerStatusLabel($this->status);
+        return self::customerStatusLabel($this->status, $this->payment_status);
     }
 
-    public static function customerStatusLabel(?string $status): string
+    public static function customerStatusLabel(?string $status, ?string $paymentStatus = null): string
     {
         $normalized = strtolower((string) $status);
+        $normalizedPayment = strtolower((string) $paymentStatus);
+
+        if (in_array($normalized, ['complete', 'completed', 'ready', 'ready_for_pickup'], true) && ($normalizedPayment === '' || $normalizedPayment === 'unpaid')) {
+            return '待收款';
+        }
 
         return match ($normalized) {
             'pending' => '已送出',

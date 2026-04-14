@@ -10,6 +10,7 @@
             </div>
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">{{ __('admin.products_back_to_stores') }}</a>
+                <a href="{{ route('admin.stores.kitchen', $store) }}" class="inline-flex items-center justify-center rounded-2xl border border-orange-300 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">🍳 {{ __('admin.kitchen') }}</a>
                 <button type="button" id="create-category-btn" class="inline-flex items-center justify-center rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">{{ __('admin.products_btn_add_category') }}</button>
                 <button type="button" id="create-product-btn" class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500">{{ __('admin.products_btn_add_product') }}</button>
             </div>
@@ -179,6 +180,14 @@
                         <button type="button" data-option-add-group class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500">{{ __('admin.products_options_add_group') }}</button>
                     </div>
 
+                    <div class="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+                        <p id="option-editor-summary" class="font-medium">0 groups / 0 choices</p>
+                        <div class="flex gap-2">
+                            <button type="button" data-option-expand-all class="rounded-md border border-slate-300 bg-white px-2.5 py-1 font-semibold text-slate-700 hover:bg-slate-100">Expand all</button>
+                            <button type="button" data-option-collapse-all class="rounded-md border border-slate-300 bg-white px-2.5 py-1 font-semibold text-slate-700 hover:bg-slate-100">Collapse all</button>
+                        </div>
+                    </div>
+
                     <p class="mb-2 text-xs text-slate-600">{{ __('admin.products_options_tree_edit_hint') }}</p>
                     <div id="option-groups-editor" class="space-y-3"></div>
                 </div>
@@ -194,6 +203,13 @@
                     <label class="inline-flex items-center gap-2 text-sm text-slate-700">
                         <input type="checkbox" name="is_sold_out" id="modal-is-sold-out" value="1" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
                         {{ __('admin.products_form_sold_out') }}
+                    </label>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                        <input type="checkbox" name="allow_item_note" id="modal-allow-item-note" value="1" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                        {{ __('admin.products_form_allow_item_note') }}
                     </label>
                 </div>
             </div>
@@ -345,8 +361,11 @@
     const modalSubmit = document.getElementById('product-modal-submit');
     const optionGroupsInput = document.getElementById('option-groups-json-input');
     const optionEditor = document.getElementById('option-groups-editor');
+    const optionEditorSummary = document.getElementById('option-editor-summary');
     const addGroupBtn = document.querySelector('[data-option-add-group]');
     const clearAllBtn = document.querySelector('[data-option-clear-all]');
+    const expandAllBtn = document.querySelector('[data-option-expand-all]');
+    const collapseAllBtn = document.querySelector('[data-option-collapse-all]');
     const templateButtons = document.querySelectorAll('[data-option-template]');
 
     const categoryModal = document.getElementById('category-modal');
@@ -418,6 +437,7 @@
         required: false,
         max_select: 1,
         choices: [],
+        collapsed: false,
     });
 
     const createChoice = () => ({
@@ -438,6 +458,7 @@
                     name: String(group.name || '').trim(),
                     type,
                     required: !!group.required,
+                    collapsed: !!group.collapsed,
                     max_select: type === 'multiple' ? Math.max(Number(group.max_select || 1), 1) : 1,
                     choices: choices
                         .filter((choice) => choice && typeof choice === 'object')
@@ -453,6 +474,15 @@
     const syncOptionGroups = () => {
         normalizeOptionGroups();
         optionGroupsInput.value = JSON.stringify(optionGroups);
+
+        if (optionEditorSummary) {
+            const totalChoices = optionGroups.reduce((sum, group) => {
+                const choices = Array.isArray(group.choices) ? group.choices.length : 0;
+                return sum + choices;
+            }, 0);
+
+            optionEditorSummary.textContent = `${optionGroups.length} groups / ${totalChoices} choices`;
+        }
     };
 
     const renderOptionEditor = () => {
@@ -467,12 +497,30 @@
             wrapper.className = 'rounded-2xl border border-slate-200 bg-white p-3';
             wrapper.dataset.groupIndex = String(groupIndex);
 
+            const groupName = (group.name || '').trim() || `${i18n.groupLabel} #${groupIndex + 1}`;
+            const choicesCount = Array.isArray(group.choices) ? group.choices.length : 0;
+            const typeLabel = group.type === 'multiple' ? i18n.multipleChoice : i18n.singleChoice;
+            const isCollapsed = !!group.collapsed;
+            const maxSelectText = group.type === 'multiple' ? ` / max ${Math.max(Number(group.max_select || 1), 1)}` : '';
+            const requiredBadge = group.required ? '<span class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">Required</span>' : '';
+
             wrapper.innerHTML = `
                 <div class="mb-3 flex items-center justify-between">
-                    <p class="text-xs font-semibold text-slate-700">${i18n.groupLabel} #${groupIndex + 1}</p>
-                    <button type="button" data-remove-group class="rounded-lg bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100">${i18n.removeGroup}</button>
+                    <div class="flex min-w-0 flex-1 items-center gap-2">
+                        <button type="button" data-toggle-group class="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100">${isCollapsed ? 'Expand' : 'Collapse'}</button>
+                        <p class="truncate text-xs font-semibold text-slate-800">${esc(groupName)}</p>
+                        <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">${esc(typeLabel)}${esc(maxSelectText)}</span>
+                        <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">${choicesCount} choices</span>
+                        ${requiredBadge}
+                    </div>
+                    <div class="ml-2 flex items-center gap-1">
+                        <button type="button" data-move-group-up class="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100">Up</button>
+                        <button type="button" data-move-group-down class="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100">Down</button>
+                        <button type="button" data-remove-group class="rounded-lg bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100">${i18n.removeGroup}</button>
+                    </div>
                 </div>
-                <div class="grid gap-2 md:grid-cols-2">
+                <div data-group-body class="${isCollapsed ? 'hidden ' : ''}space-y-3">
+                    <div class="grid gap-2 md:grid-cols-2">
                     <input type="text" value="${esc(group.name || '')}" data-group-field="name" placeholder="${esc(i18n.groupNamePlaceholder)}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <input type="text" value="${esc(group.id || '')}" data-group-field="id" placeholder="${esc(i18n.groupIdPlaceholder)}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <select data-group-field="type" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
@@ -491,6 +539,7 @@
                         <button type="button" data-add-choice class="rounded-md bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white hover:bg-slate-800">${i18n.addChoice}</button>
                     </div>
                     <div class="space-y-2" data-choices-list="1"></div>
+                </div>
                 </div>
             `;
 
@@ -758,6 +807,7 @@
         optionGroupsInput.value = '[]';
         document.getElementById('modal-is-active').checked = true;
         document.getElementById('modal-is-sold-out').checked = false;
+        document.getElementById('modal-allow-item-note').checked = false;
 
         if (categoryId) {
             modalCategory.value = String(categoryId);
@@ -777,6 +827,7 @@
         optionGroups = Array.isArray(product.option_groups) ? product.option_groups : parseOptionGroups(product.option_groups_json ?? '[]');
         document.getElementById('modal-is-active').checked = !!product.is_active;
         document.getElementById('modal-is-sold-out').checked = !!product.is_sold_out;
+        document.getElementById('modal-allow-item-note').checked = !!product.allow_item_note;
         renderOptionEditor();
     };
 
@@ -828,6 +879,10 @@
 
         if (!formData.get('is_sold_out')) {
             formData.set('is_sold_out', '0');
+        }
+
+        if (!formData.get('allow_item_note')) {
+            formData.set('allow_item_note', '0');
         }
 
         return formData;
@@ -1326,8 +1381,23 @@
             }
 
             optionGroups = JSON.parse(JSON.stringify(optionTemplates[key]));
+            optionGroups = optionGroups.map((group) => ({ ...group, collapsed: false }));
             renderOptionEditor();
         });
+    });
+
+    expandAllBtn?.addEventListener('click', () => {
+        optionGroups.forEach((group) => {
+            group.collapsed = false;
+        });
+        renderOptionEditor();
+    });
+
+    collapseAllBtn?.addEventListener('click', () => {
+        optionGroups.forEach((group) => {
+            group.collapsed = true;
+        });
+        renderOptionEditor();
     });
 
     optionEditor?.addEventListener('click', (event) => {
@@ -1344,6 +1414,28 @@
         if (event.target.closest('[data-remove-group]')) {
             optionGroups.splice(groupIndex, 1);
             renderOptionEditor();
+            return;
+        }
+
+        if (event.target.closest('[data-toggle-group]')) {
+            optionGroups[groupIndex].collapsed = !optionGroups[groupIndex].collapsed;
+            renderOptionEditor();
+            return;
+        }
+
+        if (event.target.closest('[data-move-group-up]')) {
+            if (groupIndex > 0) {
+                [optionGroups[groupIndex - 1], optionGroups[groupIndex]] = [optionGroups[groupIndex], optionGroups[groupIndex - 1]];
+                renderOptionEditor();
+            }
+            return;
+        }
+
+        if (event.target.closest('[data-move-group-down]')) {
+            if (groupIndex < optionGroups.length - 1) {
+                [optionGroups[groupIndex + 1], optionGroups[groupIndex]] = [optionGroups[groupIndex], optionGroups[groupIndex + 1]];
+                renderOptionEditor();
+            }
             return;
         }
 
@@ -1391,7 +1483,12 @@
                 optionGroups[groupIndex].max_select = 1;
             }
 
-            renderOptionEditor();
+            if (groupField === 'type') {
+                renderOptionEditor();
+                return;
+            }
+
+            syncOptionGroups();
             return;
         }
 

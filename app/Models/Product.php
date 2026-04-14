@@ -19,12 +19,14 @@ class Product extends Model
         'is_sold_out',
         'image',
         'option_groups',
+        'allow_item_note',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'is_sold_out' => 'boolean',
         'option_groups' => 'array',
+        'allow_item_note' => 'boolean',
     ];
 
     public function store() {

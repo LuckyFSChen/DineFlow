@@ -149,6 +149,14 @@
             <span class="text-sm font-semibold text-slate-700">{{ __('admin.products_form_sold_out') }}</span>
         </label>
     </div>
+
+    <div class="lg:col-span-2">
+        <label class="inline-flex items-center gap-3">
+            <input type="checkbox" name="allow_item_note" value="1" {{ old('allow_item_note', $product->allow_item_note ?? false) ? 'checked' : '' }}
+                   class="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+            <span class="text-sm font-semibold text-slate-700">{{ __('admin.products_form_allow_item_note') }}</span>
+        </label>
+    </div>
 </div>
 
 <div class="mt-8 flex gap-3">

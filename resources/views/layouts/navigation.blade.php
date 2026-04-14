@@ -23,9 +23,61 @@
                     @endif
 
                     @if(Auth::user()?->isAdmin() || Auth::user()?->hasActiveSubscription())
-                        <x-nav-link :href="route('admin.stores.index')" :active="request()->routeIs('admin.stores.*')">
+                        <x-nav-link :href="route('admin.stores.index')" :active="request()->routeIs('admin.stores.*') && !request()->routeIs('admin.stores.kitchen*')">
                             {{ __('nav.store_backend') }}
                         </x-nav-link>
+                    @endif
+
+                    @if(Auth::user()?->isAdmin() || Auth::user()?->hasActiveSubscription() || Auth::user()?->isChef())
+                        @php
+                            $navKitchenStore = null;
+
+                            if (Auth::user()?->isMerchant()) {
+                                $navKitchenStore = Auth::user()->stores()->orderBy('id')->first();
+                            } elseif (Auth::user()?->isChef()) {
+                                $navKitchenStore = Auth::user()->store;
+                            } else {
+                                $routeStore = request()->route('store');
+
+                                if ($routeStore instanceof \App\Models\Store) {
+                                    $navKitchenStore = $routeStore;
+                                } elseif (is_numeric($routeStore)) {
+                                    $navKitchenStore = \App\Models\Store::query()->find((int) $routeStore);
+                                } else {
+                                    $navKitchenStore = \App\Models\Store::query()->orderBy('id')->first();
+                                }
+                            }
+                        @endphp
+                        @if($navKitchenStore)
+                        <x-nav-link :href="route('admin.stores.kitchen', $navKitchenStore)" :active="request()->routeIs('admin.stores.kitchen*')">
+                            🍳 {{ __('nav.kitchen') }}
+                        </x-nav-link>
+                        @endif
+                    @endif
+
+                    @if(Auth::user()?->isAdmin() || Auth::user()?->hasActiveSubscription() || Auth::user()?->role === 'cashier')
+                        @php
+                            $navCashierStore = null;
+                            if (Auth::user()?->isMerchant()) {
+                                $navCashierStore = Auth::user()->stores()->orderBy('id')->first();
+                            } elseif (Auth::user()?->role === 'cashier') {
+                                $navCashierStore = Auth::user()->store;
+                            } else {
+                                $routeStore = request()->route('store');
+                                if ($routeStore instanceof \App\Models\Store) {
+                                    $navCashierStore = $routeStore;
+                                } elseif (is_numeric($routeStore)) {
+                                    $navCashierStore = \App\Models\Store::query()->find((int) $routeStore);
+                                } else {
+                                    $navCashierStore = \App\Models\Store::query()->orderBy('id')->first();
+                                }
+                            }
+                        @endphp
+                        @if($navCashierStore)
+                        <x-nav-link :href="route('admin.stores.cashier', $navCashierStore)" :active="request()->routeIs('admin.stores.cashier*')">
+                            💳 {{ __('nav.cashier') }}
+                        </x-nav-link>
+                        @endif
                     @endif
 
                     @if(Auth::user()?->isAdmin())
@@ -39,7 +91,7 @@
             <!-- Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ms-6 sm:gap-3">
                 {{-- Language Switcher --}}
-                @php $localeName = ['zh_TW' => 'ZH', 'en' => 'EN', 'vi' => 'VI'][app()->getLocale()] ?? 'EN'; @endphp
+                @php $localeName = ['zh_TW' => 'ZH', 'zh_CN' => 'CN', 'en' => 'EN', 'vi' => 'VI'][app()->getLocale()] ?? 'EN'; @endphp
                 <div x-data="{ langOpen: false }" class="relative">
                     <button @click="langOpen = !langOpen" class="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-50 focus:outline-none">
                         🌐 {{ $localeName }}
@@ -54,6 +106,7 @@
                          x-transition:leave-start="opacity-100 scale-100"
                          x-transition:leave-end="opacity-0 scale-95">
                         <a href="{{ route('locale.switch', 'zh_TW') }}" class="flex items-center gap-2 px-3 py-2 text-xs font-medium {{ app()->getLocale() === 'zh_TW' ? 'bg-slate-50 font-bold text-slate-900' : 'text-slate-700 hover:bg-slate-50' }}">🇹🇼 {{ __('nav.lang_zh_TW') }}</a>
+                        <a href="{{ route('locale.switch', 'zh_CN') }}" class="flex items-center gap-2 px-3 py-2 text-xs font-medium {{ app()->getLocale() === 'zh_CN' ? 'bg-slate-50 font-bold text-slate-900' : 'text-slate-700 hover:bg-slate-50' }}">🇨🇳 {{ __('nav.lang_zh_CN') }}</a>
                         <a href="{{ route('locale.switch', 'en') }}" class="flex items-center gap-2 px-3 py-2 text-xs font-medium {{ app()->getLocale() === 'en' ? 'bg-slate-50 font-bold text-slate-900' : 'text-slate-700 hover:bg-slate-50' }}">🇺🇸 {{ __('nav.lang_en') }}</a>
                         <a href="{{ route('locale.switch', 'vi') }}" class="flex items-center gap-2 px-3 py-2 text-xs font-medium {{ app()->getLocale() === 'vi' ? 'bg-slate-50 font-bold text-slate-900' : 'text-slate-700 hover:bg-slate-50' }}">🇻🇳 {{ __('nav.lang_vi') }}</a>
                     </div>
@@ -136,6 +189,29 @@
                 </x-responsive-nav-link>
             @endif
 
+            @if(Auth::user()?->isChef() && Auth::user()?->store)
+                <x-responsive-nav-link :href="route('admin.stores.kitchen', Auth::user()->store)" :active="request()->routeIs('admin.stores.kitchen*')">
+                    🍳 {{ __('nav.kitchen') }}
+                </x-responsive-nav-link>
+            @endif
+
+            @if(Auth::user()?->role === 'cashier' && Auth::user()?->store)
+                <x-responsive-nav-link :href="route('admin.stores.cashier', Auth::user()->store)" :active="request()->routeIs('admin.stores.cashier*')">
+                    💳 {{ __('nav.cashier') }}
+                </x-responsive-nav-link>
+            @elseif(Auth::user()?->isAdmin() || Auth::user()?->hasActiveSubscription())
+                @php
+                    $respCashierStore = Auth::user()?->isMerchant()
+                        ? Auth::user()->stores()->orderBy('id')->first()
+                        : \App\Models\Store::query()->orderBy('id')->first();
+                @endphp
+                @if($respCashierStore)
+                <x-responsive-nav-link :href="route('admin.stores.cashier', $respCashierStore)" :active="request()->routeIs('admin.stores.cashier*')">
+                    💳 {{ __('nav.cashier') }}
+                </x-responsive-nav-link>
+                @endif
+            @endif
+
             @if(Auth::user()?->isAdmin())
                 <x-responsive-nav-link :href="route('super-admin.subscriptions.index')" :active="request()->routeIs('super-admin.subscriptions.*')">
                     {{ __('nav.super_admin') }}
@@ -176,6 +252,7 @@
                     <p class="text-xs font-semibold text-gray-500 mb-2">{{ __('nav.language') }}</p>
                     <div class="flex gap-2">
                         <a href="{{ route('locale.switch', 'zh_TW') }}" class="rounded-lg border px-3 py-1.5 text-xs font-semibold {{ app()->getLocale() === 'zh_TW' ? 'border-indigo-400 bg-indigo-50 text-indigo-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">ZH</a>
+                        <a href="{{ route('locale.switch', 'zh_CN') }}" class="rounded-lg border px-3 py-1.5 text-xs font-semibold {{ app()->getLocale() === 'zh_CN' ? 'border-indigo-400 bg-indigo-50 text-indigo-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">CN</a>
                         <a href="{{ route('locale.switch', 'en') }}" class="rounded-lg border px-3 py-1.5 text-xs font-semibold {{ app()->getLocale() === 'en' ? 'border-indigo-400 bg-indigo-50 text-indigo-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">EN</a>
                         <a href="{{ route('locale.switch', 'vi') }}" class="rounded-lg border px-3 py-1.5 text-xs font-semibold {{ app()->getLocale() === 'vi' ? 'border-indigo-400 bg-indigo-50 text-indigo-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">VI</a>
                     </div>

@@ -4,6 +4,9 @@ use App\Http\Controllers\Admin\StoreManagementController as AdminStoreController
 use App\Http\Controllers\Admin\UserSubscriptionController;
 use App\Http\Controllers\Admin\ProductManagementController;
 use App\Http\Controllers\Admin\DiningTableManagementController;
+use App\Http\Controllers\Admin\KitchenController;
+use App\Http\Controllers\Admin\CashierController;
+use App\Http\Controllers\Admin\ChefManagementController;
 use App\Http\Controllers\Customer\DineInMenuController;
 use App\Http\Controllers\Customer\DineInOrderController;
 use App\Http\Controllers\Customer\TakeoutOrderingController;
@@ -13,6 +16,7 @@ use App\Http\Controllers\Merchant\FinancialReportController;
 use App\Http\Controllers\Merchant\SubscriptionController as MerchantSubscriptionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StoreController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -38,6 +42,68 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin', 'merchant.subscrip
     Route::patch('stores/{store}/takeout-qr', [DiningTableManagementController::class, 'updateTakeoutQr'])->name('stores.takeout-qr.update');
     Route::patch('stores/{store}/tables/{table}/status', [DiningTableManagementController::class, 'updateStatus'])->name('stores.tables.status');
     Route::post('stores/{store}/tables/{table}/regenerate-qr', [DiningTableManagementController::class, 'regenerateQr'])->name('stores.tables.regenerate-qr');
+
+    Route::get('stores/{store}/chefs', [ChefManagementController::class, 'index'])->name('stores.chefs.index');
+    Route::post('stores/{store}/chefs', [ChefManagementController::class, 'store'])->name('stores.chefs.store');
+    Route::delete('stores/{store}/chefs/{chef}', [ChefManagementController::class, 'destroy'])->name('stores.chefs.destroy');
+});
+
+Route::middleware(['auth', 'verified', 'role:merchant,admin,chef'])->prefix('admin')->name('admin.')->group(function () {
+    // Kitchen display
+    Route::get('stores/{store}/kitchen', [KitchenController::class, 'index'])
+        ->name('stores.kitchen')
+        ->missing(function () {
+            return redirect()->route('dashboard')->with('error', '店家不存在或已刪除。');
+        });
+
+    Route::get('stores/{store}/kitchen/orders', [KitchenController::class, 'orders'])
+        ->name('stores.kitchen.orders')
+        ->missing(function (Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['ok' => false, 'message' => 'Store not found'], 404);
+            }
+
+            return redirect()->route('dashboard')->with('error', '店家不存在或已刪除。');
+        });
+
+    Route::patch('stores/{store}/kitchen/orders/{order:id}/status', [KitchenController::class, 'updateStatus'])
+        ->name('stores.kitchen.orders.status')
+        ->missing(function (Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['ok' => false, 'message' => 'Store not found'], 404);
+            }
+
+            return redirect()->route('dashboard')->with('error', '店家不存在或已刪除。');
+        });
+});
+
+Route::middleware(['auth', 'verified', 'role:merchant,admin,cashier'])->prefix('admin')->name('admin.')->group(function () {
+    // Cashier display
+    Route::get('stores/{store}/cashier', [CashierController::class, 'index'])
+        ->name('stores.cashier')
+        ->missing(function () {
+            return redirect()->route('dashboard')->with('error', '店家不存在或已刪除。');
+        });
+
+    Route::get('stores/{store}/cashier/orders', [CashierController::class, 'orders'])
+        ->name('stores.cashier.orders')
+        ->missing(function (Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['ok' => false, 'message' => 'Store not found'], 404);
+            }
+
+            return redirect()->route('dashboard')->with('error', '店家不存在或已刪除。');
+        });
+
+    Route::patch('stores/{store}/cashier/orders/{order:id}/status', [CashierController::class, 'updateStatus'])
+        ->name('stores.cashier.orders.status')
+        ->missing(function (Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['ok' => false, 'message' => 'Store not found'], 404);
+            }
+
+            return redirect()->route('dashboard')->with('error', '店家不存在或已刪除。');
+        });
 });
 
 Route::middleware(['auth', 'verified', 'role:merchant'])->prefix('merchant')->name('merchant.')->group(function () {
@@ -99,6 +165,10 @@ Route::prefix('s/{store:slug}/takeout')
 
 Route::get('/s/{store:slug}/orders/{order}', [DineInOrderController::class, 'success'])
     ->name('customer.order.success');
+Route::get('/s/{store:slug}/orders', [DineInOrderController::class, 'history'])
+    ->name('customer.order.history');
+Route::get('/s/{store:slug}/orders/{order}/status', [DineInOrderController::class, 'orderStatus'])
+    ->name('customer.order.status');
 
 Route::get('/dashboard', function () {
     return view('dashboard');

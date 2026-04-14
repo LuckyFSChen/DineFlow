@@ -47,12 +47,17 @@
 
                     <div class="rounded-2xl bg-orange-50 px-4 py-4">
                         <p class="text-sm text-gray-500">{{ __('customer.table_no') }}</p>
-                        <p class="mt-1 font-semibold text-gray-900">{{ $isTakeout ? 'takeout' : ($order->table->table_no ?? '-') }}</p>
+                        <p class="mt-1 font-semibold text-gray-900">{{ $isTakeout ? __('customer.takeout_short') : ($order->table->table_no ?? '-') }}</p>
                     </div>
 
                     <div class="rounded-2xl bg-orange-50 px-4 py-4">
                         <p class="text-sm text-gray-500">{{ __('customer.order_status') }}</p>
-                        <p class="mt-1 font-semibold text-orange-600">{{ $order->customer_status_label }}</p>
+                        <p id="customer-order-status-label" class="mt-1 font-semibold text-orange-600">{{ $order->customer_status_label }}</p>
+                    </div>
+
+                    <div class="rounded-2xl bg-orange-50 px-4 py-4">
+                        <p class="text-sm text-gray-500">{{ __('customer.payment_status_unpaid') }}/{{ __('customer.payment_status_paid') }}</p>
+                        <p id="customer-order-payment-label" class="mt-1 font-semibold text-gray-900">{{ $order->payment_status === 'paid' ? __('customer.payment_status_paid') : __('customer.payment_status_unpaid') }}</p>
                     </div>
 
                     <div class="rounded-2xl bg-orange-50 px-4 py-4">
@@ -115,9 +120,131 @@
                        class="mt-4 inline-flex h-11 items-center justify-center rounded-2xl bg-orange-500 px-5 text-sm font-semibold text-white hover:bg-orange-600">
                         {{ __('customer.back_to_menu') }}
                     </a>
+
+                    <a href="{{ route('customer.order.history', ['store' => $store, 'customer_email' => $order->customer_email, 'customer_phone' => $order->customer_phone]) }}"
+                       class="mt-3 inline-flex h-11 items-center justify-center rounded-2xl border border-orange-200 bg-orange-50 px-5 text-sm font-semibold text-orange-700 hover:bg-orange-100">
+                        {{ __('customer.view_my_order_history') }}
+                    </a>
                 </div>
             </section>
         </main>
     </div>
+
+    <div id="order-status-toast" class="fixed bottom-6 right-6 z-50 hidden rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 shadow-lg">
+        {{ __('customer.order_status_changed_title') }}
+    </div>
+
+    <script>
+    (() => {
+        const statusLabel = document.getElementById('customer-order-status-label');
+        const paymentLabel = document.getElementById('customer-order-payment-label');
+        const toast = document.getElementById('order-status-toast');
+        const endpoint = @json(route('customer.order.status', ['store' => $store, 'order' => $order]));
+        const paidLabel = @json(__('customer.payment_status_paid'));
+        const unpaidLabel = @json(__('customer.payment_status_unpaid'));
+
+        if (!statusLabel || !paymentLabel || !endpoint) {
+            return;
+        }
+
+        let lastStatus = @json($order->status);
+        let lastPaymentStatus = @json($order->payment_status);
+        let audioContext = null;
+
+        const initAudio = () => {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) {
+                return;
+            }
+
+            audioContext = new AudioCtx();
+            const unlock = () => {
+                if (audioContext?.state === 'suspended') {
+                    audioContext.resume().catch(() => {});
+                }
+                window.removeEventListener('click', unlock);
+                window.removeEventListener('keydown', unlock);
+            };
+
+            window.addEventListener('click', unlock, { once: true });
+            window.addEventListener('keydown', unlock, { once: true });
+        };
+
+        const playSound = () => {
+            if (!audioContext) {
+                return;
+            }
+
+            const now = audioContext.currentTime;
+            const beep = (start, frequency, duration) => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                osc.type = 'triangle';
+                osc.frequency.value = frequency;
+                gain.gain.setValueAtTime(0.0001, start);
+                gain.gain.exponentialRampToValueAtTime(0.1, start + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                osc.start(start);
+                osc.stop(start + duration);
+            };
+
+            if (audioContext.state === 'suspended') {
+                audioContext.resume().catch(() => {});
+            }
+
+            beep(now, 740, 0.16);
+            beep(now + 0.2, 990, 0.2);
+        };
+
+        const showToast = () => {
+            if (!toast) {
+                return;
+            }
+
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        };
+
+        const poll = async () => {
+            try {
+                const res = await fetch(endpoint, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+
+                if (!res.ok) {
+                    return;
+                }
+
+                const data = await res.json();
+                if (!data.ok) {
+                    return;
+                }
+
+                const nextStatus = data.status || lastStatus;
+                const nextPaymentStatus = data.payment_status || lastPaymentStatus;
+                const changed = nextStatus !== lastStatus || nextPaymentStatus !== lastPaymentStatus;
+
+                statusLabel.textContent = data.customer_status_label || statusLabel.textContent;
+                paymentLabel.textContent = nextPaymentStatus === 'paid' ? paidLabel : unpaidLabel;
+
+                if (changed) {
+                    playSound();
+                    showToast();
+                    lastStatus = nextStatus;
+                    lastPaymentStatus = nextPaymentStatus;
+                }
+            } catch (_) {
+            }
+        };
+
+        initAudio();
+        setInterval(poll, 10000);
+    })();
+    </script>
 </body>
 </html>

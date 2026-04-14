@@ -147,13 +147,14 @@
                                                         @csrf
                                                         <input type="hidden" name="product_id" value="{{ $product->id }}">
                                                         <input type="hidden" name="option_payload" value="" data-option-payload>
+                                                        <input type="hidden" name="item_note" value="" data-item-note>
                                                         <div class="inline-flex h-12 items-center rounded-2xl border border-brand-soft bg-brand-soft/20 p-1 shadow-sm">
                                                             <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold text-brand-primary transition hover:bg-white" data-qty-decrement>-</button>
                                                             <input type="hidden" name="qty" value="1" data-qty-input>
                                                             <span class="flex min-w-[2.8rem] items-center justify-center text-sm font-semibold text-brand-dark" data-qty-display>1</span>
                                                             <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold text-brand-primary transition hover:bg-white" data-qty-increment>+</button>
                                                         </div>
-                                                        <button type="submit" class="inline-flex h-12 items-center justify-center rounded-2xl bg-brand-primary px-5 text-sm font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:-translate-y-0.5 hover:bg-brand-accent hover:text-brand-dark" data-add-to-cart-button data-option-groups='@json($product->option_groups ?? [])' data-product-name="{{ $product->name }}">{{ __('customer.add_to_cart') }}</button>
+                                                        <button type="submit" class="inline-flex h-12 items-center justify-center rounded-2xl bg-brand-primary px-5 text-sm font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:-translate-y-0.5 hover:bg-brand-accent hover:text-brand-dark" data-add-to-cart-button data-option-groups='@json($product->option_groups ?? [])' data-allow-item-note="{{ $product->allow_item_note ? '1' : '0' }}" data-product-name="{{ $product->name }}">{{ __('customer.add_to_cart') }}</button>
                                                     </form>
                                                 @endif
                                             </div>
@@ -221,6 +222,8 @@
             requiredError: @json(__('customer.option_required_error', ['group' => '__group__'])),
             maxSelectError: @json(__('customer.option_max_select_error', ['group' => '__group__', 'max' => '__max__'])),
             unnamedProduct: @json(__('customer.product_default_name')),
+            itemNoteLabel: @json(__('customer.item_note_label')),
+            itemNotePlaceholder: @json(__('customer.item_note_placeholder')),
         };
 
         let activeForm = null;
@@ -234,7 +237,7 @@
             activeGroups = [];
         };
 
-        const openModal = (form, productName, groups) => {
+        const openModal = (form, productName, groups, allowItemNote, currentNote) => {
             activeForm = form;
             activeGroups = groups;
             modalTitle.textContent = i18n.optionsTitleWithProduct.replace('__product__', productName);
@@ -303,6 +306,27 @@
                 modalBody.appendChild(wrapper);
             });
 
+            if (allowItemNote) {
+                const noteWrapper = document.createElement('div');
+                noteWrapper.className = 'rounded-2xl border border-slate-200 p-4';
+
+                const noteTitle = document.createElement('div');
+                noteTitle.className = 'mb-2 text-sm font-semibold text-slate-800';
+                noteTitle.textContent = i18n.itemNoteLabel;
+
+                const noteInput = document.createElement('textarea');
+                noteInput.rows = 3;
+                noteInput.maxLength = 255;
+                noteInput.value = String(currentNote || '');
+                noteInput.placeholder = i18n.itemNotePlaceholder;
+                noteInput.className = 'w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft';
+                noteInput.setAttribute('data-item-note-input', '1');
+
+                noteWrapper.appendChild(noteTitle);
+                noteWrapper.appendChild(noteInput);
+                modalBody.appendChild(noteWrapper);
+            }
+
             modal?.classList.remove('hidden');
             modal?.classList.add('flex');
         };
@@ -355,6 +379,12 @@
                 payloadInput.value = JSON.stringify(payload);
             }
 
+            const noteInput = modalBody.querySelector('[data-item-note-input]');
+            const itemNoteInput = activeForm.querySelector('[data-item-note]');
+            if (itemNoteInput) {
+                itemNoteInput.value = noteInput ? String(noteInput.value || '').trim() : '';
+            }
+
             const confirmedForm = activeForm;
             confirmedForm.dataset.confirmed = '1';
             closeModal();
@@ -386,6 +416,8 @@
                 }
 
                 const groupsRaw = submitButton.dataset.optionGroups || '[]';
+                const allowItemNote = submitButton.dataset.allowItemNote === '1';
+                const itemNoteInput = form.querySelector('[data-item-note]');
                 let groups = [];
                 try {
                     groups = JSON.parse(groupsRaw);
@@ -393,13 +425,17 @@
                     groups = [];
                 }
 
-                if (Array.isArray(groups) && groups.length > 0 && form.dataset.confirmed !== '1') {
+                if ((Array.isArray(groups) && groups.length > 0 || allowItemNote) && form.dataset.confirmed !== '1') {
                     event.preventDefault();
-                    openModal(form, submitButton.dataset.productName || i18n.unnamedProduct, groups);
+                    openModal(form, submitButton.dataset.productName || i18n.unnamedProduct, groups, allowItemNote, itemNoteInput?.value || '');
                     return;
                 }
 
                 form.dataset.confirmed = '';
+
+                if (!allowItemNote && itemNoteInput) {
+                    itemNoteInput.value = '';
+                }
 
                 event.preventDefault();
                 form.dataset.animating = 'true';

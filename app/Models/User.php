@@ -25,6 +25,7 @@ class User extends Authenticatable
         'role',
         'subscription_ends_at',
         'subscription_plan_id',
+        'store_id',
     ];
 
     /**
@@ -66,6 +67,16 @@ class User extends Authenticatable
         return $this->role === 'customer';
     }
 
+    public function isChef(): bool
+    {
+        return $this->role === 'chef';
+    }
+
+    public function isCashier(): bool
+    {
+        return $this->role === 'cashier';
+    }
+
     public function hasActiveSubscription(): bool
     {
         if ($this->isAdmin()) {
@@ -85,6 +96,11 @@ class User extends Authenticatable
     public function stores()
     {
         return $this->hasMany(Store::class);
+    }
+
+    public function store()
+    {
+        return $this->belongsTo(Store::class, 'store_id');
     }
 
     public function maxAllowedStores(): ?int

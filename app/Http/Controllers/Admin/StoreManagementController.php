@@ -196,6 +196,7 @@ class StoreManagementController extends Controller
             'address' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'regex:/^(09\d{2}-\d{3}-\d{3}|09\d{8})$/'],
             'banner_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'checkout_timing' => ['nullable', 'in:prepay,postpay'],
             'opening_time' => ['nullable', 'date_format:H:i', 'required_with:closing_time'],
             'closing_time' => ['nullable', 'date_format:H:i', 'required_with:opening_time'],
         ], [
@@ -205,6 +206,7 @@ class StoreManagementController extends Controller
         $data['phone'] = $this->normalizeTaiwanMobilePhone($data['phone'] ?? null);
         $data['slug'] = $data['slug'] ?: (Str::slug($data['name']) ?: 'store');
         $data['is_active'] = $request->boolean('is_active');
+        $data['checkout_timing'] = $data['checkout_timing'] ?? 'postpay';
 
         return $data;
     }
@@ -277,6 +279,7 @@ class StoreManagementController extends Controller
             'description' => $store->description,
             'address' => $store->address,
             'phone' => $store->phone,
+            'checkout_timing' => $store->checkout_timing ?? 'postpay',
             'is_active' => (bool) $store->is_active,
             'opening_time' => $store->opening_time,
             'closing_time' => $store->closing_time,

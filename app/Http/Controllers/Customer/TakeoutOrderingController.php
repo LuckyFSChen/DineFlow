@@ -80,6 +80,7 @@ class TakeoutOrderingController extends Controller
             'product_id' => ['required', 'integer', 'exists:products,id'],
             'qty' => ['required', 'integer', 'min:1'],
             'option_payload' => ['nullable', 'string'],
+            'item_note' => ['nullable', 'string', 'max:255'],
         ]);
 
         $product = Product::where('id', $validated['product_id'])
@@ -92,8 +93,9 @@ class TakeoutOrderingController extends Controller
         $cart = session()->get($cartKey, []);
 
         $optionResult = $this->resolveSelectedOptions($product, $validated['option_payload'] ?? null);
+        $itemNote = $this->sanitizeItemNote($validated['item_note'] ?? null, (bool) $product->allow_item_note);
         $unitPrice = (int) $product->price + (int) $optionResult['extra_price'];
-        $lineKey = $this->cartLineKey($product->id, $optionResult['selected']);
+        $lineKey = $this->cartLineKey($product->id, $optionResult['selected'], $itemNote);
 
         if (isset($cart[$lineKey])) {
             $cart[$lineKey]['qty'] += $validated['qty'];
@@ -107,6 +109,7 @@ class TakeoutOrderingController extends Controller
                 'price' => $unitPrice,
                 'option_items' => $optionResult['selected'],
                 'option_label' => $optionResult['label'],
+                'item_note' => $itemNote,
                 'qty' => $validated['qty'],
                 'subtotal' => 0,
             ];
@@ -120,7 +123,7 @@ class TakeoutOrderingController extends Controller
         session()->put($cartKey, $cart);
 
         return redirect()
-            ->route('customer.takeout.cart.show', ['store' => $store])
+            ->route('customer.takeout.menu', ['store' => $store])
             ->with('success', '商品已加入購物車。');
     }
 
@@ -188,6 +191,7 @@ class TakeoutOrderingController extends Controller
                 'cart_token' => $cartToken,
                 'order_no' => $this->generateOrderNo($store),
                 'status' => 'pending',
+                'payment_status' => 'unpaid',
                 'customer_name' => $validated['customer_name'] ?? null,
                 'customer_email' => $validated['customer_email'] ?? null,
                 'customer_phone' => $validated['customer_phone'] ?? null,
@@ -203,7 +207,7 @@ class TakeoutOrderingController extends Controller
                     'price' => $item['price'],
                     'qty' => $item['qty'],
                     'subtotal' => $item['subtotal'],
-                    'note' => $item['option_label'] ?? null,
+                    'note' => $this->composeOrderItemNote($item['option_label'] ?? null, $item['item_note'] ?? null),
                 ]);
             }
 
@@ -246,11 +250,48 @@ class TakeoutOrderingController extends Controller
         abort_unless($store->takeout_qr_enabled, 404);
     }
 
-    private function cartLineKey(int $productId, array $selectedOptions): string
+    private function cartLineKey(int $productId, array $selectedOptions, ?string $itemNote): string
     {
-        $json = json_encode($selectedOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $json = json_encode([
+            'options' => $selectedOptions,
+            'item_note' => $itemNote,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         return $productId . '_' . md5($json ?: '[]');
+    }
+
+    private function sanitizeItemNote(?string $note, bool $allowItemNote): ?string
+    {
+        if (! $allowItemNote) {
+            return null;
+        }
+
+        if ($note === null) {
+            return null;
+        }
+
+        $trimmed = trim($note);
+
+        return $trimmed === '' ? null : $trimmed;
+    }
+
+    private function composeOrderItemNote(?string $optionLabel, ?string $itemNote): ?string
+    {
+        $parts = [];
+
+        if ($optionLabel !== null && trim($optionLabel) !== '') {
+            $parts[] = trim($optionLabel);
+        }
+
+        if ($itemNote !== null && trim($itemNote) !== '') {
+            $parts[] = '備註：' . trim($itemNote);
+        }
+
+        if (count($parts) === 0) {
+            return null;
+        }
+
+        return implode(' | ', $parts);
     }
 
     private function resolveSelectedOptions(Product $product, ?string $optionPayload): array

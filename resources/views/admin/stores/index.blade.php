@@ -128,6 +128,16 @@
                                             {{ __('admin.tables_qr') }}
                                         </a>
 
+                                        <a href="{{ route('admin.stores.kitchen', $store) }}"
+                                           class="inline-flex items-center rounded-xl border border-orange-300 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">
+                                            🍳 {{ __('admin.kitchen') }}
+                                        </a>
+
+                                        <a href="{{ route('admin.stores.chefs.index', $store) }}"
+                                           class="inline-flex items-center rounded-xl border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100">
+                                            👨‍🍳 廚師帳號
+                                        </a>
+
                                                      <button
                                                          type="button"
                                                          data-edit-store="{{ $store->slug }}"
@@ -211,6 +221,14 @@
                 <div>
                     <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.closing_time') }}</label>
                     <input type="time" name="closing_time" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.checkout_timing') }}</label>
+                    <select name="checkout_timing" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        <option value="postpay">{{ __('admin.checkout_postpay') }}</option>
+                        <option value="prepay">{{ __('admin.checkout_prepay') }}</option>
+                    </select>
                 </div>
 
                 <div class="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
@@ -370,6 +388,7 @@
         modalMethod.value = 'POST';
         clearBannerPreview();
         modalForm.elements['is_active'].checked = true;
+        modalForm.elements['checkout_timing'].value = 'postpay';
 
         if (!store) {
             return;
@@ -382,6 +401,7 @@
         modalForm.elements['description'].value = store.description || '';
         modalForm.elements['opening_time'].value = store.opening_time || '';
         modalForm.elements['closing_time'].value = store.closing_time || '';
+        modalForm.elements['checkout_timing'].value = store.checkout_timing || 'postpay';
         modalForm.elements['is_active'].checked = !!store.is_active;
 
         if (store.banner_image_url) {
