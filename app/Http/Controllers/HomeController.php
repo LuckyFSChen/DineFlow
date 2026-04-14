@@ -9,17 +9,19 @@ class HomeController extends Controller
 {
     public function index(Request $request)
     {
-        $keyword = trim((string) $request->query('keyword', ''));
+        $keyword = trim((string) $request->get('keyword', ''));
 
-        $stores = Store::query()
-            ->when($keyword !== '', function ($query) use ($keyword) {
-                $query->where(function ($q) use ($keyword) {
-                    $q->where('name', 'like', "%{$keyword}%")
-                        ->orWhere('description', 'like', "%{$keyword}%")
-                        ->orWhere('address', 'like', "%{$keyword}%");
-                });
-            })
-            ->where('is_active', true)
+        $query = Store::query()->where('is_active', 1);
+
+        if ($keyword !== '') {
+            $query->where(function ($q) use ($keyword) {
+                $q->where('name', 'like', "%{$keyword}%")
+                ->orWhere('address', 'like', "%{$keyword}%")
+                ->orWhere('description', 'like', "%{$keyword}%");
+            });
+        }
+
+        $stores = $query
             ->orderBy('name')
             ->paginate(12)
             ->withQueryString();

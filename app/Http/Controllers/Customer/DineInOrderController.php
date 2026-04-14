@@ -10,7 +10,7 @@ use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class OrderController extends Controller
+class DineInOrderController extends Controller
 {
     protected function getDineInCartSessionKey(Store $store, DiningTable $table): string
     {
@@ -20,6 +20,12 @@ class OrderController extends Controller
     public function addToCart(Request $request, Store $store, DiningTable $table)
     {
         abort_unless($table->store_id === $store->id, 404);
+
+        if (! $store->isOrderingAvailable()) {
+            return redirect()
+                ->route('customer.dinein.menu', ['store' => $store, 'table' => $table])
+                ->with('error', $store->orderingClosedMessage());
+        }
 
         $validated = $request->validate([
             'product_id' => ['required', 'integer', 'exists:products,id'],
@@ -55,11 +61,8 @@ class OrderController extends Controller
         session()->put($cartKey, $cart);
 
         return redirect()
-            ->route('customer.dinein.menu', [
-                'store' => $store,
-                'table' => $table,
-            ])
-            ->with('success', '已加入購物車');
+            ->route('customer.dinein.menu', ['store' => $store, 'table' => $table])
+            ->with('success', '商品已加入購物車。');
     }
 
     public function cart(Store $store, DiningTable $table)
@@ -69,13 +72,20 @@ class OrderController extends Controller
         $cartKey = $this->getDineInCartSessionKey($store, $table);
         $cart = session()->get($cartKey, []);
         $total = collect($cart)->sum('subtotal');
+        $orderingAvailable = $store->isOrderingAvailable();
 
-        return view('customer.cart', compact('store', 'table', 'cart', 'total'));
+        return view('customer.dine-in.cart-v2', compact('store', 'table', 'cart', 'total', 'orderingAvailable'));
     }
 
     public function submit(Request $request, Store $store, DiningTable $table)
     {
         abort_unless($table->store_id === $store->id, 404);
+
+        if (! $store->isOrderingAvailable()) {
+            return redirect()
+                ->route('customer.dinein.cart.show', ['store' => $store, 'table' => $table])
+                ->with('error', $store->orderingClosedMessage());
+        }
 
         $validated = $request->validate([
             'customer_name' => ['nullable', 'string', 'max:255'],
@@ -89,11 +99,8 @@ class OrderController extends Controller
 
         if (empty($cart)) {
             return redirect()
-                ->route('customer.dinein.cart.show', [
-                    'store' => $store,
-                    'table' => $table,
-                ])
-                ->with('error', '購物車為空');
+                ->route('customer.dinein.cart.show', ['store' => $store, 'table' => $table])
+                ->with('error', '購物車是空的。');
         }
 
         $total = collect($cart)->sum('subtotal');
@@ -140,15 +147,14 @@ class OrderController extends Controller
     {
         abort_unless($order->store_id === $store->id, 404);
 
-        $order->load('items', 'store', 'diningTable');
+        $order->load('items', 'store', 'table');
 
-        return view('customer.success', compact('order', 'store'));
+        return view('customer.success-v2', compact('order', 'store'));
     }
 
     private function generateOrderNo(Store $store): string
     {
         $date = now()->format('md');
-
         $count = Order::where('store_id', $store->id)
             ->whereDate('created_at', today())
             ->lockForUpdate()

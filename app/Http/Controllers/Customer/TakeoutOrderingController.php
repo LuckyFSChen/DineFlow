@@ -3,23 +3,65 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
-use App\Models\DiningTable;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
-class OrderController extends Controller
+class TakeoutOrderingController extends Controller
 {
-    protected function getDineInCartSessionKey(Store $store, DiningTable $table): string
+    protected function getTakeoutCartToken(Store $store): string
     {
-        return 'dinein_cart.' . $store->id . '.' . $table->id;
+        $sessionKey = 'takeout_cart_token_' . $store->id;
+
+        if (! session()->has($sessionKey)) {
+            session([$sessionKey => (string) Str::uuid()]);
+        }
+
+        return session($sessionKey);
     }
 
-    public function addToCart(Request $request, Store $store, DiningTable $table)
+    protected function getTakeoutCartSessionKey(Store $store): string
     {
-        abort_unless($table->store_id === $store->id, 404);
+        return 'takeout_cart.' . $store->id . '.' . $this->getTakeoutCartToken($store);
+    }
+
+    public function menu(Store $store)
+    {
+        $categories = $store->categories()
+            ->where('is_active', true)
+            ->with(['products' => function ($query) use ($store) {
+                $query->where('store_id', $store->id)
+                    ->where('is_active', true)
+                    ->where('is_sold_out', false)
+                    ->orderBy('sort');
+            }])
+            ->orderBy('sort')
+            ->get();
+
+        $orderingAvailable = $store->isOrderingAvailable();
+        $cart = session()->get($this->getTakeoutCartSessionKey($store), []);
+        $cartCount = collect($cart)->sum('qty');
+        $cartTotal = collect($cart)->sum('subtotal');
+
+        return view('customer.takeout.menu-mobile-v3', compact(
+            'store',
+            'categories',
+            'orderingAvailable',
+            'cartCount',
+            'cartTotal'
+        ));
+    }
+
+    public function addToCart(Request $request, Store $store)
+    {
+        if (! $store->isOrderingAvailable()) {
+            return redirect()
+                ->route('customer.takeout.menu', ['store' => $store])
+                ->with('error', $store->orderingClosedMessage());
+        }
 
         $validated = $request->validate([
             'product_id' => ['required', 'integer', 'exists:products,id'],
@@ -32,7 +74,7 @@ class OrderController extends Controller
             ->where('is_sold_out', false)
             ->firstOrFail();
 
-        $cartKey = $this->getDineInCartSessionKey($store, $table);
+        $cartKey = $this->getTakeoutCartSessionKey($store);
         $cart = session()->get($cartKey, []);
 
         if (isset($cart[$product->id])) {
@@ -55,27 +97,27 @@ class OrderController extends Controller
         session()->put($cartKey, $cart);
 
         return redirect()
-            ->route('customer.dinein.menu', [
-                'store' => $store,
-                'table' => $table,
-            ])
-            ->with('success', '已加入購物車');
+            ->route('customer.takeout.cart.show', ['store' => $store])
+            ->with('success', '商品已加入購物車。');
     }
 
-    public function cart(Store $store, DiningTable $table)
+    public function cart(Store $store)
     {
-        abort_unless($table->store_id === $store->id, 404);
-
-        $cartKey = $this->getDineInCartSessionKey($store, $table);
+        $cartKey = $this->getTakeoutCartSessionKey($store);
         $cart = session()->get($cartKey, []);
         $total = collect($cart)->sum('subtotal');
+        $orderingAvailable = $store->isOrderingAvailable();
 
-        return view('customer.cart', compact('store', 'table', 'cart', 'total'));
+        return view('customer.takeout.cart-v2', compact('store', 'cart', 'total', 'orderingAvailable'));
     }
 
-    public function submit(Request $request, Store $store, DiningTable $table)
+    public function checkout(Request $request, Store $store)
     {
-        abort_unless($table->store_id === $store->id, 404);
+        if (! $store->isOrderingAvailable()) {
+            return redirect()
+                ->route('customer.takeout.cart.show', ['store' => $store])
+                ->with('error', $store->orderingClosedMessage());
+        }
 
         $validated = $request->validate([
             'customer_name' => ['nullable', 'string', 'max:255'],
@@ -84,26 +126,24 @@ class OrderController extends Controller
             'note' => ['nullable', 'string'],
         ]);
 
-        $cartKey = $this->getDineInCartSessionKey($store, $table);
+        $cartKey = $this->getTakeoutCartSessionKey($store);
         $cart = session()->get($cartKey, []);
 
         if (empty($cart)) {
             return redirect()
-                ->route('customer.dinein.cart.show', [
-                    'store' => $store,
-                    'table' => $table,
-                ])
-                ->with('error', '購物車為空');
+                ->route('customer.takeout.cart.show', ['store' => $store])
+                ->with('error', '購物車是空的。');
         }
 
         $total = collect($cart)->sum('subtotal');
+        $cartToken = $this->getTakeoutCartToken($store);
 
-        $order = DB::transaction(function () use ($store, $table, $validated, $cart, $total) {
+        $order = DB::transaction(function () use ($store, $validated, $cart, $total, $cartToken) {
             $order = Order::create([
                 'store_id' => $store->id,
-                'dining_table_id' => $table->id,
-                'order_type' => 'dine_in',
-                'cart_token' => null,
+                'dining_table_id' => null,
+                'order_type' => 'takeout',
+                'cart_token' => $cartToken,
                 'order_no' => $this->generateOrderNo($store),
                 'status' => 'pending',
                 'customer_name' => $validated['customer_name'] ?? null,
@@ -129,6 +169,7 @@ class OrderController extends Controller
         });
 
         session()->forget($cartKey);
+        session()->forget('takeout_cart_token_' . $store->id);
 
         return redirect()->route('customer.order.success', [
             'store' => $store->slug,
@@ -136,22 +177,11 @@ class OrderController extends Controller
         ]);
     }
 
-    public function success(Store $store, Order $order)
-    {
-        abort_unless($order->store_id === $store->id, 404);
-
-        $order->load('items', 'store', 'diningTable');
-
-        return view('customer.success', compact('order', 'store'));
-    }
-
     private function generateOrderNo(Store $store): string
     {
         $date = now()->format('md');
-
         $count = Order::where('store_id', $store->id)
             ->whereDate('created_at', today())
-            ->lockForUpdate()
             ->count() + 1;
 
         return $date . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);

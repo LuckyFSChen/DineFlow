@@ -10,6 +10,8 @@ class Order extends Model
     protected $fillable = [
         'store_id',
         'dining_table_id',
+        'order_type',
+        'cart_token',
         'order_no',
         'status',
         'customer_name',

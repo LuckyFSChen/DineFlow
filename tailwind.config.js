@@ -11,6 +11,15 @@ export default {
 
     theme: {
         extend: {
+            colors: {
+                 brand: {
+                    dark: '#5A1E0E',
+                    primary: '#ec9057',
+                    accent: '#F6AE2D',
+                    highlight: '#FFD670',
+                    soft: '#FFF3E0',
+                }
+            },
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },

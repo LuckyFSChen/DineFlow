@@ -15,13 +15,19 @@ class DiningTableSeeder extends Seeder
      */
     public function run(): void
     {
-        $store = Store::first();
+        $stores = Store::whereIn('slug', ['test-store', 'lucky-cafe'])->get();
 
-        if (!$store) {
+        if ($stores->isEmpty()) {
             return;
         }
 
-        $tables = ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"];
+        foreach ($stores as $store) {
+            $this->createDiningTablesForStore($store);
+        }
+    }
+
+    private function createDiningTablesForStore($store){
+        $tables = ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3", "外帶"];
 
         foreach ($tables as $tableNo) {
             DiningTable::create([

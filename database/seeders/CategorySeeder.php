@@ -14,14 +14,19 @@ class CategorySeeder extends Seeder
      */
     public function run(): void
     {
-        $store = Store::firstOrCreate([
-            'name' => 'DineFlow Demo Store'
-        ]);
+        $stores = Store::whereIn('slug', ['test-store', 'lucky-cafe'])->get();
 
-        if (!$store) {
+        if ($stores->isEmpty()) {
             return;
         }
+        
+        foreach ($stores as $store) {
+            $this->createCategoriesForStore($store);
+        }
+    }
 
+    private function createCategoriesForStore($store)
+    {
         $categories = [
             ['name' => '主餐', 'sort' => 1],
             ['name' => '小菜', 'sort' => 2],

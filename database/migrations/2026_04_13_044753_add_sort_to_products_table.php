@@ -11,9 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('stores', function (Blueprint $table) {
-            $table->string('description')->nullable()->after('name');
-            $table->string('slug')->unique()->after('description');
+        Schema::table('products', function (Blueprint $table) {
+            $table->integer('sort')
+                ->default(0)
+                ->after('price');
         });
     }
 
@@ -22,9 +23,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('stores', function (Blueprint $table) {
-            $table->dropColumn('slug');
-            $table->dropColumn('description');
+        Schema::table('products', function (Blueprint $table) {
+            $table->dropColumn('sort');
         });
     }
 };

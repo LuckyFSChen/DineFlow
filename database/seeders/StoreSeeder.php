@@ -2,24 +2,52 @@
 
 namespace Database\Seeders;
 
-use App\Models\Store;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\Store;
+use Illuminate\Support\Str;
 
 class StoreSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        Store::create([
-            'name' => 'Test Store',
-            'phone' => '1234567890',
-            'address' => '123 Test Street',
-            'contact_email' => 'test@example.com',
-            'notification_email' => 'notify@example.com',
-            'is_active' => true,
-        ]);
+        $stores = [
+            [
+                'name' => 'Test Store',
+                'description' => '測試餐廳',
+                'address' => '台北市信義區',
+                'phone' => '0912345678',
+                'is_active' => 1,
+            ],
+            [
+                'name' => 'Lucky Cafe',
+                'description' => '咖啡廳',
+                'address' => '台北市中山區',
+                'phone' => '0922333444',
+                'is_active' => 1,
+            ],
+        ];
+
+        foreach ($stores as $data) {
+            // 先產 base slug
+            $baseSlug = Str::slug($data['name']);
+
+            // 中文 fallback（很重要）
+            if (empty($baseSlug)) {
+                $baseSlug = 'store';
+            }
+
+            // 避免重複
+            $slug = $baseSlug;
+            $count = 1;
+
+            while (Store::where('slug', $slug)->exists()) {
+                $slug = $baseSlug . '-' . $count;
+                $count++;
+            }
+
+            $data['slug'] = $slug;
+
+            Store::create($data);
+        }
     }
 }
