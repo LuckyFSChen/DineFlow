@@ -369,7 +369,7 @@
             <div class="mt-2 text-base">{{ __('home.footer_subtitle') }}</div>
             <div class="mt-2 text-sm text-white/85">
                 如有需求可洽談：
-                <a href="tel:0979-300-504" class="font-semibold text-brand-highlight hover:text-brand-soft">0979300504</a>
+                <a href="tel:0979300504" class="font-semibold text-brand-highlight hover:text-brand-soft">0979-300-504</a>
                 /
                 <a href="mailto:bigtw178@gmail.com" class="font-semibold text-brand-highlight hover:text-brand-soft">bigtw178@gmail.com</a>
             </div>
