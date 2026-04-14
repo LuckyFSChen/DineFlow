@@ -367,6 +367,12 @@
         <div class="mx-auto max-w-7xl px-6 py-8 text-center text-white/80 lg:px-8">
             <div class="text-base font-semibold text-white">DineFlow</div>
             <div class="mt-2 text-base">{{ __('home.footer_subtitle') }}</div>
+            <div class="mt-2 text-sm text-white/85">
+                如有需求可洽談：
+                <a href="tel:0979300504" class="font-semibold text-brand-highlight hover:text-brand-soft">0979300504</a>
+                /
+                <a href="mailto:bigtw178@gmail.com" class="font-semibold text-brand-highlight hover:text-brand-soft">bigtw178@gmail.com</a>
+            </div>
         </div>
     </footer>
 </div>

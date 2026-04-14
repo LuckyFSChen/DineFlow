@@ -11,7 +11,9 @@ class HomeController extends Controller
     {
         $keyword = trim((string) $request->get('keyword', ''));
 
-        $query = Store::query()->where('is_active', 1);
+        $query = Store::query()
+            ->where('is_active', 1)
+            ->where('takeout_qr_enabled', 1);
 
         if ($keyword !== '') {
             $query->where(function ($q) use ($keyword) {

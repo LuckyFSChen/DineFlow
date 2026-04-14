@@ -1,5 +1,29 @@
 @extends('layouts.app')
 
+@section('title', __('home.full_intro_title') . ' | ' . config('app.name', 'DineFlow'))
+@section('meta_description', __('home.full_intro_desc'))
+@section('canonical', route('product.intro'))
+@section('meta_robots', 'index,follow,max-image-preview:large')
+@section('meta_image', asset('images/product-intro/productManagement.png'))
+
+@push('structured-data')
+<script type="application/ld+json">
+{!! json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'WebPage',
+    'name' => __('home.full_intro_title'),
+    'description' => __('home.full_intro_desc'),
+    'url' => route('product.intro'),
+    'inLanguage' => str_replace('_', '-', app()->getLocale()),
+    'isPartOf' => [
+        '@type' => 'WebSite',
+        'name' => config('app.name', 'DineFlow'),
+        'url' => url('/'),
+    ],
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
+</script>
+@endpush
+
 @section('content')
 <div class="min-h-screen bg-brand-soft/20 text-brand-dark">
     <section class="relative isolate overflow-hidden border-b border-brand-soft/70 bg-brand-dark text-white">

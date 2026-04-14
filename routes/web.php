@@ -140,6 +140,42 @@ Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('local
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::view('/product-intro', 'product-intro')->name('product.intro');
 Route::get('/stores/{store:slug}', [StoreController::class, 'enter'])->name('stores.enter');
+Route::get('/sitemap.xml', function () {
+    $urls = collect([
+        [
+            'loc' => route('home'),
+            'priority' => '1.0',
+            'changefreq' => 'daily',
+            'lastmod' => now()->toAtomString(),
+        ],
+        [
+            'loc' => route('product.intro'),
+            'priority' => '0.8',
+            'changefreq' => 'weekly',
+            'lastmod' => now()->toAtomString(),
+        ],
+    ]);
+
+    $takeoutUrls = \App\Models\Store::query()
+        ->where('is_active', true)
+        ->where('takeout_qr_enabled', true)
+        ->select(['slug', 'updated_at'])
+        ->get()
+        ->map(function ($store) {
+            return [
+                'loc' => route('customer.takeout.menu', ['store' => $store->slug]),
+                'priority' => '0.7',
+                'changefreq' => 'daily',
+                'lastmod' => optional($store->updated_at)->toAtomString() ?? now()->toAtomString(),
+            ];
+        });
+
+    $xml = view('sitemap', [
+        'urls' => $urls->concat($takeoutUrls),
+    ]);
+
+    return response($xml, 200)->header('Content-Type', 'application/xml');
+})->name('sitemap');
 
 /*
 |--------------------------------------------------------------------------
