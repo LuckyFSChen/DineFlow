@@ -138,6 +138,54 @@ php artisan optimize:clear
 php artisan route:list
 ```
 
+## Production：重設 storage 連結
+
+如果 production 上傳圖檔偶發讀不到，常見原因是 `public/storage` 仍指到舊版 release 路徑。可在每次部署後執行以下指令重建連結。
+
+```bash
+cd /var/www/dineflow/current
+
+# 1) 清掉舊連結（不存在就忽略）
+php artisan storage:unlink || true
+rm -rf public/storage
+
+# 2) 重新建立到目前 release 的連結
+php artisan storage:link --relative
+
+# 3) 清快取
+php artisan optimize:clear
+```
+
+檢查是否正確：
+
+```bash
+ls -l public | grep storage
+```
+
+應看到 `public/storage -> ../storage/app/public` 這種相對連結。
+
+另外請確認：
+
+- Web root 指向 `.../current/public`（不要指到專案根目錄）。
+- `storage` 與 `bootstrap/cache` 對 web user 可寫入。
+
+## Production：重建訂閱方案（只跑方案 seed）
+
+如果只要在 production 更新訂閱方案資料，請不要執行整包 `db:seed`，避免覆蓋 demo 資料。建議只跑方案 seeder：
+
+```bash
+cd /var/www/dineflow/current
+php artisan migrate --force
+php artisan db:seed --class=Database\\Seeders\\SubscriptionPlanSeeder --force
+php artisan optimize:clear
+```
+
+或使用專案內建 composer script：
+
+```bash
+composer run prod:refresh-subscription-plans
+```
+
 ## 主要路由摘要
 
 - 商家後台
