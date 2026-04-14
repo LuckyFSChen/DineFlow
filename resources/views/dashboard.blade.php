@@ -15,20 +15,6 @@
                         </div>
                     @endif
 
-                    <div>
-                        <p class="text-sm text-slate-500">目前帳號角色</p>
-                        <p class="mt-1 text-lg font-semibold text-slate-900">{{ strtoupper(auth()->user()->role) }}</p>
-                    </div>
-
-                    @if(auth()->user()->isMerchant())
-                        <div>
-                            <p class="text-sm text-slate-500">商家訂閱到期日</p>
-                            <p class="mt-1 text-lg font-semibold text-slate-900">
-                                {{ auth()->user()->subscription_ends_at ? auth()->user()->subscription_ends_at->format('Y-m-d H:i') : '尚未啟用' }}
-                            </p>
-                        </div>
-                    @endif
-
                     @if(auth()->user()->isAdmin() || auth()->user()->hasActiveSubscription())
                         <a href="{{ route('admin.stores.index') }}"
                            class="inline-flex items-center rounded-lg bg-brand-primary px-4 py-2 font-semibold text-white hover:bg-brand-accent hover:text-brand-dark">

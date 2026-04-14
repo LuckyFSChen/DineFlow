@@ -6,12 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\SubscriptionPayment;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
-use App\Support\EcpayEcpgService;
 use App\Support\EcpayService;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -52,10 +50,8 @@ class SubscriptionController extends Controller
         $hashKey = (string) config('services.ecpay.hash_key');
         $hashIv = (string) config('services.ecpay.hash_iv');
         $checkoutAction = (string) config('services.ecpay.checkout_action');
-        $sdkUrl = (string) config('services.ecpay.sdk_url');
-        $sdkServerType = (string) config('services.ecpay.sdk_server_type', 'Stage');
 
-        if ($merchantId === '' || $hashKey === '' || $hashIv === '') {
+        if ($merchantId === '' || $hashKey === '' || $hashIv === '' || $checkoutAction === '') {
             return redirect()
                 ->route('merchant.subscription.index')
                 ->with('error', '綠界金流尚未設定，請先設定 ECPAY 參數。');
@@ -98,41 +94,6 @@ class SubscriptionController extends Controller
             ]
         );
 
-        $tokenPayload = [
-            'MerchantTradeNo' => $merchantTradeNo,
-            'MerchantTradeDate' => $payload['MerchantTradeDate'],
-            'TotalAmount' => (int) $plan->price_twd,
-            'TradeDesc' => $payload['TradeDesc'],
-            'ItemName' => $itemName,
-            'ReturnURL' => route('ecpay.subscription.notify'),
-            'OrderResultURL' => route('ecpay.subscription.result'),
-            'ChoosePayment' => 'ALL',
-            'NeedExtraPaidInfo' => 'Y',
-            'CustomField1' => (string) $user->id,
-            'CustomField2' => (string) $plan->id,
-        ];
-
-        $ecpg = new EcpayEcpgService();
-        $tokenResult = $ecpg->createToken($tokenPayload);
-
-        if ($tokenResult['ok']) {
-            $token = (string) (Arr::get($tokenResult, 'data.Token') ?: Arr::get($tokenResult, 'data.PayToken') ?: '');
-            if ($token !== '' && $sdkUrl !== '') {
-                return view('merchant.subscription.ecpay-sdk', [
-                    'token' => $token,
-                    'merchantTradeNo' => $merchantTradeNo,
-                    'sdkUrl' => $sdkUrl,
-                    'sdkServerType' => $sdkServerType,
-                ]);
-            }
-        }
-
-        if ($checkoutAction === '') {
-            return redirect()
-                ->route('merchant.subscription.index')
-                ->with('error', '無法取得站內付 Token，且未設定導頁式付款備援。');
-        }
-
         return view('merchant.subscription.ecpay-redirect', [
             'checkoutAction' => $checkoutAction,
             'payload' => $payload,
@@ -163,80 +124,6 @@ class SubscriptionController extends Controller
         $this->applyPaymentResult($normalized['payload']);
 
         return response('1|OK', 200);
-    }
-
-    public function createTrade(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'merchant_trade_no' => ['required', 'string', 'max:20'],
-            'pay_token' => ['required', 'string', 'max:128'],
-            'payment_type' => ['nullable', 'string', 'max:30'],
-        ]);
-
-        $user = $request->user();
-        if (! $user || ! $user->isMerchant()) {
-            return response()->json([
-                'ok' => false,
-                'message' => '僅商家帳號可建立付款交易。',
-            ], 403);
-        }
-
-        $payment = SubscriptionPayment::query()
-            ->where('ecpay_merchant_trade_no', (string) $validated['merchant_trade_no'])
-            ->where('user_id', $user->id)
-            ->first();
-
-        if (! $payment) {
-            return response()->json([
-                'ok' => false,
-                'message' => '找不到對應的訂閱付款資料。',
-            ], 404);
-        }
-
-        $tradePayload = [
-            'MerchantTradeNo' => (string) $validated['merchant_trade_no'],
-            'PayToken' => (string) $validated['pay_token'],
-            'PaymentType' => (string) ($validated['payment_type'] ?? ''),
-            'TotalAmount' => (int) $payment->amount_twd,
-        ];
-
-        $ecpg = new EcpayEcpgService();
-        $tradeResult = $ecpg->createTrade($tradePayload);
-        $data = (array) ($tradeResult['data'] ?? []);
-        $rtnCode = (string) Arr::get($data, 'RtnCode', '');
-
-        if ($rtnCode === '10300028') {
-            return response()->json([
-                'ok' => true,
-                'message' => '此訂單已建立或處理中，請勿重複送出，請稍候查看訂閱狀態。',
-                'redirect_url' => route('merchant.subscription.success'),
-                'result' => $data,
-            ]);
-        }
-
-        $this->applyPaymentResult($data);
-
-        $redirectUrl = (string) (
-            Arr::get($data, 'AuthURL')
-            ?: Arr::get($data, 'PaymentURL')
-            ?: Arr::get($data, 'ThreeDSURL')
-            ?: ''
-        );
-
-        if (! $tradeResult['ok']) {
-            return response()->json([
-                'ok' => false,
-                'message' => (string) ($tradeResult['message'] ?: '建立交易失敗，請稍後再試。'),
-                'raw' => $tradeResult['raw'] ?? [],
-            ], 422);
-        }
-
-        return response()->json([
-            'ok' => true,
-            'message' => (string) ($tradeResult['message'] ?: '交易已建立，請依指示完成付款。'),
-            'redirect_url' => $redirectUrl,
-            'result' => $data,
-        ]);
     }
 
     private function generateMerchantTradeNo(): string

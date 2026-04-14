@@ -11,7 +11,7 @@
             <div id="sdk-info" class="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">初始化付款元件中，請稍候...</div>
 
             <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
-                <div id="ecpay-payment-container" class="min-h-[320px]"></div>
+                <div id="ECPayPayment" class="min-h-[320px]"></div>
             </div>
 
             <div class="mt-6 flex flex-wrap gap-3">

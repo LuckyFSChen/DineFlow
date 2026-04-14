@@ -12,13 +12,13 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        帳號中心
-                    </x-nav-link>
-
                     @if(Auth::user()?->isMerchant())
                         <x-nav-link :href="route('merchant.subscription.index')" :active="request()->routeIs('merchant.subscription.*')">
                             訂閱方案
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('merchant.reports.financial')" :active="request()->routeIs('merchant.reports.*')">
+                            財務報表
                         </x-nav-link>
                     @endif
 
@@ -38,12 +38,23 @@
 
             <!-- Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ms-6">
-                <x-dropdown align="right" width="48">
-                    <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            {{-- <div>{{ Auth::user()->name }}</div> --}}
+                <div class="me-4 text-right">
+                    <p class="text-xs text-slate-500">{{ strtoupper((string) Auth::user()?->role) }}</p>
+                    @if(Auth::user()?->isMerchant())
+                        <p class="text-xs font-medium text-slate-700">
+                            到期 {{ Auth::user()?->subscription_ends_at ? Auth::user()?->subscription_ends_at->format('Y-m-d H:i') : '尚未啟用' }}
+                        </p>
+                    @endif
+                </div>
 
-                            <div class="ms-1">
+                <x-dropdown align="right" width="56" contentClasses="p-2 bg-white">
+                    <x-slot name="trigger">
+                        <button class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none">
+                            <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">
+                                {{ strtoupper(substr((string) (Auth::user()?->name ?? 'U'), 0, 1)) }}
+                            </span>
+                            <span class="max-w-[110px] truncate">{{ Auth::user()?->name ?? '帳號' }}</span>
+                            <div>
                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                                 </svg>
@@ -52,19 +63,29 @@
                     </x-slot>
 
                     <x-slot name="content">
+                        <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                            <p class="text-xs font-semibold tracking-wide text-slate-500">目前登入</p>
+                            <p class="mt-0.5 truncate text-sm font-semibold text-slate-800">{{ Auth::user()?->name }}</p>
+                            @if(Auth::user()?->email)
+                                <p class="truncate text-xs text-slate-500">{{ Auth::user()?->email }}</p>
+                            @endif
+                        </div>
+
+                        <div class="my-2 border-t border-slate-200"></div>
+
                         <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Profile') }}
+                            個人設定
                         </x-dropdown-link>
 
                         <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
 
-                            <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();">
-                                {{ __('Log Out') }}
-                            </x-dropdown-link>
+                            <a href="{{ route('logout') }}"
+                               onclick="event.preventDefault(); this.closest('form').submit();"
+                               class="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-rose-600 transition hover:bg-rose-50 focus:outline-none">
+                                登出系統
+                            </a>
                         </form>
                     </x-slot>
                 </x-dropdown>
@@ -85,13 +106,13 @@
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                帳號中心
-            </x-responsive-nav-link>
-
             @if(Auth::user()?->isMerchant())
                 <x-responsive-nav-link :href="route('merchant.subscription.index')" :active="request()->routeIs('merchant.subscription.*')">
                     訂閱方案
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('merchant.reports.financial')" :active="request()->routeIs('merchant.reports.*')">
+                    財務報表
                 </x-responsive-nav-link>
             @endif
 
@@ -111,6 +132,12 @@
         <!-- Responsive Settings Options -->
         <div class="pt-4 pb-1 border-t border-gray-200">
             <div class="px-4">
+                <div class="font-medium text-sm text-gray-700">{{ strtoupper((string) Auth::user()?->role) }}</div>
+                @if(Auth::user()?->isMerchant())
+                    <div class="font-medium text-xs text-gray-500 mt-1">
+                        到期 {{ Auth::user()?->subscription_ends_at ? Auth::user()?->subscription_ends_at->format('Y-m-d H:i') : '尚未啟用' }}
+                    </div>
+                @endif
                 {{-- <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div> --}}
                 {{-- <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div> --}}
             </div>

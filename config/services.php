@@ -42,8 +42,9 @@ return [
         'checkout_action' => env('ECPAY_CHECKOUT_ACTION', 'https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5'),
         'sdk_url' => env('ECPAY_SDK_URL', 'https://ecpg-stage.ecpay.com.tw/Scripts/sdk-1.0.0.js'),
         'sdk_server_type' => env('ECPAY_SDK_SERVER_TYPE', 'Stage'),
-        'ecpg_create_token_url' => env('ECPAY_ECPG_CREATE_TOKEN_URL', 'https://ecpg-stage.ecpay.com.tw/Merchant/CreateToken'),
-        'ecpg_create_trade_url' => env('ECPAY_ECPG_CREATE_TRADE_URL', 'https://ecpg-stage.ecpay.com.tw/Merchant/CreateTrade'),
+        'ecpg_create_token_url' => env('ECPAY_ECPG_CREATE_TOKEN_URL', 'https://ecpg-stage.ecpay.com.tw/Merchant/GetTokenbyTrade'),
+        'ecpg_create_payment_url' => env('ECPAY_ECPG_CREATE_PAYMENT_URL', env('ECPAY_ECPG_CREATE_TRADE_URL', 'https://ecpg-stage.ecpay.com.tw/Merchant/CreatePayment')),
+        'allow_redirect_fallback' => (bool) env('ECPAY_ALLOW_REDIRECT_FALLBACK', false),
     ],
 
 ];

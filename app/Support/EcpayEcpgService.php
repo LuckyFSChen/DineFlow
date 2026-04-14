@@ -14,7 +14,7 @@ class EcpayEcpgService
 
     public function createTrade(array $tradeData): array
     {
-        return $this->callApi((string) config('services.ecpay.ecpg_create_trade_url'), $tradeData);
+        return $this->callApi((string) config('services.ecpay.ecpg_create_payment_url'), $tradeData);
     }
 
     private function callApi(string $url, array $data): array
@@ -65,9 +65,21 @@ class EcpayEcpgService
         }
 
         $decodedData = [];
-        $encryptedData = (string) Arr::get($json, 'Data', '');
-        if ($encryptedData !== '') {
-            $decodedData = $this->decryptData($encryptedData, $hashKey, $hashIv);
+        $rawData = Arr::get($json, 'Data');
+
+        if (is_array($rawData)) {
+            // Some endpoints return Data as plain JSON object when already decoded.
+            $decodedData = $rawData;
+        } elseif (is_string($rawData) && $rawData !== '') {
+            $decodedData = $this->decryptData($rawData, $hashKey, $hashIv);
+
+            // Fallback: if Data is actually plain JSON string instead of encrypted blob.
+            if ($decodedData === []) {
+                $jsonData = json_decode($rawData, true);
+                if (is_array($jsonData)) {
+                    $decodedData = $jsonData;
+                }
+            }
         }
 
         $transCode = (int) Arr::get($json, 'TransCode', 0);
@@ -84,12 +96,14 @@ class EcpayEcpgService
 
     private function encryptData(array $data, string $hashKey, string $hashIv): string
     {
-        $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $json = json_encode($data);
         if ($json === false) {
             return '';
         }
 
-        $encrypted = openssl_encrypt($json, 'aes-128-cbc', $hashKey, OPENSSL_RAW_DATA, $hashIv);
+        $urlEncoded = urlencode($json);
+
+        $encrypted = openssl_encrypt($urlEncoded, 'aes-128-cbc', $hashKey, OPENSSL_RAW_DATA, $hashIv);
         if ($encrypted === false) {
             return '';
         }
@@ -109,7 +123,8 @@ class EcpayEcpgService
             return [];
         }
 
-        $decoded = json_decode($decrypted, true);
+        $urlDecoded = urldecode($decrypted);
+        $decoded = json_decode($urlDecoded, true);
         return is_array($decoded) ? $decoded : [];
     }
 }

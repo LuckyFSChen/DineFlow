@@ -7,6 +7,7 @@ use App\Http\Controllers\Customer\DineInMenuController;
 use App\Http\Controllers\Customer\DineInOrderController;
 use App\Http\Controllers\Customer\TakeoutOrderingController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Merchant\FinancialReportController;
 use App\Http\Controllers\Merchant\SubscriptionController as MerchantSubscriptionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StoreController;
@@ -34,8 +35,8 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin', 'merchant.subscrip
 Route::middleware(['auth', 'verified', 'role:merchant'])->prefix('merchant')->name('merchant.')->group(function () {
     Route::get('/subscription', [MerchantSubscriptionController::class, 'index'])->name('subscription.index');
     Route::post('/subscription', [MerchantSubscriptionController::class, 'subscribe'])->name('subscription.subscribe');
-    Route::post('/subscription/trade', [MerchantSubscriptionController::class, 'createTrade'])->name('subscription.trade');
     Route::get('/subscription/success', [MerchantSubscriptionController::class, 'success'])->name('subscription.success');
+    Route::get('/reports/financial', [FinancialReportController::class, 'index'])->name('reports.financial');
 });
 
 Route::post('/ecpay/subscription/notify', [MerchantSubscriptionController::class, 'notify'])->name('ecpay.subscription.notify');
