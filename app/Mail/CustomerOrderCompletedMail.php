@@ -10,7 +10,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class CustomerOrderCreatedMail extends Mailable
+class CustomerOrderCompletedMail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -23,14 +23,14 @@ class CustomerOrderCreatedMail extends Mailable
         $storeName = $this->order->store?->name ?? config('app.name');
 
         return new Envelope(
-            subject: sprintf('[%s] 訂單已送出 #%s', $storeName, $this->order->order_no),
+            subject: sprintf('[%s] 訂單已完成 #%s', $storeName, $this->order->order_no),
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.orders.customer-created',
+            markdown: 'emails.orders.customer-completed',
             with: ['order' => $this->order],
         );
     }

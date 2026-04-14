@@ -2,8 +2,13 @@
 
 namespace App\Models;
 
+use App\Mail\CustomerOrderCompletedMail;
+use App\Mail\CustomerOrderCreatedMail;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Throwable;
 
 class Order extends Model
 {
@@ -47,6 +52,62 @@ class Order extends Model
                 $order->uuid = (string) Str::uuid();
             }
         });
+
+        static::created(function (self $order) {
+            if (blank($order->customer_email)) {
+                return;
+            }
+
+            DB::afterCommit(function () use ($order): void {
+                $freshOrder = self::query()->with(['store', 'table', 'items'])->find($order->id);
+
+                if (! $freshOrder || blank($freshOrder->customer_email)) {
+                    return;
+                }
+
+                try {
+                    Mail::to($freshOrder->customer_email)->send(new CustomerOrderCreatedMail($freshOrder));
+                } catch (Throwable $e) {
+                    report($e);
+                }
+            });
+        });
+
+        static::updated(function (self $order) {
+            if (! $order->wasChanged('status')) {
+                return;
+            }
+
+            $currentStatus = (string) $order->status;
+            $previousStatus = (string) $order->getOriginal('status');
+
+            if (! self::isCompletedStatus($currentStatus) || self::isCompletedStatus($previousStatus)) {
+                return;
+            }
+
+            if (blank($order->customer_email)) {
+                return;
+            }
+
+            DB::afterCommit(function () use ($order): void {
+                $freshOrder = self::query()->with(['store', 'table', 'items'])->find($order->id);
+
+                if (! $freshOrder || blank($freshOrder->customer_email)) {
+                    return;
+                }
+
+                try {
+                    Mail::to($freshOrder->customer_email)->send(new CustomerOrderCompletedMail($freshOrder));
+                } catch (Throwable $e) {
+                    report($e);
+                }
+            });
+        });
+    }
+
+    private static function isCompletedStatus(?string $status): bool
+    {
+        return in_array(strtolower((string) $status), ['complete', 'completed', 'ready', 'ready_for_pickup'], true);
     }
 
     public function getCustomerStatusLabelAttribute(): string

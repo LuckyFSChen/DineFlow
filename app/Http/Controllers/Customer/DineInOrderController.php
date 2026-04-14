@@ -274,13 +274,19 @@ class DineInOrderController extends Controller
 
     private function generateOrderNo(Store $store): string
     {
-        $date = now()->format('md');
-        $count = Order::where('store_id', $store->id)
-            ->whereDate('created_at', today())
-            ->lockForUpdate()
-            ->count() + 1;
+        $storeToken = str_pad((string) $store->id, 2, '0', STR_PAD_LEFT);
 
-        return $date . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
+        for ($attempt = 0; $attempt < 8; $attempt++) {
+            $candidate = now()->format('mdHisv') . '-' . $storeToken . random_int(10, 99);
+
+            if (! Order::where('order_no', $candidate)->exists()) {
+                return $candidate;
+            }
+
+            usleep(10000);
+        }
+
+        return now()->format('mdHisv') . '-' . $storeToken . random_int(100, 999);
     }
 
     private function cartLineKey(int $productId, array $selectedOptions, ?string $itemNote): string

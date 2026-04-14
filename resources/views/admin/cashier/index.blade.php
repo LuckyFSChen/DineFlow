@@ -43,6 +43,15 @@ $ordersData = $orders->map(fn($o) => cashierFormatOrder($o))->values()->all();
         </div>
 
         <div class="flex items-center gap-3">
+            {{-- Board switch --}}
+            <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
+                <span class="px-3 py-1.5 bg-indigo-600 text-white">💳 結帳看板</span>
+                <a href="{{ route('admin.stores.kitchen', $store) }}"
+                   class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
+                    🍳 後廚看板
+                </a>
+            </div>
+
             {{-- Status filter --}}
             <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
                 <button @click="filter = 'all'" :class="filter === 'all' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">全部</button>
@@ -61,12 +70,6 @@ $ordersData = $orders->map(fn($o) => cashierFormatOrder($o))->values()->all();
 
             {{-- Count badge --}}
             <span class="rounded-full bg-indigo-600 px-3 py-0.5 text-xs font-bold" x-text="filteredOrders.length + ' 單'"></span>
-
-            {{-- Link to Kitchen board --}}
-            <a href="{{ route('admin.stores.kitchen', $store) }}"
-               class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700">
-                🍳 後廚看板
-            </a>
         </div>
     </div>
 

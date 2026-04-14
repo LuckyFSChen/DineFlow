@@ -1,13 +1,13 @@
 <x-mail::message>
-# 您的訂單已送出
+# 您的訂單已完成
 
 您好{{ filled($order->customer_name) ? '，' . $order->customer_name : '' }}：
 
-我們已收到您在 **{{ $order->store?->name ?? config('app.name') }}** 的訂單。
+您在 **{{ $order->store?->name ?? config('app.name') }}** 的訂單已完成，歡迎前往取餐。
 
 - 訂單編號：{{ $order->order_no }}
 - 訂單類型：{{ $order->order_type === 'takeout' ? '外帶' : '內用' }}
-- 訂單狀態：{{ $order->customer_status_label }}
+- 目前狀態：{{ $order->customer_status_label }}
 - 訂單金額：NT$ {{ number_format((int) $order->total) }}
 
 <x-mail::button :url="route('customer.order.success', ['store' => $order->store->slug, 'order' => $order->uuid])">

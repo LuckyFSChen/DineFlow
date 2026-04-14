@@ -43,11 +43,14 @@ $ordersData = $orders->map(fn($o) => kitchenFormatOrder($o))->values()->all();
         </div>
 
         <div class="flex items-center gap-3">
-            {{-- Link to Cashier board --}}
-            <a href="{{ route('admin.stores.cashier', $store) }}"
-               class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700">
-                💳 結帳看板
-            </a>
+            {{-- Board switch --}}
+            <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
+                <a href="{{ route('admin.stores.cashier', $store) }}"
+                   class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
+                    💳 結帳看板
+                </a>
+                <span class="px-3 py-1.5 bg-indigo-600 text-white">🍳 後廚看板</span>
+            </div>
 
             {{-- Live indicator --}}
             <div class="flex items-center gap-1.5 rounded-full border border-emerald-700 bg-emerald-900/50 px-3 py-1 text-xs text-emerald-400">
