@@ -1,59 +1,172 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# DineFlow
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+DineFlow 是一個餐廳點餐與商家管理系統，支援內用與外帶點餐、商家訂閱制、Stripe 金流、店家/商品後台管理。
 
-## About Laravel
+目前專案以 Laravel 12 + Blade + Tailwind 為主，後台重點頁面已採用 Popup + AJAX 操作。
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 核心功能
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 1) 角色與權限
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- `admin` / `merchant` / `customer` 三種角色。
+- 商家後台路由受 `auth + verified + role + merchant.subscription` 保護。
+- `merchant` 只能管理自己的店家與商品；`admin` 可管理所有店家。
 
-## Learning Laravel
+### 2) 訂閱與方案
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- 訂閱方案表：天數、價格、店家上限。
+- 商家可在方案頁訂閱，走 Stripe Checkout（subscription mode）。
+- Stripe Webhook 會同步訂閱狀態、到期日與付款紀錄。
+- 付款稽核資料寫入 `subscription_payments`。
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 3) 商家後台
 
-## Laravel Sponsors
+- 店家管理：
+	- 店家列表搜尋、狀態顯示、橫幅顯示。
+	- 新增/編輯使用 Popup + AJAX。
+	- 圖片支援拖曳上傳與預覽。
+- 商品管理中心：
+	- 依分類群組顯示商品。
+	- 新增/編輯使用 Popup + AJAX。
+	- 選配使用樹狀 UI（群組/選項）編輯，系統送出 JSON。
+	- 商品排序支援拖曳（目前為拖曳放開才套用排序）。
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 4) 顧客點餐
 
-### Premium Partners
+- 內用：`/s/{store:slug}/t/{table:qr_token}/menu`
+- 外帶：`/s/{store:slug}/takeout/menu`
+- 支援商品選配、購物車、結帳、成功頁、訂單狀態追蹤。
+- 客戶資料可勾選記住，並可清除已記住資料。
+- 客戶電話會正規化為 `09xx-xxx-xxx`。
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## 技術棧
 
-## Contributing
+- PHP 8.2+
+- Laravel 12
+- Blade + Tailwind CSS + Alpine.js + Vite
+- Stripe (`stripe/stripe-php`)
+- QR Code (`simplesoftwareio/simple-qrcode`)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## 環境需求
 
-## Code of Conduct
+- PHP 8.2+
+- Composer
+- Node.js 18+
+- npm
+- 資料庫：
+	- 預設可用 SQLite（`.env.example`）
+	- 或自行改為 MySQL
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## 快速啟動
 
-## Security Vulnerabilities
+1. 安裝 PHP 依賴
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+composer install
+```
 
-## License
+2. 建立環境檔與金鑰
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+3. 建立資料表與測試資料
+
+```bash
+php artisan migrate:fresh --seed
+```
+
+4. 建立 storage 連結（橫幅圖片需要）
+
+```bash
+php artisan storage:link
+```
+
+5. 安裝前端依賴並啟動
+
+```bash
+npm install
+composer run dev
+```
+
+若只要建置前端靜態資源：
+
+```bash
+npm run build
+```
+
+## 測試帳號（Seeder）
+
+執行 `php artisan migrate:fresh --seed` 後可使用：
+
+- Admin
+	- Email: `admin@dineflow.local`
+	- Password: `password`
+- Merchant
+	- Email: `merchant@dineflow.local`
+	- Password: `password`
+- Customer
+	- Email: `customer@dineflow.local`
+	- Password: `password`
+
+## Stripe 設定
+
+請在 `.env` 設定：
+
+```env
+STRIPE_KEY=
+STRIPE_SECRET=
+STRIPE_WEBHOOK_SECRET=
+```
+
+Webhook 路由：
+
+- `POST /stripe/webhook`
+
+## 常用指令
+
+```bash
+# 執行測試
+php artisan test
+
+# 清除快取
+php artisan optimize:clear
+
+# 查看路由
+php artisan route:list
+```
+
+## 主要路由摘要
+
+- 商家後台
+	- `admin/stores`（店家管理）
+	- `admin/stores/{store}/products`（商品管理）
+	- `admin/stores/{store}/products/reorder`（商品排序 API）
+- 商家訂閱
+	- `merchant/subscription`
+- 顧客點餐
+	- 內用：`s/{store:slug}/t/{table:qr_token}/menu`
+	- 外帶：`s/{store:slug}/takeout/menu`
+
+## 專案結構（重點）
+
+- `app/Http/Controllers/Admin`：店家/商品後台控制器
+- `app/Http/Controllers/Customer`：點餐與購物車流程
+- `app/Http/Controllers/Merchant`：訂閱流程
+- `app/Http/Controllers/StripeWebhookController.php`：Stripe 事件處理
+- `resources/views/admin`：後台頁面
+- `resources/views/customer`：前台點餐頁面
+- `database/migrations`：資料表與欄位演進
+- `database/seeders`：測試資料與 demo 帳號
+
+## 注意事項
+
+- `Store` 路由綁定鍵為 `slug`，不要用數字 id 組後台編輯路由。
+- 商家若無有效訂閱或超出店家額度，後台建立店家會被限制。
+- 商品管理目前分類資料由既有分類表提供，分類進階管理可再擴充。
+
+## 授權
+
+此專案基於 Laravel 生態建置，原始框架授權為 MIT。

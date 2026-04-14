@@ -544,18 +544,31 @@
         });
     };
 
-    const getDropReference = (container, draggingCard, clientX, clientY, dragDirection) => {
+    const getDropReference = (container, draggingCard, clientX, clientY, hoverState) => {
         const pointed = document.elementFromPoint(clientX, clientY)?.closest('[data-product-card]');
 
         if (pointed && container.contains(pointed) && pointed !== draggingCard) {
-            // 依拖曳方向決定插入點，避免在相鄰卡片間來回翻轉造成抖動。
-            const insertBefore = dragDirection < 0;
+            const allCards = [...container.querySelectorAll('[data-product-card]')];
+            const targetIndex = allCards.indexOf(pointed);
+            const dragIndex = allCards.indexOf(draggingCard);
+            const pointedId = pointed.getAttribute('data-product-id') || '';
+
+            // 進入目標卡時只決定一次方向，避免同一卡片上反覆切換造成排序不生效。
+            if (hoverState.targetId !== pointedId || !hoverState.decision) {
+                hoverState.targetId = pointedId;
+                hoverState.decision = dragIndex < targetIndex ? 'after' : 'before';
+            }
+
+            const insertBefore = hoverState.decision === 'before';
 
             return {
                 reference: insertBefore ? pointed : pointed.nextElementSibling,
                 target: pointed,
             };
         }
+
+        hoverState.targetId = null;
+        hoverState.decision = null;
 
         const elements = [...container.querySelectorAll('[data-product-card]:not(.is-dragging)')];
         const fallback = elements.reduce((closest, child) => {
@@ -584,29 +597,8 @@
             let rafId = 0;
             let lastClientY = 0;
             let lastClientX = 0;
-            let dragDirection = 1;
-            let persistTimer = 0;
-
-            const schedulePersist = () => {
-                const categoryId = container.getAttribute('data-category-id');
-                if (!categoryId) {
-                    return;
-                }
-
-                if (persistTimer) {
-                    clearTimeout(persistTimer);
-                }
-
-                persistTimer = window.setTimeout(async () => {
-                    const currentSignature = orderSignature(container);
-                    if (currentSignature === lastPersistedSignature) {
-                        return;
-                    }
-
-                    await persistCategorySort(categoryId, container, false);
-                    lastPersistedSignature = orderSignature(container);
-                }, 220);
-            };
+            const hoverState = { targetId: null, decision: null };
+            let pendingDropReference = null;
 
             container.querySelectorAll('[data-product-card]').forEach((card) => {
                 const handle = card.querySelector('[data-drag-product-handle]');
@@ -632,9 +624,11 @@
 
                     draggingCard = card;
                     startSignature = orderSignature(container);
-                    dragDirection = 1;
+                    hoverState.targetId = null;
+                    hoverState.decision = null;
                     lastClientX = 0;
                     lastClientY = 0;
+                    pendingDropReference = null;
                     card.classList.add('is-dragging', 'opacity-60', 'ring-2', 'ring-indigo-300');
                 });
 
@@ -643,15 +637,12 @@
                     card.draggable = false;
                     delete card.dataset.dragEnabled;
                     clearDropTargetStyles(container);
+                    hoverState.targetId = null;
+                    hoverState.decision = null;
 
                     if (rafId) {
                         cancelAnimationFrame(rafId);
                         rafId = 0;
-                    }
-
-                    if (persistTimer) {
-                        clearTimeout(persistTimer);
-                        persistTimer = 0;
                     }
 
                     const categoryId = container.getAttribute('data-category-id');
@@ -662,6 +653,7 @@
                     } else {
                         updateSortLabels(container);
                     }
+                    pendingDropReference = null;
                     draggingCard = null;
                 });
             });
@@ -672,16 +664,6 @@
                     return;
                 }
 
-                if (lastClientX !== 0 || lastClientY !== 0) {
-                    const dx = event.clientX - lastClientX;
-                    const dy = event.clientY - lastClientY;
-                    const majorDelta = Math.abs(dx) > Math.abs(dy) ? dx : dy;
-
-                    if (Math.abs(majorDelta) > 1) {
-                        dragDirection = majorDelta > 0 ? 1 : -1;
-                    }
-                }
-
                 lastClientY = event.clientY;
                 lastClientX = event.clientX;
                 if (rafId) {
@@ -689,31 +671,33 @@
                 }
 
                 rafId = requestAnimationFrame(() => {
-                    const dropRef = getDropReference(container, draggingCard, lastClientX, lastClientY, dragDirection);
-                    const afterElement = dropRef.reference;
-                    const expectedNext = afterElement || null;
+                    const dropRef = getDropReference(container, draggingCard, lastClientX, lastClientY, hoverState);
+                    pendingDropReference = dropRef.reference || null;
 
                     clearDropTargetStyles(container);
                     if (dropRef.target && dropRef.target !== draggingCard) {
                         dropRef.target.classList.add('drop-target', 'ring-2', 'ring-amber-300');
                     }
 
-                    if (draggingCard.nextElementSibling === expectedNext) {
-                        rafId = 0;
-                        return;
-                    }
-
-                    if (!afterElement) {
-                        container.appendChild(draggingCard);
-                    } else {
-                        container.insertBefore(draggingCard, afterElement);
-                    }
-
-                    updateSortLabels(container);
-                    schedulePersist();
-
                     rafId = 0;
                 });
+            });
+
+            container.addEventListener('drop', (event) => {
+                event.preventDefault();
+                if (!draggingCard) {
+                    return;
+                }
+
+                const expectedNext = pendingDropReference || null;
+                if (draggingCard.nextElementSibling !== expectedNext) {
+                    if (!pendingDropReference) {
+                        container.appendChild(draggingCard);
+                    } else {
+                        container.insertBefore(draggingCard, pendingDropReference);
+                    }
+                    updateSortLabels(container);
+                }
             });
         });
     };
