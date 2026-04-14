@@ -7,6 +7,8 @@ use App\Models\SubscriptionPlan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Stripe\Checkout\Session;
+use Stripe\Stripe;
 
 class SubscriptionController extends Controller
 {
@@ -39,17 +41,74 @@ class SubscriptionController extends Controller
             ->where('is_active', true)
             ->firstOrFail();
 
-        $startsAt = $user->subscription_ends_at && $user->subscription_ends_at->isFuture()
-            ? $user->subscription_ends_at->copy()
-            : now();
+        $stripeKey = (string) config('services.stripe.secret');
+        if ($stripeKey === '') {
+            return redirect()
+                ->route('merchant.subscription.index')
+                ->with('error', 'Stripe 金流尚未設定，請先設定 STRIPE_SECRET。');
+        }
 
-        $user->update([
-            'subscription_plan_id' => $plan->id,
-            'subscription_ends_at' => $startsAt->addDays($plan->duration_days),
+        [$interval, $intervalCount] = $this->stripeRecurringCycle((int) $plan->duration_days);
+
+        Stripe::setApiKey($stripeKey);
+
+        $lineItem = [
+            'quantity' => 1,
+        ];
+
+        if (! empty($plan->stripe_price_id)) {
+            $lineItem['price'] = $plan->stripe_price_id;
+        } else {
+            $lineItem['price_data'] = [
+                'currency' => 'twd',
+                'unit_amount' => (int) $plan->price_twd,
+                'product_data' => [
+                    'name' => 'DineFlow - ' . $plan->name,
+                    'description' => '商家訂閱方案',
+                ],
+                'recurring' => [
+                    'interval' => $interval,
+                    'interval_count' => $intervalCount,
+                ],
+            ];
+        }
+
+        $session = Session::create([
+            'mode' => 'subscription',
+            'success_url' => route('merchant.subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url' => route('merchant.subscription.index'),
+            'client_reference_id' => (string) $user->id,
+            'customer_email' => $user->email,
+            'metadata' => [
+                'user_id' => (string) $user->id,
+                'plan_id' => (string) $plan->id,
+            ],
+            'line_items' => [$lineItem],
         ]);
+
+        return redirect()->away($session->url);
+    }
+
+    public function success(Request $request): RedirectResponse
+    {
+        $sessionId = (string) $request->query('session_id', '');
+        if ($sessionId === '') {
+            return redirect()
+                ->route('merchant.subscription.index')
+                ->with('error', '找不到 Stripe 結帳資訊。');
+        }
 
         return redirect()
             ->route('merchant.subscription.index')
-            ->with('success', '已啟用 ' . $plan->name . '，可使用商家後台。');
+            ->with('success', '付款完成，系統正在同步你的訂閱狀態。');
+    }
+
+    private function stripeRecurringCycle(int $durationDays): array
+    {
+        if ($durationDays >= 365) {
+            return ['year', max((int) round($durationDays / 365), 1)];
+        }
+
+        return ['month', max((int) round($durationDays / 30), 1)];
     }
 }

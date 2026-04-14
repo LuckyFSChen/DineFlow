@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Store;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -13,8 +15,24 @@ class StoreManagementController extends Controller
     public function index(Request $request)
     {
         $keyword = $request->get('keyword');
+        $user = $request->user();
+
+        $maxStores = null;
+        $usedStores = null;
+        $remainingStores = null;
+        $canCreateStore = true;
+
+        if ($user && $user->isMerchant()) {
+            $maxStores = $user->maxAllowedStores();
+            $usedStores = Store::query()->where('user_id', $user->id)->count();
+            $remainingStores = $maxStores === null ? null : max($maxStores - $usedStores, 0);
+            $canCreateStore = $this->canCreateStore($user);
+        }
 
         $stores = Store::query()
+            ->when($user && $user->isMerchant(), function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })
             ->when($keyword, function ($query) use ($keyword) {
                 $query->where(function ($q) use ($keyword) {
                     $q->where('name', 'like', "%{$keyword}%")
@@ -28,11 +46,25 @@ class StoreManagementController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return view('admin.stores.index', compact('stores', 'keyword'));
+        return view('admin.stores.index', compact(
+            'stores',
+            'keyword',
+            'maxStores',
+            'usedStores',
+            'remainingStores',
+            'canCreateStore'
+        ));
     }
 
-    public function create()
+    public function create(Request $request)
     {
+        $user = $request->user();
+        if ($user && $user->isMerchant() && ! $this->canCreateStore($user)) {
+            return redirect()
+                ->route('admin.stores.index')
+                ->with('error', '你目前方案可建立的店家數已達上限，請升級方案。');
+        }
+
         $store = new Store();
 
         return view('admin.stores.create', compact('store'));
@@ -40,7 +72,26 @@ class StoreManagementController extends Controller
 
     public function store(Request $request)
     {
+        $user = $request->user();
+        if ($user && $user->isMerchant() && ! $this->canCreateStore($user)) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => '你目前方案可建立的店家數已達上限，請升級方案。',
+                ], 422);
+            }
+
+            return redirect()
+                ->route('admin.stores.index')
+                ->with('error', '你目前方案可建立的店家數已達上限，請升級方案。');
+        }
+
         $data = $this->validatedData($request);
+
+        if ($user && $user->isMerchant()) {
+            $data['user_id'] = $user->id;
+        }
+
         $store = Store::create($data);
 
         if ($request->hasFile('banner_image')) {
@@ -58,18 +109,37 @@ class StoreManagementController extends Controller
             ]);
         }
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => '店家已建立。',
+                'store' => $this->storePayload($store->fresh()),
+            ]);
+        }
+
         return redirect()
             ->route('admin.stores.index')
             ->with('success', '店家已建立。');
     }
 
-    public function edit(Store $store)
+    public function edit(Request $request, Store $store)
     {
+        $this->authorizeStoreAccess($request, $store);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'store' => $this->storePayload($store),
+            ]);
+        }
+
         return view('admin.stores.edit', compact('store'));
     }
 
     public function update(Request $request, Store $store)
     {
+        $this->authorizeStoreAccess($request, $store);
+
         $updateData = $this->validatedData($request, $store->id);
 
         if ($request->hasFile('banner_image')) {
@@ -93,6 +163,14 @@ class StoreManagementController extends Controller
 
         $store->update($updateData);
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => '店家已更新。',
+                'store' => $this->storePayload($store->fresh()),
+            ]);
+        }
+
         return redirect()
             ->route('admin.stores.index')
             ->with('success', '店家已更新。');
@@ -100,6 +178,8 @@ class StoreManagementController extends Controller
 
     public function destroy(Store $store)
     {
+        $this->authorizeStoreAccess(request(), $store);
+
         $store->delete();
 
         return redirect()
@@ -146,5 +226,64 @@ class StoreManagementController extends Controller
         }
 
         return substr($digits, 0, 4) . '-' . substr($digits, 4, 3) . '-' . substr($digits, 7, 3);
+    }
+
+    protected function authorizeStoreAccess(Request $request, Store $store): void
+    {
+        $user = $request->user();
+        if (! $user) {
+            abort(403, '請先登入。');
+        }
+
+        if ($user->isAdmin()) {
+            return;
+        }
+
+        if ($user->isMerchant() && (int) $store->user_id === (int) $user->id) {
+            return;
+        }
+
+        abort(403, '你無法管理此店家。');
+    }
+
+    protected function canCreateStore(User $user): bool
+    {
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        if ($user->subscriptionPlan === null) {
+            return false;
+        }
+
+        $maxStores = $user->maxAllowedStores();
+        if ($maxStores === null) {
+            return true;
+        }
+
+        $currentCount = Store::query()
+            ->where('user_id', $user->id)
+            ->count();
+
+        return $currentCount < $maxStores;
+    }
+
+    protected function storePayload(Store $store): array
+    {
+        return [
+            'id' => $store->id,
+            'name' => $store->name,
+            'slug' => $store->slug,
+            'description' => $store->description,
+            'address' => $store->address,
+            'phone' => $store->phone,
+            'is_active' => (bool) $store->is_active,
+            'opening_time' => $store->opening_time,
+            'closing_time' => $store->closing_time,
+            'banner_image' => $store->banner_image,
+            'banner_image_url' => $store->banner_image
+                ? asset('storage/' . ltrim($store->banner_image, '/'))
+                : null,
+        ];
     }
 }

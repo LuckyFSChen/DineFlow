@@ -35,7 +35,16 @@
                             <p class="mt-1 text-sm text-brand-primary/75">桌號 {{ $table->table_no }}</p>
                             <p class="mt-1 text-sm text-brand-primary/75">營業時間 {{ $store->businessHoursLabel() }}</p>
                         </div>
-                        <a href="{{ route('customer.dinein.cart.show', ['store' => $store, 'table' => $table]) }}" class="inline-flex items-center rounded-2xl border border-brand-soft bg-brand-soft/20 px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-highlight/50">查看購物車</a>
+                        <div class="flex flex-col items-end gap-2">
+                            <a href="{{ route('customer.dinein.cart.show', ['store' => $store, 'table' => $table]) }}" class="inline-flex items-center rounded-2xl border border-brand-soft bg-brand-soft/20 px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-highlight/50">查看購物車</a>
+                            @if(isset($orderHistory) && $orderHistory->isNotEmpty())
+                                <div class="flex flex-wrap justify-end gap-2">
+                                    @foreach($orderHistory->take(3) as $historyOrder)
+                                        <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="inline-flex items-center rounded-xl border border-brand-soft bg-white px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30">狀態 {{ $historyOrder->order_no }}</a>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
                     </div>
 
                     @if(! $orderingAvailable)
@@ -137,13 +146,14 @@
                                                     <form method="POST" action="{{ route('customer.dinein.cart.items.store', ['store' => $store, 'table' => $table]) }}" class="flex items-center justify-between gap-3" data-add-to-cart-form>
                                                         @csrf
                                                         <input type="hidden" name="product_id" value="{{ $product->id }}">
+                                                        <input type="hidden" name="option_payload" value="" data-option-payload>
                                                         <div class="inline-flex h-12 items-center rounded-2xl border border-brand-soft bg-brand-soft/20 p-1 shadow-sm">
                                                             <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold text-brand-primary transition hover:bg-white" data-qty-decrement>-</button>
                                                             <input type="hidden" name="qty" value="1" data-qty-input>
                                                             <span class="flex min-w-[2.8rem] items-center justify-center text-sm font-semibold text-brand-dark" data-qty-display>1</span>
                                                             <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold text-brand-primary transition hover:bg-white" data-qty-increment>+</button>
                                                         </div>
-                                                        <button type="submit" class="inline-flex h-12 items-center justify-center rounded-2xl bg-brand-primary px-5 text-sm font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:-translate-y-0.5 hover:bg-brand-accent hover:text-brand-dark" data-add-to-cart-button>加入購物車</button>
+                                                        <button type="submit" class="inline-flex h-12 items-center justify-center rounded-2xl bg-brand-primary px-5 text-sm font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:-translate-y-0.5 hover:bg-brand-accent hover:text-brand-dark" data-add-to-cart-button data-option-groups='@json($product->option_groups ?? [])' data-product-name="{{ $product->name }}">加入購物車</button>
                                                     </form>
                                                 @endif
                                             </div>
@@ -165,8 +175,29 @@
                     <p class="text-xs uppercase tracking-[0.2em] text-brand-highlight/80">Table {{ $table->table_no }}</p>
                     <p class="text-sm font-semibold">{{ $orderingAvailable ? '可前往購物車送出本桌訂單' : '目前不在營業時間' }}</p>
                     <p class="mt-1 text-xs text-white/70">{{ $cartCount > 0 ? $cartCount . ' 項 | NT$ ' . number_format($cartTotal) : '購物車目前是空的' }}</p>
+                    @if(isset($orderHistory) && $orderHistory->isNotEmpty())
+                        <div class="mt-1 flex flex-wrap gap-2">
+                            @foreach($orderHistory->take(2) as $historyOrder)
+                                <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="inline-flex text-xs font-semibold text-brand-highlight underline-offset-2 hover:underline">狀態 {{ $historyOrder->order_no }}</a>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
                 <a href="{{ route('customer.dinein.cart.show', ['store' => $store, 'table' => $table]) }}" class="inline-flex h-11 items-center justify-center rounded-2xl bg-brand-highlight px-4 text-sm font-semibold text-brand-dark transition hover:bg-brand-soft" data-cart-target>查看購物車{{ $cartCount > 0 ? ' (' . $cartCount . ')' : '' }}</a>
+            </div>
+        </div>
+
+        <div id="option-modal" class="fixed inset-0 z-[90] hidden items-end justify-center bg-black/45 p-4 sm:items-center">
+            <div class="w-full max-w-lg rounded-3xl bg-white p-5 shadow-2xl">
+                <div class="flex items-center justify-between">
+                    <h3 id="option-modal-title" class="text-lg font-bold text-brand-dark">選擇搭配</h3>
+                    <button type="button" id="option-modal-close" class="rounded-full p-2 text-slate-500 hover:bg-slate-100">✕</button>
+                </div>
+                <div id="option-modal-body" class="mt-4 max-h-[60vh] space-y-4 overflow-y-auto"></div>
+                <div class="mt-5 flex gap-3">
+                    <button type="button" id="option-modal-cancel" class="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">取消</button>
+                    <button type="button" id="option-modal-confirm" class="inline-flex flex-1 items-center justify-center rounded-2xl bg-brand-primary px-4 py-3 text-sm font-semibold text-white hover:bg-brand-accent hover:text-brand-dark">確認加入</button>
+                </div>
             </div>
         </div>
     </div>
@@ -176,6 +207,149 @@
         const forms = document.querySelectorAll('[data-add-to-cart-form]');
         const cartTarget = document.querySelector('[data-cart-target]');
         const cartBar = document.querySelector('[data-cart-bar]');
+        const modal = document.getElementById('option-modal');
+        const modalTitle = document.getElementById('option-modal-title');
+        const modalBody = document.getElementById('option-modal-body');
+        const modalClose = document.getElementById('option-modal-close');
+        const modalCancel = document.getElementById('option-modal-cancel');
+        const modalConfirm = document.getElementById('option-modal-confirm');
+
+        let activeForm = null;
+        let activeGroups = [];
+
+        const closeModal = () => {
+            modal?.classList.add('hidden');
+            modal?.classList.remove('flex');
+            modalBody.innerHTML = '';
+            activeForm = null;
+            activeGroups = [];
+        };
+
+        const openModal = (form, productName, groups) => {
+            activeForm = form;
+            activeGroups = groups;
+            modalTitle.textContent = `選擇搭配：${productName}`;
+            modalBody.innerHTML = '';
+
+            groups.forEach((group) => {
+                const groupId = String(group.id || '');
+                if (!groupId) {
+                    return;
+                }
+
+                const type = group.type === 'multiple' ? 'multiple' : 'single';
+                const required = !!group.required;
+                const maxSelect = Number(group.max_select || 99);
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'rounded-2xl border border-slate-200 p-4';
+                wrapper.dataset.groupId = groupId;
+                wrapper.dataset.groupType = type;
+                wrapper.dataset.groupRequired = required ? '1' : '0';
+                wrapper.dataset.groupMax = String(maxSelect);
+
+                const title = document.createElement('div');
+                title.className = 'mb-2 text-sm font-semibold text-slate-800';
+                title.textContent = `${group.name || groupId}${required ? '（必選）' : ''}`;
+                wrapper.appendChild(title);
+
+                const choices = Array.isArray(group.choices) ? group.choices : [];
+                choices.forEach((choice, index) => {
+                    const choiceId = String(choice.id || '');
+                    if (!choiceId) {
+                        return;
+                    }
+
+                    const row = document.createElement('label');
+                    row.className = 'mb-2 flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-sm last:mb-0 hover:bg-slate-50';
+
+                    const left = document.createElement('div');
+                    left.className = 'flex items-center gap-2';
+
+                    const input = document.createElement('input');
+                    input.type = type === 'single' ? 'radio' : 'checkbox';
+                    input.name = `opt_${groupId}` + (type === 'multiple' ? '[]' : '');
+                    input.value = choiceId;
+                    input.dataset.choiceName = String(choice.name || choiceId);
+                    input.dataset.choicePrice = String(Number(choice.price || 0));
+                    if (required && type === 'single' && index === 0) {
+                        input.checked = true;
+                    }
+
+                    left.appendChild(input);
+                    const text = document.createElement('span');
+                    text.textContent = String(choice.name || choiceId);
+                    left.appendChild(text);
+
+                    const price = document.createElement('span');
+                    const p = Number(choice.price || 0);
+                    price.className = 'text-xs font-semibold ' + (p > 0 ? 'text-brand-primary' : 'text-slate-500');
+                    price.textContent = p > 0 ? `+NT$ ${p}` : '免費';
+
+                    row.appendChild(left);
+                    row.appendChild(price);
+                    wrapper.appendChild(row);
+                });
+
+                modalBody.appendChild(wrapper);
+            });
+
+            modal?.classList.remove('hidden');
+            modal?.classList.add('flex');
+        };
+
+        modalClose?.addEventListener('click', closeModal);
+        modalCancel?.addEventListener('click', closeModal);
+
+        modalConfirm?.addEventListener('click', () => {
+            if (!activeForm) {
+                closeModal();
+                return;
+            }
+
+            const payload = {};
+
+            for (const group of activeGroups) {
+                const groupId = String(group.id || '');
+                if (!groupId) {
+                    continue;
+                }
+
+                const wrapper = modalBody.querySelector(`[data-group-id="${groupId}"]`);
+                if (!wrapper) {
+                    continue;
+                }
+
+                const type = wrapper.dataset.groupType;
+                const required = wrapper.dataset.groupRequired === '1';
+                const maxSelect = Number(wrapper.dataset.groupMax || 99);
+
+                const checked = Array.from(wrapper.querySelectorAll('input:checked')).map((input) => input.value);
+
+                if (required && checked.length === 0) {
+                    alert(`${group.name || groupId} 為必選`);
+                    return;
+                }
+
+                if (type === 'multiple' && checked.length > maxSelect) {
+                    alert(`${group.name || groupId} 最多可選 ${maxSelect} 項`);
+                    return;
+                }
+
+                if (checked.length > 0) {
+                    payload[groupId] = type === 'single' ? [checked[0]] : checked;
+                }
+            }
+
+            const payloadInput = activeForm.querySelector('[data-option-payload]');
+            if (payloadInput) {
+                payloadInput.value = JSON.stringify(payload);
+            }
+
+            activeForm.dataset.confirmed = '1';
+            closeModal();
+            activeForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        });
 
         forms.forEach((form) => {
             const input = form.querySelector('[data-qty-input]');
@@ -200,6 +374,22 @@
                 if (!cartTarget || !submitButton || form.dataset.animating === 'true') {
                     return;
                 }
+
+                const groupsRaw = submitButton.dataset.optionGroups || '[]';
+                let groups = [];
+                try {
+                    groups = JSON.parse(groupsRaw);
+                } catch (_e) {
+                    groups = [];
+                }
+
+                if (Array.isArray(groups) && groups.length > 0 && form.dataset.confirmed !== '1') {
+                    event.preventDefault();
+                    openModal(form, submitButton.dataset.productName || '商品', groups);
+                    return;
+                }
+
+                form.dataset.confirmed = '';
 
                 event.preventDefault();
                 form.dataset.animating = 'true';

@@ -11,6 +11,7 @@ class Store extends Model
     use SoftDeletes;
 
     protected $fillable = [
+        'user_id',
         'name',
         'slug',
         'description',
@@ -135,6 +136,11 @@ class Store extends Model
     public function tables()
     {
         return $this->hasMany(DiningTable::class);
+    }
+
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function categories()

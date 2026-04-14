@@ -19,5 +19,54 @@
             {{ $slot ?? '' }}
         @endif
     </div>
+
+    <script>
+    (() => {
+        const phoneSelectors = [
+            'input[name="phone"]',
+            'input[name="customer_phone"]',
+            'input[id="customer_phone"]',
+        ];
+
+        const formatTaiwanMobile = (raw) => {
+            const digits = String(raw || '').replace(/\D/g, '').slice(0, 10);
+
+            if (digits.length <= 4) {
+                return digits;
+            }
+
+            if (digits.length <= 7) {
+                return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+            }
+
+            return `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
+        };
+
+        const bindInput = (input) => {
+            if (!input || input.dataset.phoneAutoHyphenBound === '1') {
+                return;
+            }
+
+            input.dataset.phoneAutoHyphenBound = '1';
+            input.setAttribute('inputmode', input.getAttribute('inputmode') || 'numeric');
+            input.setAttribute('maxlength', '12');
+
+            const apply = () => {
+                input.value = formatTaiwanMobile(input.value);
+            };
+
+            input.addEventListener('input', apply);
+            input.addEventListener('blur', apply);
+            apply();
+        };
+
+        const applyAll = () => {
+            const inputs = document.querySelectorAll(phoneSelectors.join(','));
+            inputs.forEach(bindInput);
+        };
+
+        applyAll();
+    })();
+    </script>
 </body>
 </html>

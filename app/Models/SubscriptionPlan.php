@@ -9,8 +9,10 @@ class SubscriptionPlan extends Model
     protected $fillable = [
         'name',
         'slug',
+        'stripe_price_id',
         'price_twd',
         'duration_days',
+        'max_stores',
         'features',
         'is_active',
     ];
@@ -18,5 +20,6 @@ class SubscriptionPlan extends Model
     protected $casts = [
         'features' => 'array',
         'is_active' => 'boolean',
+        'max_stores' => 'integer',
     ];
 }

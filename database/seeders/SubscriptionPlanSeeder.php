@@ -13,8 +13,10 @@ class SubscriptionPlanSeeder extends Seeder
             [
                 'name' => 'Basic Monthly',
                 'slug' => 'basic-monthly',
+                'stripe_price_id' => null,
                 'price_twd' => 999,
                 'duration_days' => 30,
+                'max_stores' => 1,
                 'features' => [
                     '1 店家管理',
                     '菜單與品項管理',
@@ -25,8 +27,10 @@ class SubscriptionPlanSeeder extends Seeder
             [
                 'name' => 'Growth Monthly',
                 'slug' => 'growth-monthly',
+                'stripe_price_id' => null,
                 'price_twd' => 1999,
                 'duration_days' => 30,
+                'max_stores' => 3,
                 'features' => [
                     '最多 3 店家',
                     '進階報表',
@@ -37,8 +41,10 @@ class SubscriptionPlanSeeder extends Seeder
             [
                 'name' => 'Pro Yearly',
                 'slug' => 'pro-yearly',
+                'stripe_price_id' => null,
                 'price_twd' => 19999,
                 'duration_days' => 365,
+                'max_stores' => null,
                 'features' => [
                     '不限店家數',
                     '全功能後台',

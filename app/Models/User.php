@@ -25,6 +25,8 @@ class User extends Authenticatable
         'role',
         'subscription_ends_at',
         'subscription_plan_id',
+        'stripe_customer_id',
+        'stripe_subscription_id',
     ];
 
     /**
@@ -80,5 +82,19 @@ class User extends Authenticatable
     public function subscriptionPlan()
     {
         return $this->belongsTo(SubscriptionPlan::class);
+    }
+
+    public function stores()
+    {
+        return $this->hasMany(Store::class);
+    }
+
+    public function maxAllowedStores(): ?int
+    {
+        if ($this->isAdmin()) {
+            return null;
+        }
+
+        return $this->subscriptionPlan?->max_stores;
     }
 }

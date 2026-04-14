@@ -1,36 +1,43 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="min-h-screen bg-slate-50">
+<div class="min-h-screen bg-brand-soft/20">
     <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 
         {{-- Header --}}
-        <div class="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="mb-8 overflow-hidden rounded-[2rem] border border-brand-soft/60 bg-white shadow-[0_24px_60px_rgba(90,30,14,0.12)]">
+            <div class="relative isolate overflow-hidden bg-brand-dark px-6 py-8 text-white sm:px-8">
+                <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,214,112,0.28),_transparent_34%),linear-gradient(135deg,_rgba(90,30,14,0.96),_rgba(236,144,87,0.88))]"></div>
+                <div class="absolute -right-12 -top-10 h-36 w-36 rounded-full bg-brand-highlight/20 blur-3xl"></div>
+                <div class="absolute -bottom-14 left-10 h-32 w-32 rounded-full bg-brand-accent/20 blur-3xl"></div>
+                <div class="relative">
             <div class="mb-2">
                 <a href="{{ route('customer.takeout.menu', ['store' => $store]) }}"
-                   class="inline-flex items-center text-sm font-medium text-slate-500 transition hover:text-slate-700">
+                   class="inline-flex items-center text-sm font-medium text-white/70 transition hover:text-white">
                     ← 回外帶菜單
                 </a>
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-                <span class="inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-200">
+                <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold tracking-[0.2em] text-brand-highlight">
                     外帶購物車
                 </span>
             </div>
 
-            <h1 class="mt-4 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+            <h1 class="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
                 {{ $store->name }}
             </h1>
 
-            <p class="mt-3 text-sm leading-6 text-slate-600 sm:text-base">
+            <p class="mt-3 text-sm leading-6 text-white/75 sm:text-base">
                 確認餐點內容後即可送出外帶訂單。
             </p>
+                </div>
+            </div>
         </div>
 
         {{-- Flash Messages --}}
         @if(session('success'))
-            <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 shadow-sm">
+            <div class="mb-6 rounded-2xl border border-brand-accent/30 bg-brand-accent/10 px-4 py-3 text-sm text-brand-primary shadow-sm">
                 {{ session('success') }}
             </div>
         @endif
@@ -42,7 +49,7 @@
         @endif
 
         @if($errors->any())
-            <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800 shadow-sm">
+            <div class="mb-6 rounded-2xl border border-brand-soft bg-brand-soft/30 px-4 py-4 text-sm text-brand-dark shadow-sm">
                 <div class="mb-2 font-semibold">請先確認以下欄位：</div>
                 <ul class="space-y-1">
                     @foreach($errors->all() as $error)
@@ -52,32 +59,46 @@
             </div>
         @endif
 
+        @if(isset($orderHistory) && $orderHistory->isNotEmpty())
+            <div class="mb-6 rounded-2xl border border-brand-soft/60 bg-white p-4 shadow-sm">
+                <p class="text-sm font-semibold text-brand-dark">近期訂單狀態</p>
+                <div class="mt-2 flex flex-wrap gap-2">
+                    @foreach($orderHistory->take(5) as $historyOrder)
+                        <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="inline-flex items-center rounded-xl border border-brand-soft bg-brand-soft/20 px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-highlight/50">{{ $historyOrder->order_no }} ・ {{ $historyOrder->customer_status_label }}</a>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         @if(!empty($cart))
             <div class="grid gap-8 lg:grid-cols-3">
                 {{-- Cart Items --}}
                 <div class="lg:col-span-2">
-                    <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                        <div class="border-b border-slate-200 px-6 py-5">
-                            <h2 class="text-xl font-bold text-slate-900">購物車內容</h2>
-                            <p class="mt-1 text-sm text-slate-500">
+                    <div class="overflow-hidden rounded-3xl border border-brand-soft/60 bg-white shadow-[0_18px_44px_rgba(90,30,14,0.1)]">
+                        <div class="border-b border-brand-soft/60 px-6 py-5">
+                            <h2 class="text-xl font-bold text-brand-dark">購物車內容</h2>
+                            <p class="mt-1 text-sm text-brand-primary/70">
                                 共 {{ count($cart) }} 項商品
                             </p>
                         </div>
 
-                        <div class="divide-y divide-slate-200">
+                        <div class="divide-y divide-brand-soft/60">
                             @foreach($cart as $item)
                                 <div class="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
                                     <div class="min-w-0">
-                                        <h3 class="truncate text-lg font-semibold text-slate-900">
+                                        <h3 class="truncate text-lg font-semibold text-brand-dark">
                                             {{ $item['product_name'] }}
                                         </h3>
-                                        <div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
+                                        @if(!empty($item['option_label']))
+                                            <p class="mt-1 text-xs text-brand-primary">{{ $item['option_label'] }}</p>
+                                        @endif
+                                        <div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-brand-primary/75">
                                             <span>單價 NT$ {{ number_format($item['price']) }}</span>
                                             <span>數量 × {{ $item['qty'] }}</span>
                                         </div>
                                     </div>
 
-                                    <div class="text-lg font-bold text-slate-900">
+                                    <div class="text-lg font-bold text-brand-dark">
                                         NT$ {{ number_format($item['subtotal']) }}
                                     </div>
                                 </div>
@@ -89,17 +110,17 @@
                 {{-- Summary + Checkout --}}
                 <div class="lg:col-span-1">
                     <div class="sticky top-6 space-y-6">
-                        <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                            <h2 class="text-xl font-bold text-slate-900">訂單摘要</h2>
+                        <div class="rounded-3xl border border-brand-soft/60 bg-white p-6 shadow-[0_18px_44px_rgba(90,30,14,0.1)]">
+                            <h2 class="text-xl font-bold text-brand-dark">訂單摘要</h2>
 
                             <div class="mt-5 space-y-4 text-sm">
-                                <div class="flex items-center justify-between text-slate-600">
+                                <div class="flex items-center justify-between text-brand-primary/80">
                                     <span>商品小計</span>
                                     <span>NT$ {{ number_format($total) }}</span>
                                 </div>
 
-                                <div class="border-t border-slate-200 pt-4">
-                                    <div class="flex items-center justify-between text-lg font-bold text-slate-900">
+                                <div class="border-t border-brand-soft/60 pt-4">
+                                    <div class="flex items-center justify-between text-lg font-bold text-brand-dark">
                                         <span>總計</span>
                                         <span>NT$ {{ number_format($total) }}</span>
                                     </div>
@@ -107,8 +128,8 @@
                             </div>
                         </div>
 
-                        <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                            <h2 class="text-xl font-bold text-slate-900">填寫訂單資訊</h2>
+                        <div class="rounded-3xl border border-brand-soft/60 bg-white p-6 shadow-[0_18px_44px_rgba(90,30,14,0.1)]">
+                            <h2 class="text-xl font-bold text-brand-dark">填寫訂單資訊</h2>
 
                             <form method="POST"
                                   action="{{ route('customer.takeout.cart.checkout', ['store' => $store]) }}"
@@ -116,50 +137,80 @@
                                 @csrf
 
                                 <div>
-                                    <label for="customer_name" class="mb-2 block text-sm font-medium text-slate-700">
+                                    <label for="customer_name" class="mb-2 block text-sm font-medium text-brand-dark">
                                         姓名
                                     </label>
                                     <input id="customer_name"
                                            type="text"
                                            name="customer_name"
-                                           value="{{ old('customer_name') }}"
-                                           class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100">
+                                         value="{{ old('customer_name', $rememberedCustomerInfo['customer_name'] ?? '') }}"
+                                           class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">
                                 </div>
 
                                 <div>
-                                    <label for="customer_email" class="mb-2 block text-sm font-medium text-slate-700">
+                                    <label for="customer_email" class="mb-2 block text-sm font-medium text-brand-dark">
                                         Email
                                     </label>
                                     <input id="customer_email"
                                            type="email"
                                            name="customer_email"
-                                           value="{{ old('customer_email') }}"
-                                           class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100">
+                                         value="{{ old('customer_email', $rememberedCustomerInfo['customer_email'] ?? '') }}"
+                                           class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">
                                 </div>
 
                                 <div>
-                                    <label for="customer_phone" class="mb-2 block text-sm font-medium text-slate-700">
+                                    <label for="customer_phone" class="mb-2 block text-sm font-medium text-brand-dark">
                                         電話
                                     </label>
                                     <input id="customer_phone"
                                            type="text"
                                            name="customer_phone"
-                                           value="{{ old('customer_phone') }}"
-                                           class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100">
+                                           value="{{ old('customer_phone', $rememberedCustomerInfo['customer_phone'] ?? '') }}"
+                                           inputmode="numeric"
+                                           maxlength="12"
+                                           pattern="09[0-9]{2}-[0-9]{3}-[0-9]{3}"
+                                           placeholder="例如：0922-333-444"
+                                           class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">
+                                    <p class="mt-1 text-xs text-brand-primary/70">請輸入格式：0922-333-444</p>
                                 </div>
 
                                 <div>
-                                    <label for="note" class="mb-2 block text-sm font-medium text-slate-700">
+                                    <label class="inline-flex items-center gap-2 text-sm text-brand-dark">
+                                        <input
+                                            type="checkbox"
+                                            name="remember_customer_info"
+                                            value="1"
+                                            @checked(old('remember_customer_info', !empty($rememberedCustomerInfo)))
+                                            class="h-4 w-4 rounded border-brand-soft text-brand-primary focus:ring-brand-highlight"
+                                        >
+                                        記住這次填寫的訂單資訊（姓名 / Email / 電話）
+                                    </label>
+
+                                    @if(!empty($rememberedCustomerInfo))
+                                        <form method="POST" action="{{ route('customer.takeout.customer-info.clear', ['store' => $store]) }}" class="mt-2">
+                                            @csrf
+                                            <button
+                                                type="submit"
+                                                class="inline-flex items-center rounded-xl border border-brand-soft bg-white px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30"
+                                            >
+                                                清除已記住資訊
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
+
+                                <div>
+                                    <label for="note" class="mb-2 block text-sm font-medium text-brand-dark">
                                         備註
                                     </label>
                                     <textarea id="note"
                                               name="note"
                                               rows="4"
-                                              class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100">{{ old('note') }}</textarea>
+                                              class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">{{ old('note') }}</textarea>
                                 </div>
 
                                 <button type="submit"
-                                        class="inline-flex w-full items-center justify-center rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">
+                                        class="inline-flex w-full items-center justify-center rounded-2xl bg-brand-primary px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:bg-brand-accent hover:text-brand-dark">
                                     送出外帶訂單
                                 </button>
                             </form>
@@ -169,17 +220,17 @@
             </div>
         @else
             {{-- Empty Cart --}}
-            <div class="rounded-3xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
+            <div class="rounded-3xl border border-brand-soft/60 bg-white px-6 py-16 text-center shadow-[0_18px_44px_rgba(90,30,14,0.1)]">
                 <div class="mx-auto max-w-md">
                     <div class="text-5xl">🛒</div>
-                    <h2 class="mt-4 text-2xl font-bold text-slate-900">購物車目前是空的</h2>
-                    <p class="mt-3 text-slate-600">
+                    <h2 class="mt-4 text-2xl font-bold text-brand-dark">購物車目前是空的</h2>
+                    <p class="mt-3 text-brand-primary/75">
                         先回到菜單挑選幾樣餐點，再回來確認訂單內容。
                     </p>
 
                     <div class="mt-6">
                         <a href="{{ route('customer.takeout.menu', ['store' => $store]) }}"
-                           class="inline-flex items-center rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
+                           class="inline-flex items-center rounded-2xl bg-brand-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-accent hover:text-brand-dark">
                             回到菜單
                         </a>
                     </div>

@@ -4,12 +4,15 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Store;
+use App\Models\User;
 use Illuminate\Support\Str;
 
 class StoreSeeder extends Seeder
 {
     public function run(): void
     {
+        $merchantUser = User::query()->where('email', 'merchant@dineflow.local')->first();
+
         $stores = [
             [
                 'name' => 'Test Store',
@@ -17,6 +20,7 @@ class StoreSeeder extends Seeder
                 'address' => '台北市信義區',
                 'phone' => '0912-345-678',
                 'is_active' => 1,
+                'user_id' => $merchantUser?->id,
             ],
             [
                 'name' => 'Lucky Cafe',
@@ -24,6 +28,7 @@ class StoreSeeder extends Seeder
                 'address' => '台北市中山區',
                 'phone' => '0922-333-444',
                 'is_active' => 1,
+                'user_id' => $merchantUser?->id,
             ],
         ];
 

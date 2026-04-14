@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
             SubscriptionPlanSeeder::class,
         ]);
 
-        $basicPlan = SubscriptionPlan::query()->where('slug', 'basic-monthly')->first();
+        $growthPlan = SubscriptionPlan::query()->where('slug', 'growth-monthly')->first();
 
         User::updateOrCreate(
             ['email' => 'admin@dineflow.local'],
@@ -43,7 +43,7 @@ class DatabaseSeeder extends Seeder
                 'email_verified_at' => now(),
                 'role' => 'merchant',
                 'subscription_ends_at' => now()->addMonth(),
-                'subscription_plan_id' => $basicPlan?->id,
+                'subscription_plan_id' => $growthPlan?->id,
             ]
         );
 

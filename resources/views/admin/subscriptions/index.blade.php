@@ -47,7 +47,7 @@
                                         <select name="plan_id" class="rounded-lg border border-slate-300 px-2 py-1.5 text-sm">
                                             @foreach($plans as $plan)
                                                 <option value="{{ $plan->id }}" @selected($merchant->subscription_plan_id === $plan->id)>
-                                                    {{ $plan->name }} ({{ $plan->duration_days }}天)
+                                                    {{ $plan->name }} ({{ $plan->duration_days }}天 / {{ $plan->max_stores === null ? '不限店家' : '最多'.$plan->max_stores.'店' }})
                                                 </option>
                                             @endforeach
                                         </select>

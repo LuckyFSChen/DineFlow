@@ -35,6 +35,10 @@
             <section class="mt-6 rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
                 <h2 class="text-lg font-bold">訂單資訊</h2>
 
+                @php
+                    $isTakeout = ($order->order_type ?? null) === 'takeout';
+                @endphp
+
                 <div class="mt-4 grid gap-4 sm:grid-cols-2">
                     <div class="rounded-2xl bg-orange-50 px-4 py-4">
                         <p class="text-sm text-gray-500">店家</p>
@@ -43,12 +47,12 @@
 
                     <div class="rounded-2xl bg-orange-50 px-4 py-4">
                         <p class="text-sm text-gray-500">桌號</p>
-                        <p class="mt-1 font-semibold text-gray-900">{{ $order->table->table_no }}</p>
+                        <p class="mt-1 font-semibold text-gray-900">{{ $isTakeout ? 'takeout' : ($order->table->table_no ?? '-') }}</p>
                     </div>
 
                     <div class="rounded-2xl bg-orange-50 px-4 py-4">
                         <p class="text-sm text-gray-500">訂單狀態</p>
-                        <p class="mt-1 font-semibold text-orange-600">{{ $order->status }}</p>
+                        <p class="mt-1 font-semibold text-orange-600">{{ $order->customer_status_label }}</p>
                     </div>
 
                     <div class="rounded-2xl bg-orange-50 px-4 py-4">
@@ -72,6 +76,9 @@
                                 <h3 class="text-base font-semibold text-gray-900">
                                     {{ $item->product_name }}
                                 </h3>
+                                @if(!empty($item->note))
+                                    <p class="mt-1 text-xs text-orange-600">{{ $item->note }}</p>
+                                @endif
                                 <p class="mt-1 text-sm text-gray-500">
                                     單價 NT$ {{ number_format($item->price) }}
                                 </p>
@@ -104,7 +111,7 @@
                         您可以返回菜單繼續加點，或等待店家出餐。
                     </p>
 
-                    <a href="{{ route('customer.menu', $order->table->qr_token) }}"
+                    <a href="{{ $isTakeout ? route('customer.takeout.menu', ['store' => $store]) : route('customer.dinein.menu', ['store' => $store, 'table' => $order->table]) }}"
                        class="mt-4 inline-flex h-11 items-center justify-center rounded-2xl bg-orange-500 px-5 text-sm font-semibold text-white hover:bg-orange-600">
                         返回菜單
                     </a>

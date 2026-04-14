@@ -30,6 +30,17 @@
                 </div>
             @endif
 
+            @if(isset($orderHistory) && $orderHistory->isNotEmpty())
+                <div class="mb-6 rounded-2xl border border-orange-100 bg-white p-4 shadow-sm">
+                    <p class="text-sm font-semibold text-gray-900">近期訂單狀態</p>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        @foreach($orderHistory->take(5) as $historyOrder)
+                            <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="inline-flex items-center rounded-xl border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700 transition hover:bg-orange-100">{{ $historyOrder->order_no }} ・ {{ $historyOrder->customer_status_label }}</a>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             @if (empty($cart))
                 <div class="rounded-3xl border border-dashed border-orange-200 bg-white px-6 py-12 text-center shadow-sm">
                     <div class="mx-auto max-w-sm">
@@ -60,6 +71,9 @@
                                         <h3 class="text-base font-semibold text-gray-900">
                                             {{ $item['product_name'] }}
                                         </h3>
+                                        @if(!empty($item['option_label']))
+                                            <p class="mt-1 text-xs text-orange-600">{{ $item['option_label'] }}</p>
+                                        @endif
                                         <p class="mt-1 text-sm text-gray-500">
                                             單價 NT$ {{ number_format($item['price']) }}
                                         </p>
@@ -101,7 +115,7 @@
                                 <label class="mb-2 block text-sm font-medium text-gray-700">姓名</label>
                                 <input type="text"
                                        name="customer_name"
-                                       value="{{ old('customer_name') }}"
+                                        value="{{ old('customer_name', $rememberedCustomerInfo['customer_name'] ?? '') }}"
                                        class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
                                        placeholder="例如：Lucky">
                             </div>
@@ -110,7 +124,7 @@
                                 <label class="mb-2 block text-sm font-medium text-gray-700">Email</label>
                                 <input type="email"
                                        name="customer_email"
-                                       value="{{ old('customer_email') }}"
+                                        value="{{ old('customer_email', $rememberedCustomerInfo['customer_email'] ?? '') }}"
                                        class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
                                        placeholder="例如：lucky@example.com">
                             </div>
@@ -119,9 +133,38 @@
                                 <label class="mb-2 block text-sm font-medium text-gray-700">電話</label>
                                 <input type="text"
                                        name="customer_phone"
-                                       value="{{ old('customer_phone') }}"
+                                       value="{{ old('customer_phone', $rememberedCustomerInfo['customer_phone'] ?? '') }}"
+                                       inputmode="numeric"
+                                       maxlength="12"
+                                       pattern="09[0-9]{2}-[0-9]{3}-[0-9]{3}"
                                        class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                                       placeholder="例如：0912345678">
+                                       placeholder="例如：0922-333-444">
+                                <p class="mt-1 text-xs text-orange-600">請輸入格式：0922-333-444</p>
+                            </div>
+
+                            <div>
+                                <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                                    <input
+                                        type="checkbox"
+                                        name="remember_customer_info"
+                                        value="1"
+                                        @checked(old('remember_customer_info', !empty($rememberedCustomerInfo)))
+                                        class="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-300"
+                                    >
+                                    記住這次填寫的訂單資訊（姓名 / Email / 電話）
+                                </label>
+
+                                @if(!empty($rememberedCustomerInfo))
+                                    <form method="POST" action="{{ route('customer.dinein.customer-info.clear', ['store' => $store, 'table' => $table]) }}" class="mt-2">
+                                        @csrf
+                                        <button
+                                            type="submit"
+                                            class="inline-flex items-center rounded-xl border border-orange-200 bg-white px-3 py-1.5 text-xs font-semibold text-orange-600 transition hover:bg-orange-50"
+                                        >
+                                            清除已記住資訊
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
 
                             <div>
@@ -146,5 +189,38 @@
             @endif
         </main>
     </div>
+
+    <script>
+    (() => {
+        const input = document.querySelector('input[name="customer_phone"]');
+        if (!input) {
+            return;
+        }
+
+        const formatTaiwanMobile = (raw) => {
+            const digits = String(raw || '').replace(/\D/g, '').slice(0, 10);
+
+            if (digits.length <= 4) {
+                return digits;
+            }
+
+            if (digits.length <= 7) {
+                return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+            }
+
+            return `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
+        };
+
+        const apply = () => {
+            input.value = formatTaiwanMobile(input.value);
+        };
+
+        input.setAttribute('maxlength', '12');
+        input.setAttribute('inputmode', 'numeric');
+        input.addEventListener('input', apply);
+        input.addEventListener('blur', apply);
+        apply();
+    })();
+    </script>
 </body>
 </html>
