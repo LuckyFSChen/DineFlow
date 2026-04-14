@@ -20,6 +20,7 @@ class Store extends Model
         'contact_email',
         'notification_email',
         'is_active',
+        'takeout_qr_enabled',
         'banner_image',
         'opening_time',
         'closing_time',
@@ -27,6 +28,7 @@ class Store extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'takeout_qr_enabled' => 'boolean',
     ];
 
     public function getBannerImageUrlAttribute(): ?string

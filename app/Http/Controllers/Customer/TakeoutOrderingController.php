@@ -35,6 +35,8 @@ class TakeoutOrderingController extends Controller
 
     public function menu(Store $store)
     {
+        $this->ensureTakeoutEnabled($store);
+
         $categories = $store->categories()
             ->where('is_active', true)
             ->with(['products' => function ($query) use ($store) {
@@ -66,6 +68,8 @@ class TakeoutOrderingController extends Controller
 
     public function addToCart(Request $request, Store $store)
     {
+        $this->ensureTakeoutEnabled($store);
+
         if (! $store->isOrderingAvailable()) {
             return redirect()
                 ->route('customer.takeout.menu', ['store' => $store])
@@ -122,6 +126,8 @@ class TakeoutOrderingController extends Controller
 
     public function cart(Store $store)
     {
+        $this->ensureTakeoutEnabled($store);
+
         $cartKey = $this->getTakeoutCartSessionKey($store);
         $cart = session()->get($cartKey, []);
         $total = collect($cart)->sum('subtotal');
@@ -134,6 +140,8 @@ class TakeoutOrderingController extends Controller
 
     public function checkout(Request $request, Store $store)
     {
+        $this->ensureTakeoutEnabled($store);
+
         if (! $store->isOrderingAvailable()) {
             return redirect()
                 ->route('customer.takeout.cart.show', ['store' => $store])
@@ -214,6 +222,8 @@ class TakeoutOrderingController extends Controller
 
     public function clearRememberedCustomerInfo(Store $store)
     {
+        $this->ensureTakeoutEnabled($store);
+
         session()->forget(self::CUSTOMER_PROFILE_SESSION_KEY);
 
         return redirect()
@@ -229,6 +239,11 @@ class TakeoutOrderingController extends Controller
             ->count() + 1;
 
         return $date . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
+    }
+
+    private function ensureTakeoutEnabled(Store $store): void
+    {
+        abort_unless($store->takeout_qr_enabled, 404);
     }
 
     private function cartLineKey(int $productId, array $selectedOptions): string

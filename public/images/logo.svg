@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 110" role="img" aria-labelledby="title desc">
+  <title id="title">DineFlow</title>
+  <desc id="desc">Food-themed DineFlow logo with bowl, steam and chopsticks</desc>
+  <defs>
+    <linearGradient id="badge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fb923c"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+    <linearGradient id="bowl" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff7ed"/>
+      <stop offset="100%" stop-color="#fed7aa"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="10" y="10" width="90" height="90" rx="24" fill="url(#badge)"/>
+
+  <path d="M35 56c0 14 12 25 30 25s30-11 30-25z" fill="url(#bowl)"/>
+  <path d="M35 56h60" stroke="#7c2d12" stroke-width="4" stroke-linecap="round"/>
+  <path d="M43 63h44" stroke="#f97316" stroke-width="4" stroke-linecap="round"/>
+
+  <path d="M50 32c-5 6-5 12 0 18" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+  <path d="M64 28c-5 7-5 13 0 20" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+  <path d="M78 32c-5 6-5 12 0 18" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+
+  <path d="M82 24l18 8" stroke="#fde68a" stroke-width="5" stroke-linecap="round"/>
+  <path d="M80 29l18 8" stroke="#fde68a" stroke-width="5" stroke-linecap="round"/>
+
+  <text x="118" y="64" font-family="'Trebuchet MS', 'Segoe UI', Arial, sans-serif" font-size="44" font-weight="800" fill="#1f2937" letter-spacing="0.5">DineFlow</text>
+  <text x="120" y="86" font-family="'Trebuchet MS', 'Segoe UI', Arial, sans-serif" font-size="14" font-weight="700" fill="#9a3412" letter-spacing="3">QR ORDERING</text>
+</svg>

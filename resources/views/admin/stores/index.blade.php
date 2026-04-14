@@ -123,6 +123,11 @@
                                             商品
                                         </a>
 
+                                        <a href="{{ route('admin.stores.tables.index', $store) }}"
+                                           class="inline-flex items-center rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100">
+                                            桌位QR
+                                        </a>
+
                                                      <button
                                                          type="button"
                                                          data-edit-store="{{ $store->slug }}"

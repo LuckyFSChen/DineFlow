@@ -38,22 +38,16 @@
 
             <!-- Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ms-6">
-                <div class="me-4 text-right">
-                    <p class="text-xs text-slate-500">{{ strtoupper((string) Auth::user()?->role) }}</p>
-                    @if(Auth::user()?->isMerchant())
-                        <p class="text-xs font-medium text-slate-700">
-                            到期 {{ Auth::user()?->subscription_ends_at ? Auth::user()?->subscription_ends_at->format('Y-m-d H:i') : '尚未啟用' }}
-                        </p>
-                    @endif
-                </div>
-
                 <x-dropdown align="right" width="56" contentClasses="p-2 bg-white">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none">
                             <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">
                                 {{ strtoupper(substr((string) (Auth::user()?->name ?? 'U'), 0, 1)) }}
                             </span>
-                            <span class="max-w-[110px] truncate">{{ Auth::user()?->name ?? '帳號' }}</span>
+                            <span class="max-w-[140px] leading-tight text-left">
+                                <span class="block truncate">{{ Auth::user()?->name ?? '帳號' }}</span>
+                                <span class="block text-[11px] font-medium text-slate-500">{{ strtoupper((string) Auth::user()?->role) }}</span>
+                            </span>
                             <div>
                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -81,11 +75,11 @@
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
 
-                            <a href="{{ route('logout') }}"
+                            <x-dropdown-link :href="route('logout')"
                                onclick="event.preventDefault(); this.closest('form').submit();"
-                               class="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-rose-600 transition hover:bg-rose-50 focus:outline-none">
+                               class="mt-1 font-semibold text-rose-600 hover:bg-rose-50 focus:bg-rose-50">
                                 登出系統
-                            </a>
+                            </x-dropdown-link>
                         </form>
                     </x-slot>
                 </x-dropdown>
