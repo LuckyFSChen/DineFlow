@@ -9,7 +9,6 @@ use App\Http\Controllers\Customer\TakeoutOrderingController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Merchant\SubscriptionController as MerchantSubscriptionController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\StoreController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,17 +20,26 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified', 'role:merchant,admin', 'merchant.subscription'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('stores', AdminStoreController::class)->except(['show']);
+    Route::post('stores/{store}/categories', [ProductManagementController::class, 'storeCategory'])->name('stores.categories.store');
+    Route::get('stores/{store}/categories/{category}/edit', [ProductManagementController::class, 'editCategory'])->name('stores.categories.edit');
+    Route::put('stores/{store}/categories/{category}', [ProductManagementController::class, 'updateCategory'])->name('stores.categories.update');
+    Route::patch('stores/{store}/categories/{category}/disable', [ProductManagementController::class, 'disableCategory'])->name('stores.categories.disable');
+    Route::patch('stores/{store}/categories/{category}/enable', [ProductManagementController::class, 'enableCategory'])->name('stores.categories.enable');
+    Route::delete('stores/{store}/categories/{category}', [ProductManagementController::class, 'destroyCategory'])->name('stores.categories.destroy');
     Route::post('stores/{store}/products/reorder', [ProductManagementController::class, 'reorder'])->name('stores.products.reorder');
+    Route::post('stores/{store}/products/move', [ProductManagementController::class, 'move'])->name('stores.products.move');
     Route::resource('stores.products', ProductManagementController::class)->except(['show']);
 });
 
 Route::middleware(['auth', 'verified', 'role:merchant'])->prefix('merchant')->name('merchant.')->group(function () {
     Route::get('/subscription', [MerchantSubscriptionController::class, 'index'])->name('subscription.index');
     Route::post('/subscription', [MerchantSubscriptionController::class, 'subscribe'])->name('subscription.subscribe');
+    Route::post('/subscription/trade', [MerchantSubscriptionController::class, 'createTrade'])->name('subscription.trade');
     Route::get('/subscription/success', [MerchantSubscriptionController::class, 'success'])->name('subscription.success');
 });
 
-Route::post('/stripe/webhook', StripeWebhookController::class)->name('stripe.webhook');
+Route::post('/ecpay/subscription/notify', [MerchantSubscriptionController::class, 'notify'])->name('ecpay.subscription.notify');
+Route::post('/ecpay/subscription/result', [MerchantSubscriptionController::class, 'result'])->name('ecpay.subscription.result');
 
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('super-admin')->name('super-admin.')->group(function () {
     Route::get('/subscriptions', [UserSubscriptionController::class, 'index'])->name('subscriptions.index');

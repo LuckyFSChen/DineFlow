@@ -138,7 +138,7 @@
                                                 <div class="flex items-start justify-between gap-4">
                                                     <div class="min-w-0">
                                                         <h3 class="text-lg font-bold text-brand-dark">{{ $product->name }}</h3>
-                                                        <p class="mt-2 line-clamp-2 text-sm leading-6 text-brand-primary/75">{{ $product->description ?: '精選現做餐點，推薦加入購物車一起帶走。' }}</p>
+                                                        <p class="mt-2 line-clamp-2 text-sm leading-6 text-brand-primary/75">{{ $product->description ?: '精選現做餐點，快加入購物車！' }}</p>
                                                     </div>
                                                     @if($product->is_sold_out)
                                                         <div class="shrink-0 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">已售完</div>
@@ -175,15 +175,54 @@
                         </section>
                     @endforeach
                 </div>
+
             </div>
         @endif
     </div>
 </div>
 
-<div class="fixed inset-x-0 bottom-0 z-40 border-t border-brand-soft/60 bg-white/95 px-4 py-4 backdrop-blur md:hidden">
+@if($categories->isNotEmpty())
+<aside class="fixed right-6 top-24 z-30 hidden w-80 xl:block">
+    <div class="overflow-hidden rounded-[1.5rem] border border-brand-soft/70 bg-white shadow-[0_18px_40px_rgba(90,30,14,0.1)]">
+        <div class="border-b border-brand-soft/60 bg-brand-dark px-4 py-4 text-white">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-highlight/80">購物車預覽</p>
+            <p class="mt-1 text-sm font-semibold">{{ $cartCount > 0 ? $cartCount . ' 項 | NT$ ' . number_format($cartTotal) : '購物車目前是空的' }}</p>
+        </div>
+
+        <div class="max-h-[52vh] space-y-3 overflow-y-auto px-4 py-4">
+            @forelse($cartPreviewItems->take(6) as $item)
+                <article class="rounded-2xl border border-brand-soft/70 bg-brand-soft/15 px-3 py-3">
+                    <div class="flex items-start justify-between gap-2">
+                        <p class="text-sm font-semibold text-brand-dark">{{ $item['product_name'] ?? '商品' }}</p>
+                        <p class="shrink-0 text-xs font-semibold text-brand-primary">x{{ $item['qty'] ?? 1 }}</p>
+                    </div>
+                    @if(!empty($item['option_label']))
+                        <p class="mt-1 text-xs text-brand-primary/75">{{ $item['option_label'] }}</p>
+                    @endif
+                    <p class="mt-2 text-xs font-semibold text-brand-accent">小計 NT$ {{ number_format((int) ($item['subtotal'] ?? 0)) }}</p>
+                </article>
+            @empty
+                <div class="rounded-2xl border border-dashed border-brand-soft/80 bg-brand-soft/10 px-3 py-8 text-center text-sm text-brand-primary/75">
+                    尚未加入商品
+                </div>
+            @endforelse
+
+            @if($cartPreviewItems->count() > 6)
+                <p class="text-center text-xs font-semibold text-brand-primary/70">還有 {{ $cartPreviewItems->count() - 6 }} 項，請前往購物車查看</p>
+            @endif
+        </div>
+
+        <div class="border-t border-brand-soft/60 p-4">
+            <a href="{{ route('customer.takeout.cart.show', ['store' => $store]) }}" class="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-brand-highlight px-4 text-sm font-semibold text-brand-dark transition hover:bg-brand-soft">查看購物車{{ $cartCount > 0 ? ' (' . $cartCount . ')' : '' }}</a>
+        </div>
+    </div>
+</aside>
+@endif
+
+<div class="fixed inset-x-0 bottom-0 z-40 border-t border-brand-soft/60 bg-white/95 px-4 py-4 backdrop-blur">
     <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-[1.75rem] bg-brand-dark px-4 py-3 text-white shadow-[0_18px_44px_rgba(90,30,14,0.24)] transition-transform duration-200" data-cart-bar>
         <div>
-            <p class="text-xs uppercase tracking-[0.2em] text-brand-highlight/80">{{ $orderingAvailable ? 'Cart Ready' : 'Closed' }}</p>
+            <p class="text-xs uppercase tracking-[0.2em] text-brand-highlight/80">{{ $orderingAvailable ? '營業中' : '暫停點餐' }}</p>
             <p class="mt-1 text-sm font-semibold">{{ $cartCount > 0 ? $cartCount . ' 項 | NT$ ' . number_format($cartTotal) : '購物車目前是空的' }}</p>
             @if(isset($orderHistory) && $orderHistory->isNotEmpty())
                 <div class="mt-1 flex flex-wrap gap-2">
@@ -197,7 +236,7 @@
     </div>
 </div>
 
-<div id="option-modal" class="fixed inset-0 z-[90] hidden items-end justify-center bg-black/45 p-4 sm:items-center">
+<div id="option-modal" class="fixed inset-0 z-[90] hidden items-center justify-center bg-black/45 p-4">
     <div class="w-full max-w-lg rounded-3xl bg-white p-5 shadow-2xl">
         <div class="flex items-center justify-between">
             <h3 id="option-modal-title" class="text-lg font-bold text-brand-dark">選擇搭配</h3>
@@ -353,9 +392,10 @@
             payloadInput.value = JSON.stringify(payload);
         }
 
-        activeForm.dataset.confirmed = '1';
+        const confirmedForm = activeForm;
+        confirmedForm.dataset.confirmed = '1';
         closeModal();
-        activeForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        confirmedForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
     });
 
     forms.forEach((form) => {

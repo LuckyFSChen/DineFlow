@@ -187,7 +187,7 @@
             </div>
         </div>
 
-        <div id="option-modal" class="fixed inset-0 z-[90] hidden items-end justify-center bg-black/45 p-4 sm:items-center">
+        <div id="option-modal" class="fixed inset-0 z-[90] hidden items-center justify-center bg-black/45 p-4">
             <div class="w-full max-w-lg rounded-3xl bg-white p-5 shadow-2xl">
                 <div class="flex items-center justify-between">
                     <h3 id="option-modal-title" class="text-lg font-bold text-brand-dark">選擇搭配</h3>
@@ -346,9 +346,10 @@
                 payloadInput.value = JSON.stringify(payload);
             }
 
-            activeForm.dataset.confirmed = '1';
+            const confirmedForm = activeForm;
+            confirmedForm.dataset.confirmed = '1';
             closeModal();
-            activeForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            confirmedForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
         });
 
         forms.forEach((form) => {

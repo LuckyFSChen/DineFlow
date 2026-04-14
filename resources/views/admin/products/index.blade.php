@@ -10,6 +10,7 @@
             </div>
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">回店家列表</a>
+                <button type="button" id="create-category-btn" class="inline-flex items-center justify-center rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">新增分類</button>
                 <button type="button" id="create-product-btn" class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500">新增商品</button>
             </div>
         </div>
@@ -37,9 +38,14 @@
                     <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 class="text-xl font-bold text-slate-900">{{ $category->name }}</h2>
-                            <p class="mt-1 text-sm text-slate-500">{{ $category->products->count() }} 項商品</p>
+                            <p class="mt-1 text-sm text-slate-500">{{ $category->products->count() }} 項商品 ・ 排序 {{ $category->sort ?? 1 }}</p>
                         </div>
-                        <button type="button" class="inline-flex items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100" data-create-in-category="{{ $category->id }}">在此分類新增</button>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100" data-edit-category="{{ $category->id }}">編輯分類</button>
+                            <button type="button" class="inline-flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100" data-disable-category="{{ $category->id }}" data-category-name="{{ $category->name }}">停用分類</button>
+                            <button type="button" class="inline-flex items-center justify-center rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100" data-delete-category="{{ $category->id }}" data-category-name="{{ $category->name }}">刪除分類</button>
+                            <button type="button" class="inline-flex items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100" data-create-in-category="{{ $category->id }}">新增商品</button>
+                        </div>
                     </div>
 
                     @if($category->products->isNotEmpty())
@@ -70,8 +76,8 @@
                             @endforeach
                         </div>
                     @else
-                        <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500" data-category-products>
-                            這個分類還沒有商品，點右上角「在此分類新增」快速建立。
+                        <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500" data-category-products data-category-id="{{ $category->id }}">
+                            <div data-empty-placeholder>這個分類還沒有商品，點右上角「新增商品」快速建立。</div>
                         </div>
                     @endif
                 </section>
@@ -80,6 +86,37 @@
                     <p class="text-slate-600">目前沒有可用分類，請先建立分類再新增商品。</p>
                 </div>
             @endforelse
+
+            @if($inactiveCategories->isNotEmpty())
+                <section class="rounded-3xl border border-amber-200 bg-amber-50/40 p-5 shadow-sm">
+                    <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 class="text-xl font-bold text-amber-900">已停用分類</h2>
+                            <p class="mt-1 text-sm text-amber-700">需要恢復時可直接重新啟用，不會刪除原本分類與商品關聯。</p>
+                        </div>
+                        <span class="inline-flex w-fit items-center rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-semibold text-amber-700">{{ $inactiveCategories->count() }} 筆</span>
+                    </div>
+
+                    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                        @foreach($inactiveCategories as $inactiveCategory)
+                            <article class="rounded-2xl border border-amber-200 bg-white p-4">
+                                <h3 class="text-base font-semibold text-slate-900">{{ $inactiveCategory->name }}</h3>
+                                <p class="mt-1 text-sm text-slate-500">排序 {{ $inactiveCategory->sort ?? 1 }} ・ {{ $inactiveCategory->products_count }} 項商品</p>
+                                <div class="mt-3 flex gap-2">
+                                    <button
+                                        type="button"
+                                        class="inline-flex flex-1 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                                        data-enable-category="{{ $inactiveCategory->id }}"
+                                        data-category-name="{{ $inactiveCategory->name }}"
+                                    >
+                                        重新啟用
+                                    </button>
+                                </div>
+                            </article>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
         </div>
     </div>
 </div>
@@ -171,6 +208,41 @@
     </div>
 </div>
 
+<div id="category-modal" class="fixed inset-0 z-[130] hidden items-end justify-center bg-black/50 p-4 sm:items-center">
+    <div class="w-full max-w-xl rounded-3xl bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+            <div>
+                <h3 id="category-modal-title" class="text-lg font-bold text-slate-900">新增分類</h3>
+                <p class="text-xs text-slate-500">建立或修改商品分類</p>
+            </div>
+            <button type="button" id="category-modal-close" class="rounded-full p-2 text-slate-500 hover:bg-slate-100">✕</button>
+        </div>
+
+        <form id="category-modal-form" class="px-6 py-5">
+            <input type="hidden" name="_method" id="category-modal-method" value="POST">
+
+            <div class="space-y-4">
+                <div>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">分類名稱</label>
+                    <input type="text" name="name" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" required>
+                </div>
+
+                <div>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">排序</label>
+                    <input type="number" name="sort" min="1" value="1" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                </div>
+            </div>
+
+            <div id="category-modal-error" class="mt-4 hidden rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"></div>
+
+            <div class="mt-6 flex gap-2">
+                <button type="submit" id="category-modal-submit" class="inline-flex flex-1 items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500">儲存分類</button>
+                <button type="button" id="category-modal-cancel" class="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">取消</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 (() => {
     const csrfToken = '{{ csrf_token() }}';
@@ -180,6 +252,13 @@
     const updateUrlTemplate = '{{ route('admin.stores.products.update', [$store, '__PRODUCT__']) }}';
     const deleteUrlTemplate = '{{ route('admin.stores.products.destroy', [$store, '__PRODUCT__']) }}';
     const reorderUrl = '{{ route('admin.stores.products.reorder', $store) }}';
+    const moveUrl = '{{ route('admin.stores.products.move', $store) }}';
+    const createCategoryUrl = '{{ route('admin.stores.categories.store', $store) }}';
+    const editCategoryUrlTemplate = '{{ route('admin.stores.categories.edit', [$store, '__CATEGORY__']) }}';
+    const updateCategoryUrlTemplate = '{{ route('admin.stores.categories.update', [$store, '__CATEGORY__']) }}';
+    const disableCategoryUrlTemplate = '{{ route('admin.stores.categories.disable', [$store, '__CATEGORY__']) }}';
+    const enableCategoryUrlTemplate = '{{ route('admin.stores.categories.enable', [$store, '__CATEGORY__']) }}';
+    const deleteCategoryUrlTemplate = '{{ route('admin.stores.categories.destroy', [$store, '__CATEGORY__']) }}';
 
     const flash = document.getElementById('product-flash');
     const modal = document.getElementById('product-modal');
@@ -197,10 +276,22 @@
     const clearAllBtn = document.querySelector('[data-option-clear-all]');
     const templateButtons = document.querySelectorAll('[data-option-template]');
 
+    const categoryModal = document.getElementById('category-modal');
+    const categoryModalTitle = document.getElementById('category-modal-title');
+    const categoryModalClose = document.getElementById('category-modal-close');
+    const categoryModalCancel = document.getElementById('category-modal-cancel');
+    const categoryModalForm = document.getElementById('category-modal-form');
+    const categoryModalMethod = document.getElementById('category-modal-method');
+    const categoryModalSubmit = document.getElementById('category-modal-submit');
+    const categoryModalError = document.getElementById('category-modal-error');
+    const createCategoryBtn = document.getElementById('create-category-btn');
+
     let currentMode = 'create';
     let currentProductId = null;
     let optionGroups = [];
     const reorderAbortControllers = new Map();
+    let categoryMode = 'create';
+    let currentCategoryId = null;
 
     const optionTemplates = {
         steak: [
@@ -379,12 +470,212 @@
         modal.classList.add('flex');
     };
 
+    const openCategoryModal = () => {
+        categoryModal.classList.remove('hidden');
+        categoryModal.classList.add('flex');
+    };
+
     const closeModal = () => {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
         modalError.classList.add('hidden');
         modalError.textContent = '';
         currentProductId = null;
+    };
+
+    const closeCategoryModal = () => {
+        categoryModal.classList.add('hidden');
+        categoryModal.classList.remove('flex');
+        categoryModalError.classList.add('hidden');
+        categoryModalError.textContent = '';
+        currentCategoryId = null;
+    };
+
+    const setCategoryFormValues = (category = null) => {
+        categoryModalForm.reset();
+        categoryModalMethod.value = 'POST';
+
+        if (!category) {
+            categoryModalForm.elements['sort'].value = 1;
+            return;
+        }
+
+        categoryModalForm.elements['name'].value = category.name ?? '';
+        categoryModalForm.elements['sort'].value = category.sort ?? 1;
+    };
+
+    const openCreateCategoryModal = () => {
+        categoryMode = 'create';
+        currentCategoryId = null;
+        categoryModalTitle.textContent = '新增分類';
+        categoryModalSubmit.textContent = '建立分類';
+        setCategoryFormValues(null);
+        openCategoryModal();
+    };
+
+    const openEditCategoryModal = async (categoryId) => {
+        categoryMode = 'edit';
+        currentCategoryId = categoryId;
+        categoryModalTitle.textContent = '編輯分類';
+        categoryModalSubmit.textContent = '更新分類';
+
+        try {
+            const url = editCategoryUrlTemplate.replace('__CATEGORY__', String(categoryId));
+            const res = await fetch(url, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+                throw new Error(data.message || '讀取分類資料失敗');
+            }
+
+            setCategoryFormValues(data.category);
+            openCategoryModal();
+        } catch (e) {
+            showFlash(e.message || '讀取分類資料失敗', 'error');
+        }
+    };
+
+    const submitCategoryForm = async (event) => {
+        event.preventDefault();
+        categoryModalError.classList.add('hidden');
+        categoryModalError.textContent = '';
+
+        const formData = new FormData(categoryModalForm);
+        let url = createCategoryUrl;
+
+        if (categoryMode === 'edit' && currentCategoryId) {
+            url = updateCategoryUrlTemplate.replace('__CATEGORY__', String(currentCategoryId));
+            formData.set('_method', 'PUT');
+        }
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: formData,
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+                const validationMessage = Object.values(data.errors || {}).flat().join('，');
+                throw new Error(data.message || validationMessage || '儲存分類失敗');
+            }
+
+            closeCategoryModal();
+            showFlash(data.message || '分類已儲存');
+            window.location.reload();
+        } catch (e) {
+            categoryModalError.classList.remove('hidden');
+            categoryModalError.textContent = e.message || '儲存分類失敗';
+        }
+    };
+
+    const deleteCategory = async (categoryId, categoryName) => {
+        if (!confirm(`確定要刪除分類「${categoryName}」嗎？`)) {
+            return;
+        }
+
+        const url = deleteCategoryUrlTemplate.replace('__CATEGORY__', String(categoryId));
+        const formData = new FormData();
+        formData.set('_method', 'DELETE');
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: formData,
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+                const validationMessage = Object.values(data.errors || {}).flat().join('，');
+                throw new Error(data.message || validationMessage || '刪除分類失敗');
+            }
+
+            showFlash(data.message || '分類已刪除');
+            window.location.reload();
+        } catch (e) {
+            showFlash(e.message || '刪除分類失敗', 'error');
+        }
+    };
+
+    const disableCategory = async (categoryId, categoryName) => {
+        if (!confirm(`確定要停用分類「${categoryName}」嗎？停用後此分類將不顯示於商品管理中心。`)) {
+            return;
+        }
+
+        const url = disableCategoryUrlTemplate.replace('__CATEGORY__', String(categoryId));
+        const formData = new FormData();
+        formData.set('_method', 'PATCH');
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: formData,
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+                const validationMessage = Object.values(data.errors || {}).flat().join('，');
+                throw new Error(data.message || validationMessage || '停用分類失敗');
+            }
+
+            showFlash(data.message || '分類已停用');
+            window.location.reload();
+        } catch (e) {
+            showFlash(e.message || '停用分類失敗', 'error');
+        }
+    };
+
+    const enableCategory = async (categoryId, categoryName) => {
+        if (!confirm(`確定要重新啟用分類「${categoryName}」嗎？`)) {
+            return;
+        }
+
+        const url = enableCategoryUrlTemplate.replace('__CATEGORY__', String(categoryId));
+        const formData = new FormData();
+        formData.set('_method', 'PATCH');
+
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: formData,
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+                const validationMessage = Object.values(data.errors || {}).flat().join('，');
+                throw new Error(data.message || validationMessage || '啟用分類失敗');
+            }
+
+            showFlash(data.message || '分類已重新啟用');
+            window.location.reload();
+        } catch (e) {
+            showFlash(e.message || '啟用分類失敗', 'error');
+        }
     };
 
     const setFormValues = (product = null, categoryId = null) => {
@@ -538,6 +829,26 @@
         }
     };
 
+    const persistCategoryMove = async (payload) => {
+        const res = await fetch(moveUrl, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+            throw new Error(data.message || '跨分類排序更新失敗');
+        }
+
+        return data;
+    };
+
     const clearDropTargetStyles = (container) => {
         container.querySelectorAll('[data-product-card].drop-target').forEach((card) => {
             card.classList.remove('drop-target', 'ring-2', 'ring-amber-300');
@@ -589,115 +900,208 @@
     };
 
     const initProductSorting = () => {
-        const containers = document.querySelectorAll('[data-category-products][data-category-id]');
-        containers.forEach((container) => {
-            let draggingCard = null;
-            let startSignature = '';
-            let lastPersistedSignature = orderSignature(container);
-            let rafId = 0;
-            let lastClientY = 0;
-            let lastClientX = 0;
-            const hoverState = { targetId: null, decision: null };
-            let pendingDropReference = null;
+        const containers = [...document.querySelectorAll('[data-category-products][data-category-id]')];
+        const hoverStateByContainer = new WeakMap();
 
-            container.querySelectorAll('[data-product-card]').forEach((card) => {
-                const handle = card.querySelector('[data-drag-product-handle]');
-                card.draggable = false;
+        const dragState = {
+            card: null,
+            sourceContainer: null,
+            currentContainer: null,
+            pendingReference: null,
+            rafId: 0,
+            clientX: 0,
+            clientY: 0,
+            startSourceSignature: '',
+        };
 
-                handle?.addEventListener('mousedown', () => {
-                    card.draggable = true;
-                    card.dataset.dragEnabled = '1';
-                });
+        const toggleEmptyPlaceholder = (container) => {
+            if (!container) {
+                return;
+            }
 
-                card.addEventListener('mouseup', () => {
-                    if (!card.classList.contains('is-dragging')) {
-                        card.draggable = false;
-                        delete card.dataset.dragEnabled;
-                    }
-                });
+            const placeholder = container.querySelector('[data-empty-placeholder]');
+            if (!placeholder) {
+                return;
+            }
 
-                card.addEventListener('dragstart', (event) => {
-                    if (card.dataset.dragEnabled !== '1') {
-                        event.preventDefault();
-                        return;
-                    }
+            const hasCards = container.querySelectorAll('[data-product-card]').length > 0;
+            placeholder.classList.toggle('hidden', hasCards);
+        };
 
-                    draggingCard = card;
-                    startSignature = orderSignature(container);
-                    hoverState.targetId = null;
-                    hoverState.decision = null;
-                    lastClientX = 0;
-                    lastClientY = 0;
-                    pendingDropReference = null;
-                    card.classList.add('is-dragging', 'opacity-60', 'ring-2', 'ring-indigo-300');
-                });
+        const attachCardEvents = (card) => {
+            if (!card) {
+                return;
+            }
 
-                card.addEventListener('dragend', async () => {
-                    card.classList.remove('is-dragging', 'opacity-60', 'ring-2', 'ring-indigo-300');
+            const handle = card.querySelector('[data-drag-product-handle]');
+            card.draggable = false;
+
+            handle?.addEventListener('mousedown', () => {
+                card.draggable = true;
+                card.dataset.dragEnabled = '1';
+            });
+
+            card.addEventListener('mouseup', () => {
+                if (!card.classList.contains('is-dragging')) {
                     card.draggable = false;
                     delete card.dataset.dragEnabled;
-                    clearDropTargetStyles(container);
-                    hoverState.targetId = null;
-                    hoverState.decision = null;
-
-                    if (rafId) {
-                        cancelAnimationFrame(rafId);
-                        rafId = 0;
-                    }
-
-                    const categoryId = container.getAttribute('data-category-id');
-                    const changed = startSignature !== orderSignature(container);
-                    if (categoryId && changed) {
-                        await persistCategorySort(categoryId, container, true);
-                        lastPersistedSignature = orderSignature(container);
-                    } else {
-                        updateSortLabels(container);
-                    }
-                    pendingDropReference = null;
-                    draggingCard = null;
-                });
+                }
             });
+
+            card.addEventListener('dragstart', (event) => {
+                if (card.dataset.dragEnabled !== '1') {
+                    event.preventDefault();
+                    return;
+                }
+
+                dragState.card = card;
+                dragState.sourceContainer = card.closest('[data-category-products][data-category-id]');
+                dragState.currentContainer = dragState.sourceContainer;
+                dragState.pendingReference = null;
+                dragState.clientX = 0;
+                dragState.clientY = 0;
+                dragState.startSourceSignature = dragState.sourceContainer ? orderSignature(dragState.sourceContainer) : '';
+
+                card.classList.add('is-dragging', 'opacity-60', 'ring-2', 'ring-indigo-300');
+            });
+
+            card.addEventListener('dragend', async () => {
+                const dragged = dragState.card;
+                if (!dragged) {
+                    return;
+                }
+
+                dragged.classList.remove('is-dragging', 'opacity-60', 'ring-2', 'ring-indigo-300');
+                dragged.draggable = false;
+                delete dragged.dataset.dragEnabled;
+
+                containers.forEach((container) => {
+                    clearDropTargetStyles(container);
+                    container.classList.remove('ring-2', 'ring-amber-300');
+                });
+
+                if (dragState.rafId) {
+                    cancelAnimationFrame(dragState.rafId);
+                    dragState.rafId = 0;
+                }
+
+                const sourceContainer = dragState.sourceContainer;
+                const targetContainer = dragState.currentContainer || sourceContainer;
+                const sourceCategoryId = sourceContainer?.getAttribute('data-category-id');
+                const targetCategoryId = targetContainer?.getAttribute('data-category-id');
+
+                if (sourceContainer && targetContainer && sourceCategoryId && targetCategoryId) {
+                    const sourceIds = [...sourceContainer.querySelectorAll('[data-product-card]')]
+                        .map((el) => Number(el.getAttribute('data-product-id')))
+                        .filter((id) => Number.isInteger(id) && id > 0);
+
+                    const targetIds = [...targetContainer.querySelectorAll('[data-product-card]')]
+                        .map((el) => Number(el.getAttribute('data-product-id')))
+                        .filter((id) => Number.isInteger(id) && id > 0);
+
+                    const movedProductId = Number(dragged.getAttribute('data-product-id'));
+
+                    const movedAcrossCategory = sourceCategoryId !== targetCategoryId;
+                    const reorderedWithinCategory = sourceCategoryId === targetCategoryId
+                        && sourceContainer
+                        && dragState.startSourceSignature !== orderSignature(sourceContainer);
+
+                    const shouldPersist = movedAcrossCategory || reorderedWithinCategory;
+
+                    if (shouldPersist && Number.isInteger(movedProductId) && movedProductId > 0) {
+                        try {
+                            const data = await persistCategoryMove({
+                                moved_product_id: movedProductId,
+                                source_category_id: Number(sourceCategoryId),
+                                target_category_id: Number(targetCategoryId),
+                                source_product_ids: sourceIds,
+                                target_product_ids: targetIds,
+                            });
+                            showFlash(data.message || '分類與排序已更新。');
+                        } catch (e) {
+                            showFlash(e.message || '分類與排序更新失敗', 'error');
+                            window.location.reload();
+                        }
+                    }
+
+                    updateSortLabels(sourceContainer);
+                    if (targetContainer !== sourceContainer) {
+                        updateSortLabels(targetContainer);
+                    }
+                    toggleEmptyPlaceholder(sourceContainer);
+                    toggleEmptyPlaceholder(targetContainer);
+                }
+
+                dragState.card = null;
+                dragState.sourceContainer = null;
+                dragState.currentContainer = null;
+                dragState.pendingReference = null;
+                dragState.startSourceSignature = '';
+            });
+        };
+
+        containers.forEach((container) => {
+            hoverStateByContainer.set(container, { targetId: null, decision: null });
+
+            container.querySelectorAll('[data-product-card]').forEach(attachCardEvents);
 
             container.addEventListener('dragover', (event) => {
                 event.preventDefault();
-                if (!draggingCard) {
+                if (!dragState.card) {
                     return;
                 }
 
-                lastClientY = event.clientY;
-                lastClientX = event.clientX;
-                if (rafId) {
+                dragState.clientX = event.clientX;
+                dragState.clientY = event.clientY;
+                dragState.currentContainer = container;
+
+                if (dragState.rafId) {
                     return;
                 }
 
-                rafId = requestAnimationFrame(() => {
-                    const dropRef = getDropReference(container, draggingCard, lastClientX, lastClientY, hoverState);
-                    pendingDropReference = dropRef.reference || null;
+                dragState.rafId = requestAnimationFrame(() => {
+                    containers.forEach((c) => {
+                        clearDropTargetStyles(c);
+                        c.classList.remove('ring-2', 'ring-amber-300');
+                    });
 
-                    clearDropTargetStyles(container);
-                    if (dropRef.target && dropRef.target !== draggingCard) {
+                    container.classList.add('ring-2', 'ring-amber-300');
+
+                    const hoverState = hoverStateByContainer.get(container) || { targetId: null, decision: null };
+                    const dropRef = getDropReference(container, dragState.card, dragState.clientX, dragState.clientY, hoverState);
+                    hoverStateByContainer.set(container, hoverState);
+                    dragState.pendingReference = dropRef.reference || null;
+
+                    if (dropRef.target && dropRef.target !== dragState.card) {
                         dropRef.target.classList.add('drop-target', 'ring-2', 'ring-amber-300');
                     }
 
-                    rafId = 0;
+                    dragState.rafId = 0;
                 });
             });
 
             container.addEventListener('drop', (event) => {
                 event.preventDefault();
-                if (!draggingCard) {
+                if (!dragState.card) {
                     return;
                 }
 
-                const expectedNext = pendingDropReference || null;
-                if (draggingCard.nextElementSibling !== expectedNext) {
-                    if (!pendingDropReference) {
-                        container.appendChild(draggingCard);
+                const dragged = dragState.card;
+                const reference = dragState.pendingReference;
+                const placeholder = container.querySelector('[data-empty-placeholder]');
+
+                if (!reference) {
+                    if (placeholder) {
+                        container.insertBefore(dragged, placeholder);
                     } else {
-                        container.insertBefore(draggingCard, pendingDropReference);
+                        container.appendChild(dragged);
                     }
-                    updateSortLabels(container);
+                } else {
+                    container.insertBefore(dragged, reference);
                 }
+
+                toggleEmptyPlaceholder(container);
+                toggleEmptyPlaceholder(dragState.sourceContainer);
             });
         });
     };
@@ -773,9 +1177,13 @@
     };
 
     document.getElementById('create-product-btn')?.addEventListener('click', () => openCreateModal());
+    createCategoryBtn?.addEventListener('click', () => openCreateCategoryModal());
     modalClose?.addEventListener('click', closeModal);
     modalCancel?.addEventListener('click', closeModal);
     modalForm?.addEventListener('submit', submitModalForm);
+    categoryModalClose?.addEventListener('click', closeCategoryModal);
+    categoryModalCancel?.addEventListener('click', closeCategoryModal);
+    categoryModalForm?.addEventListener('submit', submitCategoryForm);
 
     document.querySelectorAll('[data-create-in-category]').forEach((button) => {
         button.addEventListener('click', () => {
@@ -792,6 +1200,30 @@
     document.querySelectorAll('[data-delete-product]').forEach((button) => {
         button.addEventListener('click', () => {
             deleteProduct(button.getAttribute('data-delete-product'), button.getAttribute('data-product-name') || '商品');
+        });
+    });
+
+    document.querySelectorAll('[data-edit-category]').forEach((button) => {
+        button.addEventListener('click', () => {
+            openEditCategoryModal(button.getAttribute('data-edit-category'));
+        });
+    });
+
+    document.querySelectorAll('[data-delete-category]').forEach((button) => {
+        button.addEventListener('click', () => {
+            deleteCategory(button.getAttribute('data-delete-category'), button.getAttribute('data-category-name') || '分類');
+        });
+    });
+
+    document.querySelectorAll('[data-disable-category]').forEach((button) => {
+        button.addEventListener('click', () => {
+            disableCategory(button.getAttribute('data-disable-category'), button.getAttribute('data-category-name') || '分類');
+        });
+    });
+
+    document.querySelectorAll('[data-enable-category]').forEach((button) => {
+        button.addEventListener('click', () => {
+            enableCategory(button.getAttribute('data-enable-category'), button.getAttribute('data-category-name') || '分類');
         });
     });
 

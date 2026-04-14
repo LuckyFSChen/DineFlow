@@ -35,10 +35,15 @@ return [
         ],
     ],
 
-    'stripe' => [
-        'key' => env('STRIPE_KEY'),
-        'secret' => env('STRIPE_SECRET'),
-        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    'ecpay' => [
+        'merchant_id' => env('ECPAY_MERCHANT_ID'),
+        'hash_key' => env('ECPAY_HASH_KEY'),
+        'hash_iv' => env('ECPAY_HASH_IV'),
+        'checkout_action' => env('ECPAY_CHECKOUT_ACTION', 'https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5'),
+        'sdk_url' => env('ECPAY_SDK_URL', 'https://ecpg-stage.ecpay.com.tw/Scripts/sdk-1.0.0.js'),
+        'sdk_server_type' => env('ECPAY_SDK_SERVER_TYPE', 'Stage'),
+        'ecpg_create_token_url' => env('ECPAY_ECPG_CREATE_TOKEN_URL', 'https://ecpg-stage.ecpay.com.tw/Merchant/CreateToken'),
+        'ecpg_create_trade_url' => env('ECPAY_ECPG_CREATE_TRADE_URL', 'https://ecpg-stage.ecpay.com.tw/Merchant/CreateTrade'),
     ],
 
 ];

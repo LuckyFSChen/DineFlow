@@ -3,12 +3,19 @@
 namespace App\Http\Controllers\Merchant;
 
 use App\Http\Controllers\Controller;
+use App\Models\SubscriptionPayment;
 use App\Models\SubscriptionPlan;
+use App\Models\User;
+use App\Support\EcpayEcpgService;
+use App\Support\EcpayService;
+use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
-use Stripe\Checkout\Session;
-use Stripe\Stripe;
 
 class SubscriptionController extends Controller
 {
@@ -25,7 +32,7 @@ class SubscriptionController extends Controller
         ]);
     }
 
-    public function subscribe(Request $request): RedirectResponse
+    public function subscribe(Request $request): RedirectResponse|View
     {
         $validated = $request->validate([
             'plan_id' => ['required', 'exists:subscription_plans,id'],
@@ -41,74 +48,307 @@ class SubscriptionController extends Controller
             ->where('is_active', true)
             ->firstOrFail();
 
-        $stripeKey = (string) config('services.stripe.secret');
-        if ($stripeKey === '') {
+        $merchantId = (string) config('services.ecpay.merchant_id');
+        $hashKey = (string) config('services.ecpay.hash_key');
+        $hashIv = (string) config('services.ecpay.hash_iv');
+        $checkoutAction = (string) config('services.ecpay.checkout_action');
+        $sdkUrl = (string) config('services.ecpay.sdk_url');
+        $sdkServerType = (string) config('services.ecpay.sdk_server_type', 'Stage');
+
+        if ($merchantId === '' || $hashKey === '' || $hashIv === '') {
             return redirect()
                 ->route('merchant.subscription.index')
-                ->with('error', 'Stripe 金流尚未設定，請先設定 STRIPE_SECRET。');
+                ->with('error', '綠界金流尚未設定，請先設定 ECPAY 參數。');
         }
 
-        [$interval, $intervalCount] = $this->stripeRecurringCycle((int) $plan->duration_days);
+        $merchantTradeNo = $this->generateMerchantTradeNo();
+        $itemName = 'DineFlow ' . $plan->name . ' 訂閱方案';
 
-        Stripe::setApiKey($stripeKey);
-
-        $lineItem = [
-            'quantity' => 1,
+        $payload = [
+            'MerchantID' => $merchantId,
+            'MerchantTradeNo' => $merchantTradeNo,
+            'MerchantTradeDate' => now()->format('Y/m/d H:i:s'),
+            'PaymentType' => 'aio',
+            'TotalAmount' => (int) $plan->price_twd,
+            'TradeDesc' => 'DineFlow Merchant Subscription',
+            'ItemName' => $itemName,
+            'ReturnURL' => route('ecpay.subscription.notify'),
+            'OrderResultURL' => route('ecpay.subscription.result'),
+            'ChoosePayment' => 'ALL',
+            'ClientBackURL' => route('merchant.subscription.success'),
+            'EncryptType' => 1,
+            'CustomField1' => (string) $user->id,
+            'CustomField2' => (string) $plan->id,
         ];
 
-        if (! empty($plan->stripe_price_id)) {
-            $lineItem['price'] = $plan->stripe_price_id;
-        } else {
-            $lineItem['price_data'] = [
+        $payload['CheckMacValue'] = EcpayService::generateCheckMacValue($payload, $hashKey, $hashIv);
+
+        SubscriptionPayment::query()->updateOrCreate(
+            ['ecpay_merchant_trade_no' => $merchantTradeNo],
+            [
+                'user_id' => $user->id,
+                'subscription_plan_id' => $plan->id,
+                'amount_twd' => (int) $plan->price_twd,
                 'currency' => 'twd',
-                'unit_amount' => (int) $plan->price_twd,
-                'product_data' => [
-                    'name' => 'DineFlow - ' . $plan->name,
-                    'description' => '商家訂閱方案',
-                ],
-                'recurring' => [
-                    'interval' => $interval,
-                    'interval_count' => $intervalCount,
-                ],
-            ];
+                'status' => 'pending',
+                'paid_at' => null,
+                'ecpay_trade_no' => null,
+                'ecpay_payment_type' => null,
+                'payload' => ['request' => $payload],
+            ]
+        );
+
+        $tokenPayload = [
+            'MerchantTradeNo' => $merchantTradeNo,
+            'MerchantTradeDate' => $payload['MerchantTradeDate'],
+            'TotalAmount' => (int) $plan->price_twd,
+            'TradeDesc' => $payload['TradeDesc'],
+            'ItemName' => $itemName,
+            'ReturnURL' => route('ecpay.subscription.notify'),
+            'OrderResultURL' => route('ecpay.subscription.result'),
+            'ChoosePayment' => 'ALL',
+            'NeedExtraPaidInfo' => 'Y',
+            'CustomField1' => (string) $user->id,
+            'CustomField2' => (string) $plan->id,
+        ];
+
+        $ecpg = new EcpayEcpgService();
+        $tokenResult = $ecpg->createToken($tokenPayload);
+
+        if ($tokenResult['ok']) {
+            $token = (string) (Arr::get($tokenResult, 'data.Token') ?: Arr::get($tokenResult, 'data.PayToken') ?: '');
+            if ($token !== '' && $sdkUrl !== '') {
+                return view('merchant.subscription.ecpay-sdk', [
+                    'token' => $token,
+                    'merchantTradeNo' => $merchantTradeNo,
+                    'sdkUrl' => $sdkUrl,
+                    'sdkServerType' => $sdkServerType,
+                ]);
+            }
         }
 
-        $session = Session::create([
-            'mode' => 'subscription',
-            'success_url' => route('merchant.subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url' => route('merchant.subscription.index'),
-            'client_reference_id' => (string) $user->id,
-            'customer_email' => $user->email,
-            'metadata' => [
-                'user_id' => (string) $user->id,
-                'plan_id' => (string) $plan->id,
-            ],
-            'line_items' => [$lineItem],
-        ]);
+        if ($checkoutAction === '') {
+            return redirect()
+                ->route('merchant.subscription.index')
+                ->with('error', '無法取得站內付 Token，且未設定導頁式付款備援。');
+        }
 
-        return redirect()->away($session->url);
+        return view('merchant.subscription.ecpay-redirect', [
+            'checkoutAction' => $checkoutAction,
+            'payload' => $payload,
+        ]);
     }
 
     public function success(Request $request): RedirectResponse
     {
-        $sessionId = (string) $request->query('session_id', '');
-        if ($sessionId === '') {
-            return redirect()
-                ->route('merchant.subscription.index')
-                ->with('error', '找不到 Stripe 結帳資訊。');
-        }
-
         return redirect()
             ->route('merchant.subscription.index')
-            ->with('success', '付款完成，系統正在同步你的訂閱狀態。');
+            ->with('success', '已返回 DineFlow，付款結果同步中，請稍候重新整理查看狀態。');
     }
 
-    private function stripeRecurringCycle(int $durationDays): array
+    public function notify(Request $request): Response
     {
-        if ($durationDays >= 365) {
-            return ['year', max((int) round($durationDays / 365), 1)];
+        $hashKey = (string) config('services.ecpay.hash_key');
+        $hashIv = (string) config('services.ecpay.hash_iv');
+
+        if ($hashKey === '' || $hashIv === '') {
+            return response('0|ECPAY_NOT_CONFIGURED', 500);
         }
 
-        return ['month', max((int) round($durationDays / 30), 1)];
+        $normalized = $this->normalizeEcpayCallbackPayload($request);
+        if ($normalized['is_check_mac_required'] && ! EcpayService::verifyCheckMacValue($normalized['payload'], $hashKey, $hashIv)) {
+            return response('0|CHECKMAC_INVALID', 400);
+        }
+
+        $this->applyPaymentResult($normalized['payload']);
+
+        return response('1|OK', 200);
+    }
+
+    public function createTrade(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'merchant_trade_no' => ['required', 'string', 'max:20'],
+            'pay_token' => ['required', 'string', 'max:128'],
+            'payment_type' => ['nullable', 'string', 'max:30'],
+        ]);
+
+        $user = $request->user();
+        if (! $user || ! $user->isMerchant()) {
+            return response()->json([
+                'ok' => false,
+                'message' => '僅商家帳號可建立付款交易。',
+            ], 403);
+        }
+
+        $payment = SubscriptionPayment::query()
+            ->where('ecpay_merchant_trade_no', (string) $validated['merchant_trade_no'])
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $payment) {
+            return response()->json([
+                'ok' => false,
+                'message' => '找不到對應的訂閱付款資料。',
+            ], 404);
+        }
+
+        $tradePayload = [
+            'MerchantTradeNo' => (string) $validated['merchant_trade_no'],
+            'PayToken' => (string) $validated['pay_token'],
+            'PaymentType' => (string) ($validated['payment_type'] ?? ''),
+            'TotalAmount' => (int) $payment->amount_twd,
+        ];
+
+        $ecpg = new EcpayEcpgService();
+        $tradeResult = $ecpg->createTrade($tradePayload);
+        $data = (array) ($tradeResult['data'] ?? []);
+        $rtnCode = (string) Arr::get($data, 'RtnCode', '');
+
+        if ($rtnCode === '10300028') {
+            return response()->json([
+                'ok' => true,
+                'message' => '此訂單已建立或處理中，請勿重複送出，請稍候查看訂閱狀態。',
+                'redirect_url' => route('merchant.subscription.success'),
+                'result' => $data,
+            ]);
+        }
+
+        $this->applyPaymentResult($data);
+
+        $redirectUrl = (string) (
+            Arr::get($data, 'AuthURL')
+            ?: Arr::get($data, 'PaymentURL')
+            ?: Arr::get($data, 'ThreeDSURL')
+            ?: ''
+        );
+
+        if (! $tradeResult['ok']) {
+            return response()->json([
+                'ok' => false,
+                'message' => (string) ($tradeResult['message'] ?: '建立交易失敗，請稍後再試。'),
+                'raw' => $tradeResult['raw'] ?? [],
+            ], 422);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'message' => (string) ($tradeResult['message'] ?: '交易已建立，請依指示完成付款。'),
+            'redirect_url' => $redirectUrl,
+            'result' => $data,
+        ]);
+    }
+
+    private function generateMerchantTradeNo(): string
+    {
+        for ($i = 0; $i < 10; $i++) {
+            $candidate = 'DF' . now()->format('ymdHis') . strtoupper(Str::random(6));
+
+            if (! SubscriptionPayment::query()->where('ecpay_merchant_trade_no', $candidate)->exists()) {
+                return $candidate;
+            }
+        }
+
+        return 'DF' . now()->format('ymdHis') . strtoupper(Str::random(6));
+    }
+
+    public function result(Request $request): View
+    {
+        $normalized = $this->normalizeEcpayCallbackPayload($request);
+        $isPaid = $this->applyPaymentResult($normalized['payload']);
+
+        return view('merchant.subscription.result', [
+            'isPaid' => $isPaid,
+        ]);
+    }
+
+    private function normalizeEcpayCallbackPayload(Request $request): array
+    {
+        $payload = $request->all();
+
+        if (isset($payload['ResultData']) && is_string($payload['ResultData'])) {
+            $decodedResultData = json_decode($payload['ResultData'], true);
+            if (is_array($decodedResultData)) {
+                $payload = $decodedResultData;
+            }
+        }
+
+        if (isset($payload['Data']) && is_string($payload['Data'])) {
+            $decodedData = json_decode($payload['Data'], true);
+            if (is_array($decodedData)) {
+                $payload = array_merge($payload, $decodedData);
+            }
+        }
+
+        return [
+            'payload' => $payload,
+            'is_check_mac_required' => isset($payload['CheckMacValue']),
+        ];
+    }
+
+    private function applyPaymentResult(array $data): bool
+    {
+        $merchantTradeNo = (string) (Arr::get($data, 'MerchantTradeNo') ?: Arr::get($data, 'OrderInfo.MerchantTradeNo', ''));
+        if ($merchantTradeNo === '') {
+            return false;
+        }
+
+        $existingPayment = SubscriptionPayment::query()
+            ->where('ecpay_merchant_trade_no', $merchantTradeNo)
+            ->first();
+
+        $customField = Arr::get($data, 'CustomField');
+        $customFieldData = is_string($customField) ? json_decode($customField, true) : [];
+        if (! is_array($customFieldData)) {
+            $customFieldData = [];
+        }
+
+        $userId = (int) (Arr::get($data, 'CustomField1') ?: Arr::get($customFieldData, 'user_id') ?: $existingPayment?->user_id ?: 0);
+        $planId = (int) (Arr::get($data, 'CustomField2') ?: Arr::get($customFieldData, 'plan_id') ?: $existingPayment?->subscription_plan_id ?: 0);
+
+        $user = User::query()->find($userId);
+        $plan = SubscriptionPlan::query()->find($planId);
+        if (! $user || ! $plan) {
+            return false;
+        }
+
+        $tradeStatus = (string) Arr::get($data, 'OrderInfo.TradeStatus', '');
+        $rtnCode = (string) Arr::get($data, 'RtnCode', '');
+        $isPaid = $rtnCode === '1' || $tradeStatus === '1';
+
+        $paidAt = null;
+        if ($isPaid) {
+            $base = $user->subscription_ends_at && $user->subscription_ends_at->isFuture()
+                ? Carbon::parse($user->subscription_ends_at)
+                : now();
+
+            $user->update([
+                'subscription_plan_id' => $plan->id,
+                'subscription_ends_at' => $base->copy()->addDays((int) $plan->duration_days),
+            ]);
+
+            $paidAt = now();
+        }
+
+        $amount = Arr::get($data, 'TradeAmt', Arr::get($data, 'OrderInfo.TradeAmt', 0));
+        $tradeNo = (string) (Arr::get($data, 'TradeNo') ?: Arr::get($data, 'OrderInfo.TradeNo', ''));
+        $paymentType = (string) (Arr::get($data, 'PaymentType') ?: Arr::get($data, 'OrderInfo.PaymentType', ''));
+
+        SubscriptionPayment::query()->updateOrCreate(
+            ['ecpay_merchant_trade_no' => $merchantTradeNo],
+            [
+                'user_id' => $user->id,
+                'subscription_plan_id' => $plan->id,
+                'amount_twd' => max((int) $amount, 0),
+                'currency' => 'twd',
+                'status' => $isPaid ? 'paid' : 'failed',
+                'paid_at' => $paidAt,
+                'ecpay_trade_no' => $tradeNo,
+                'ecpay_payment_type' => $paymentType,
+                'payload' => $data,
+            ]
+        );
+
+        return $isPaid;
     }
 }

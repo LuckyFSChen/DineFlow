@@ -50,6 +50,7 @@ class TakeoutOrderingController extends Controller
         $cart = session()->get($this->getTakeoutCartSessionKey($store), []);
         $cartCount = collect($cart)->sum('qty');
         $cartTotal = collect($cart)->sum('subtotal');
+        $cartPreviewItems = collect($cart)->values();
         $orderHistory = $this->getTakeoutOrderHistory($store);
 
         return view('customer.takeout.menu-mobile', compact(
@@ -58,6 +59,7 @@ class TakeoutOrderingController extends Controller
             'orderingAvailable',
             'cartCount',
             'cartTotal',
+            'cartPreviewItems',
             'orderHistory'
         ));
     }

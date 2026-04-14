@@ -13,7 +13,6 @@ class SubscriptionPlanSeeder extends Seeder
             [
                 'name' => 'Basic Monthly',
                 'slug' => 'basic-monthly',
-                'stripe_price_id' => null,
                 'price_twd' => 999,
                 'duration_days' => 30,
                 'max_stores' => 1,
@@ -27,7 +26,6 @@ class SubscriptionPlanSeeder extends Seeder
             [
                 'name' => 'Growth Monthly',
                 'slug' => 'growth-monthly',
-                'stripe_price_id' => null,
                 'price_twd' => 1999,
                 'duration_days' => 30,
                 'max_stores' => 3,
@@ -41,7 +39,6 @@ class SubscriptionPlanSeeder extends Seeder
             [
                 'name' => 'Pro Yearly',
                 'slug' => 'pro-yearly',
-                'stripe_price_id' => null,
                 'price_twd' => 19999,
                 'duration_days' => 365,
                 'max_stores' => null,

@@ -12,11 +12,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('subscription_plan_id')->nullable()->constrained('subscription_plans')->nullOnDelete();
-            $table->string('stripe_event_id')->nullable()->unique();
-            $table->string('stripe_checkout_session_id')->nullable()->index();
-            $table->string('stripe_subscription_id')->nullable()->index();
-            $table->string('stripe_invoice_id')->nullable()->index();
-            $table->string('stripe_payment_intent_id')->nullable()->index();
+            $table->string('ecpay_merchant_trade_no')->nullable()->unique();
+            $table->string('ecpay_trade_no')->nullable()->index();
+            $table->string('ecpay_payment_type')->nullable();
             $table->unsignedInteger('amount_twd')->default(0);
             $table->string('currency', 10)->default('twd');
             $table->string('status', 30)->default('pending');

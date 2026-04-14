@@ -55,14 +55,14 @@
                         @csrf
                         <input type="hidden" name="plan_id" value="{{ $plan->id }}">
                         <button type="submit" class="inline-flex w-full items-center justify-center rounded-xl bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-accent hover:text-brand-dark">
-                            使用 Stripe 啟用 / 續訂
+                            使用綠界啟用 / 續訂
                         </button>
                     </form>
                 </div>
             @endforeach
         </div>
 
-        <p class="mt-6 text-xs text-slate-500">測試模式可使用 Stripe 測試卡號，例如 4242 4242 4242 4242。</p>
+        <p class="mt-6 text-xs text-slate-500">付款將導向綠界金流頁面，完成付款後系統會自動同步訂閱狀態。</p>
     </div>
 </div>
 @endsection

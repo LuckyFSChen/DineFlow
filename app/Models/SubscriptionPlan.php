@@ -9,7 +9,6 @@ class SubscriptionPlan extends Model
     protected $fillable = [
         'name',
         'slug',
-        'stripe_price_id',
         'price_twd',
         'duration_days',
         'max_stores',

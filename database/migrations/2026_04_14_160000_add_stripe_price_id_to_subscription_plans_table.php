@@ -8,16 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('subscription_plans', function (Blueprint $table) {
-            $table->string('stripe_price_id')->nullable()->unique()->after('slug');
-        });
+        // Removed: Stripe price ID is no longer used.
     }
 
     public function down(): void
     {
-        Schema::table('subscription_plans', function (Blueprint $table) {
-            $table->dropUnique(['stripe_price_id']);
-            $table->dropColumn('stripe_price_id');
-        });
+        // No-op.
     }
 };

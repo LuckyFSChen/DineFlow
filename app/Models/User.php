@@ -25,8 +25,6 @@ class User extends Authenticatable
         'role',
         'subscription_ends_at',
         'subscription_plan_id',
-        'stripe_customer_id',
-        'stripe_subscription_id',
     ];
 
     /**
