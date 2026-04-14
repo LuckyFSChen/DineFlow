@@ -41,31 +41,75 @@
                 'title' => __('home.full_intro_flow_step_1_title'),
                 'tag' => 'Store Setup',
                 'accent' => 'bg-brand-primary/15',
+                'image' => asset('images/product-intro/productManagement.png'),
             ],
             [
                 'title' => __('home.full_intro_flow_step_2_title'),
                 'tag' => 'QR Entry',
                 'accent' => 'bg-brand-highlight/25',
+                'image' => asset('images/product-intro/qrcode.png'),
             ],
             [
                 'title' => __('home.full_intro_flow_step_3_title'),
                 'tag' => 'Order Board',
                 'accent' => 'bg-emerald-200/45',
+                'image' => asset('images/product-intro/menu.png'),
             ],
             [
                 'title' => __('home.full_intro_flow_step_4_title'),
                 'tag' => 'Kitchen Sync',
                 'accent' => 'bg-orange-200/40',
+                'image' => asset('images/product-intro/billboard.png'),
             ],
             [
                 'title' => __('home.full_intro_flow_step_5_title'),
                 'tag' => 'Reports',
                 'accent' => 'bg-sky-200/45',
+                'image' => asset('images/product-intro/financial.png'),
             ],
             [
                 'title' => __('home.full_intro_feature_title'),
                 'tag' => 'Feature View',
                 'accent' => 'bg-rose-200/35',
+                'image' => asset('images/product-intro/circleProductTier.png'),
+            ],
+        ];
+
+        $flowSteps = [
+            [
+                'number' => 1,
+                'title' => __('home.full_intro_flow_step_1_title'),
+                'desc' => __('home.full_intro_flow_step_1_desc'),
+                'image' => asset('images/product-intro/productManagement.png'),
+                'badge' => 'bg-brand-primary text-white',
+            ],
+            [
+                'number' => 2,
+                'title' => __('home.full_intro_flow_step_2_title'),
+                'desc' => __('home.full_intro_flow_step_2_desc'),
+                'image' => asset('images/product-intro/qrcode.png'),
+                'badge' => 'bg-brand-primary text-white',
+            ],
+            [
+                'number' => 3,
+                'title' => __('home.full_intro_flow_step_3_title'),
+                'desc' => __('home.full_intro_flow_step_3_desc'),
+                'image' => asset('images/product-intro/menu.png'),
+                'badge' => 'bg-brand-primary text-white',
+            ],
+            [
+                'number' => 4,
+                'title' => __('home.full_intro_flow_step_4_title'),
+                'desc' => __('home.full_intro_flow_step_4_desc'),
+                'image' => asset('images/product-intro/billboard.png'),
+                'badge' => 'bg-brand-primary text-white',
+            ],
+            [
+                'number' => 5,
+                'title' => __('home.full_intro_flow_step_5_title'),
+                'desc' => __('home.full_intro_flow_step_5_desc'),
+                'image' => asset('images/product-intro/financial.png'),
+                'badge' => 'bg-brand-highlight text-brand-dark',
             ],
         ];
     @endphp
@@ -83,34 +127,17 @@
             <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 @foreach ($previewCards as $index => $previewCard)
                     <article class="group overflow-hidden rounded-[1.6rem] border border-brand-soft/60 bg-white shadow-[0_14px_36px_rgba(90,30,14,0.08)] transition hover:-translate-y-1 hover:shadow-[0_18px_44px_rgba(90,30,14,0.13)]">
-                        <div class="aspect-[16/10] border-b border-brand-soft/60 bg-brand-soft/25 p-4">
-                            <div class="flex h-full flex-col rounded-2xl border border-brand-soft/80 bg-white p-3">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="h-2 w-2 rounded-full bg-brand-primary/30"></span>
-                                        <span class="h-2 w-2 rounded-full bg-brand-primary/45"></span>
-                                        <span class="h-2 w-2 rounded-full bg-brand-primary/60"></span>
-                                    </div>
-                                    <span class="rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-brand-primary/80 {{ $previewCard['accent'] }}">
-                                        {{ $previewCard['tag'] }}
-                                    </span>
-                                </div>
-
-                                <div class="mt-3 grid grow grid-cols-3 gap-2">
-                                    <div class="col-span-1 rounded-xl bg-brand-soft/60"></div>
-                                    <div class="col-span-2 rounded-xl bg-brand-primary/10 p-2">
-                                        <div class="h-2.5 w-3/4 rounded bg-brand-primary/25"></div>
-                                        <div class="mt-2 h-2 w-full rounded bg-brand-primary/15"></div>
-                                        <div class="mt-1.5 h-2 w-5/6 rounded bg-brand-primary/15"></div>
-                                        <div class="mt-2.5 grid grid-cols-2 gap-1.5">
-                                            <div class="h-9 rounded-lg bg-white"></div>
-                                            <div class="h-9 rounded-lg bg-white"></div>
-                                            <div class="h-9 rounded-lg bg-white"></div>
-                                            <div class="h-9 rounded-lg bg-white"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="relative aspect-[16/10] border-b border-brand-soft/60 bg-brand-soft/25">
+                            <img
+                                src="{{ $previewCard['image'] }}"
+                                alt="{{ $previewCard['title'] }}"
+                                loading="lazy"
+                                class="h-full w-full object-cover object-top transition duration-500 group-hover:scale-[1.02]"
+                            >
+                            <span class="absolute right-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-brand-primary/80 backdrop-blur {{ $previewCard['accent'] }}">
+                                {{ $previewCard['tag'] }}
+                            </span>
+                            <div class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-brand-dark/30 to-transparent"></div>
                         </div>
 
                         <div class="p-5">
@@ -151,55 +178,27 @@
             </div>
 
             <div class="space-y-6">
-                <div class="rounded-[1.7rem] border border-brand-soft/60 bg-brand-soft/20 p-6 sm:p-7">
-                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
-                        <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-primary font-bold text-white">1</span>
-                        <div>
-                            <h3 class="text-xl font-bold text-brand-dark">{{ __('home.full_intro_flow_step_1_title') }}</h3>
-                            <p class="mt-2 text-base leading-7 text-brand-primary/80">{{ __('home.full_intro_flow_step_1_desc') }}</p>
+                @foreach ($flowSteps as $step)
+                    <div class="rounded-[1.7rem] border border-brand-soft/60 bg-brand-soft/20 p-6 sm:p-7">
+                        <div class="grid gap-5 lg:grid-cols-[1fr_360px] lg:items-center">
+                            <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+                                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold {{ $step['badge'] }}">{{ $step['number'] }}</span>
+                                <div>
+                                    <h3 class="text-xl font-bold text-brand-dark">{{ $step['title'] }}</h3>
+                                    <p class="mt-2 text-base leading-7 text-brand-primary/80">{{ $step['desc'] }}</p>
+                                </div>
+                            </div>
+                            <div class="overflow-hidden rounded-2xl border border-brand-soft/70 bg-white/80">
+                                <img
+                                    src="{{ $step['image'] }}"
+                                    alt="{{ $step['title'] }}"
+                                    loading="lazy"
+                                    class="h-full w-full object-cover object-top"
+                                >
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="rounded-[1.7rem] border border-brand-soft/60 bg-brand-soft/20 p-6 sm:p-7">
-                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
-                        <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-primary font-bold text-white">2</span>
-                        <div>
-                            <h3 class="text-xl font-bold text-brand-dark">{{ __('home.full_intro_flow_step_2_title') }}</h3>
-                            <p class="mt-2 text-base leading-7 text-brand-primary/80">{{ __('home.full_intro_flow_step_2_desc') }}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="rounded-[1.7rem] border border-brand-soft/60 bg-brand-soft/20 p-6 sm:p-7">
-                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
-                        <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-primary font-bold text-white">3</span>
-                        <div>
-                            <h3 class="text-xl font-bold text-brand-dark">{{ __('home.full_intro_flow_step_3_title') }}</h3>
-                            <p class="mt-2 text-base leading-7 text-brand-primary/80">{{ __('home.full_intro_flow_step_3_desc') }}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="rounded-[1.7rem] border border-brand-soft/60 bg-brand-soft/20 p-6 sm:p-7">
-                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
-                        <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-primary font-bold text-white">4</span>
-                        <div>
-                            <h3 class="text-xl font-bold text-brand-dark">{{ __('home.full_intro_flow_step_4_title') }}</h3>
-                            <p class="mt-2 text-base leading-7 text-brand-primary/80">{{ __('home.full_intro_flow_step_4_desc') }}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="rounded-[1.7rem] border border-brand-soft/60 bg-brand-soft/20 p-6 sm:p-7">
-                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
-                        <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-highlight font-bold text-brand-dark">5</span>
-                        <div>
-                            <h3 class="text-xl font-bold text-brand-dark">{{ __('home.full_intro_flow_step_5_title') }}</h3>
-                            <p class="mt-2 text-base leading-7 text-brand-primary/80">{{ __('home.full_intro_flow_step_5_desc') }}</p>
-                        </div>
-                    </div>
-                </div>
+                @endforeach
             </div>
         </div>
     </section>

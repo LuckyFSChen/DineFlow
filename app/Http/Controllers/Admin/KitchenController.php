@@ -119,7 +119,7 @@ class KitchenController extends Controller
         $user = $request->user();
 
         if ($user->isAdmin()) {
-            return Store::query()->orderBy('name')->orderBy('id')->get(['id', 'name']);
+            return Store::query()->orderBy('name')->orderBy('id')->get(['id', 'name', 'slug']);
         }
 
         if ($user->isMerchant()) {
@@ -127,13 +127,13 @@ class KitchenController extends Controller
                 ->where('user_id', $user->id)
                 ->orderBy('name')
                 ->orderBy('id')
-                ->get(['id', 'name']);
+                ->get(['id', 'name', 'slug']);
         }
 
         if ($user->isChef() && $user->store_id) {
-            return Store::query()->whereKey($user->store_id)->get(['id', 'name']);
+            return Store::query()->whereKey($user->store_id)->get(['id', 'name', 'slug']);
         }
 
-        return Store::query()->whereRaw('1 = 0')->get(['id', 'name']);
+        return Store::query()->whereRaw('1 = 0')->get(['id', 'name', 'slug']);
     }
 }
