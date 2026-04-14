@@ -20,7 +20,7 @@
                            class="inline-flex items-center rounded-lg bg-brand-primary px-4 py-2 font-semibold text-white hover:bg-brand-accent hover:text-brand-dark">
                             {{ __('admin.go_to_store_backend') }}
                         </a>
-                    @elseif(auth()->user()->isChef() && auth()->user()->store)
+                    @elseif(auth()->user()->isChef() && auth()->user()->store && auth()->user()->store->is_active)
                         <a href="{{ route('admin.stores.kitchen', auth()->user()->store) }}"
                            class="inline-flex items-center rounded-lg bg-orange-600 px-4 py-2 font-semibold text-white hover:bg-orange-500">
                             🍳 前往後廚看板

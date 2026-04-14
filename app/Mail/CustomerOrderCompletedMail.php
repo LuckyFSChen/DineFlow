@@ -21,9 +21,13 @@ class CustomerOrderCompletedMail extends Mailable
     public function envelope(): Envelope
     {
         $storeName = $this->order->store?->name ?? config('app.name');
+        $locale = Order::resolveOrderLocale($this->order->order_locale ?? app()->getLocale());
 
         return new Envelope(
-            subject: sprintf('[%s] 訂單已完成 #%s', $storeName, $this->order->order_no),
+            subject: __('mail_orders.completed.subject', [
+                'store' => $storeName,
+                'order_no' => $this->order->order_no,
+            ], $locale),
         );
     }
 

@@ -17,10 +17,11 @@ class KitchenController extends Controller
         $this->authorizeStore($request, $store);
 
         $orders = $this->fetchActiveOrders($store);
+        $availableStores = $this->resolveAccessibleStores($request);
 
         $checkoutTiming = $store->checkout_timing ?? 'postpay';
 
-        return view('admin.kitchen.index', compact('store', 'orders', 'checkoutTiming'));
+        return view('admin.kitchen.index', compact('store', 'orders', 'checkoutTiming', 'availableStores'));
     }
 
     public function orders(Request $request, Store $store): JsonResponse
@@ -32,6 +33,7 @@ class KitchenController extends Controller
         $data = $orders->map(fn (Order $o) => [
             'id' => $o->id,
             'order_no' => $o->order_no,
+            'order_locale' => $o->order_locale,
             'status' => $o->status,
             'payment_status' => $o->payment_status,
             'order_type' => $o->order_type,
@@ -110,5 +112,28 @@ class KitchenController extends Controller
             ->whereIn('status', self::PREPARING_STATUSES)
             ->orderBy('created_at', 'asc')
             ->get();
+    }
+
+    private function resolveAccessibleStores(Request $request): \Illuminate\Database\Eloquent\Collection
+    {
+        $user = $request->user();
+
+        if ($user->isAdmin()) {
+            return Store::query()->orderBy('name')->orderBy('id')->get(['id', 'name']);
+        }
+
+        if ($user->isMerchant()) {
+            return Store::query()
+                ->where('user_id', $user->id)
+                ->orderBy('name')
+                ->orderBy('id')
+                ->get(['id', 'name']);
+        }
+
+        if ($user->isChef() && $user->store_id) {
+            return Store::query()->whereKey($user->store_id)->get(['id', 'name']);
+        }
+
+        return Store::query()->whereRaw('1 = 0')->get(['id', 'name']);
     }
 }

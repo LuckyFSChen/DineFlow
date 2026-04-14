@@ -48,7 +48,10 @@ class FinancialReportController extends Controller
             ->join('stores', 'stores.id', '=', 'orders.store_id')
             ->where('stores.user_id', $user->id)
             ->whereBetween('orders.created_at', [$start, $end])
-            ->whereNotIn('orders.status', ['cancelled', 'canceled']);
+            ->where(function ($query) {
+                $query->whereNull('orders.status')
+                    ->orWhereNotIn(DB::raw('LOWER(orders.status)'), ['cancel', 'cancelled', 'canceled']);
+            });
 
         if ($selectedStoreId !== null) {
             $baseOrders->where('orders.store_id', $selectedStoreId);

@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ProductManagementController;
 use App\Http\Controllers\Admin\DiningTableManagementController;
 use App\Http\Controllers\Admin\KitchenController;
 use App\Http\Controllers\Admin\CashierController;
+use App\Http\Controllers\Admin\AllBoardsController;
 use App\Http\Controllers\Admin\ChefManagementController;
 use App\Http\Controllers\Customer\DineInMenuController;
 use App\Http\Controllers\Customer\DineInOrderController;
@@ -106,6 +107,14 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin,cashier'])->prefix('
         });
 });
 
+Route::middleware(['auth', 'verified', 'role:merchant,admin,chef,cashier'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('stores/{store}/boards', [AllBoardsController::class, 'index'])
+        ->name('stores.boards')
+        ->missing(function () {
+            return redirect()->route('dashboard')->with('error', '店家不存在或已刪除。');
+        });
+});
+
 Route::middleware(['auth', 'verified', 'role:merchant'])->prefix('merchant')->name('merchant.')->group(function () {
     Route::get('/subscription', [MerchantSubscriptionController::class, 'index'])->name('subscription.index');
     Route::post('/subscription', [MerchantSubscriptionController::class, 'subscribe'])->name('subscription.subscribe');
@@ -129,6 +138,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('super-admin')->na
 
 Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::view('/product-intro', 'product-intro')->name('product.intro');
 Route::get('/stores/{store:slug}', [StoreController::class, 'enter'])->name('stores.enter');
 
 /*
@@ -170,8 +180,26 @@ Route::get('/s/{store:slug}/orders', [DineInOrderController::class, 'history'])
 Route::get('/s/{store:slug}/orders/{order}/status', [DineInOrderController::class, 'orderStatus'])
     ->name('customer.order.status');
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
+Route::get('/admin', function (Request $request) {
+    $user = $request->user();
+
+    if ($user === null) {
+        return redirect()->route('login');
+    }
+
+    if ($user->isMerchant()) {
+        return redirect()->route('merchant.subscription.index');
+    }
+
+    if ($user->isAdmin()) {
+        return redirect()->route('super-admin.subscriptions.index');
+    }
+
+    if (($user->isChef() || $user->isCashier()) && $user->store) {
+        return redirect()->route('admin.stores.boards', $user->store);
+    }
+
+    return redirect()->route('home');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {

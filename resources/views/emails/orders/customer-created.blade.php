@@ -1,19 +1,19 @@
 <x-mail::message>
-# 您的訂單已送出
+# {{ __('mail_orders.created.heading') }}
 
-您好{{ filled($order->customer_name) ? '，' . $order->customer_name : '' }}：
+{{ __('mail_orders.greeting', ['name' => $order->customer_name]) }}
 
-我們已收到您在 **{{ $order->store?->name ?? config('app.name') }}** 的訂單。
+{{ __('mail_orders.created.intro', ['store' => $order->store?->name ?? config('app.name')]) }}
 
-- 訂單編號：{{ $order->order_no }}
-- 訂單類型：{{ $order->order_type === 'takeout' ? '外帶' : '內用' }}
-- 訂單狀態：{{ $order->customer_status_label }}
-- 訂單金額：NT$ {{ number_format((int) $order->total) }}
+- {{ __('mail_orders.fields.order_no') }}{{ $order->order_no }}
+- {{ __('mail_orders.fields.order_type') }}{{ $order->order_type === 'takeout' ? __('mail_orders.order_type.takeout') : __('mail_orders.order_type.dine_in') }}
+- {{ __('mail_orders.fields.status') }}{{ \App\Models\Order::customerStatusLabelByLocale($order->status, $order->payment_status, app()->getLocale()) }}
+- {{ __('mail_orders.fields.total') }}NT$ {{ number_format((int) $order->total) }}
 
 <x-mail::button :url="route('customer.order.success', ['store' => $order->store->slug, 'order' => $order->uuid])">
-查看訂單
+{{ __('mail_orders.cta.view_order') }}
 </x-mail::button>
 
-感謝您的訂購，<br>
+{{ __('mail_orders.footer.thanks') }},<br>
 {{ config('app.name') }}
 </x-mail::message>

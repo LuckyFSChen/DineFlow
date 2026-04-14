@@ -12,6 +12,8 @@ use Throwable;
 
 class Order extends Model
 {
+    private const SUPPORTED_ORDER_LOCALES = ['zh_TW', 'zh_CN', 'en', 'vi'];
+
     protected $fillable = [
         'store_id',
         'dining_table_id',
@@ -23,6 +25,7 @@ class Order extends Model
         'customer_name',
         'customer_phone',
         'customer_email',
+        'order_locale',
         'note',
         'subtotal',
         'total',
@@ -51,6 +54,8 @@ class Order extends Model
             if (empty($order->uuid)) {
                 $order->uuid = (string) Str::uuid();
             }
+
+            $order->order_locale = self::resolveOrderLocale($order->order_locale ?? app()->getLocale());
         });
 
         static::created(function (self $order) {
@@ -66,7 +71,9 @@ class Order extends Model
                 }
 
                 try {
-                    Mail::to($freshOrder->customer_email)->send(new CustomerOrderCreatedMail($freshOrder));
+                    Mail::to($freshOrder->customer_email)
+                        ->locale(self::resolveOrderLocale($freshOrder->order_locale))
+                        ->send(new CustomerOrderCreatedMail($freshOrder));
                 } catch (Throwable $e) {
                     report($e);
                 }
@@ -97,7 +104,9 @@ class Order extends Model
                 }
 
                 try {
-                    Mail::to($freshOrder->customer_email)->send(new CustomerOrderCompletedMail($freshOrder));
+                    Mail::to($freshOrder->customer_email)
+                        ->locale(self::resolveOrderLocale($freshOrder->order_locale))
+                        ->send(new CustomerOrderCompletedMail($freshOrder));
                 } catch (Throwable $e) {
                     report($e);
                 }
@@ -117,21 +126,42 @@ class Order extends Model
 
     public static function customerStatusLabel(?string $status, ?string $paymentStatus = null): string
     {
+        return self::customerStatusLabelByLocale($status, $paymentStatus, app()->getLocale());
+    }
+
+    public static function customerStatusLabelByLocale(?string $status, ?string $paymentStatus = null, ?string $locale = null): string
+    {
         $normalized = strtolower((string) $status);
         $normalizedPayment = strtolower((string) $paymentStatus);
+        $resolvedLocale = self::resolveOrderLocale($locale);
 
         if (in_array($normalized, ['complete', 'completed', 'ready', 'ready_for_pickup'], true) && ($normalizedPayment === '' || $normalizedPayment === 'unpaid')) {
-            return '待收款';
+            return __('mail_orders.status.awaiting_payment', locale: $resolvedLocale);
         }
 
         return match ($normalized) {
-            'pending' => '已送出',
-            'accepted', 'confirmed', 'received' => '已接單',
-            'preparing', 'processing', 'cooking', 'in_progress' => '製作中',
-            'complete', 'completed', 'ready', 'ready_for_pickup' => '餐點完成可取',
-            'picked_up', 'collected', 'served' => '已取餐',
-            'cancelled', 'canceled' => '訂單已取消',
-            default => '訂單狀態更新中',
+            'pending' => __('mail_orders.status.pending', locale: $resolvedLocale),
+            'accepted', 'confirmed', 'received' => __('mail_orders.status.accepted', locale: $resolvedLocale),
+            'preparing', 'processing', 'cooking', 'in_progress' => __('mail_orders.status.preparing', locale: $resolvedLocale),
+            'complete', 'completed', 'ready', 'ready_for_pickup' => __('mail_orders.status.completed', locale: $resolvedLocale),
+            'picked_up', 'collected', 'served' => __('mail_orders.status.picked_up', locale: $resolvedLocale),
+            'cancelled', 'canceled' => __('mail_orders.status.cancelled', locale: $resolvedLocale),
+            default => __('mail_orders.status.updating', locale: $resolvedLocale),
         };
+    }
+
+    public static function resolveOrderLocale(?string $locale): string
+    {
+        $normalized = is_string($locale) ? trim($locale) : '';
+
+        if (in_array($normalized, self::SUPPORTED_ORDER_LOCALES, true)) {
+            return $normalized;
+        }
+
+        $fallback = (string) config('app.locale', 'zh_TW');
+
+        return in_array($fallback, self::SUPPORTED_ORDER_LOCALES, true)
+            ? $fallback
+            : 'zh_TW';
     }
 }

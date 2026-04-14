@@ -294,6 +294,75 @@
         </div>
     </section>
 
+    <section id="merchant-flow" class="border-t border-brand-soft/60 bg-brand-soft/20 py-16">
+        <div class="mx-auto max-w-7xl px-6 lg:px-8">
+            <div class="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+                <div>
+                    <span class="inline-flex items-center gap-2 rounded-full border border-brand-primary/20 bg-white px-4 py-1.5 text-sm font-semibold tracking-[0.18em] text-brand-primary">
+                        {{ __('home.merchant_intro_badge') }}
+                    </span>
+                    <h2 class="mt-5 text-3xl font-bold tracking-tight text-brand-dark sm:text-4xl">
+                        {{ __('home.merchant_intro_title') }}
+                    </h2>
+                    <p class="mt-4 text-lg leading-8 text-brand-primary/80">
+                        {{ __('home.merchant_intro_desc') }}
+                    </p>
+
+                    <div class="mt-8 flex flex-wrap gap-4">
+                        <a href="{{ route('product.intro') }}" class="inline-flex items-center gap-2 rounded-2xl bg-brand-primary px-5 py-3 text-base font-semibold text-white transition hover:-translate-y-0.5 hover:bg-brand-accent hover:text-brand-dark">
+                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M10.3 4.3a1 1 0 011.4 0l5 5a1 1 0 010 1.4l-5 5a1 1 0 01-1.4-1.4L13.59 11H4a1 1 0 110-2h9.59l-3.3-3.3a1 1 0 010-1.4z" clip-rule="evenodd"/>
+                            </svg>
+                            {{ __('home.merchant_intro_cta') }}
+                        </a>
+                        <a href="#store-list" class="inline-flex items-center gap-2 rounded-2xl border border-brand-primary/20 bg-white px-5 py-3 text-base font-semibold text-brand-primary transition hover:bg-brand-soft/30">
+                            {{ __('home.merchant_intro_secondary') }}
+                        </a>
+                    </div>
+                </div>
+
+                <div class="rounded-[1.8rem] border border-brand-soft/70 bg-white p-6 shadow-[0_22px_48px_rgba(90,30,14,0.1)] sm:p-8">
+                    <div class="space-y-5">
+                        <div class="flex items-start gap-4">
+                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-primary text-sm font-bold text-white">1</span>
+                            <div>
+                                <div class="text-lg font-semibold text-brand-dark">{{ __('home.merchant_intro_step_1_title') }}</div>
+                                <p class="mt-1 text-base text-brand-primary/75">{{ __('home.merchant_intro_step_1_desc') }}</p>
+                            </div>
+                        </div>
+                        <div class="h-4 border-l-2 border-dashed border-brand-soft/80 ml-4"></div>
+
+                        <div class="flex items-start gap-4">
+                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-primary text-sm font-bold text-white">2</span>
+                            <div>
+                                <div class="text-lg font-semibold text-brand-dark">{{ __('home.merchant_intro_step_2_title') }}</div>
+                                <p class="mt-1 text-base text-brand-primary/75">{{ __('home.merchant_intro_step_2_desc') }}</p>
+                            </div>
+                        </div>
+                        <div class="h-4 border-l-2 border-dashed border-brand-soft/80 ml-4"></div>
+
+                        <div class="flex items-start gap-4">
+                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-primary text-sm font-bold text-white">3</span>
+                            <div>
+                                <div class="text-lg font-semibold text-brand-dark">{{ __('home.merchant_intro_step_3_title') }}</div>
+                                <p class="mt-1 text-base text-brand-primary/75">{{ __('home.merchant_intro_step_3_desc') }}</p>
+                            </div>
+                        </div>
+                        <div class="h-4 border-l-2 border-dashed border-brand-soft/80 ml-4"></div>
+
+                        <div class="flex items-start gap-4">
+                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-highlight text-sm font-bold text-brand-dark">4</span>
+                            <div>
+                                <div class="text-lg font-semibold text-brand-dark">{{ __('home.merchant_intro_step_4_title') }}</div>
+                                <p class="mt-1 text-base text-brand-primary/75">{{ __('home.merchant_intro_step_4_desc') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <footer class="border-t border-brand-soft/60 bg-brand-dark">
         <div class="mx-auto max-w-7xl px-6 py-8 text-center text-white/80 lg:px-8">
             <div class="text-base font-semibold text-white">DineFlow</div>

@@ -5,6 +5,7 @@ return [
     'financial_report'    => '财务报表',
     'store_backend'       => '商家后台',
     'kitchen'             => '后厨看板',
+    'cashier'             => '收银看板',
     'super_admin'         => '最终后台',
     'account_center'      => '账号中心',
     'profile'             => '个人设置',

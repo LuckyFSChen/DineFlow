@@ -17,16 +17,55 @@ use Illuminate\View\View;
 
 class SubscriptionController extends Controller
 {
+    private const FX_FROM_TWD = [
+        'twd' => 1.0,
+        'cny' => 0.22,
+        'vnd' => 780.0,
+    ];
+
+    private const CURRENCY_SYMBOLS = [
+        'twd' => 'NT$',
+        'cny' => 'CNY ¥',
+        'vnd' => 'VND ₫',
+    ];
+
     public function index(Request $request): View
     {
+        $user = $request->user();
+        $currencyProfile = $this->resolveCurrencyProfile($user);
+
         $plans = SubscriptionPlan::query()
             ->where('is_active', true)
-            ->orderBy('price_twd')
             ->get();
 
+        $planPricing = $plans
+            ->mapWithKeys(function (SubscriptionPlan $plan) use ($user, $currencyProfile): array {
+                return [$plan->id => $this->buildPricingPreview($user, $plan, $currencyProfile)];
+            })
+            ->all();
+
+        $tierOrder = ['basic' => 1, 'growth' => 2, 'pro' => 3];
+        $cycleOrder = ['monthly' => 1, 'quarterly' => 2, 'yearly' => 3];
+
+        $plansByTier = $plans
+            ->sortBy(function (SubscriptionPlan $plan) use ($tierOrder, $cycleOrder): array {
+                [$tier, $cycle] = array_pad(explode('-', $plan->slug, 2), 2, '');
+
+                return [
+                    $tierOrder[$tier] ?? 99,
+                    $cycleOrder[$cycle] ?? 99,
+                    $plan->price_twd,
+                ];
+            })
+            ->groupBy(function (SubscriptionPlan $plan): string {
+                return ucfirst(strtok($plan->slug, '-'));
+            });
+
         return view('merchant.subscription.index', [
-            'plans' => $plans,
-            'user' => $request->user(),
+            'plansByTier' => $plansByTier,
+            'planPricing' => $planPricing,
+            'user' => $user,
+            'currencyProfile' => $currencyProfile,
         ]);
     }
 
@@ -45,6 +84,18 @@ class SubscriptionController extends Controller
             ->where('id', $validated['plan_id'])
             ->where('is_active', true)
             ->firstOrFail();
+
+        $currencyProfile = $this->resolveCurrencyProfile($user);
+        $pricing = $this->buildPricingPreview($user, $plan, $currencyProfile);
+        if (! $pricing['is_purchase_allowed']) {
+            return redirect()
+                ->route('merchant.subscription.index')
+                ->with('error', (string) $pricing['blocked_reason']);
+        }
+
+        $upgradeCredit = (int) $pricing['upgrade_credit_twd'];
+        $payableAmount = (int) $pricing['payable_amount_twd'];
+        $isUpgradeProrationApplied = (bool) $pricing['is_upgrade_proration_applied'];
 
         $merchantId = (string) config('services.ecpay.merchant_id');
         $hashKey = (string) config('services.ecpay.hash_key');
@@ -65,7 +116,7 @@ class SubscriptionController extends Controller
             'MerchantTradeNo' => $merchantTradeNo,
             'MerchantTradeDate' => now()->format('Y/m/d H:i:s'),
             'PaymentType' => 'aio',
-            'TotalAmount' => (int) $plan->price_twd,
+            'TotalAmount' => $payableAmount,
             'TradeDesc' => 'DineFlow Merchant Subscription',
             'ItemName' => $itemName,
             'ReturnURL' => route('ecpay.subscription.notify'),
@@ -84,13 +135,25 @@ class SubscriptionController extends Controller
             [
                 'user_id' => $user->id,
                 'subscription_plan_id' => $plan->id,
-                'amount_twd' => (int) $plan->price_twd,
+                'amount_twd' => $payableAmount,
                 'currency' => 'twd',
                 'status' => 'pending',
                 'paid_at' => null,
                 'ecpay_trade_no' => null,
                 'ecpay_payment_type' => null,
-                'payload' => ['request' => $payload],
+                'payload' => [
+                    'request' => $payload,
+                    'pricing' => [
+                        'original_price_twd' => (int) $plan->price_twd,
+                        'upgrade_credit_twd' => $upgradeCredit,
+                        'payable_amount_twd' => $payableAmount,
+                        'is_upgrade_proration_applied' => $isUpgradeProrationApplied,
+                        'display_currency' => $currencyProfile['currency_code'],
+                        'display_original_amount' => (int) $pricing['display_original_amount'],
+                        'display_upgrade_credit' => (int) $pricing['display_upgrade_credit'],
+                        'display_payable_amount' => (int) $pricing['display_payable_amount'],
+                    ],
+                ],
             ]
         );
 
@@ -203,11 +266,17 @@ class SubscriptionController extends Controller
         $rtnCode = (string) Arr::get($data, 'RtnCode', '');
         $isPaid = $rtnCode === '1' || $tradeStatus === '1';
 
+        $isUpgradeProrationApplied = (bool) Arr::get($existingPayment?->payload ?? [], 'pricing.is_upgrade_proration_applied', false);
+
         $paidAt = null;
         if ($isPaid) {
-            $base = $user->subscription_ends_at && $user->subscription_ends_at->isFuture()
-                ? Carbon::parse($user->subscription_ends_at)
-                : now();
+            $base = $isUpgradeProrationApplied
+                ? now()
+                : (
+                    $user->hasActiveSubscription()
+                        ? Carbon::parse($user->subscription_ends_at)
+                        : now()
+                );
 
             $user->update([
                 'subscription_plan_id' => $plan->id,
@@ -237,5 +306,102 @@ class SubscriptionController extends Controller
         );
 
         return $isPaid;
+    }
+
+    private function tierRankFromSlug(string $slug): int
+    {
+        $tier = strtolower((string) strtok($slug, '-'));
+
+        return match ($tier) {
+            'basic' => 1,
+            'growth' => 2,
+            'pro' => 3,
+            default => 0,
+        };
+    }
+
+    private function buildPricingPreview(?User $user, SubscriptionPlan $targetPlan, array $currencyProfile): array
+    {
+        $originalPrice = (int) $targetPlan->price_twd;
+
+        $preview = [
+            'original_price_twd' => $originalPrice,
+            'upgrade_credit_twd' => 0,
+            'payable_amount_twd' => $originalPrice,
+            'is_upgrade_proration_applied' => false,
+            'is_purchase_allowed' => true,
+            'blocked_reason' => null,
+            'show_reset_time_warning' => false,
+            'display_currency' => $currencyProfile['currency_code'],
+            'display_symbol' => $currencyProfile['symbol'],
+        ];
+
+        if (! $user) {
+            return $preview;
+        }
+
+        $currentPlan = $user->subscriptionPlan;
+        $hasActiveSubscription = $user->hasActiveSubscription();
+        if (! $hasActiveSubscription || ! $currentPlan) {
+            return $preview;
+        }
+
+        $currentTierRank = $this->tierRankFromSlug((string) $currentPlan->slug);
+        $targetTierRank = $this->tierRankFromSlug((string) $targetPlan->slug);
+
+        if ($targetTierRank < $currentTierRank) {
+            $preview['is_purchase_allowed'] = false;
+            $preview['blocked_reason'] = '目前方案尚未到期，無法直接降級。請待目前方案到期後再改為較低方案。';
+
+            return $preview;
+        }
+
+        if ($targetTierRank > $currentTierRank && (int) $targetPlan->duration_days < (int) $currentPlan->duration_days) {
+            $preview['is_purchase_allowed'] = false;
+            $preview['blocked_reason'] = '升級為更高方案時，計費週期不可縮短。請選擇同週期或更長週期的升級方案。';
+
+            return $preview;
+        }
+
+        if ($targetTierRank > $currentTierRank) {
+            $remainingSeconds = max(0, now()->diffInSeconds($user->subscription_ends_at, false));
+            $remainingDays = (int) ceil($remainingSeconds / 86400);
+            $dailyRate = (float) $currentPlan->price_twd / max((int) $currentPlan->duration_days, 1);
+            $upgradeCredit = (int) floor($remainingDays * $dailyRate);
+            $payableAmount = max(1, $originalPrice - $upgradeCredit);
+
+            $preview['upgrade_credit_twd'] = $upgradeCredit;
+            $preview['payable_amount_twd'] = $payableAmount;
+            $preview['is_upgrade_proration_applied'] = $upgradeCredit > 0;
+            $preview['show_reset_time_warning'] = (string) $currentPlan->slug === 'basic-yearly'
+                && in_array((string) strtok($targetPlan->slug, '-'), ['growth', 'pro'], true);
+        }
+
+        $preview['display_original_amount'] = $this->convertFromTwd($preview['original_price_twd'], $currencyProfile['currency_code']);
+        $preview['display_upgrade_credit'] = $this->convertFromTwd($preview['upgrade_credit_twd'], $currencyProfile['currency_code']);
+        $preview['display_payable_amount'] = $this->convertFromTwd($preview['payable_amount_twd'], $currencyProfile['currency_code']);
+
+        return $preview;
+    }
+
+    private function resolveCurrencyProfile(?User $user): array
+    {
+        $currencyCode = $user?->subscriptionCurrencyCode() ?? 'twd';
+
+        if (! isset(self::FX_FROM_TWD[$currencyCode])) {
+            $currencyCode = 'twd';
+        }
+
+        return [
+            'currency_code' => $currencyCode,
+            'symbol' => self::CURRENCY_SYMBOLS[$currencyCode] ?? 'NT$',
+        ];
+    }
+
+    private function convertFromTwd(int $amountTwd, string $targetCurrency): int
+    {
+        $rate = self::FX_FROM_TWD[$targetCurrency] ?? 1.0;
+
+        return max(0, (int) round($amountTwd * $rate));
     }
 }

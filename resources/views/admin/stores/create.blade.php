@@ -3,10 +3,10 @@
 @section('content')
 <div class="min-h-screen bg-slate-50">
     <div class="mx-auto max-w-4xl px-6 py-10 lg:px-8">
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold tracking-tight text-slate-900">{{ __('admin.add_store') }}</h1>
-            <p class="mt-2 text-slate-600">{{ __('admin.create_store_page_desc') }}</p>
-        </div>
+        <x-backend-header
+            :title="__('admin.add_store')"
+            :subtitle="__('admin.create_store_page_desc')"
+        />
 
         <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
             <form method="POST" action="{{ route('admin.stores.store') }}" enctype="multipart/form-data">

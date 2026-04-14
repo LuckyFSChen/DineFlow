@@ -3,31 +3,42 @@
 @section('content')
 <div class="min-h-screen bg-slate-50" x-data="{}">
     <div class="mx-auto max-w-7xl px-6 py-10 lg:px-8">
-        <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-                <h1 class="text-3xl font-bold tracking-tight text-slate-900">{{ __('admin.products_page_title') }}</h1>
-                <p class="mt-2 text-slate-600">{{ $store->name }} · {{ __('admin.products_page_description') }}</p>
+        <div class="admin-hero mb-6 rounded-3xl px-5 py-5 md:px-7">
+            <div class="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold tracking-tight text-slate-900">{{ __('admin.products_page_title') }}</h1>
+                    <p class="mt-2 text-slate-600">{{ $store->name }} · {{ __('admin.products_page_description') }}</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center justify-center rounded-2xl border border-slate-900 bg-slate-800 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700">{{ __('admin.products_back_to_stores') }}</a>
+                    @if($store->is_active)
+                        <a href="{{ route('admin.stores.kitchen', $store) }}" class="inline-flex items-center justify-center rounded-2xl border border-orange-300 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">🍳 {{ __('admin.kitchen') }}</a>
+                    @endif
+                    <button type="button" id="create-category-btn" class="inline-flex items-center justify-center rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">{{ __('admin.products_btn_add_category') }}</button>
+                    <button type="button" id="create-product-btn" class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500">{{ __('admin.products_btn_add_product') }}</button>
+                </div>
             </div>
-            <div class="flex flex-wrap gap-2">
-                <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">{{ __('admin.products_back_to_stores') }}</a>
-                <a href="{{ route('admin.stores.kitchen', $store) }}" class="inline-flex items-center justify-center rounded-2xl border border-orange-300 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">🍳 {{ __('admin.kitchen') }}</a>
-                <button type="button" id="create-category-btn" class="inline-flex items-center justify-center rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">{{ __('admin.products_btn_add_category') }}</button>
-                <button type="button" id="create-product-btn" class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500">{{ __('admin.products_btn_add_product') }}</button>
+
+            <div class="grid gap-4 md:grid-cols-3">
+            <div class="admin-kpi rounded-2xl p-4 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ __('admin.products_stats_total') }}</p>
+                <p class="value mt-2 text-slate-900">{{ $totalProducts }}</p>
+            </div>
+            <div class="admin-kpi rounded-2xl p-4 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ __('admin.products_stats_available') }}</p>
+                <p class="value mt-2 text-emerald-700">{{ $activeProducts }}</p>
+            </div>
+            <div class="admin-kpi rounded-2xl p-4 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ __('admin.products_stats_with_options') }}</p>
+                <p class="value mt-2 text-indigo-700">{{ $optionEnabledProducts }}</p>
+            </div>
             </div>
         </div>
 
-        <div class="mb-8 grid gap-4 md:grid-cols-3">
-            <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ __('admin.products_stats_total') }}</p>
-                <p class="mt-2 text-2xl font-bold text-slate-900">{{ $totalProducts }}</p>
-            </div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ __('admin.products_stats_available') }}</p>
-                <p class="mt-2 text-2xl font-bold text-emerald-700">{{ $activeProducts }}</p>
-            </div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ __('admin.products_stats_with_options') }}</p>
-                <p class="mt-2 text-2xl font-bold text-indigo-700">{{ $optionEnabledProducts }}</p>
+        <div class="mb-4">
+            <div class="admin-pill-nav inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-slate-700">
+                <span class="rounded-full bg-cyan-100 px-2 py-1 text-cyan-700">{{ $store->name }}</span>
+                <span>拖曳可排序商品，分類可快速啟用/停用</span>
             </div>
         </div>
 
@@ -52,11 +63,23 @@
                     @if($category->products->isNotEmpty())
                         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3" data-category-products data-category-id="{{ $category->id }}">
                             @foreach($category->products as $product)
+                                @php
+                                    $productImageUrl = filled($product->image)
+                                        ? (\Illuminate\Support\Str::startsWith($product->image, ['http://', 'https://'])
+                                            ? $product->image
+                                            : asset('storage/' . ltrim($product->image, '/')))
+                                        : null;
+                                @endphp
                                 <article class="rounded-2xl border border-slate-200 bg-slate-50 p-4" data-product-card data-product-id="{{ $product->id }}">
                                     <div class="flex items-start justify-between gap-3">
-                                        <div>
+                                        <div class="flex min-w-0 flex-1 items-start gap-3">
+                                            @if($productImageUrl)
+                                                <img src="{{ $productImageUrl }}" alt="{{ $product->name }}" class="h-14 w-14 rounded-xl object-cover ring-1 ring-slate-200">
+                                            @endif
+                                            <div class="min-w-0">
                                             <h3 class="text-base font-semibold text-slate-900">{{ $product->name }}</h3>
                                             <p class="mt-1 text-sm text-slate-500">NT$ {{ number_format($product->price) }} ・ <span data-product-sort>{{ __('admin.products_sort_label') }} {{ $product->sort }}</span></p>
+                                            </div>
                                         </div>
                                         <div class="flex items-center gap-2">
                                             <span class="inline-flex cursor-grab rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 active:cursor-grabbing" data-drag-product-handle>{{ __('admin.products_drag_to_sort') }}</span>
@@ -160,9 +183,30 @@
                     <input type="number" name="sort" min="1" value="1" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100">
                 </div>
 
-                <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.products_form_image_url') }}</label>
-                    <input type="text" name="image" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100">
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">商品圖片</label>
+                    <div class="rounded-2xl border border-slate-300 bg-slate-50 p-3">
+                        <input type="hidden" name="remove_image" id="modal-remove-image" value="0">
+                        <div class="grid gap-4 md:grid-cols-[200px,1fr]">
+                            <div>
+                                <canvas id="modal-image-crop-preview" width="320" height="320" class="h-40 w-40 rounded-xl border border-slate-300 bg-white"></canvas>
+                                <p id="modal-image-helper" class="mt-2 text-xs text-slate-500">尚未選擇圖片</p>
+                            </div>
+                            <div class="space-y-3">
+                                <input type="file" id="modal-image-upload" accept="image/png,image/jpeg,image/webp" class="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100">
+                                <div>
+                                    <label for="modal-image-zoom" class="mb-1 block text-xs font-semibold text-slate-600">縮放</label>
+                                    <input id="modal-image-zoom" type="range" min="1" max="3" step="0.05" value="1" class="w-full">
+                                </div>
+                                <p class="text-xs text-slate-500">在預覽框內拖曳可調整裁切位置，儲存時會以方形裁切後上傳。</p>
+                                <div class="flex flex-wrap gap-2">
+                                    <button type="button" id="modal-image-reset" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">重設位置</button>
+                                    <button type="button" id="modal-image-remove" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">移除圖片</button>
+                                </div>
+                                <p class="text-[11px] text-slate-500">支援 JPG / PNG / WEBP，檔案大小上限 4MB。</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="md:col-span-2">
@@ -347,6 +391,8 @@
         templateComboBlackTea: @json(__('admin.products_template_combo_black_tea')),
         templateComboGreenTea: @json(__('admin.products_template_combo_green_tea')),
         templateComboMilkTea: @json(__('admin.products_template_combo_milk_tea')),
+        imageOnly: @json(__('admin.error_image_only')),
+        imageTooLarge: @json(__('admin.error_image_too_large_2')),
     };
 
     const flash = document.getElementById('product-flash');
@@ -367,6 +413,13 @@
     const expandAllBtn = document.querySelector('[data-option-expand-all]');
     const collapseAllBtn = document.querySelector('[data-option-collapse-all]');
     const templateButtons = document.querySelectorAll('[data-option-template]');
+    const imageUploadInput = document.getElementById('modal-image-upload');
+    const imagePreviewCanvas = document.getElementById('modal-image-crop-preview');
+    const imageZoomInput = document.getElementById('modal-image-zoom');
+    const imageResetBtn = document.getElementById('modal-image-reset');
+    const imageRemoveBtn = document.getElementById('modal-image-remove');
+    const imageHelper = document.getElementById('modal-image-helper');
+    const removeImageInput = document.getElementById('modal-remove-image');
 
     const categoryModal = document.getElementById('category-modal');
     const categoryModalTitle = document.getElementById('category-modal-title');
@@ -384,6 +437,19 @@
     const reorderAbortControllers = new Map();
     let categoryMode = 'create';
     let currentCategoryId = null;
+    const imageState = {
+        sourceImage: null,
+        sourceObjectUrl: null,
+        sourceFileName: 'product-image.png',
+        hasNewUpload: false,
+        removeRequested: false,
+        zoom: 1,
+        offsetX: 0,
+        offsetY: 0,
+        dragging: false,
+        lastX: 0,
+        lastY: 0,
+    };
 
     const optionTemplates = {
         steak: [
@@ -575,6 +641,192 @@
             return [];
         }
     };
+
+    const revokeImageObjectUrl = () => {
+        if (!imageState.sourceObjectUrl) {
+            return;
+        }
+
+        URL.revokeObjectURL(imageState.sourceObjectUrl);
+        imageState.sourceObjectUrl = null;
+    };
+
+    const clampImageOffset = () => {
+        if (!imageState.sourceImage || !imagePreviewCanvas) {
+            imageState.offsetX = 0;
+            imageState.offsetY = 0;
+            return;
+        }
+
+        const canvasSize = imagePreviewCanvas.width;
+        const baseScale = Math.max(
+            canvasSize / imageState.sourceImage.naturalWidth,
+            canvasSize / imageState.sourceImage.naturalHeight,
+        );
+        const scale = baseScale * imageState.zoom;
+        const drawWidth = imageState.sourceImage.naturalWidth * scale;
+        const drawHeight = imageState.sourceImage.naturalHeight * scale;
+
+        const minX = canvasSize - drawWidth;
+        const minY = canvasSize - drawHeight;
+
+        imageState.offsetX = Math.min(0, Math.max(minX, imageState.offsetX));
+        imageState.offsetY = Math.min(0, Math.max(minY, imageState.offsetY));
+    };
+
+    const renderImagePreview = () => {
+        if (!imagePreviewCanvas) {
+            return;
+        }
+
+        const ctx = imagePreviewCanvas.getContext('2d');
+        if (!ctx) {
+            return;
+        }
+
+        const canvasSize = imagePreviewCanvas.width;
+        ctx.clearRect(0, 0, canvasSize, canvasSize);
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+        if (!imageState.sourceImage) {
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.setLineDash([10, 8]);
+            ctx.strokeRect(10, 10, canvasSize - 20, canvasSize - 20);
+            ctx.setLineDash([]);
+            return;
+        }
+
+        clampImageOffset();
+
+        const baseScale = Math.max(
+            canvasSize / imageState.sourceImage.naturalWidth,
+            canvasSize / imageState.sourceImage.naturalHeight,
+        );
+        const scale = baseScale * imageState.zoom;
+        const drawWidth = imageState.sourceImage.naturalWidth * scale;
+        const drawHeight = imageState.sourceImage.naturalHeight * scale;
+        const drawX = imageState.offsetX;
+        const drawY = imageState.offsetY;
+
+        ctx.drawImage(imageState.sourceImage, drawX, drawY, drawWidth, drawHeight);
+    };
+
+    const resetImageState = () => {
+        revokeImageObjectUrl();
+        imageState.sourceImage = null;
+        imageState.sourceFileName = 'product-image.png';
+        imageState.hasNewUpload = false;
+        imageState.removeRequested = false;
+        imageState.zoom = 1;
+        imageState.offsetX = 0;
+        imageState.offsetY = 0;
+        imageState.dragging = false;
+
+        if (imageZoomInput) {
+            imageZoomInput.value = '1';
+        }
+        if (imageUploadInput) {
+            imageUploadInput.value = '';
+        }
+        if (removeImageInput) {
+            removeImageInput.value = '0';
+        }
+        if (imageHelper) {
+            imageHelper.textContent = '尚未選擇圖片';
+        }
+
+        renderImagePreview();
+    };
+
+    const setImageFromUrl = (url, helperText = '目前圖片') => {
+        if (!url) {
+            resetImageState();
+            return;
+        }
+
+        revokeImageObjectUrl();
+
+        const image = new Image();
+        image.onload = () => {
+            imageState.sourceImage = image;
+            imageState.hasNewUpload = false;
+            imageState.removeRequested = false;
+            imageState.zoom = 1;
+            imageState.offsetX = 0;
+            imageState.offsetY = 0;
+
+            if (imageZoomInput) {
+                imageZoomInput.value = '1';
+            }
+            if (removeImageInput) {
+                removeImageInput.value = '0';
+            }
+            if (imageHelper) {
+                imageHelper.textContent = helperText;
+            }
+
+            renderImagePreview();
+        };
+        image.onerror = () => {
+            resetImageState();
+        };
+        image.src = url;
+    };
+
+    const setImageFromFile = (file) => {
+        if (!file.type.startsWith('image/')) {
+            showFlash(i18n.imageOnly, 'error');
+            return;
+        }
+
+        if (file.size > 4 * 1024 * 1024) {
+            showFlash(i18n.imageTooLarge, 'error');
+            return;
+        }
+
+        revokeImageObjectUrl();
+        const url = URL.createObjectURL(file);
+        imageState.sourceObjectUrl = url;
+
+        const image = new Image();
+        image.onload = () => {
+            imageState.sourceImage = image;
+            imageState.sourceFileName = file.name || 'product-image.png';
+            imageState.hasNewUpload = true;
+            imageState.removeRequested = false;
+            imageState.zoom = 1;
+            imageState.offsetX = 0;
+            imageState.offsetY = 0;
+
+            if (imageZoomInput) {
+                imageZoomInput.value = '1';
+            }
+            if (removeImageInput) {
+                removeImageInput.value = '0';
+            }
+            if (imageHelper) {
+                imageHelper.textContent = `已選擇：${file.name}`;
+            }
+
+            renderImagePreview();
+        };
+        image.onerror = () => {
+            showFlash('圖片讀取失敗，請重新選擇。', 'error');
+        };
+        image.src = url;
+    };
+
+    const canvasToBlob = (canvas, type, quality) => new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+            if (blob) {
+                resolve(blob);
+                return;
+            }
+
+            reject(new Error('圖片轉換失敗'));
+        }, type, quality);
+    });
 
     const showFlash = (message, type = 'success') => {
         if (!flash) return;
@@ -805,6 +1057,7 @@
         modalMethod.value = 'POST';
         optionGroups = [];
         optionGroupsInput.value = '[]';
+        resetImageState();
         document.getElementById('modal-is-active').checked = true;
         document.getElementById('modal-is-sold-out').checked = false;
         document.getElementById('modal-allow-item-note').checked = false;
@@ -822,8 +1075,8 @@
         modalForm.elements['category_id'].value = String(product.category_id ?? '');
         modalForm.elements['price'].value = product.price ?? 0;
         modalForm.elements['sort'].value = product.sort ?? 1;
-        modalForm.elements['image'].value = product.image ?? '';
         modalForm.elements['description'].value = product.description ?? '';
+        setImageFromUrl(product.image_url ?? null, '目前圖片（可拖曳調整裁切）');
         optionGroups = Array.isArray(product.option_groups) ? product.option_groups : parseOptionGroups(product.option_groups_json ?? '[]');
         document.getElementById('modal-is-active').checked = !!product.is_active;
         document.getElementById('modal-is-sold-out').checked = !!product.is_sold_out;
@@ -866,7 +1119,7 @@
         }
     };
 
-    const collectFormData = () => {
+    const collectFormData = async () => {
         syncOptionGroups();
         const formData = new FormData(modalForm);
         if (!formData.get('option_groups_json')) {
@@ -883,6 +1136,18 @@
 
         if (!formData.get('allow_item_note')) {
             formData.set('allow_item_note', '0');
+        }
+
+        formData.delete('image_upload');
+        if (imageState.hasNewUpload && imageState.sourceImage && imagePreviewCanvas) {
+            const blob = await canvasToBlob(imagePreviewCanvas, 'image/jpeg', 0.92);
+            const filename = (imageState.sourceFileName || 'product-image.jpg').replace(/\.[^.]+$/, '.jpg');
+            formData.set('image_upload', new File([blob], filename, { type: 'image/jpeg' }));
+            formData.set('remove_image', '0');
+        } else if (imageState.removeRequested) {
+            formData.set('remove_image', '1');
+        } else {
+            formData.set('remove_image', '0');
         }
 
         return formData;
@@ -1239,7 +1504,7 @@
         modalError.classList.add('hidden');
         modalError.textContent = '';
 
-        const formData = collectFormData();
+        const formData = await collectFormData();
         let url = createUrl;
 
         if (currentMode === 'edit' && currentProductId) {
@@ -1309,6 +1574,82 @@
     modalClose?.addEventListener('click', closeModal);
     modalCancel?.addEventListener('click', closeModal);
     modalForm?.addEventListener('submit', submitModalForm);
+        imageUploadInput?.addEventListener('change', (event) => {
+            const file = event.target.files?.[0];
+            if (!file) {
+                return;
+            }
+
+            setImageFromFile(file);
+        });
+
+        imageZoomInput?.addEventListener('input', (event) => {
+            imageState.zoom = Math.max(1, Number(event.target.value || 1));
+            renderImagePreview();
+        });
+
+        imageResetBtn?.addEventListener('click', () => {
+            imageState.zoom = 1;
+            imageState.offsetX = 0;
+            imageState.offsetY = 0;
+            if (imageZoomInput) {
+                imageZoomInput.value = '1';
+            }
+            renderImagePreview();
+        });
+
+        imageRemoveBtn?.addEventListener('click', () => {
+            resetImageState();
+            imageState.removeRequested = true;
+            if (removeImageInput) {
+                removeImageInput.value = '1';
+            }
+            if (imageHelper) {
+                imageHelper.textContent = '圖片將在儲存後移除';
+            }
+        });
+
+        imagePreviewCanvas?.addEventListener('pointerdown', (event) => {
+            if (!imageState.sourceImage) {
+                return;
+            }
+
+            imageState.dragging = true;
+            imageState.lastX = event.clientX;
+            imageState.lastY = event.clientY;
+            imagePreviewCanvas.setPointerCapture(event.pointerId);
+        });
+
+        imagePreviewCanvas?.addEventListener('pointermove', (event) => {
+            if (!imageState.dragging) {
+                return;
+            }
+
+            const deltaX = event.clientX - imageState.lastX;
+            const deltaY = event.clientY - imageState.lastY;
+            imageState.lastX = event.clientX;
+            imageState.lastY = event.clientY;
+            imageState.offsetX += deltaX;
+            imageState.offsetY += deltaY;
+            renderImagePreview();
+        });
+
+        const endImageDrag = (event) => {
+            if (!imageState.dragging || !imagePreviewCanvas) {
+                return;
+            }
+
+            imageState.dragging = false;
+            try {
+                imagePreviewCanvas.releasePointerCapture(event.pointerId);
+            } catch (_e) {
+                // Ignore if capture already released.
+            }
+        };
+
+        imagePreviewCanvas?.addEventListener('pointerup', endImageDrag);
+        imagePreviewCanvas?.addEventListener('pointercancel', endImageDrag);
+
     categoryModalClose?.addEventListener('click', closeCategoryModal);
     categoryModalCancel?.addEventListener('click', closeCategoryModal);
     categoryModalForm?.addEventListener('submit', submitCategoryForm);

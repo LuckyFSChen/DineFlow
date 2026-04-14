@@ -7,6 +7,8 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Store;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -80,7 +82,7 @@ class ProductManagementController extends Controller
     {
         $this->authorizeStoreAccess($request, $store);
 
-        $data = $this->validatedData($request, $store);
+        $data = $this->validatedData($request, $store, null);
         $product = Product::create($data);
 
         if ($request->expectsJson()) {
@@ -126,7 +128,7 @@ class ProductManagementController extends Controller
         $this->authorizeStoreAccess($request, $store);
         $this->ensureProductBelongsToStore($store, $product);
 
-        $data = $this->validatedData($request, $store);
+        $data = $this->validatedData($request, $store, $product);
         $product->update($data);
 
         if ($request->expectsJson()) {
@@ -435,7 +437,7 @@ class ProductManagementController extends Controller
         }
     }
 
-    protected function validatedData(Request $request, Store $store): array
+    protected function validatedData(Request $request, Store $store, ?Product $currentProduct = null): array
     {
         $data = $request->validate([
             'category_id' => ['required', 'integer', 'exists:categories,id'],
@@ -443,7 +445,8 @@ class ProductManagementController extends Controller
             'description' => ['nullable', 'string'],
             'price' => ['required', 'integer', 'min:0'],
             'sort' => ['nullable', 'integer', 'min:1'],
-            'image' => ['nullable', 'string', 'max:2048'],
+            'image_upload' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'remove_image' => ['nullable', 'boolean'],
             'option_groups_json' => ['nullable', 'string'],
             'allow_item_note' => ['nullable', 'boolean'],
         ]);
@@ -466,9 +469,40 @@ class ProductManagementController extends Controller
         $data['allow_item_note'] = $request->boolean('allow_item_note');
         $data['option_groups'] = $this->parseOptionGroupsJson($data['option_groups_json'] ?? null);
 
+        $hasNewUpload = $request->hasFile('image_upload');
+        $shouldRemoveImage = $request->boolean('remove_image');
+
+        if ($hasNewUpload) {
+            if ($currentProduct && $this->isLocalStorageImage($currentProduct->image)) {
+                Storage::disk('public')->delete(ltrim((string) $currentProduct->image, '/'));
+            }
+
+            $data['image'] = $request->file('image_upload')->store('products', 'public');
+        } elseif ($shouldRemoveImage) {
+            if ($currentProduct && $this->isLocalStorageImage($currentProduct->image)) {
+                Storage::disk('public')->delete(ltrim((string) $currentProduct->image, '/'));
+            }
+
+            $data['image'] = null;
+        } elseif ($currentProduct) {
+            unset($data['image']);
+        } else {
+            $data['image'] = null;
+        }
+
+        unset($data['image_upload'], $data['remove_image']);
         unset($data['option_groups_json']);
 
         return $data;
+    }
+
+    protected function isLocalStorageImage(?string $path): bool
+    {
+        if (! $path) {
+            return false;
+        }
+
+        return ! Str::startsWith($path, ['http://', 'https://']);
     }
 
     protected function parseOptionGroupsJson(?string $raw): ?array
@@ -542,6 +576,7 @@ class ProductManagementController extends Controller
             'price' => (int) $product->price,
             'sort' => (int) ($product->sort ?? 1),
             'image' => $product->image,
+            'image_url' => $this->resolveImageUrl($product->image),
             'is_active' => (bool) $product->is_active,
             'is_sold_out' => (bool) $product->is_sold_out,
             'allow_item_note' => (bool) $product->allow_item_note,
@@ -550,5 +585,18 @@ class ProductManagementController extends Controller
                 ? json_encode($product->option_groups, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
                 : '[]',
         ];
+    }
+
+    protected function resolveImageUrl(?string $path): ?string
+    {
+        if (! $path) {
+            return null;
+        }
+
+        if (Str::startsWith($path, ['http://', 'https://'])) {
+            return $path;
+        }
+
+        return asset('storage/' . ltrim($path, '/'));
     }
 }

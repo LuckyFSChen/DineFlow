@@ -24,7 +24,10 @@ class StoreManagementController extends Controller
 
         if ($user && $user->isMerchant()) {
             $maxStores = $user->maxAllowedStores();
-            $usedStores = Store::query()->where('user_id', $user->id)->count();
+            $usedStores = Store::query()
+                ->where('user_id', $user->id)
+                ->where('is_active', true)
+                ->count();
             $remainingStores = $maxStores === null ? null : max($maxStores - $usedStores, 0);
             $canCreateStore = $this->canCreateStore($user);
         }
@@ -90,6 +93,10 @@ class StoreManagementController extends Controller
 
         if ($user && $user->isMerchant()) {
             $data['user_id'] = $user->id;
+
+            if ($data['is_active'] && ! $this->canActivateStore($user)) {
+                $data['is_active'] = false;
+            }
         }
 
         $store = Store::create($data);
@@ -112,14 +119,14 @@ class StoreManagementController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'ok' => true,
-                'message' => '店家已建立。',
+                'message' => $this->storeCreatedMessage($user, $data['is_active']),
                 'store' => $this->storePayload($store->fresh()),
             ]);
         }
 
         return redirect()
             ->route('admin.stores.index')
-            ->with('success', '店家已建立。');
+            ->with('success', $this->storeCreatedMessage($user, $data['is_active']));
     }
 
     public function edit(Request $request, Store $store)
@@ -141,6 +148,23 @@ class StoreManagementController extends Controller
         $this->authorizeStoreAccess($request, $store);
 
         $updateData = $this->validatedData($request, $store->id);
+
+        $user = $request->user();
+        if ($user && $user->isMerchant() && $updateData['is_active']) {
+            $canActivate = $this->canActivateStore($user, $store->id);
+            if (! $canActivate) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'ok' => false,
+                        'message' => $this->activationBlockedMessage($user),
+                    ], 422);
+                }
+
+                return redirect()
+                    ->route('admin.stores.index')
+                    ->with('error', $this->activationBlockedMessage($user));
+            }
+        }
 
         if ($request->hasFile('banner_image')) {
             $file = $request->file('banner_image');
@@ -195,6 +219,7 @@ class StoreManagementController extends Controller
             'description' => ['nullable', 'string'],
             'address' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'regex:/^(09\d{2}-\d{3}-\d{3}|09\d{8})$/'],
+            'currency' => ['nullable', 'in:twd,vnd,cny,usd'],
             'banner_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'checkout_timing' => ['nullable', 'in:prepay,postpay'],
             'opening_time' => ['nullable', 'date_format:H:i', 'required_with:closing_time'],
@@ -206,6 +231,7 @@ class StoreManagementController extends Controller
         $data['phone'] = $this->normalizeTaiwanMobilePhone($data['phone'] ?? null);
         $data['slug'] = $data['slug'] ?: (Str::slug($data['name']) ?: 'store');
         $data['is_active'] = $request->boolean('is_active');
+        $data['currency'] = strtolower($data['currency'] ?? 'twd');
         $data['checkout_timing'] = $data['checkout_timing'] ?? 'postpay';
 
         return $data;
@@ -258,16 +284,66 @@ class StoreManagementController extends Controller
             return false;
         }
 
+        // Inactive stores do not consume plan quota. Quota is enforced on activation.
+        return true;
+    }
+
+    protected function canActivateStore(User $user, ?int $excludingStoreId = null): bool
+    {
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        if (! $user->hasActiveSubscription()) {
+            return false;
+        }
+
+        if ($user->subscriptionPlan === null) {
+            return false;
+        }
+
         $maxStores = $user->maxAllowedStores();
         if ($maxStores === null) {
             return true;
         }
 
-        $currentCount = Store::query()
+        $activeStoresQuery = Store::query()
             ->where('user_id', $user->id)
-            ->count();
+            ->where('is_active', true);
 
-        return $currentCount < $maxStores;
+        if ($excludingStoreId !== null) {
+            $activeStoresQuery->where('id', '!=', $excludingStoreId);
+        }
+
+        $activeCount = $activeStoresQuery->count();
+
+        return $activeCount < $maxStores;
+    }
+
+    protected function storeCreatedMessage(?User $user, bool $isActive): string
+    {
+        if (! $user || ! $user->isMerchant()) {
+            return '店家已建立。';
+        }
+
+        if ($isActive) {
+            return '店家已建立。';
+        }
+
+        if (! $user->hasActiveSubscription()) {
+            return '店家已建立，但因訂閱已到期，目前為關閉狀態。';
+        }
+
+        return '店家已建立，但因已達可開啟店家上限，目前為關閉狀態。';
+    }
+
+    protected function activationBlockedMessage(User $user): string
+    {
+        if (! $user->hasActiveSubscription()) {
+            return '訂閱已到期，店家無法開啟。請先續訂方案。';
+        }
+
+        return '目前已達可開啟店家上限。請先關閉其他店家，再開啟此店家。';
     }
 
     protected function storePayload(Store $store): array
@@ -279,6 +355,7 @@ class StoreManagementController extends Controller
             'description' => $store->description,
             'address' => $store->address,
             'phone' => $store->phone,
+            'currency' => strtolower($store->currency ?? 'twd'),
             'checkout_timing' => $store->checkout_timing ?? 'postpay',
             'is_active' => (bool) $store->is_active,
             'opening_time' => $store->opening_time,

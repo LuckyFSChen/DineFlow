@@ -1,17 +1,88 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+@php
+    $isAdminArea = request()->routeIs('admin.*') || request()->routeIs('super-admin.*') || request()->routeIs('merchant.*');
+
+    $navUser = Auth::user();
+    $routeStoreParam = request()->route('store');
+
+    $resolvedRouteStore = null;
+    if ($routeStoreParam instanceof \App\Models\Store) {
+        $resolvedRouteStore = $routeStoreParam;
+    } elseif (is_numeric($routeStoreParam)) {
+        $resolvedRouteStore = \App\Models\Store::query()->find((int) $routeStoreParam);
+    }
+
+    if ($resolvedRouteStore && ! $resolvedRouteStore->is_active) {
+        $resolvedRouteStore = null;
+    }
+
+    $firstOpenStore = fn () => \App\Models\Store::query()
+        ->where('is_active', true)
+        ->orderBy('id')
+        ->first();
+
+    $merchantOpenStore = $navUser?->isMerchant()
+        ? $navUser->stores()->where('is_active', true)->orderBy('id')->first()
+        : null;
+
+    $chefOpenStore = ($navUser?->isChef() && $navUser->store && $navUser->store->is_active)
+        ? $navUser->store
+        : null;
+
+    $cashierOpenStore = ($navUser?->isCashier() && $navUser->store && $navUser->store->is_active)
+        ? $navUser->store
+        : null;
+
+    $kitchenNavStore = null;
+    if ($navUser?->isAdmin() || $navUser?->hasActiveSubscription() || $navUser?->isChef()) {
+        if ($navUser?->isMerchant()) {
+            $kitchenNavStore = $merchantOpenStore;
+        } elseif ($navUser?->isChef()) {
+            $kitchenNavStore = $chefOpenStore;
+        } else {
+            $kitchenNavStore = $resolvedRouteStore ?: $firstOpenStore();
+        }
+    }
+
+    $cashierNavStore = null;
+    if ($navUser?->isAdmin() || $navUser?->hasActiveSubscription() || $navUser?->isCashier()) {
+        if ($navUser?->isMerchant()) {
+            $cashierNavStore = $merchantOpenStore;
+        } elseif ($navUser?->isCashier()) {
+            $cashierNavStore = $cashierOpenStore;
+        } else {
+            $cashierNavStore = $resolvedRouteStore ?: $firstOpenStore();
+        }
+    }
+
+    $showKitchenNav = $kitchenNavStore
+        && ($navUser?->isAdmin() || $navUser?->hasActiveSubscription() || $navUser?->isChef());
+
+    $showCashierNav = $cashierNavStore
+        && ($navUser?->isAdmin() || $navUser?->hasActiveSubscription() || $navUser?->isCashier());
+@endphp
+
+<nav x-data="{ open: false }" class="{{ $isAdminArea ? 'admin-nav sticky top-0 z-40 border-b border-white/40 bg-white/70 backdrop-blur-xl' : 'bg-white border-b border-gray-100' }}">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
+                    <a href="{{ Auth::check() ? route('dashboard') : route('home') }}">
                         <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
                     </a>
                 </div>
 
+                @if($isAdminArea)
+                    <div class="hidden items-center pl-3 sm:flex">
+                        <span class="inline-flex items-center rounded-full border border-cyan-300/80 bg-cyan-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-cyan-700">
+                            Admin Console
+                        </span>
+                    </div>
+                @endif
+
                 <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                <div class="hidden space-x-3 sm:-my-px sm:ms-8 sm:flex sm:items-center">
                     @if(Auth::user()?->isMerchant())
                         <x-nav-link :href="route('merchant.subscription.index')" :active="request()->routeIs('merchant.subscription.*')">
                             {{ __('nav.subscription') }}
@@ -28,56 +99,16 @@
                         </x-nav-link>
                     @endif
 
-                    @if(Auth::user()?->isAdmin() || Auth::user()?->hasActiveSubscription() || Auth::user()?->isChef())
-                        @php
-                            $navKitchenStore = null;
-
-                            if (Auth::user()?->isMerchant()) {
-                                $navKitchenStore = Auth::user()->stores()->orderBy('id')->first();
-                            } elseif (Auth::user()?->isChef()) {
-                                $navKitchenStore = Auth::user()->store;
-                            } else {
-                                $routeStore = request()->route('store');
-
-                                if ($routeStore instanceof \App\Models\Store) {
-                                    $navKitchenStore = $routeStore;
-                                } elseif (is_numeric($routeStore)) {
-                                    $navKitchenStore = \App\Models\Store::query()->find((int) $routeStore);
-                                } else {
-                                    $navKitchenStore = \App\Models\Store::query()->orderBy('id')->first();
-                                }
-                            }
-                        @endphp
-                        @if($navKitchenStore)
-                        <x-nav-link :href="route('admin.stores.kitchen', $navKitchenStore)" :active="request()->routeIs('admin.stores.kitchen*')">
+                    @if($showKitchenNav)
+                        <x-nav-link :href="route('admin.stores.kitchen', $kitchenNavStore)" :active="request()->routeIs('admin.stores.kitchen*')">
                             🍳 {{ __('nav.kitchen') }}
                         </x-nav-link>
-                        @endif
                     @endif
 
-                    @if(Auth::user()?->isAdmin() || Auth::user()?->hasActiveSubscription() || Auth::user()?->role === 'cashier')
-                        @php
-                            $navCashierStore = null;
-                            if (Auth::user()?->isMerchant()) {
-                                $navCashierStore = Auth::user()->stores()->orderBy('id')->first();
-                            } elseif (Auth::user()?->role === 'cashier') {
-                                $navCashierStore = Auth::user()->store;
-                            } else {
-                                $routeStore = request()->route('store');
-                                if ($routeStore instanceof \App\Models\Store) {
-                                    $navCashierStore = $routeStore;
-                                } elseif (is_numeric($routeStore)) {
-                                    $navCashierStore = \App\Models\Store::query()->find((int) $routeStore);
-                                } else {
-                                    $navCashierStore = \App\Models\Store::query()->orderBy('id')->first();
-                                }
-                            }
-                        @endphp
-                        @if($navCashierStore)
-                        <x-nav-link :href="route('admin.stores.cashier', $navCashierStore)" :active="request()->routeIs('admin.stores.cashier*')">
+                    @if($showCashierNav)
+                        <x-nav-link :href="route('admin.stores.cashier', $cashierNavStore)" :active="request()->routeIs('admin.stores.cashier*')">
                             💳 {{ __('nav.cashier') }}
                         </x-nav-link>
-                        @endif
                     @endif
 
                     @if(Auth::user()?->isAdmin())
@@ -111,51 +142,61 @@
                         <a href="{{ route('locale.switch', 'vi') }}" class="flex items-center gap-2 px-3 py-2 text-xs font-medium {{ app()->getLocale() === 'vi' ? 'bg-slate-50 font-bold text-slate-900' : 'text-slate-700 hover:bg-slate-50' }}">🇻🇳 {{ __('nav.lang_vi') }}</a>
                     </div>
                 </div>
-                <x-dropdown align="right" width="56" contentClasses="p-2 bg-white">
-                    <x-slot name="trigger">
-                        <button class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none">
-                            <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">
-                                {{ strtoupper(substr((string) (Auth::user()?->name ?? 'U'), 0, 1)) }}
-                            </span>
-                            <span class="max-w-[140px] leading-tight text-left">
-                                <span class="block truncate">{{ Auth::user()?->name ?? __('nav.account_center') }}</span>
-                                <span class="block text-[11px] font-medium text-slate-500">{{ strtoupper((string) Auth::user()?->role) }}</span>
-                            </span>
-                            <div>
-                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
+                @auth
+                    <x-dropdown align="right" width="56" contentClasses="p-2 bg-white">
+                        <x-slot name="trigger">
+                            <button class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none">
+                                <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">
+                                    {{ strtoupper(substr((string) Auth::user()->name, 0, 1)) }}
+                                </span>
+                                <span class="max-w-[140px] leading-tight text-left">
+                                    <span class="block truncate">{{ Auth::user()->name }}</span>
+                                    <span class="block text-[11px] font-medium text-slate-500">{{ strtoupper((string) Auth::user()->role) }}</span>
+                                </span>
+                                <div>
+                                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                            </button>
+                        </x-slot>
+
+                        <x-slot name="content">
+                            <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                                <p class="text-xs font-semibold tracking-wide text-slate-500">{{ __('nav.currently_logged_in') }}</p>
+                                <p class="mt-0.5 truncate text-sm font-semibold text-slate-800">{{ Auth::user()->name }}</p>
+                                @if(Auth::user()->email)
+                                    <p class="truncate text-xs text-slate-500">{{ Auth::user()->email }}</p>
+                                @endif
                             </div>
-                        </button>
-                    </x-slot>
 
-                    <x-slot name="content">
-                        <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-                            <p class="text-xs font-semibold tracking-wide text-slate-500">{{ __('nav.currently_logged_in') }}</p>
-                            <p class="mt-0.5 truncate text-sm font-semibold text-slate-800">{{ Auth::user()?->name }}</p>
-                            @if(Auth::user()?->email)
-                                <p class="truncate text-xs text-slate-500">{{ Auth::user()?->email }}</p>
-                            @endif
-                        </div>
+                            <div class="my-2 border-t border-slate-200"></div>
 
-                        <div class="my-2 border-t border-slate-200"></div>
-
-                        <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('nav.profile') }}
-                        </x-dropdown-link>
-
-                        <!-- Authentication -->
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-
-                            <x-dropdown-link :href="route('logout')"
-                               onclick="event.preventDefault(); this.closest('form').submit();"
-                               class="mt-1 font-semibold text-rose-600 hover:bg-rose-50 focus:bg-rose-50">
-                                {{ __('nav.logout') }}
+                            <x-dropdown-link :href="route('profile.edit')">
+                                {{ __('nav.profile') }}
                             </x-dropdown-link>
-                        </form>
-                    </x-slot>
-                </x-dropdown>
+
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+
+                                <x-dropdown-link :href="route('logout')"
+                                   onclick="event.preventDefault(); this.closest('form').submit();"
+                                   class="mt-1 font-semibold text-rose-600 hover:bg-rose-50 focus:bg-rose-50">
+                                    {{ __('nav.logout') }}
+                                </x-dropdown-link>
+                            </form>
+                        </x-slot>
+                    </x-dropdown>
+                @else
+                    <a href="{{ route('login') }}" class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">
+                        {{ __('Log in') }}
+                    </a>
+                    @if (Route::has('register'))
+                        <a href="{{ route('register') }}" class="inline-flex items-center rounded-xl bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-accent hover:text-brand-dark">
+                            {{ __('Register') }}
+                        </a>
+                    @endif
+                @endauth
             </div>
 
             <!-- Hamburger -->
@@ -189,27 +230,16 @@
                 </x-responsive-nav-link>
             @endif
 
-            @if(Auth::user()?->isChef() && Auth::user()?->store)
-                <x-responsive-nav-link :href="route('admin.stores.kitchen', Auth::user()->store)" :active="request()->routeIs('admin.stores.kitchen*')">
+            @if($showKitchenNav)
+                <x-responsive-nav-link :href="route('admin.stores.kitchen', $kitchenNavStore)" :active="request()->routeIs('admin.stores.kitchen*')">
                     🍳 {{ __('nav.kitchen') }}
                 </x-responsive-nav-link>
             @endif
 
-            @if(Auth::user()?->role === 'cashier' && Auth::user()?->store)
-                <x-responsive-nav-link :href="route('admin.stores.cashier', Auth::user()->store)" :active="request()->routeIs('admin.stores.cashier*')">
+            @if($showCashierNav)
+                <x-responsive-nav-link :href="route('admin.stores.cashier', $cashierNavStore)" :active="request()->routeIs('admin.stores.cashier*')">
                     💳 {{ __('nav.cashier') }}
                 </x-responsive-nav-link>
-            @elseif(Auth::user()?->isAdmin() || Auth::user()?->hasActiveSubscription())
-                @php
-                    $respCashierStore = Auth::user()?->isMerchant()
-                        ? Auth::user()->stores()->orderBy('id')->first()
-                        : \App\Models\Store::query()->orderBy('id')->first();
-                @endphp
-                @if($respCashierStore)
-                <x-responsive-nav-link :href="route('admin.stores.cashier', $respCashierStore)" :active="request()->routeIs('admin.stores.cashier*')">
-                    💳 {{ __('nav.cashier') }}
-                </x-responsive-nav-link>
-                @endif
             @endif
 
             @if(Auth::user()?->isAdmin())
@@ -221,44 +251,73 @@
 
         <!-- Responsive Settings Options -->
         <div class="pt-4 pb-1 border-t border-gray-200">
-            <div class="px-4">
-                <div class="font-medium text-sm text-gray-700">{{ strtoupper((string) Auth::user()?->role) }}</div>
-                @if(Auth::user()?->isMerchant())
-                    <div class="font-medium text-xs text-gray-500 mt-1">
-                        {{ __('nav.expires') }} {{ Auth::user()?->subscription_ends_at ? Auth::user()?->subscription_ends_at->format('Y-m-d H:i') : __('nav.not_activated') }}
-                    </div>
-                @endif
-                {{-- <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div> --}}
-                {{-- <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div> --}}
-            </div>
+            @auth
+                <div class="px-4">
+                    <div class="font-medium text-sm text-gray-700">{{ strtoupper((string) Auth::user()->role) }}</div>
+                    @if(Auth::user()->isMerchant())
+                        <div class="font-medium text-xs text-gray-500 mt-1">
+                            {{ __('nav.expires') }} {{ Auth::user()->subscription_ends_at ? Auth::user()->subscription_ends_at->format('Y-m-d H:i') : __('nav.not_activated') }}
+                        </div>
+                    @endif
+                </div>
 
-            <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('nav.profile') }}
-                </x-responsive-nav-link>
-
-                <!-- Authentication -->
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-
-                    <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
-                        {{ __('nav.logout') }}
+                <div class="mt-3 space-y-1">
+                    <x-responsive-nav-link :href="route('profile.edit')">
+                        {{ __('nav.profile') }}
                     </x-responsive-nav-link>
 
-                {{-- Responsive Language Switcher --}}
-                <div class="px-4 py-3 border-t border-gray-200">
-                    <p class="text-xs font-semibold text-gray-500 mb-2">{{ __('nav.language') }}</p>
-                    <div class="flex gap-2">
-                        <a href="{{ route('locale.switch', 'zh_TW') }}" class="rounded-lg border px-3 py-1.5 text-xs font-semibold {{ app()->getLocale() === 'zh_TW' ? 'border-indigo-400 bg-indigo-50 text-indigo-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">ZH</a>
-                        <a href="{{ route('locale.switch', 'zh_CN') }}" class="rounded-lg border px-3 py-1.5 text-xs font-semibold {{ app()->getLocale() === 'zh_CN' ? 'border-indigo-400 bg-indigo-50 text-indigo-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">CN</a>
-                        <a href="{{ route('locale.switch', 'en') }}" class="rounded-lg border px-3 py-1.5 text-xs font-semibold {{ app()->getLocale() === 'en' ? 'border-indigo-400 bg-indigo-50 text-indigo-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">EN</a>
-                        <a href="{{ route('locale.switch', 'vi') }}" class="rounded-lg border px-3 py-1.5 text-xs font-semibold {{ app()->getLocale() === 'vi' ? 'border-indigo-400 bg-indigo-50 text-indigo-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">VI</a>
-                    </div>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <x-responsive-nav-link :href="route('logout')"
+                                onclick="event.preventDefault(); this.closest('form').submit();">
+                            {{ __('nav.logout') }}
+                        </x-responsive-nav-link>
+                    </form>
                 </div>
-                </form>
+            @else
+                <div class="mt-2 space-y-1 px-2">
+                    <x-responsive-nav-link :href="route('login')">
+                        {{ __('Log in') }}
+                    </x-responsive-nav-link>
+                    @if (Route::has('register'))
+                        <x-responsive-nav-link :href="route('register')">
+                            {{ __('Register') }}
+                        </x-responsive-nav-link>
+                    @endif
+                </div>
+            @endauth
+
+            <div class="px-4 py-3 border-t border-gray-200">
+                <p class="text-xs font-semibold text-gray-500 mb-2">{{ __('nav.language') }}</p>
+                <div class="flex gap-2">
+                    <a href="{{ route('locale.switch', 'zh_TW') }}" class="rounded-lg border px-3 py-1.5 text-xs font-semibold {{ app()->getLocale() === 'zh_TW' ? 'border-indigo-400 bg-indigo-50 text-indigo-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">ZH</a>
+                    <a href="{{ route('locale.switch', 'zh_CN') }}" class="rounded-lg border px-3 py-1.5 text-xs font-semibold {{ app()->getLocale() === 'zh_CN' ? 'border-indigo-400 bg-indigo-50 text-indigo-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">CN</a>
+                    <a href="{{ route('locale.switch', 'en') }}" class="rounded-lg border px-3 py-1.5 text-xs font-semibold {{ app()->getLocale() === 'en' ? 'border-indigo-400 bg-indigo-50 text-indigo-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">EN</a>
+                    <a href="{{ route('locale.switch', 'vi') }}" class="rounded-lg border px-3 py-1.5 text-xs font-semibold {{ app()->getLocale() === 'vi' ? 'border-indigo-400 bg-indigo-50 text-indigo-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">VI</a>
+                </div>
             </div>
         </div>
     </div>
 </nav>
+
+@auth
+    @if($isAdminArea)
+        <div class="mobile-admin-dock">
+            <a href="{{ route('admin.stores.index') }}" class="{{ request()->routeIs('admin.stores.index') ? 'active' : '' }}">店家</a>
+
+            @if($showKitchenNav)
+                <a href="{{ route('admin.stores.kitchen', $kitchenNavStore) }}" class="{{ request()->routeIs('admin.stores.kitchen*') ? 'active' : '' }}">後廚</a>
+            @endif
+
+            @if($showCashierNav)
+                <a href="{{ route('admin.stores.cashier', $cashierNavStore) }}" class="{{ request()->routeIs('admin.stores.cashier*') ? 'active' : '' }}">收銀</a>
+            @endif
+
+            @if(Auth::user()?->isMerchant())
+                <a href="{{ route('merchant.subscription.index') }}" class="{{ request()->routeIs('merchant.subscription.*') ? 'active' : '' }}">方案</a>
+            @elseif(Auth::user()?->isAdmin())
+                <a href="{{ route('super-admin.subscriptions.index') }}" class="{{ request()->routeIs('super-admin.subscriptions.*') ? 'active' : '' }}">訂閱</a>
+            @endif
+        </div>
+    @endif
+@endauth

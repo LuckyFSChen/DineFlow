@@ -1,30 +1,61 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $storeCollection = $stores->getCollection();
+    $activeStoreCount = $storeCollection->where('is_active', true)->count();
+    $inactiveStoreCount = $storeCollection->count() - $activeStoreCount;
+@endphp
 <div class="min-h-screen bg-slate-50">
     <div class="mx-auto max-w-7xl px-6 py-10 lg:px-8">
-        <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-                <h1 class="text-3xl font-bold tracking-tight text-slate-900">{{ __('admin.store_management') }}</h1>
-                <p class="mt-2 text-slate-600">{{ __('admin.store_management_desc') }}</p>
+        <div class="admin-hero mb-6 rounded-3xl px-5 py-5 md:px-7">
+            <div class="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold tracking-tight text-slate-900">{{ __('admin.store_management') }}</h1>
+                    <p class="mt-2 text-slate-600">{{ __('admin.store_management_desc') }}</p>
+                </div>
+
+                @if(isset($canCreateStore) && ! $canCreateStore)
+                    <button
+                        type="button"
+                        id="open-store-modal-btn"
+                        disabled
+                        class="inline-flex cursor-not-allowed items-center justify-center rounded-2xl bg-slate-300 px-5 py-3 text-sm font-semibold text-slate-500">
+                        {{ __('admin.add_store_limit') }}
+                    </button>
+                @else
+                    <button
+                        type="button"
+                        id="open-store-modal-btn"
+                        class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500">
+                        {{ __('admin.add_store') }}
+                    </button>
+                @endif
             </div>
 
-            @if(isset($canCreateStore) && ! $canCreateStore)
-                <button
-                    type="button"
-                    id="open-store-modal-btn"
-                    disabled
-                    class="inline-flex cursor-not-allowed items-center justify-center rounded-2xl bg-slate-300 px-5 py-3 text-sm font-semibold text-slate-500">
-                    {{ __('admin.add_store_limit') }}
-                </button>
-            @else
-                <button
-                    type="button"
-                    id="open-store-modal-btn"
-                    class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500">
-                    {{ __('admin.add_store') }}
-                </button>
-            @endif
+            <div class="grid gap-3 md:grid-cols-3">
+                <div class="admin-kpi rounded-2xl p-4 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">店家總數</p>
+                    <p class="value mt-2 text-slate-900">{{ $storeCollection->count() }}</p>
+                </div>
+                <div class="admin-kpi rounded-2xl p-4 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">啟用中</p>
+                    <p class="value mt-2 text-emerald-700">{{ $activeStoreCount }}</p>
+                </div>
+                <div class="admin-kpi rounded-2xl p-4 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">已關閉</p>
+                    <p class="value mt-2 text-amber-700">{{ $inactiveStoreCount }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <div class="admin-pill-nav inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-slate-700">
+                    <span class="rounded-full bg-cyan-100 px-2 py-1 text-cyan-700">總覽</span>
+                    <span>可管理所有門市與營運入口</span>
+                </div>
+            </div>
         </div>
 
         @if(isset($usedStores))
@@ -36,6 +67,7 @@
                 @else
                     / {{ __('admin.limit_stores', ['max' => $maxStores]) }}（{{ __('admin.remaining_stores', ['count' => $remainingStores]) }}）
                 @endif
+                <span class="ml-2 text-indigo-700">{{ __('admin.quota_inactive_not_counted') }}</span>
             </div>
         @endif
 
@@ -51,7 +83,7 @@
             </div>
         @endif
 
-        <div class="mb-6 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="admin-search-shell mb-6 rounded-3xl p-4 shadow-sm">
             <form method="GET" action="{{ route('admin.stores.index') }}" class="flex flex-col gap-3 md:flex-row">
                 <input
                     type="text"
@@ -76,6 +108,7 @@
                             <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.store_name') }}</th>
                             <th class="px-6 py-4 text-left font-semibold text-slate-700">Slug</th>
                             <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.phone') }}</th>
+                            <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.currency') }}</th>
                             <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.address') }}</th>
                             <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.status') }}</th>
                             <th class="px-6 py-4 text-right font-semibold text-slate-700">{{ __('admin.actions') }}</th>
@@ -104,6 +137,7 @@
                                 </td>
                                 <td class="px-6 py-4 text-slate-600">{{ $store->slug }}</td>
                                 <td class="px-6 py-4 text-slate-600">{{ $store->phone ?: '-' }}</td>
+                                <td class="px-6 py-4 text-slate-600">{{ strtoupper($store->currency ?? 'twd') }}</td>
                                 <td class="px-6 py-4 text-slate-600">{{ $store->address ?: '-' }}</td>
                                 <td class="px-6 py-4">
                                     @if($store->is_active)
@@ -148,15 +182,17 @@
                                                 {{ __('admin.tables_qr') }}
                                             </a>
 
-                                            <a href="{{ route('admin.stores.kitchen', $store) }}"
-                                               class="inline-flex items-center rounded-xl border border-orange-300 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">
-                                                🍳 {{ __('admin.kitchen') }}
-                                            </a>
+                                            @if($store->is_active)
+                                                <a href="{{ route('admin.stores.kitchen', $store) }}"
+                                                   class="inline-flex items-center rounded-xl border border-orange-300 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">
+                                                    🍳 {{ __('admin.kitchen') }}
+                                                </a>
 
-                                            <a href="{{ route('admin.stores.chefs.index', $store) }}"
-                                               class="inline-flex items-center rounded-xl border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100">
-                                                👨‍🍳 廚師帳號
-                                            </a>
+                                                <a href="{{ route('admin.stores.chefs.index', $store) }}"
+                                                   class="inline-flex items-center rounded-xl border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100">
+                                                    👨‍🍳 廚師帳號
+                                                </a>
+                                            @endif
 
                                             <button
                                                 type="button"
@@ -249,6 +285,16 @@
                     <select name="checkout_timing" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                         <option value="postpay">{{ __('admin.checkout_postpay') }}</option>
                         <option value="prepay">{{ __('admin.checkout_prepay') }}</option>
+                    </select>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.currency') }}</label>
+                    <select name="currency" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        <option value="twd">{{ __('admin.currency_twd') }}</option>
+                        <option value="vnd">{{ __('admin.currency_vnd') }}</option>
+                        <option value="cny">{{ __('admin.currency_cny') }}</option>
+                        <option value="usd">{{ __('admin.currency_usd') }}</option>
                     </select>
                 </div>
 
@@ -410,6 +456,7 @@
         clearBannerPreview();
         modalForm.elements['is_active'].checked = true;
         modalForm.elements['checkout_timing'].value = 'postpay';
+        modalForm.elements['currency'].value = 'twd';
 
         if (!store) {
             return;
@@ -423,6 +470,7 @@
         modalForm.elements['opening_time'].value = store.opening_time || '';
         modalForm.elements['closing_time'].value = store.closing_time || '';
         modalForm.elements['checkout_timing'].value = store.checkout_timing || 'postpay';
+        modalForm.elements['currency'].value = (store.currency || 'twd').toLowerCase();
         modalForm.elements['is_active'].checked = !!store.is_active;
 
         if (store.banner_image_url) {

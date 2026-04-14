@@ -35,13 +35,19 @@ class RegisteredUserController extends Controller
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'account_type' => ['required', 'in:customer,merchant'],
+            'merchant_region' => ['nullable', 'in:tw,cn,vn', 'required_if:account_type,merchant'],
         ]);
+
+        $accountType = $request->string('account_type')->toString();
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => $request->string('account_type')->toString(),
+            'role' => $accountType,
+            'merchant_region' => $accountType === 'merchant'
+                ? $request->string('merchant_region')->toString()
+                : null,
         ]);
 
         event(new Registered($user));

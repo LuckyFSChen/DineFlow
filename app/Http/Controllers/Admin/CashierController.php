@@ -19,10 +19,11 @@ class CashierController extends Controller
         $this->authorizeStore($request, $store);
 
         $orders = $this->fetchCashierOrders($store);
+        $availableStores = $this->resolveAccessibleStores($request);
 
         $checkoutTiming = $store->checkout_timing ?? 'postpay';
 
-        return view('admin.cashier.index', compact('store', 'orders', 'checkoutTiming'));
+        return view('admin.cashier.index', compact('store', 'orders', 'checkoutTiming', 'availableStores'));
     }
 
     public function orders(Request $request, Store $store): JsonResponse
@@ -34,6 +35,7 @@ class CashierController extends Controller
         $data = $orders->map(fn (Order $o) => [
             'id'             => $o->id,
             'order_no'       => $o->order_no,
+            'order_locale'   => $o->order_locale,
             'status'         => $o->status,
             'payment_status' => $o->payment_status,
             'order_type'     => $o->order_type,
@@ -61,10 +63,24 @@ class CashierController extends Controller
         abort_if($order->store_id !== $store->id, 403);
 
         $status = (string) $request->input('status');
-        $allowed = ['preparing', 'paid'];
+        $allowed = ['preparing', 'paid', 'cancelled'];
 
         if (! in_array($status, $allowed, true)) {
             return response()->json(['ok' => false, 'message' => 'Invalid status'], 422);
+        }
+
+        if ($status === 'cancelled') {
+            if (! in_array((string) $order->status, self::PENDING_STATUSES, true)) {
+                return response()->json(['ok' => false, 'message' => 'Only pending orders can be cancelled'], 422);
+            }
+
+            $order->update(['status' => 'cancelled']);
+
+            return response()->json([
+                'ok'             => true,
+                'status'         => $order->status,
+                'payment_status' => $order->payment_status,
+            ]);
         }
 
         if ($status === 'paid') {
@@ -130,5 +146,28 @@ class CashierController extends Controller
             })
             ->orderBy('created_at', 'asc')
             ->get();
+    }
+
+    private function resolveAccessibleStores(Request $request): \Illuminate\Database\Eloquent\Collection
+    {
+        $user = $request->user();
+
+        if ($user->isAdmin()) {
+            return Store::query()->orderBy('name')->orderBy('id')->get(['id', 'name']);
+        }
+
+        if ($user->isMerchant()) {
+            return Store::query()
+                ->where('user_id', $user->id)
+                ->orderBy('name')
+                ->orderBy('id')
+                ->get(['id', 'name']);
+        }
+
+        if ($user->isCashier() && $user->store_id) {
+            return Store::query()->whereKey($user->store_id)->get(['id', 'name']);
+        }
+
+        return Store::query()->whereRaw('1 = 0')->get(['id', 'name']);
     }
 }

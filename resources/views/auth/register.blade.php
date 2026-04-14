@@ -38,6 +38,18 @@
             <x-input-error :messages="$errors->get('account_type')" class="mt-2" />
         </div>
 
+        <div class="mt-4" id="merchant-region-wrap">
+            <x-input-label for="merchant_region" :value="__('auth.Merchant Region')" />
+            <select id="merchant_region" name="merchant_region" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                <option value="">{{ __('auth.Select merchant region') }}</option>
+                <option value="tw" @selected(old('merchant_region') === 'tw')>{{ __('auth.region_tw') }}</option>
+                <option value="cn" @selected(old('merchant_region') === 'cn')>{{ __('auth.region_cn') }}</option>
+                <option value="vn" @selected(old('merchant_region') === 'vn')>{{ __('auth.region_vn') }}</option>
+            </select>
+            <p class="mt-1 text-xs text-slate-500">{{ __('auth.merchant_region_desc') }}</p>
+            <x-input-error :messages="$errors->get('merchant_region')" class="mt-2" />
+        </div>
+
         <!-- Password -->
         <div class="mt-4">
             <x-input-label for="password" :value="__('auth.Password')" />
@@ -71,4 +83,34 @@
             </x-primary-button>
         </div>
     </form>
+
+    <script>
+    (() => {
+        const accountTypeInputs = Array.from(document.querySelectorAll('input[name="account_type"]'));
+        const regionWrap = document.getElementById('merchant-region-wrap');
+        const regionSelect = document.getElementById('merchant_region');
+
+        if (!regionWrap || !regionSelect || accountTypeInputs.length === 0) {
+            return;
+        }
+
+        const toggleRegion = () => {
+            const selected = accountTypeInputs.find((input) => input.checked)?.value || 'customer';
+            const isMerchant = selected === 'merchant';
+
+            regionWrap.classList.toggle('hidden', !isMerchant);
+            regionSelect.required = isMerchant;
+
+            if (!isMerchant) {
+                regionSelect.value = '';
+            }
+        };
+
+        accountTypeInputs.forEach((input) => {
+            input.addEventListener('change', toggleRegion);
+        });
+
+        toggleRegion();
+    })();
+    </script>
 </x-guest-layout>

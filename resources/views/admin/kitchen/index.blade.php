@@ -7,6 +7,7 @@ function kitchenFormatOrder(\App\Models\Order $order): array {
     return [
         'id'           => $order->id,
         'order_no'     => $order->order_no,
+        'order_locale' => $order->order_locale,
         'status'       => $order->status,
         'payment_status' => $order->payment_status,
         'order_type'   => $order->order_type,
@@ -31,7 +32,8 @@ $ordersData = $orders->map(fn($o) => kitchenFormatOrder($o))->values()->all();
 <div class="min-h-screen bg-slate-900 text-white" x-data="kitchenBoard()" x-init="init()">
 
     {{-- Header --}}
-    <div class="sticky top-0 z-20 flex items-center justify-between border-b border-slate-700 bg-slate-900/95 px-6 py-3 backdrop-blur">
+    <div class="sticky top-0 z-20 border-b border-slate-700 bg-slate-900/95 px-4 py-3 backdrop-blur sm:px-6">
+        <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div class="flex items-center gap-4">
             <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700">
                 ← 回店家管理
@@ -42,7 +44,7 @@ $ordersData = $orders->map(fn($o) => kitchenFormatOrder($o))->values()->all();
             </div>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-2 xl:justify-end">
             {{-- Board switch --}}
             <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
                 <a href="{{ route('admin.stores.cashier', $store) }}"
@@ -50,7 +52,41 @@ $ordersData = $orders->map(fn($o) => kitchenFormatOrder($o))->values()->all();
                     💳 結帳看板
                 </a>
                 <span class="px-3 py-1.5 bg-indigo-600 text-white">🍳 後廚看板</span>
+                <a href="{{ route('admin.stores.boards', $store) }}"
+                   class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
+                    🧩 所有看板
+                </a>
             </div>
+
+            @if(($availableStores ?? collect())->count() > 1)
+                <div class="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs">
+                    <span class="text-slate-400">店家</span>
+                    <select
+                        class="rounded border border-slate-600 bg-slate-900 px-2 py-1 text-xs text-slate-100 focus:border-indigo-500 focus:outline-none"
+                        onchange="if (this.value) window.location.href = this.value;">
+                        @foreach($availableStores as $availableStore)
+                            <option value="{{ route('admin.stores.kitchen', $availableStore) }}" @selected((int) $availableStore->id === (int) $store->id)>
+                                {{ $availableStore->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
+
+            <div class="relative">
+                <input
+                    x-model.trim="searchTerm"
+                    type="text"
+                    placeholder="搜尋單號/顧客/桌號"
+                    class="w-52 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none">
+            </div>
+
+            <button
+                @click="refreshNow()"
+                type="button"
+                class="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-700">
+                立即更新
+            </button>
 
             {{-- Live indicator --}}
             <div class="flex items-center gap-1.5 rounded-full border border-emerald-700 bg-emerald-900/50 px-3 py-1 text-xs text-emerald-400">
@@ -62,7 +98,24 @@ $ordersData = $orders->map(fn($o) => kitchenFormatOrder($o))->values()->all();
             </div>
 
             {{-- Count badge --}}
-            <span class="rounded-full bg-indigo-600 px-3 py-0.5 text-xs font-bold" x-text="filteredOrders.length + ' 單'"></span>
+            <span class="rounded-full bg-indigo-600 px-3 py-0.5 text-xs font-bold" x-text="filteredOrders.length + ' / ' + orders.length + ' 單'"></span>
+            <span class="rounded-full border border-slate-700 bg-slate-800 px-3 py-0.5 text-xs text-slate-300" x-text="'下次更新 ' + nextRefreshIn + 's'"></span>
+        </div>
+        </div>
+
+        <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div class="rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2">
+                <p class="text-[11px] text-slate-400">製作中訂單</p>
+                <p class="text-lg font-bold text-blue-300" x-text="preparingCount"></p>
+            </div>
+            <div class="rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2">
+                <p class="text-[11px] text-slate-400">逾時(20 分+)</p>
+                <p class="text-lg font-bold text-rose-300" x-text="overdueCount"></p>
+            </div>
+            <div class="rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2">
+                <p class="text-[11px] text-slate-400">最後更新</p>
+                <p class="text-sm font-semibold text-slate-100" x-text="lastUpdatedText"></p>
+            </div>
         </div>
     </div>
 
@@ -81,7 +134,7 @@ $ordersData = $orders->map(fn($o) => kitchenFormatOrder($o))->values()->all();
     </div>
 
     {{-- Order grid --}}
-    <div x-show="!loading" class="grid gap-4 p-6" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
+    <div x-show="!loading" class="grid gap-4 p-4 sm:p-6" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
         <template x-for="order in filteredOrders" :key="order.id">
             <div class="flex flex-col rounded-2xl border overflow-hidden transition-all duration-300 border-blue-500/50 bg-blue-950/30">
 
@@ -101,6 +154,11 @@ $ordersData = $orders->map(fn($o) => kitchenFormatOrder($o))->values()->all();
                                 <span class="rounded bg-orange-800/60 px-1.5 py-0.5 text-orange-300">外帶</span>
                             </template>
                             <span class="text-slate-500" x-text="timeAgo(order.created_at)"></span>
+                            <span class="rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                                  :class="waitBadgeClass(order)"
+                                  x-text="'等待 ' + waitMinutes(order) + 'm'"></span>
+                                <span class="rounded border border-sky-500/40 bg-sky-900/40 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300"
+                                    x-text="'語系 ' + localeLabel(order.order_locale)"></span>
                         </div>
                         {{-- Customer name --}}
                         <div x-show="order.customer_name" class="mt-0.5 text-xs text-slate-400">
@@ -149,7 +207,7 @@ $ordersData = $orders->map(fn($o) => kitchenFormatOrder($o))->values()->all();
                         @click="setStatus(order, 'completed')"
                         :disabled="order._loading"
                         class="flex-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50">
-                        🍽️ 製作完成
+                        <span x-text="order._loading ? '處理中...' : '🍽️ 製作完成'"></span>
                     </button>
                 </div>
             </div>
@@ -180,23 +238,84 @@ function kitchenBoard() {
         statusUrlTemplate: @json(route('admin.stores.kitchen.orders.status', ['store' => $store, 'order' => '__ORDER__'])),
         checkoutTiming: @json($checkoutTiming ?? 'postpay'),
         filter: 'all',
+        searchTerm: '',
         loading: false,
         newOrderAlert: false,
         errorMessage: '',
+        lastUpdatedAt: null,
+        pollSeconds: 10,
+        nextRefreshIn: 10,
         _pollTimer: null,
+        _countdownTimer: null,
         _alertTimer: null,
         _errorTimer: null,
         _audioContext: null,
         _audioUnlockHandler: null,
 
         get filteredOrders() {
-            // Kitchen board shows all preparing orders (no other states)
-            return this.orders;
+            let result = [...this.orders];
+            const keyword = this.searchTerm.toLowerCase();
+
+            if (keyword) {
+                result = result.filter((o) => {
+                    const orderNo = String(o.order_no || o.id || '').toLowerCase();
+                    const customer = String(o.customer_name || '').toLowerCase();
+                    const tableNo = String(o.table?.table_no || '').toLowerCase();
+                    return orderNo.includes(keyword) || customer.includes(keyword) || tableNo.includes(keyword);
+                });
+            }
+
+            return result;
+        },
+
+        get preparingCount() {
+            return this.orders.length;
+        },
+
+        get overdueCount() {
+            return this.orders.filter((o) => this.waitMinutes(o) >= 20).length;
+        },
+
+        localeLabel(locale) {
+            const map = {
+                zh_TW: 'ZH',
+                zh_CN: 'CN',
+                en: 'EN',
+                vi: 'VI',
+            };
+
+            return map[String(locale || '')] || 'ZH';
+        },
+
+        get lastUpdatedText() {
+            if (!this.lastUpdatedAt) {
+                return '尚未更新';
+            }
+
+            const d = new Date(this.lastUpdatedAt);
+            return d.toLocaleTimeString('zh-TW', { hour12: false });
         },
 
         init() {
             this.initAudio();
-            this._pollTimer = setInterval(() => this.poll(), 10000);
+            this.lastUpdatedAt = Date.now();
+            this.nextRefreshIn = this.pollSeconds;
+            this._pollTimer = setInterval(() => this.poll(), this.pollSeconds * 1000);
+            this._countdownTimer = setInterval(() => this.tickCountdown(), 1000);
+        },
+
+        tickCountdown() {
+            if (this.nextRefreshIn <= 1) {
+                this.nextRefreshIn = this.pollSeconds;
+                return;
+            }
+
+            this.nextRefreshIn -= 1;
+        },
+
+        refreshNow() {
+            this.nextRefreshIn = this.pollSeconds;
+            this.poll();
         },
 
         initAudio() {
@@ -230,6 +349,7 @@ function kitchenBoard() {
                 const oldIds   = new Set(this.orders.map(o => o.id));
                 const hasNew   = fresh.some(o => !oldIds.has(o.id));
                 this.orders = fresh;
+                this.lastUpdatedAt = Date.now();
                 if (hasNew) this.showAlert();
             } catch {}
         },
@@ -340,6 +460,22 @@ function kitchenBoard() {
             if (diff < 60)  return diff + ' 秒前';
             if (diff < 3600) return Math.floor(diff / 60) + ' 分鐘前';
             return Math.floor(diff / 3600) + ' 小時前';
+        },
+
+        waitMinutes(order) {
+            if (!order?.created_at) {
+                return 0;
+            }
+
+            return Math.max(0, Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000));
+        },
+
+        waitBadgeClass(order) {
+            const minutes = this.waitMinutes(order);
+
+            if (minutes >= 20) return 'bg-rose-500/20 text-rose-300';
+            if (minutes >= 10) return 'bg-amber-500/20 text-amber-300';
+            return 'bg-emerald-500/20 text-emerald-300';
         },
     };
 }

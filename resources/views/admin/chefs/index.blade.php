@@ -3,16 +3,17 @@
 @section('content')
 <div class="min-h-screen bg-slate-50">
     <div class="mx-auto max-w-6xl px-6 py-10 lg:px-8">
-        <div class="mb-8 flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h1 class="text-3xl font-bold tracking-tight text-slate-900">廚師帳號管理</h1>
-                <p class="mt-2 text-slate-600">店家：{{ $store->name }}</p>
-            </div>
-            <div class="flex gap-2">
-                <a href="{{ route('admin.stores.kitchen', $store) }}" class="inline-flex items-center rounded-2xl border border-orange-300 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">🍳 後廚看板</a>
-                <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">返回店家列表</a>
-            </div>
-        </div>
+        <x-backend-header
+            title="廚師帳號管理"
+            :subtitle="'店家：' . $store->name"
+        >
+            <x-slot name="actions">
+                @if($store->is_active)
+                    <a href="{{ route('admin.stores.kitchen', $store) }}" class="inline-flex items-center rounded-2xl border border-orange-300/70 bg-orange-500/20 px-4 py-3 text-sm font-semibold text-orange-100 transition hover:bg-orange-500/30">🍳 後廚看板</a>
+                @endif
+                <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center rounded-2xl border border-slate-300/70 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/20">返回店家列表</a>
+            </x-slot>
+        </x-backend-header>
 
         @if(session('success'))
             <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ session('success') }}</div>

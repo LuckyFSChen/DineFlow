@@ -10,17 +10,22 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="font-sans antialiased bg-light">
-    <div class="min-vh-100">
+@php
+    $isAdminArea = request()->routeIs('admin.*') || request()->routeIs('super-admin.*') || request()->routeIs('merchant.*');
+@endphp
+<body class="font-sans antialiased bg-light {{ $isAdminArea ? 'is-admin-area' : '' }}">
+    <div class="min-vh-100 app-shell">
         @include('layouts.navigation')
 
-        {{-- For extends/section templates --}}
-        @hasSection('content')
-            @yield('content')
-        @else
-            {{-- For x-app-layout slot content --}}
-            {{ $slot ?? '' }}
-        @endif
+        <main class="app-main {{ $isAdminArea ? 'admin-stage' : '' }}">
+            {{-- For extends/section templates --}}
+            @hasSection('content')
+                @yield('content')
+            @else
+                {{-- For x-app-layout slot content --}}
+                {{ $slot ?? '' }}
+            @endif
+        </main>
     </div>
 
     <script>

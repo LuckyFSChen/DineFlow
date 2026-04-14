@@ -23,6 +23,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'merchant_region',
         'subscription_ends_at',
         'subscription_plan_id',
         'store_id',
@@ -85,7 +86,7 @@ class User extends Authenticatable
 
         return $this->isMerchant()
             && $this->subscription_ends_at !== null
-            && $this->subscription_ends_at->isFuture();
+            && $this->subscription_ends_at->greaterThanOrEqualTo(now()->startOfDay());
     }
 
     public function subscriptionPlan()
@@ -110,5 +111,23 @@ class User extends Authenticatable
         }
 
         return $this->subscriptionPlan?->max_stores;
+    }
+
+    public function subscriptionCurrencyCode(): string
+    {
+        return match (strtolower((string) $this->merchant_region)) {
+            'cn' => 'cny',
+            'vn' => 'vnd',
+            default => 'twd',
+        };
+    }
+
+    public function merchantRegionCode(): string
+    {
+        return match (strtolower((string) $this->merchant_region)) {
+            'cn' => 'cn',
+            'vn' => 'vn',
+            default => 'tw',
+        };
     }
 }

@@ -25,7 +25,7 @@
         @if($user->isMerchant())
             <div>
                 <x-input-label for="subscription_ends_at" :value="__('profile.subscription_end')" />
-                <x-text-input id="subscription_ends_at" type="text" class="mt-1 block w-full bg-slate-50" :value="$user->subscription_ends_at ? $user->subscription_ends_at->format('Y-m-d H:i') : __('profile.not_activated')" readonly />
+                <x-text-input id="subscription_ends_at" type="text" class="mt-1 block w-full bg-slate-50" :value="$user->subscription_ends_at ? $user->subscription_ends_at->format('Y-m-d') : __('profile.not_activated')" readonly />
             </div>
         @endif
 

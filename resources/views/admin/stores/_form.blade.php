@@ -41,6 +41,20 @@
         @enderror
     </div>
 
+    <div>
+        <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('admin.currency') }}</label>
+        <select name="currency"
+                class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+            <option value="twd" @selected(old('currency', $store->currency ?? 'twd') === 'twd')>{{ __('admin.currency_twd') }}</option>
+            <option value="vnd" @selected(old('currency', $store->currency ?? 'twd') === 'vnd')>{{ __('admin.currency_vnd') }}</option>
+            <option value="cny" @selected(old('currency', $store->currency ?? 'twd') === 'cny')>{{ __('admin.currency_cny') }}</option>
+            <option value="usd" @selected(old('currency', $store->currency ?? 'twd') === 'usd')>{{ __('admin.currency_usd') }}</option>
+        </select>
+        @error('currency')
+            <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+        @enderror
+    </div>
+
     <div class="lg:col-span-2">
         <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('admin.store_description') }}</label>
         <textarea name="description" rows="5"

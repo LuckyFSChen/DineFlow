@@ -53,7 +53,7 @@ class UserSubscriptionController extends Controller
                 ->with('success', '已設定為到期：' . $user->email);
         }
 
-        $startsAt = $user->subscription_ends_at && $user->subscription_ends_at->isFuture()
+        $startsAt = $user->hasActiveSubscription()
             ? $user->subscription_ends_at->copy()
             : now();
 

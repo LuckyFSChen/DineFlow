@@ -17,6 +17,7 @@ class Store extends Model
         'description',
         'phone',
         'address',
+        'currency',
         'contact_email',
         'notification_email',
         'is_active',

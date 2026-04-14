@@ -3,22 +3,23 @@
 @section('content')
 <div class="min-h-screen bg-slate-50">
     <div class="mx-auto max-w-7xl px-6 py-10 lg:px-8">
-        <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-                <h1 class="text-3xl font-bold tracking-tight text-slate-900">{{ __('admin.tables_qr_title') }}</h1>
-                <p class="mt-2 text-slate-600">{{ __('admin.store_label') }}{{ $store->name }}（{{ $store->slug }}）</p>
-            </div>
-            <div class="flex flex-wrap gap-2">
+        <x-backend-header
+            :title="__('admin.tables_qr_title')"
+            :subtitle="__('admin.store_label') . $store->name . '（' . $store->slug . '）'"
+        >
+            <x-slot name="actions">
                 <a href="{{ route('admin.stores.index') }}"
-                   class="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+                   class="inline-flex items-center justify-center rounded-2xl border border-slate-300/70 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/20">
                     {{ __('admin.back_to_stores') }}
                 </a>
-                <a href="{{ route('admin.stores.kitchen', $store) }}"
-                   class="inline-flex items-center justify-center rounded-2xl border border-orange-300 bg-orange-50 px-5 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">
-                    🍳 {{ __('admin.kitchen') }}
-                </a>
-            </div>
-        </div>
+                @if($store->is_active)
+                    <a href="{{ route('admin.stores.kitchen', $store) }}"
+                       class="inline-flex items-center justify-center rounded-2xl border border-orange-300/70 bg-orange-500/20 px-5 py-3 text-sm font-semibold text-orange-100 transition hover:bg-orange-500/30">
+                        🍳 {{ __('admin.kitchen') }}
+                    </a>
+                @endif
+            </x-slot>
+        </x-backend-header>
 
         @if(session('success'))
             <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
