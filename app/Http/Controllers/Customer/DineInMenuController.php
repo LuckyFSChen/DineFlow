@@ -29,7 +29,7 @@ class DineInMenuController extends Controller
         $cartCount = collect($cart)->sum('qty');
         $cartTotal = collect($cart)->sum('subtotal');
 
-        return view('customer.dine-in.menu-mobile-v3', compact(
+        return view('customer.dine-in.menu-mobile', compact(
             'store',
             'table',
             'categories',

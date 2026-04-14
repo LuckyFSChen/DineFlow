@@ -74,7 +74,7 @@ class DineInOrderController extends Controller
         $total = collect($cart)->sum('subtotal');
         $orderingAvailable = $store->isOrderingAvailable();
 
-        return view('customer.dine-in.cart-v2', compact('store', 'table', 'cart', 'total', 'orderingAvailable'));
+        return view('customer.dine-in.cart', compact('store', 'table', 'cart', 'total', 'orderingAvailable'));
     }
 
     public function submit(Request $request, Store $store, DiningTable $table)
@@ -149,7 +149,7 @@ class DineInOrderController extends Controller
 
         $order->load('items', 'store', 'table');
 
-        return view('customer.success-v2', compact('order', 'store'));
+        return view('customer.success', compact('order', 'store'));
     }
 
     private function generateOrderNo(Store $store): string

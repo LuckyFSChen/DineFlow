@@ -141,13 +141,38 @@ class StoreController extends Controller
 
     protected function validatedData(Request $request, ?int $storeId = null): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255', 'unique:stores,slug,' . $storeId],
             'description' => ['nullable', 'string'],
             'address' => ['nullable', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'phone' => ['nullable', 'regex:/^(09\d{2}-\d{3}-\d{3}|09\d{8})$/'],
             'banner_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ], [
+            'phone.regex' => '電話格式需為 0922333444 或 0922-333-444。',
         ]);
+
+        $data['phone'] = $this->normalizeTaiwanMobilePhone($data['phone'] ?? null);
+
+        return $data;
+    }
+
+    protected function normalizeTaiwanMobilePhone(?string $phone): ?string
+    {
+        if ($phone === null) {
+            return null;
+        }
+
+        $phone = trim($phone);
+        if ($phone === '') {
+            return null;
+        }
+
+        $digits = preg_replace('/\D+/', '', $phone);
+        if (preg_match('/^09\d{8}$/', $digits) !== 1) {
+            return $phone;
+        }
+
+        return substr($digits, 0, 4) . '-' . substr($digits, 4, 3) . '-' . substr($digits, 7, 3);
     }
 }

@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\Admin\StoreManagementController as AdminStoreController;
+use App\Http\Controllers\Admin\UserSubscriptionController;
 use App\Http\Controllers\Customer\DineInMenuController;
 use App\Http\Controllers\Customer\DineInOrderController;
 use App\Http\Controllers\Customer\TakeoutOrderingController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Merchant\SubscriptionController as MerchantSubscriptionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StoreController;
 use Illuminate\Support\Facades\Route;
@@ -15,8 +17,18 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:merchant,admin', 'merchant.subscription'])->prefix('admin')->name('admin.')->group(function () {
         Route::resource('stores', AdminStoreController::class)->except(['show']);
+});
+
+Route::middleware(['auth', 'verified', 'role:merchant'])->prefix('merchant')->name('merchant.')->group(function () {
+    Route::get('/subscription', [MerchantSubscriptionController::class, 'index'])->name('subscription.index');
+    Route::post('/subscription', [MerchantSubscriptionController::class, 'subscribe'])->name('subscription.subscribe');
+});
+
+Route::middleware(['auth', 'verified', 'role:admin'])->prefix('super-admin')->name('super-admin.')->group(function () {
+    Route::get('/subscriptions', [UserSubscriptionController::class, 'index'])->name('subscriptions.index');
+    Route::patch('/subscriptions/{user}', [UserSubscriptionController::class, 'update'])->name('subscriptions.update');
 });
 
 /*

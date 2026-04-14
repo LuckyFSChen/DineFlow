@@ -23,7 +23,10 @@
     <div>
         <label class="mb-2 block text-sm font-semibold text-slate-700">電話</label>
         <input type="text" name="phone" value="{{ old('phone', $store->phone) }}"
+               placeholder="0922-333-444"
+               pattern="09[0-9]{2}-[0-9]{3}-[0-9]{3}"
                class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+        <p class="mt-2 text-xs text-slate-500">格式：0922-333-444</p>
         @error('phone')
             <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
         @enderror

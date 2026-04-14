@@ -13,8 +13,26 @@
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
+                        帳號中心
                     </x-nav-link>
+
+                    @if(Auth::user()?->isMerchant())
+                        <x-nav-link :href="route('merchant.subscription.index')" :active="request()->routeIs('merchant.subscription.*')">
+                            訂閱方案
+                        </x-nav-link>
+                    @endif
+
+                    @if(Auth::user()?->isAdmin() || Auth::user()?->hasActiveSubscription())
+                        <x-nav-link :href="route('admin.stores.index')" :active="request()->routeIs('admin.stores.*')">
+                            商家後台
+                        </x-nav-link>
+                    @endif
+
+                    @if(Auth::user()?->isAdmin())
+                        <x-nav-link :href="route('super-admin.subscriptions.index')" :active="request()->routeIs('super-admin.subscriptions.*')">
+                            最終後台
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -68,8 +86,26 @@
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
+                帳號中心
             </x-responsive-nav-link>
+
+            @if(Auth::user()?->isMerchant())
+                <x-responsive-nav-link :href="route('merchant.subscription.index')" :active="request()->routeIs('merchant.subscription.*')">
+                    訂閱方案
+                </x-responsive-nav-link>
+            @endif
+
+            @if(Auth::user()?->isAdmin() || Auth::user()?->hasActiveSubscription())
+                <x-responsive-nav-link :href="route('admin.stores.index')" :active="request()->routeIs('admin.stores.*')">
+                    商家後台
+                </x-responsive-nav-link>
+            @endif
+
+            @if(Auth::user()?->isAdmin())
+                <x-responsive-nav-link :href="route('super-admin.subscriptions.index')" :active="request()->routeIs('super-admin.subscriptions.*')">
+                    最終後台
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->

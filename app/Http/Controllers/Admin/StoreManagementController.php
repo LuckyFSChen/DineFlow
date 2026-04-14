@@ -28,14 +28,14 @@ class StoreManagementController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return view('admin.stores.index-v2', compact('stores', 'keyword'));
+        return view('admin.stores.index', compact('stores', 'keyword'));
     }
 
     public function create()
     {
         $store = new Store();
 
-        return view('admin.stores.create-v2', compact('store'));
+        return view('admin.stores.create', compact('store'));
     }
 
     public function store(Request $request)
@@ -65,7 +65,7 @@ class StoreManagementController extends Controller
 
     public function edit(Store $store)
     {
-        return view('admin.stores.edit-v2', compact('store'));
+        return view('admin.stores.edit', compact('store'));
     }
 
     public function update(Request $request, Store $store)
@@ -114,15 +114,37 @@ class StoreManagementController extends Controller
             'slug' => ['nullable', 'string', 'max:255', 'unique:stores,slug,' . $storeId],
             'description' => ['nullable', 'string'],
             'address' => ['nullable', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'phone' => ['nullable', 'regex:/^(09\d{2}-\d{3}-\d{3}|09\d{8})$/'],
             'banner_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'opening_time' => ['nullable', 'date_format:H:i', 'required_with:closing_time'],
             'closing_time' => ['nullable', 'date_format:H:i', 'required_with:opening_time'],
+        ], [
+            'phone.regex' => '電話格式需為 0922333444 或 0922-333-444。',
         ]);
 
+        $data['phone'] = $this->normalizeTaiwanMobilePhone($data['phone'] ?? null);
         $data['slug'] = $data['slug'] ?: (Str::slug($data['name']) ?: 'store');
         $data['is_active'] = $request->boolean('is_active');
 
         return $data;
+    }
+
+    protected function normalizeTaiwanMobilePhone(?string $phone): ?string
+    {
+        if ($phone === null) {
+            return null;
+        }
+
+        $phone = trim($phone);
+        if ($phone === '') {
+            return null;
+        }
+
+        $digits = preg_replace('/\D+/', '', $phone);
+        if (preg_match('/^09\d{8}$/', $digits) !== 1) {
+            return $phone;
+        }
+
+        return substr($digits, 0, 4) . '-' . substr($digits, 4, 3) . '-' . substr($digits, 7, 3);
     }
 }

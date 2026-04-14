@@ -46,7 +46,7 @@ class TakeoutOrderingController extends Controller
         $cartCount = collect($cart)->sum('qty');
         $cartTotal = collect($cart)->sum('subtotal');
 
-        return view('customer.takeout.menu-mobile-v3', compact(
+        return view('customer.takeout.menu-mobile', compact(
             'store',
             'categories',
             'orderingAvailable',
@@ -108,7 +108,7 @@ class TakeoutOrderingController extends Controller
         $total = collect($cart)->sum('subtotal');
         $orderingAvailable = $store->isOrderingAvailable();
 
-        return view('customer.takeout.cart-v2', compact('store', 'cart', 'total', 'orderingAvailable'));
+        return view('customer.takeout.cart', compact('store', 'cart', 'total', 'orderingAvailable'));
     }
 
     public function checkout(Request $request, Store $store)

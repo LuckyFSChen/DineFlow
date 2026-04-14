@@ -11,7 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'role' => \App\Http\Middleware\EnsureUserRole::class,
+            'merchant.subscription' => \App\Http\Middleware\EnsureActiveMerchantSubscription::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

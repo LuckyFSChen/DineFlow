@@ -15,14 +15,14 @@ class StoreSeeder extends Seeder
                 'name' => 'Test Store',
                 'description' => '測試餐廳',
                 'address' => '台北市信義區',
-                'phone' => '0912345678',
+                'phone' => '0912-345-678',
                 'is_active' => 1,
             ],
             [
                 'name' => 'Lucky Cafe',
                 'description' => '咖啡廳',
                 'address' => '台北市中山區',
-                'phone' => '0922333444',
+                'phone' => '0922-333-444',
                 'is_active' => 1,
             ],
         ];
