@@ -114,42 +114,6 @@
         ];
     @endphp
 
-    <section class="border-t border-brand-soft/60 bg-white py-16">
-        <div class="mx-auto max-w-7xl px-6 lg:px-8">
-            <div class="mb-8 flex items-end justify-between gap-4">
-                <div>
-                    <p class="text-sm font-semibold uppercase tracking-[0.18em] text-brand-primary/70">Product Preview</p>
-                    <h2 class="mt-2 text-3xl font-bold tracking-tight text-brand-dark sm:text-4xl">{{ __('home.full_intro_flow_title') }}</h2>
-                </div>
-                <p class="hidden text-sm font-medium text-brand-primary/70 md:block">6 screens</p>
-            </div>
-
-            <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                @foreach ($previewCards as $index => $previewCard)
-                    <article class="group overflow-hidden rounded-[1.6rem] border border-brand-soft/60 bg-white shadow-[0_14px_36px_rgba(90,30,14,0.08)] transition hover:-translate-y-1 hover:shadow-[0_18px_44px_rgba(90,30,14,0.13)]">
-                        <div class="relative aspect-[16/10] border-b border-brand-soft/60 bg-brand-soft/25">
-                            <img
-                                src="{{ $previewCard['image'] }}"
-                                alt="{{ $previewCard['title'] }}"
-                                loading="lazy"
-                                class="h-full w-full object-cover object-top transition duration-500 group-hover:scale-[1.02]"
-                            >
-                            <span class="absolute right-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-brand-primary/80 backdrop-blur {{ $previewCard['accent'] }}">
-                                {{ $previewCard['tag'] }}
-                            </span>
-                            <div class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-brand-dark/30 to-transparent"></div>
-                        </div>
-
-                        <div class="p-5">
-                            <div class="text-xs font-semibold uppercase tracking-[0.15em] text-brand-primary/65">Preview {{ str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) }}</div>
-                            <h3 class="mt-2 text-lg font-bold text-brand-dark">{{ $previewCard['title'] }}</h3>
-                        </div>
-                    </article>
-                @endforeach
-            </div>
-        </div>
-    </section>
-
     <section class="py-14">
         <div class="mx-auto grid max-w-7xl gap-6 px-6 md:grid-cols-3 lg:px-8">
             <div class="rounded-[1.6rem] border border-brand-soft/70 bg-white p-6 shadow-[0_16px_36px_rgba(90,30,14,0.08)]">
