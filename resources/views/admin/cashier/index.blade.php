@@ -26,6 +26,15 @@ function cashierFormatOrder(\App\Models\Order $order): array {
     ];
 }
 $ordersData = $orders->map(fn($o) => cashierFormatOrder($o))->values()->all();
+$defaultCancelQuickReasons = __('admin.board_cancel_quick_reasons');
+if (! is_array($defaultCancelQuickReasons)) {
+    $defaultCancelQuickReasons = [];
+}
+$storeCancelQuickReasons = collect(is_array($store->cancel_quick_reasons) ? $store->cancel_quick_reasons : [])
+    ->map(fn($reason) => trim((string) $reason))
+    ->filter(fn($reason) => $reason !== '')
+    ->values()
+    ->all();
 $cashierI18n = [
     'order_unit' => __('admin.board_order_unit'),
     'next_refresh' => __('admin.board_next_refresh'),
@@ -49,7 +58,7 @@ $cashierI18n = [
     'cancel_confirm' => __('admin.board_cancel_confirm'),
     'cancel_close' => __('admin.board_cancel_close'),
     'cancel_reason_required' => __('admin.board_cancel_reason_required'),
-    'cancel_quick_reasons' => __('admin.board_cancel_quick_reasons'),
+    'cancel_quick_reasons' => $storeCancelQuickReasons !== [] ? $storeCancelQuickReasons : $defaultCancelQuickReasons,
     'status_unpaid_collect' => __('admin.board_status_unpaid_collect'),
     'status_pending' => __('admin.board_status_pending'),
     'status_accepted' => __('admin.board_status_accepted'),

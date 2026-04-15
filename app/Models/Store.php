@@ -32,6 +32,7 @@ class Store extends Model
         'opening_time',
         'closing_time',
         'weekly_break_hours',
+        'cancel_quick_reasons',
     ];
 
     protected $casts = [
@@ -41,6 +42,7 @@ class Store extends Model
         'latitude' => 'float',
         'longitude' => 'float',
         'weekly_break_hours' => 'array',
+        'cancel_quick_reasons' => 'array',
     ];
 
     public function getBannerImageUrlAttribute(): ?string
