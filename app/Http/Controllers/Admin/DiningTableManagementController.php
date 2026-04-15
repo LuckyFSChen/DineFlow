@@ -73,6 +73,7 @@ class DiningTableManagementController extends Controller
         $validated = $request->validate([
             'table_ids' => ['nullable', 'array'],
             'table_ids.*' => ['integer'],
+            'include_takeout' => ['nullable', 'boolean'],
         ]);
 
         $tableIds = collect($validated['table_ids'] ?? [])
@@ -100,9 +101,24 @@ class DiningTableManagementController extends Controller
                 return $table;
             });
 
+        $takeout = null;
+        $includeTakeout = $store->takeout_qr_enabled && (bool) ($validated['include_takeout'] ?? false);
+        if ($includeTakeout) {
+            $takeoutMenuUrl = route('customer.takeout.menu', ['store' => $store->slug]);
+            $takeout = [
+                'table_no' => __('admin.takeout_exclusive'),
+                'menu_url' => $takeoutMenuUrl,
+                'qr_svg' => QrCode::format('svg')
+                    ->size(130)
+                    ->margin(1)
+                    ->generate($takeoutMenuUrl),
+            ];
+        }
+
         return view('admin.stores.tables.print', [
             'store' => $store,
             'tables' => $tables,
+            'takeout' => $takeout,
         ]);
     }
 

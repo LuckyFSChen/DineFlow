@@ -137,16 +137,28 @@
     </style>
 </head>
 <body>
+    @php
+        $printCount = $tables->count() + ($takeout ? 1 : 0);
+    @endphp
     <div class="toolbar">
-        <div class="title">{{ __('admin.table_print_title', ['store' => $store->name, 'count' => $tables->count()]) }}</div>
+        <div class="title">{{ __('admin.table_print_title', ['store' => $store->name, 'count' => $printCount]) }}</div>
         <button class="btn" type="button" onclick="window.print()">{{ __('admin.print') }}</button>
     </div>
 
     <div class="container">
-        @if($tables->isEmpty())
+        @if($tables->isEmpty() && ! $takeout)
             <div class="empty">{{ __('admin.table_print_empty') }}</div>
         @else
             <div class="grid">
+                @if($takeout)
+                    <div class="card">
+                        <p class="table-no">{{ $takeout['table_no'] }}</p>
+                        <p class="store-name">{{ $store->name }}</p>
+                        <div class="qr-wrap">{!! $takeout['qr_svg'] !!}</div>
+                        <p class="table-no-under-qr">{{ $takeout['table_no'] }}</p>
+                        <p class="hint">{{ $takeout['menu_url'] }}</p>
+                    </div>
+                @endif
                 @foreach($tables as $table)
                     <div class="card">
                         <p class="table-no">{{ $table->table_no }}</p>

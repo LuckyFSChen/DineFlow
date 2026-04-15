@@ -54,6 +54,10 @@
 
                 @if($store->takeout_qr_enabled)
                     <div class="w-full max-w-[320px] rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                        <label class="mb-2 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
+                            <input type="checkbox" id="takeout-select-checkbox" class="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600">
+                            {{ __('admin.select_for_print') }}
+                        </label>
                         <div class="mx-auto flex h-[220px] w-[220px] items-center justify-center overflow-hidden rounded-xl bg-white ring-1 ring-slate-200 [&_svg]:h-full [&_svg]:w-full">
                             {!! $takeoutQrSvg !!}
                         </div>
@@ -166,6 +170,7 @@
 <script>
 (() => {
     const checkboxes = Array.from(document.querySelectorAll('.table-select-checkbox'));
+    const takeoutCheckbox = document.getElementById('takeout-select-checkbox');
     const selectAllBtn = document.getElementById('select-all-tables');
     const clearAllBtn = document.getElementById('clear-all-tables');
     const selectedCountEl = document.getElementById('selected-tables-count');
@@ -178,24 +183,38 @@
     }
 
     const syncSelected = () => {
-        const selected = checkboxes.filter((cb) => cb.checked).map((cb) => cb.value);
-        selectedCountEl.textContent = selectedCountTemplate.replace('__count__', selected.length);
-        printSubmitBtn.disabled = selected.length === 0;
+        const selectedTableIds = checkboxes.filter((cb) => cb.checked).map((cb) => cb.value);
+        const includeTakeout = !!takeoutCheckbox?.checked;
+        const selectedCount = selectedTableIds.length + (includeTakeout ? 1 : 0);
 
-        printInputs.innerHTML = selected
+        selectedCountEl.textContent = selectedCountTemplate.replace('__count__', selectedCount);
+        printSubmitBtn.disabled = selectedCount === 0;
+
+        const tableInputs = selectedTableIds
             .map((id) => `<input type="hidden" name="table_ids[]" value="${id}">`)
             .join('');
+
+        const takeoutInput = includeTakeout
+            ? '<input type="hidden" name="include_takeout" value="1">'
+            : '';
+
+        printInputs.innerHTML = tableInputs + takeoutInput;
     };
 
     checkboxes.forEach((cb) => {
         cb.addEventListener('change', syncSelected);
     });
 
+    takeoutCheckbox?.addEventListener('change', syncSelected);
+
     if (selectAllBtn) {
         selectAllBtn.addEventListener('click', () => {
             checkboxes.forEach((cb) => {
                 cb.checked = true;
             });
+            if (takeoutCheckbox) {
+                takeoutCheckbox.checked = true;
+            }
             syncSelected();
         });
     }
@@ -205,6 +224,9 @@
             checkboxes.forEach((cb) => {
                 cb.checked = false;
             });
+            if (takeoutCheckbox) {
+                takeoutCheckbox.checked = false;
+            }
             syncSelected();
         });
     }
