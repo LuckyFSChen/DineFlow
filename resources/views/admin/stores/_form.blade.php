@@ -412,6 +412,36 @@
     cropCanvas.addEventListener('mouseleave', () => {
         state.dragging = false;
     });
+    cropCanvas.addEventListener('touchstart', (event) => {
+        if (!state.sourceImage || event.touches.length === 0) {
+            return;
+        }
+
+        const touch = event.touches[0];
+        state.dragging = true;
+        state.lastX = touch.clientX;
+        state.lastY = touch.clientY;
+    }, { passive: true });
+    cropCanvas.addEventListener('touchmove', (event) => {
+        if (!state.dragging || !state.sourceImage || event.touches.length === 0) {
+            return;
+        }
+
+        const touch = event.touches[0];
+        state.offsetX += touch.clientX - state.lastX;
+        state.offsetY += touch.clientY - state.lastY;
+        state.lastX = touch.clientX;
+        state.lastY = touch.clientY;
+        state.dirty = true;
+        clampOffsets();
+        renderPreview();
+    }, { passive: true });
+    cropCanvas.addEventListener('touchend', () => {
+        state.dragging = false;
+    }, { passive: true });
+    cropCanvas.addEventListener('touchcancel', () => {
+        state.dragging = false;
+    }, { passive: true });
 
     resetButton?.addEventListener('click', () => {
         if (!state.sourceImage) {

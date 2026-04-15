@@ -144,39 +144,51 @@
 (() => {
     const dropzone = document.getElementById('banner-dropzone');
     const input = document.getElementById('banner-input');
-    const preview = document.getElementById('banner-preview');
     const wrapper = document.getElementById('banner-preview-wrapper');
+    const cropCanvas = document.getElementById('banner-crop-preview');
+    const cropCtx = cropCanvas?.getContext('2d');
+    const helper = document.getElementById('banner-helper');
+    const zoomInput = document.getElementById('banner-zoom');
+    const resetButton = document.getElementById('banner-reset');
     const removeButton = document.getElementById('banner-remove');
+    const form = input?.closest('form');
     const maxUploadImageBytes = 2 * 1024 * 1024;
     const i18n = {
         imageOnly: @json(__('admin.error_select_image')),
         imageTooLarge: @json(__('admin.error_image_too_large_2')),
     };
 
-    if (!dropzone || !input || !preview || !wrapper || !removeButton) {
+    if (!dropzone || !input || !wrapper || !cropCanvas || !cropCtx || !zoomInput || !removeButton || !form) {
         return;
     }
+
+    const state = {
+        sourceImage: null,
+        sourceObjectUrl: null,
+        sourceFileName: 'banner.jpg',
+        hasNewUpload: false,
+        dirty: false,
+        zoom: 1,
+        offsetX: 0,
+        offsetY: 0,
+        dragging: false,
+        lastX: 0,
+        lastY: 0,
+        isSubmittingPrepared: false,
+    };
 
     const resetDropzoneState = () => {
         dropzone.classList.remove('border-brand-primary', 'bg-brand-soft/30');
     };
 
-    const loadImageFromFile = (file) => new Promise((resolve, reject) => {
-        const url = URL.createObjectURL(file);
-        const image = new Image();
+    const revokeObjectUrl = () => {
+        if (!state.sourceObjectUrl) {
+            return;
+        }
 
-        image.onload = () => {
-            URL.revokeObjectURL(url);
-            resolve(image);
-        };
-
-        image.onerror = () => {
-            URL.revokeObjectURL(url);
-            reject(new Error('圖片讀取失敗'));
-        };
-
-        image.src = url;
-    });
+        URL.revokeObjectURL(state.sourceObjectUrl);
+        state.sourceObjectUrl = null;
+    };
 
     const canvasToBlob = (canvas, mimeType, quality) => new Promise((resolve, reject) => {
         canvas.toBlob((blob) => {
@@ -189,51 +201,144 @@
         }, mimeType, quality);
     });
 
-    const compressImageFileToLimit = async (file, maxBytes = maxUploadImageBytes) => {
-        if (file.size <= maxBytes) {
-            return file;
+    const clampOffsets = () => {
+        if (!state.sourceImage) {
+            return;
         }
 
-        const image = await loadImageFromFile(file);
-        let targetWidth = image.naturalWidth;
-        let targetHeight = image.naturalHeight;
-        let quality = 0.9;
-        let blob = null;
+        const baseScale = Math.max(
+            cropCanvas.width / state.sourceImage.naturalWidth,
+            cropCanvas.height / state.sourceImage.naturalHeight,
+        );
+        const drawWidth = state.sourceImage.naturalWidth * baseScale * state.zoom;
+        const drawHeight = state.sourceImage.naturalHeight * baseScale * state.zoom;
+        const minX = cropCanvas.width - drawWidth;
+        const minY = cropCanvas.height - drawHeight;
 
-        while ((targetWidth >= 360 && targetHeight >= 360) && (!blob || blob.size > maxBytes)) {
-            const canvas = document.createElement('canvas');
-            canvas.width = targetWidth;
-            canvas.height = targetHeight;
-            const ctx = canvas.getContext('2d');
+        state.offsetX = Math.min(0, Math.max(minX, state.offsetX));
+        state.offsetY = Math.min(0, Math.max(minY, state.offsetY));
+    };
 
-            if (!ctx) {
+    const centerImage = () => {
+        if (!state.sourceImage) {
+            return;
+        }
+
+        const baseScale = Math.max(
+            cropCanvas.width / state.sourceImage.naturalWidth,
+            cropCanvas.height / state.sourceImage.naturalHeight,
+        );
+        const drawWidth = state.sourceImage.naturalWidth * baseScale * state.zoom;
+        const drawHeight = state.sourceImage.naturalHeight * baseScale * state.zoom;
+        state.offsetX = (cropCanvas.width - drawWidth) / 2;
+        state.offsetY = (cropCanvas.height - drawHeight) / 2;
+        clampOffsets();
+    };
+
+    const renderPreview = () => {
+        cropCtx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+        cropCtx.fillStyle = '#f8fafc';
+        cropCtx.fillRect(0, 0, cropCanvas.width, cropCanvas.height);
+
+        if (!state.sourceImage) {
+            cropCtx.strokeStyle = '#cbd5e1';
+            cropCtx.lineWidth = 2;
+            cropCtx.strokeRect(8, 8, cropCanvas.width - 16, cropCanvas.height - 16);
+            cropCtx.fillStyle = '#64748b';
+            cropCtx.font = '24px sans-serif';
+            cropCtx.textAlign = 'center';
+            cropCtx.fillText('尚未選擇橫幅', cropCanvas.width / 2, cropCanvas.height / 2 + 8);
+            return;
+        }
+
+        const baseScale = Math.max(
+            cropCanvas.width / state.sourceImage.naturalWidth,
+            cropCanvas.height / state.sourceImage.naturalHeight,
+        );
+        const drawWidth = state.sourceImage.naturalWidth * baseScale * state.zoom;
+        const drawHeight = state.sourceImage.naturalHeight * baseScale * state.zoom;
+        clampOffsets();
+        cropCtx.drawImage(state.sourceImage, state.offsetX, state.offsetY, drawWidth, drawHeight);
+    };
+
+    const ensureBlobWithinLimit = async (canvas, maxBytes = maxUploadImageBytes) => {
+        let quality = 0.92;
+        let outputCanvas = canvas;
+        let blob = await canvasToBlob(outputCanvas, 'image/jpeg', quality);
+
+        while (blob.size > maxBytes && quality > 0.45) {
+            quality = Math.max(0.45, quality - 0.08);
+            blob = await canvasToBlob(outputCanvas, 'image/jpeg', quality);
+        }
+
+        while (blob.size > maxBytes && outputCanvas.width > 360 && outputCanvas.height > 120) {
+            const nextCanvas = document.createElement('canvas');
+            nextCanvas.width = Math.max(360, Math.floor(outputCanvas.width * 0.9));
+            nextCanvas.height = Math.max(120, Math.floor(outputCanvas.height * 0.9));
+            const nextCtx = nextCanvas.getContext('2d');
+            if (!nextCtx) {
                 break;
             }
 
-            ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
-            blob = await canvasToBlob(canvas, 'image/jpeg', quality);
-
-            if (blob.size <= maxBytes) {
-                break;
-            }
-
-            if (quality > 0.45) {
-                quality = Math.max(0.45, quality - 0.08);
-            } else {
-                targetWidth = Math.max(360, Math.floor(targetWidth * 0.85));
-                targetHeight = Math.max(360, Math.floor(targetHeight * 0.85));
-            }
+            nextCtx.drawImage(outputCanvas, 0, 0, nextCanvas.width, nextCanvas.height);
+            outputCanvas = nextCanvas;
+            quality = Math.min(quality, 0.78);
+            blob = await canvasToBlob(outputCanvas, 'image/jpeg', quality);
         }
 
-        if (!blob || blob.size > maxBytes) {
+        if (blob.size > maxBytes) {
             throw new Error(i18n.imageTooLarge);
         }
 
-        const filename = (file.name || 'banner.jpg').replace(/\.[^.]+$/, '.jpg');
-        return new File([blob], filename, { type: 'image/jpeg' });
+        return blob;
     };
 
-    const updatePreview = async (file) => {
+    const clearPreview = () => {
+        revokeObjectUrl();
+        input.value = '';
+        state.sourceImage = null;
+        state.sourceFileName = 'banner.jpg';
+        state.hasNewUpload = false;
+        state.dirty = false;
+        state.zoom = 1;
+        state.offsetX = 0;
+        state.offsetY = 0;
+        state.dragging = false;
+        zoomInput.value = '1';
+        wrapper.classList.add('hidden');
+        if (helper) {
+            helper.textContent = '尚未選擇橫幅';
+        }
+        renderPreview();
+    };
+
+    const setImageFromUrl = (url) => {
+        if (!url) {
+            clearPreview();
+            return;
+        }
+
+        revokeObjectUrl();
+        const image = new Image();
+        image.onload = () => {
+            state.sourceImage = image;
+            state.sourceFileName = 'banner.jpg';
+            state.hasNewUpload = false;
+            state.dirty = false;
+            state.zoom = 1;
+            zoomInput.value = '1';
+            centerImage();
+            wrapper.classList.remove('hidden');
+            if (helper) {
+                helper.textContent = '目前橫幅（可拖曳調整裁切）';
+            }
+            renderPreview();
+        };
+        image.onerror = clearPreview;
+        image.src = url;
+    };
+
+    const setImageFromFile = (file) => {
         if (!file) {
             return;
         }
@@ -243,22 +348,29 @@
             return;
         }
 
-        let uploadFile = file;
-        try {
-            uploadFile = await compressImageFileToLimit(file, maxUploadImageBytes);
-        } catch (error) {
-            alert(error?.message || i18n.imageTooLarge);
-            return;
-        }
+        revokeObjectUrl();
+        const url = URL.createObjectURL(file);
+        state.sourceObjectUrl = url;
 
-        const url = URL.createObjectURL(uploadFile);
-        preview.src = url;
-        wrapper.classList.remove('hidden');
-        preview.onload = () => URL.revokeObjectURL(url);
-
-        const dataTransfer = new DataTransfer();
-        dataTransfer.items.add(uploadFile);
-        input.files = dataTransfer.files;
+        const image = new Image();
+        image.onload = () => {
+            state.sourceImage = image;
+            state.sourceFileName = file.name || 'banner.jpg';
+            state.hasNewUpload = true;
+            state.dirty = false;
+            state.zoom = 1;
+            zoomInput.value = '1';
+            centerImage();
+            wrapper.classList.remove('hidden');
+            if (helper) {
+                helper.textContent = `已選擇：${file.name}`;
+            }
+            renderPreview();
+        };
+        image.onerror = () => {
+            alert('圖片讀取失敗，請重新選擇。');
+        };
+        image.src = url;
     };
 
     dropzone.addEventListener('click', () => input.click());
@@ -273,17 +385,127 @@
     dropzone.addEventListener('drop', (event) => {
         event.preventDefault();
         resetDropzoneState();
-        void updatePreview(event.dataTransfer.files[0]);
+        setImageFromFile(event.dataTransfer.files[0]);
     });
 
     input.addEventListener('change', (event) => {
-        void updatePreview(event.target.files[0]);
+        setImageFromFile(event.target.files[0]);
+    });
+
+    zoomInput.addEventListener('input', () => {
+        if (!state.sourceImage) {
+            return;
+        }
+
+        state.zoom = Number(zoomInput.value || '1');
+        state.dirty = true;
+        centerImage();
+        renderPreview();
+    });
+
+    cropCanvas.addEventListener('mousedown', (event) => {
+        if (!state.sourceImage) {
+            return;
+        }
+
+        state.dragging = true;
+        state.lastX = event.clientX;
+        state.lastY = event.clientY;
+    });
+    cropCanvas.addEventListener('mousemove', (event) => {
+        if (!state.dragging || !state.sourceImage) {
+            return;
+        }
+
+        state.offsetX += event.clientX - state.lastX;
+        state.offsetY += event.clientY - state.lastY;
+        state.lastX = event.clientX;
+        state.lastY = event.clientY;
+        state.dirty = true;
+        clampOffsets();
+        renderPreview();
+    });
+    cropCanvas.addEventListener('mouseup', () => {
+        state.dragging = false;
+    });
+    cropCanvas.addEventListener('mouseleave', () => {
+        state.dragging = false;
+    });
+    cropCanvas.addEventListener('touchstart', (event) => {
+        if (!state.sourceImage || event.touches.length === 0) {
+            return;
+        }
+
+        const touch = event.touches[0];
+        state.dragging = true;
+        state.lastX = touch.clientX;
+        state.lastY = touch.clientY;
+    }, { passive: true });
+    cropCanvas.addEventListener('touchmove', (event) => {
+        if (!state.dragging || !state.sourceImage || event.touches.length === 0) {
+            return;
+        }
+
+        const touch = event.touches[0];
+        state.offsetX += touch.clientX - state.lastX;
+        state.offsetY += touch.clientY - state.lastY;
+        state.lastX = touch.clientX;
+        state.lastY = touch.clientY;
+        state.dirty = true;
+        clampOffsets();
+        renderPreview();
+    }, { passive: true });
+    cropCanvas.addEventListener('touchend', () => {
+        state.dragging = false;
+    }, { passive: true });
+    cropCanvas.addEventListener('touchcancel', () => {
+        state.dragging = false;
+    }, { passive: true });
+
+    resetButton?.addEventListener('click', () => {
+        if (!state.sourceImage) {
+            return;
+        }
+
+        state.zoom = 1;
+        state.dirty = true;
+        zoomInput.value = '1';
+        centerImage();
+        renderPreview();
     });
 
     removeButton.addEventListener('click', () => {
-        input.value = '';
-        preview.src = '';
-        wrapper.classList.add('hidden');
+        clearPreview();
     });
+
+    form.addEventListener('submit', async (event) => {
+        if (state.isSubmittingPrepared) {
+            return;
+        }
+
+        if (!state.sourceImage || (!state.hasNewUpload && !state.dirty)) {
+            return;
+        }
+
+        event.preventDefault();
+        try {
+            const blob = await ensureBlobWithinLimit(cropCanvas, maxUploadImageBytes);
+            const filename = (state.sourceFileName || 'banner.jpg').replace(/\.[^.]+$/, '.jpg');
+            const transfer = new DataTransfer();
+            transfer.items.add(new File([blob], filename, { type: 'image/jpeg' }));
+            input.files = transfer.files;
+            state.isSubmittingPrepared = true;
+            form.submit();
+        } catch (error) {
+            alert(error?.message || i18n.imageTooLarge);
+        }
+    });
+
+    const existingUrl = wrapper.getAttribute('data-existing-banner-url');
+    if (existingUrl) {
+        setImageFromUrl(existingUrl);
+    } else {
+        renderPreview();
+    }
 })();
 </script>

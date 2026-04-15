@@ -102,7 +102,7 @@
 
         <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <table class="w-full min-w-[1080px] divide-y divide-slate-200 text-sm">
                     <thead class="bg-slate-50">
                         <tr>
                             <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.store_name') }}</th>
@@ -111,7 +111,7 @@
                             <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.currency') }}</th>
                             <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.address') }}</th>
                             <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.status') }}</th>
-                            <th class="px-6 py-4 text-right font-semibold text-slate-700">{{ __('admin.actions') }}</th>
+                            <th class="w-56 whitespace-nowrap px-6 py-4 text-right font-semibold text-slate-700">{{ __('admin.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -150,10 +150,10 @@
                                         </span>
                                     @endif
                                 </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex justify-end gap-2">
+                                <td class="w-56 px-6 py-4 align-top">
+                                    <div class="flex flex-wrap justify-end gap-2 sm:flex-nowrap">
                                         <a href="{{ route('admin.stores.products.index', $store) }}"
-                                           class="inline-flex items-center rounded-xl border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100">
+                                           class="inline-flex items-center whitespace-nowrap rounded-xl border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100">
                                             {{ __('admin.products') }}
                                         </a>
 
@@ -161,7 +161,7 @@
                                             type="button"
                                             data-store-actions-toggle="{{ $store->id }}"
                                             aria-expanded="false"
-                                            class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+                                            class="inline-flex items-center whitespace-nowrap rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
                                             {{ __('admin.store_actions_expand') }}
                                         </button>
                                     </div>
@@ -751,19 +751,19 @@
             formData.set('is_active', '0');
         }
 
-        if (bannerState.sourceImage && (bannerState.hasNewUpload || bannerState.dirty) && bannerCropPreview) {
-            const blob = await ensureBannerBlobWithinLimit(bannerCropPreview, maxUploadImageBytes);
-            const filename = (bannerState.sourceFileName || 'banner.jpg').replace(/\.[^.]+$/, '.jpg');
-            formData.set('banner_image', new File([blob], filename, { type: 'image/jpeg' }));
-        }
-
-        let url = createUrl;
-        if (currentMode === 'edit' && currentStoreId) {
-            url = updateUrlTemplate.replace('__STORE__', String(currentStoreId));
-            formData.set('_method', 'PUT');
-        }
-
         try {
+            if (bannerState.sourceImage && (bannerState.hasNewUpload || bannerState.dirty) && bannerCropPreview) {
+                const blob = await ensureBannerBlobWithinLimit(bannerCropPreview, maxUploadImageBytes);
+                const filename = (bannerState.sourceFileName || 'banner.jpg').replace(/\.[^.]+$/, '.jpg');
+                formData.set('banner_image', new File([blob], filename, { type: 'image/jpeg' }));
+            }
+
+            let url = createUrl;
+            if (currentMode === 'edit' && currentStoreId) {
+                url = updateUrlTemplate.replace('__STORE__', String(currentStoreId));
+                formData.set('_method', 'PUT');
+            }
+
             const res = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -887,6 +887,36 @@
     bannerCropPreview?.addEventListener('mouseleave', () => {
         bannerState.dragging = false;
     });
+    bannerCropPreview?.addEventListener('touchstart', (event) => {
+        if (!bannerState.sourceImage || event.touches.length === 0) {
+            return;
+        }
+
+        const touch = event.touches[0];
+        bannerState.dragging = true;
+        bannerState.lastX = touch.clientX;
+        bannerState.lastY = touch.clientY;
+    }, { passive: true });
+    bannerCropPreview?.addEventListener('touchmove', (event) => {
+        if (!bannerState.dragging || !bannerState.sourceImage || event.touches.length === 0) {
+            return;
+        }
+
+        const touch = event.touches[0];
+        bannerState.offsetX += touch.clientX - bannerState.lastX;
+        bannerState.offsetY += touch.clientY - bannerState.lastY;
+        bannerState.lastX = touch.clientX;
+        bannerState.lastY = touch.clientY;
+        bannerState.dirty = true;
+        clampBannerOffsets();
+        renderBannerPreview();
+    }, { passive: true });
+    bannerCropPreview?.addEventListener('touchend', () => {
+        bannerState.dragging = false;
+    }, { passive: true });
+    bannerCropPreview?.addEventListener('touchcancel', () => {
+        bannerState.dragging = false;
+    }, { passive: true });
     bannerReset?.addEventListener('click', () => {
         if (!bannerState.sourceImage) {
             return;
