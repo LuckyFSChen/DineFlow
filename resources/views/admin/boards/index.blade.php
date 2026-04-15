@@ -78,7 +78,7 @@ $allBoardsI18n = [
                 <div class="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs">
                     <span class="text-slate-400">{{ __('admin.board_store') }}</span>
                     <select
-                        class="rounded border border-slate-600 bg-slate-900 px-2 py-1 text-xs text-slate-100 focus:border-indigo-500 focus:outline-none"
+                        class="board-store-select rounded border border-slate-600 bg-slate-900 px-2 py-1 text-xs text-slate-100 focus:border-indigo-500 focus:outline-none"
                         onchange="if (this.value) window.location.href = this.value;">
                         @foreach($availableStores as $availableStore)
                             <option value="{{ route('admin.stores.boards', $availableStore) }}" @selected((int) $availableStore->id === (int) $store->id)>
@@ -93,6 +93,19 @@ $allBoardsI18n = [
                 <button @click="boardFilter = 'all'" :class="boardFilter === 'all' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">{{ __('admin.board_filter_all') }}</button>
                 <button @click="boardFilter = 'cashier'" :class="boardFilter === 'cashier' ? 'bg-amber-500 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">{{ __('admin.board_label_cashier') }}</button>
                 <button @click="boardFilter = 'kitchen'" :class="boardFilter === 'kitchen' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">{{ __('admin.board_label_kitchen') }}</button>
+            </div>
+
+            <div class="flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs">
+                <span class="text-slate-400">等待色階</span>
+                <input type="number" min="0" x-model.number="waitConfig.orangeStart" @change="saveWaitConfig()"
+                       class="w-11 rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-slate-100 focus:border-indigo-500 focus:outline-none">
+                <span class="text-slate-500">/</span>
+                <input type="number" min="1" x-model.number="waitConfig.orangeEnd" @change="saveWaitConfig()"
+                       class="w-11 rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-slate-100 focus:border-indigo-500 focus:outline-none">
+                <span class="text-slate-500">/</span>
+                <input type="number" min="2" x-model.number="waitConfig.redEnd" @change="saveWaitConfig()"
+                       class="w-11 rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-slate-100 focus:border-indigo-500 focus:outline-none">
+                <span class="text-slate-500">m</span>
             </div>
 
             <div class="flex items-center gap-1.5 rounded-full border border-emerald-700 bg-emerald-900/50 px-3 py-1 text-xs text-emerald-400">
@@ -123,7 +136,8 @@ $allBoardsI18n = [
     <div x-show="!loading" class="grid gap-4 p-6" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
         <template x-for="order in filteredOrders" :key="order.id">
             <div class="flex flex-col rounded-2xl border overflow-hidden transition-all duration-300"
-                 :class="cardClass(order)">
+                 :class="cardClass(order)"
+                 :style="waitCardStyle(order)">
 
                 <div class="flex items-start justify-between px-4 pt-4 pb-3 border-b" :class="cardHeaderClass(order)">
                     <div>
@@ -132,6 +146,7 @@ $allBoardsI18n = [
                                 <span class="text-slate-500" x-text="timeAgo(order.created_at)"></span>
                                 <span class="rounded px-1.5 py-0.5 text-[10px] font-semibold"
                                     :class="waitBadgeClass(order)"
+                                    :style="waitBadgeStyle(order)"
                                     x-text="i18n.waiting_prefix + waitMinutes(order) + 'm'"></span>
                                 <span class="rounded border border-sky-500/40 bg-sky-900/40 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300"
                                     x-text="i18n.locale_prefix + localeLabel(order.order_locale)"></span>
@@ -328,6 +343,8 @@ function allBoards() {
         cancelQuickReasons: [],
         selectedCancelReasons: [],
         cancelReasonOther: '',
+        waitConfigKey: 'board_wait_thresholds_v1',
+        waitConfig: { orangeStart: 1, orangeEnd: 5, redEnd: 10 },
 
         get filteredOrders() {
             if (this.boardFilter === 'cashier') {
@@ -343,6 +360,7 @@ function allBoards() {
             this.cancelQuickReasons = Array.isArray(this.i18n.cancel_quick_reasons)
                 ? this.i18n.cancel_quick_reasons
                 : [];
+            this.loadWaitConfig();
             this._pollTimer = setInterval(() => this.poll(), 10000);
         },
 
@@ -521,15 +539,13 @@ function allBoards() {
         },
 
         cardClass(order) {
-            const waitBorderClass = this.waitBorderClass(order);
-
             if (this.isPreparing(order)) {
-                return `${waitBorderClass} bg-blue-950/30`;
+                return 'bg-blue-950/30';
             }
             if (this.isUnpaidCompleted(order)) {
-                return `${waitBorderClass} bg-emerald-950/20`;
+                return 'bg-emerald-950/20';
             }
-            return `${waitBorderClass} bg-amber-950/30`;
+            return 'bg-amber-950/30';
         },
 
         waitMinutes(order) {
@@ -540,27 +556,80 @@ function allBoards() {
             return Math.max(0, Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000));
         },
 
-        waitBorderClass(order) {
-            const minutes = this.waitMinutes(order);
-
-            if (minutes >= 10) return 'border-rose-500/70';
-            if (minutes >= 5) return 'border-orange-400/70';
-
-            if (this.isPreparing(order)) {
-                return 'border-blue-500/50';
-            }
-            if (this.isUnpaidCompleted(order)) {
-                return 'border-emerald-500/50';
-            }
-            return 'border-amber-500/50';
+        waitCardStyle(order) {
+            const [r, g, b] = this.waitColor(order);
+            return `border-color: rgba(${r}, ${g}, ${b}, 0.68); background-color: rgba(${r}, ${g}, ${b}, 0.22);`;
         },
 
         waitBadgeClass(order) {
-            const minutes = this.waitMinutes(order);
+            return '';
+        },
 
-            if (minutes >= 10) return 'bg-rose-500/20 text-rose-300';
-            if (minutes >= 5) return 'bg-orange-500/20 text-orange-300';
-            return 'bg-emerald-500/20 text-emerald-300';
+        waitBadgeStyle(order) {
+            const [r, g, b] = this.waitColor(order);
+            return `background-color: rgba(${r}, ${g}, ${b}, 0.18); color: rgb(${r}, ${g}, ${b}); border: 1px solid rgba(${r}, ${g}, ${b}, 0.48);`;
+        },
+
+        waitColor(order) {
+            const minutes = this.waitMinutes(order);
+            const cfg = this.normalizedWaitConfig();
+            const green = [16, 185, 129];
+            const orange = [249, 115, 22];
+            const red = [239, 68, 68];
+            const deepRed = [190, 24, 93];
+
+            if (minutes < cfg.orangeStart) return green;
+            if (minutes < cfg.orangeEnd) {
+                return this.lerpColor(green, orange, (minutes - cfg.orangeStart) / Math.max(1, cfg.orangeEnd - cfg.orangeStart));
+            }
+            if (minutes < cfg.redEnd) {
+                return this.lerpColor(orange, red, (minutes - cfg.orangeEnd) / Math.max(1, cfg.redEnd - cfg.orangeEnd));
+            }
+
+            const overRatio = Math.min((minutes - cfg.redEnd) / Math.max(1, cfg.redEnd), 1);
+            return this.lerpColor(red, deepRed, overRatio);
+        },
+
+        lerpColor(from, to, ratio) {
+            const t = Math.min(1, Math.max(0, ratio));
+            return [
+                Math.round(from[0] + (to[0] - from[0]) * t),
+                Math.round(from[1] + (to[1] - from[1]) * t),
+                Math.round(from[2] + (to[2] - from[2]) * t),
+            ];
+        },
+
+        normalizedWaitConfig() {
+            const start = Math.max(0, Number(this.waitConfig.orangeStart) || 0);
+            const orangeEnd = Math.max(start + 1, Number(this.waitConfig.orangeEnd) || 5);
+            const redEnd = Math.max(orangeEnd + 1, Number(this.waitConfig.redEnd) || 10);
+
+            return { orangeStart: start, orangeEnd, redEnd };
+        },
+
+        saveWaitConfig() {
+            const normalized = this.normalizedWaitConfig();
+            this.waitConfig = normalized;
+            localStorage.setItem(this.waitConfigKey, JSON.stringify(normalized));
+        },
+
+        loadWaitConfig() {
+            try {
+                const raw = localStorage.getItem(this.waitConfigKey);
+                if (!raw) {
+                    this.waitConfig = this.normalizedWaitConfig();
+                    return;
+                }
+                const parsed = JSON.parse(raw);
+                this.waitConfig = {
+                    orangeStart: Number(parsed?.orangeStart ?? 1),
+                    orangeEnd: Number(parsed?.orangeEnd ?? 5),
+                    redEnd: Number(parsed?.redEnd ?? 10),
+                };
+                this.waitConfig = this.normalizedWaitConfig();
+            } catch {
+                this.waitConfig = { orangeStart: 1, orangeEnd: 5, redEnd: 10 };
+            }
         },
 
         cardHeaderClass(order) {

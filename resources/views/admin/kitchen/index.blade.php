@@ -78,7 +78,7 @@ $kitchenI18n = [
                 <div class="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs">
                     <span class="text-slate-400">{{ __('admin.board_store') }}</span>
                     <select
-                        class="rounded border border-slate-600 bg-slate-900 px-2 py-1 text-xs text-slate-100 focus:border-indigo-500 focus:outline-none"
+                        class="board-store-select rounded border border-slate-600 bg-slate-900 px-2 py-1 text-xs text-slate-100 focus:border-indigo-500 focus:outline-none"
                         onchange="if (this.value) window.location.href = this.value;">
                         @foreach($availableStores as $availableStore)
                             <option value="{{ route('admin.stores.kitchen', $availableStore) }}" @selected((int) $availableStore->id === (int) $store->id)>
@@ -103,6 +103,19 @@ $kitchenI18n = [
                 class="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-700">
                 {{ __('admin.board_refresh_now') }}
             </button>
+
+            <div class="flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs">
+                <span class="text-slate-400">等待色階</span>
+                <input type="number" min="0" x-model.number="waitConfig.orangeStart" @change="saveWaitConfig()"
+                       class="w-11 rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-slate-100 focus:border-indigo-500 focus:outline-none">
+                <span class="text-slate-500">/</span>
+                <input type="number" min="1" x-model.number="waitConfig.orangeEnd" @change="saveWaitConfig()"
+                       class="w-11 rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-slate-100 focus:border-indigo-500 focus:outline-none">
+                <span class="text-slate-500">/</span>
+                <input type="number" min="2" x-model.number="waitConfig.redEnd" @change="saveWaitConfig()"
+                       class="w-11 rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-slate-100 focus:border-indigo-500 focus:outline-none">
+                <span class="text-slate-500">m</span>
+            </div>
 
             {{-- Live indicator --}}
             <div class="flex items-center gap-1.5 rounded-full border border-emerald-700 bg-emerald-900/50 px-3 py-1 text-xs text-emerald-400">
@@ -152,26 +165,20 @@ $kitchenI18n = [
     {{-- Order grid --}}
     <div x-show="!loading" class="grid gap-4 p-4 sm:p-6" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
         <template x-for="order in filteredOrders" :key="order.id">
-            <div class="flex flex-col rounded-2xl border overflow-hidden transition-all duration-300 border-blue-500/50 bg-blue-950/30">
+            <div class="flex flex-col rounded-2xl border overflow-hidden transition-all duration-300 bg-blue-950/30"
+                 :style="waitCardStyle(order)">
 
                 {{-- Order card header --}}
                 <div class="flex items-start justify-between px-4 pt-4 pb-3 border-b border-blue-700/40">
                     <div>
                         {{-- Order No --}}
                         <span class="font-mono text-lg font-bold text-white" x-text="'#' + (order.order_no || order.id)"></span>
-                        {{-- Table / Type --}}
+                        {{-- Meta --}}
                         <div class="mt-0.5 flex items-center gap-2 text-xs">
-                            <template x-if="order.order_type === 'dine_in' && order.table">
-                                <span class="rounded bg-slate-700 px-1.5 py-0.5 text-slate-300">
-                                    {{ __('admin.board_table_no') }} <span x-text="order.table.table_no"></span>
-                                </span>
-                            </template>
-                            <template x-if="order.order_type === 'takeout' || order.order_type === 'take_out'">
-                                <span class="rounded bg-orange-800/60 px-1.5 py-0.5 text-orange-300">{{ __('admin.board_takeout') }}</span>
-                            </template>
                             <span class="text-slate-500" x-text="timeAgo(order.created_at)"></span>
                             <span class="rounded px-1.5 py-0.5 text-[10px] font-semibold"
                                   :class="waitBadgeClass(order)"
+                                  :style="waitBadgeStyle(order)"
                                   x-text="i18n.waiting_prefix + waitMinutes(order) + 'm'"></span>
                                 <span class="rounded border border-sky-500/40 bg-sky-900/40 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300"
                                     x-text="i18n.locale_prefix + localeLabel(order.order_locale)"></span>
@@ -182,10 +189,20 @@ $kitchenI18n = [
                         </div>
                     </div>
 
-                    {{-- Status badge --}}
-                    <span class="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-blue-500/20 text-blue-300">
-                        {{ __('admin.board_status_preparing') }}
-                    </span>
+                    <div class="flex flex-col items-end gap-1.5">
+                        {{-- Status badge --}}
+                        <span class="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-blue-500/20 text-blue-300">
+                            {{ __('admin.board_status_preparing') }}
+                        </span>
+                        <template x-if="order.order_type === 'dine_in' && order.table">
+                            <span class="rounded bg-slate-700 px-2.5 py-1 text-sm font-semibold text-slate-200">
+                                {{ __('admin.board_table_no') }} <span x-text="order.table.table_no"></span>
+                            </span>
+                        </template>
+                        <template x-if="order.order_type === 'takeout' || order.order_type === 'take_out'">
+                            <span class="rounded bg-orange-800/60 px-2.5 py-1 text-sm font-semibold text-orange-200">{{ __('admin.board_takeout') }}</span>
+                        </template>
+                    </div>
                 </div>
 
                 {{-- Items list --}}
@@ -268,6 +285,8 @@ function kitchenBoard() {
         _errorTimer: null,
         _audioContext: null,
         _audioUnlockHandler: null,
+        waitConfigKey: 'board_wait_thresholds_v1',
+        waitConfig: { orangeStart: 1, orangeEnd: 5, redEnd: 10 },
 
         get filteredOrders() {
             let result = [...this.orders];
@@ -290,7 +309,7 @@ function kitchenBoard() {
         },
 
         get overdueCount() {
-            return this.orders.filter((o) => this.waitMinutes(o) >= 20).length;
+            return this.orders.filter((o) => this.waitMinutes(o) >= this.normalizedWaitConfig().redEnd).length;
         },
 
         localeLabel(locale) {
@@ -316,6 +335,7 @@ function kitchenBoard() {
         init() {
             clearInterval(this._pollTimer);
             clearInterval(this._countdownTimer);
+            this.loadWaitConfig();
             this.initAudio();
             this.lastUpdatedAt = Date.now();
             this.nextRefreshIn = this.pollSeconds;
@@ -490,11 +510,79 @@ function kitchenBoard() {
         },
 
         waitBadgeClass(order) {
-            const minutes = this.waitMinutes(order);
+            return '';
+        },
 
-            if (minutes >= 20) return 'bg-rose-500/20 text-rose-300';
-            if (minutes >= 10) return 'bg-amber-500/20 text-amber-300';
-            return 'bg-emerald-500/20 text-emerald-300';
+        waitBadgeStyle(order) {
+            const [r, g, b] = this.waitColor(order);
+            return `background-color: rgba(${r}, ${g}, ${b}, 0.18); color: rgb(${r}, ${g}, ${b}); border: 1px solid rgba(${r}, ${g}, ${b}, 0.48);`;
+        },
+
+        waitCardStyle(order) {
+            const [r, g, b] = this.waitColor(order);
+            return `border-color: rgba(${r}, ${g}, ${b}, 0.68); background-color: rgba(${r}, ${g}, ${b}, 0.22);`;
+        },
+
+        waitColor(order) {
+            const minutes = this.waitMinutes(order);
+            const cfg = this.normalizedWaitConfig();
+            const green = [16, 185, 129];
+            const orange = [249, 115, 22];
+            const red = [239, 68, 68];
+            const deepRed = [190, 24, 93];
+
+            if (minutes < cfg.orangeStart) return green;
+            if (minutes < cfg.orangeEnd) {
+                return this.lerpColor(green, orange, (minutes - cfg.orangeStart) / Math.max(1, cfg.orangeEnd - cfg.orangeStart));
+            }
+            if (minutes < cfg.redEnd) {
+                return this.lerpColor(orange, red, (minutes - cfg.orangeEnd) / Math.max(1, cfg.redEnd - cfg.orangeEnd));
+            }
+
+            const overRatio = Math.min((minutes - cfg.redEnd) / Math.max(1, cfg.redEnd), 1);
+            return this.lerpColor(red, deepRed, overRatio);
+        },
+
+        lerpColor(from, to, ratio) {
+            const t = Math.min(1, Math.max(0, ratio));
+            return [
+                Math.round(from[0] + (to[0] - from[0]) * t),
+                Math.round(from[1] + (to[1] - from[1]) * t),
+                Math.round(from[2] + (to[2] - from[2]) * t),
+            ];
+        },
+
+        normalizedWaitConfig() {
+            const start = Math.max(0, Number(this.waitConfig.orangeStart) || 0);
+            const orangeEnd = Math.max(start + 1, Number(this.waitConfig.orangeEnd) || 5);
+            const redEnd = Math.max(orangeEnd + 1, Number(this.waitConfig.redEnd) || 10);
+
+            return { orangeStart: start, orangeEnd, redEnd };
+        },
+
+        saveWaitConfig() {
+            const normalized = this.normalizedWaitConfig();
+            this.waitConfig = normalized;
+            localStorage.setItem(this.waitConfigKey, JSON.stringify(normalized));
+        },
+
+        loadWaitConfig() {
+            try {
+                const raw = localStorage.getItem(this.waitConfigKey);
+                if (!raw) {
+                    this.waitConfig = this.normalizedWaitConfig();
+                    return;
+                }
+                const parsed = JSON.parse(raw);
+                this.waitConfig = {
+                    orangeStart: Number(parsed?.orangeStart ?? 1),
+                    orangeEnd: Number(parsed?.orangeEnd ?? 5),
+                    redEnd: Number(parsed?.redEnd ?? 10),
+                };
+                this.waitConfig = this.normalizedWaitConfig();
+            } catch {
+                this.waitConfig = { orangeStart: 1, orangeEnd: 5, redEnd: 10 };
+            }
         },
     };
 }

@@ -7,21 +7,16 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Store;
-use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class FinancialReportDemoSeeder extends Seeder
 {
     public function run(): void
     {
-        $merchant = User::query()->where('email', 'merchant@dineflow.local')->first();
-        if (! $merchant) {
-            return;
-        }
-
-        $stores = Store::query()->where('user_id', $merchant->id)->get();
+        $stores = Store::query()->get();
         if ($stores->isEmpty()) {
             return;
         }
@@ -56,6 +51,11 @@ class FinancialReportDemoSeeder extends Seeder
 
         $tableIds = DiningTable::query()
             ->where('store_id', $store->id)
+            ->get(['id', 'table_no'])
+            ->filter(function ($table) {
+                $tableNo = strtolower(trim((string) $table->table_no));
+                return ! in_array($tableNo, ['外帶', 'takeout', 'take_out'], true);
+            })
             ->pluck('id')
             ->values();
 
@@ -104,6 +104,7 @@ class FinancialReportDemoSeeder extends Seeder
                     : null;
 
                 $order = Order::query()->create([
+                    'uuid' => (string) Str::uuid(),
                     'store_id' => $store->id,
                     'dining_table_id' => $tableId,
                     'order_type' => $orderType,

@@ -98,59 +98,41 @@
         </div>
     </section>
 
-    <section id="store-list" class="py-16">
+    <section id="store-list" class="border-t border-brand-soft/50 bg-white py-16">
         <div class="mx-auto max-w-7xl px-6 lg:px-8">
-            <div class="mb-8 text-center">
-                <h2 class="inline-flex items-center gap-2 text-3xl font-bold tracking-tight text-brand-dark">
-                    <svg class="h-7 w-7 text-brand-primary" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M10 2a6 6 0 00-6 6c0 4.03 4.86 8.84 5.07 9.04a1.3 1.3 0 001.86 0c.2-.2 5.07-5.01 5.07-9.04a6 6 0 00-6-6zm0 8a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
-                    </svg>
-                    {{ __('home.orderable_stores') }}
-                </h2>
-                <p class="mt-3 text-lg text-brand-primary/75">
-                    {{ __('home.choose_store_desc') }}
-                </p>
-            </div>
-
-            <div class="mx-auto mb-10 max-w-3xl rounded-[1.75rem] border border-brand-soft/80 bg-white p-4 shadow-[0_18px_40px_rgba(90,30,14,0.08)]">
-                <form method="GET" action="{{ route('home') }}" class="flex flex-row gap-3">
-                    <input type="hidden" name="lat" id="home-latitude" value="{{ $userLatitude ?? '' }}">
-                    <input type="hidden" name="lng" id="home-longitude" value="{{ $userLongitude ?? '' }}">
-                    <input
-                        type="text"
-                        name="keyword"
-                        value="{{ $keyword ?? '' }}"
-                        placeholder="{{ __('home.search_placeholder') }}"
-                        class="min-w-0 flex-1 rounded-2xl border border-brand-soft/70 px-4 py-3 text-lg text-brand-dark placeholder:text-brand-primary/80 focus:border-brand-accent focus:outline-none focus:ring-2 focus:ring-brand-highlight/40"
-                    >
-                    <button
-                        type="submit"
-                        class="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-brand-primary px-5 py-3 text-base font-semibold text-white transition hover:bg-brand-accent hover:text-brand-dark"
-                    >
-                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M8.5 3a5.5 5.5 0 014.46 8.72l3.16 3.16a1 1 0 01-1.41 1.41l-3.16-3.16A5.5 5.5 0 118.5 3zm0 2a3.5 3.5 0 100 7 3.5 3.5 0 000-7z" clip-rule="evenodd"/>
+            <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+                <div>
+                    <h2 class="inline-flex items-center gap-2 text-3xl font-bold tracking-tight text-brand-dark">
+                        <svg class="h-7 w-7 text-brand-primary" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M10 2a6 6 0 00-6 6c0 4.03 4.86 8.84 5.07 9.04a1.3 1.3 0 001.86 0c.2-.2 5.07-5.01 5.07-9.04a6 6 0 00-6-6zm0 8a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                         </svg>
-                        {{ __('home.search') }}
-                    </button>
+                        {{ __('home.orderable_stores') }}
+                    </h2>
+                    <p class="mt-3 text-lg text-brand-primary/75">{{ __('home.choose_store_desc') }}</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3">
                     <button
                         type="button"
-                        id="use-current-location"
-                        class="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl border border-brand-soft/70 bg-white px-4 py-3 text-base font-semibold text-brand-primary transition hover:bg-brand-soft/20"
+                        id="home-use-current-location"
+                        class="inline-flex items-center gap-2 rounded-2xl border border-brand-soft/70 bg-white px-4 py-3 text-sm font-semibold text-brand-primary transition hover:bg-brand-soft/20"
                     >
-                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1.07a6.01 6.01 0 014.93 4.93H17a1 1 0 110 2h-1.07a6.01 6.01 0 01-4.93 4.93V17a1 1 0 11-2 0v-1.07a6.01 6.01 0 01-4.93-4.93H3a1 1 0 110-2h1.07A6.01 6.01 0 019 4.07V3a1 1 0 011-1zm0 4a4 4 0 100 8 4 4 0 000-8z" clip-rule="evenodd"/>
                         </svg>
-                        <span id="use-current-location-label">{{ __('home.use_my_location') }}</span>
+                        <span id="home-use-current-location-label">{{ __('home.use_my_location') }}</span>
                     </button>
-                </form>
-                @if($hasUserLocation)
-                    <p class="mt-3 text-sm font-medium text-emerald-700">{{ __('home.location_filtered_hint') }}</p>
-                @endif
+                    <a href="{{ route('stores.list', array_filter(['lat' => $userLatitude, 'lng' => $userLongitude], fn ($value) => $value !== null)) }}" class="inline-flex items-center gap-2 rounded-2xl border border-brand-primary/30 bg-brand-soft/20 px-5 py-3 text-base font-semibold text-brand-primary transition hover:-translate-y-0.5 hover:bg-brand-soft/40">
+                        {{ __('home.view_all_stores') }}
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M10.3 4.3a1 1 0 011.4 0l5 5a1 1 0 010 1.4l-5 5a1 1 0 01-1.4-1.4L13.59 11H4a1 1 0 110-2h9.59l-3.3-3.3a1 1 0 010-1.4z" clip-rule="evenodd"/>
+                        </svg>
+                    </a>
+                </div>
             </div>
 
-            @if($stores->count())
+            @if($featuredStores->count())
                 <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                    @foreach($stores as $store)
+                    @foreach($featuredStores as $store)
                         <div class="group flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-brand-soft/60 bg-white shadow-[0_18px_44px_rgba(90,30,14,0.1)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(90,30,14,0.16)]">
                             <div class="relative h-48 w-full overflow-hidden">
                                 <img
@@ -160,28 +142,12 @@
                                 >
                                 <div class="absolute inset-0 bg-gradient-to-t from-brand-dark/85 via-brand-dark/25 to-transparent"></div>
                                 <div class="absolute left-4 top-4">
-                                    @if($store->isOrderingAvailable())
-                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-brand-highlight px-3 py-1 text-xs font-semibold text-brand-dark shadow">
-                                            <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                                <path fill-rule="evenodd" d="M7.3 10.7a1 1 0 011.4 0l.8.8 2.8-2.8a1 1 0 111.4 1.4l-3.5 3.5a1 1 0 01-1.4 0l-1.5-1.5a1 1 0 010-1.4z" clip-rule="evenodd"/>
-                                            </svg>
-                                            {{ __('home.status_orderable') }}
-                                        </span>
-                                    @elseif($store->is_active)
-                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-dark shadow">
-                                            <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                                <circle cx="10" cy="10" r="4"/>
-                                            </svg>
-                                            {{ __('home.status_open') }}
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-brand-dark shadow">
-                                            <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                                <path fill-rule="evenodd" d="M4.3 4.3a1 1 0 011.4 0L10 8.6l4.3-4.3a1 1 0 111.4 1.4L11.4 10l4.3 4.3a1 1 0 01-1.4 1.4L10 11.4l-4.3 4.3a1 1 0 01-1.4-1.4L8.6 10 4.3 5.7a1 1 0 010-1.4z" clip-rule="evenodd"/>
-                                            </svg>
-                                            {{ __('home.status_closed') }}
-                                        </span>
-                                    @endif
+                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-brand-highlight px-3 py-1 text-xs font-semibold text-brand-dark shadow">
+                                        <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path fill-rule="evenodd" d="M7.3 10.7a1 1 0 011.4 0l.8.8 2.8-2.8a1 1 0 111.4 1.4l-3.5 3.5a1 1 0 01-1.4 0l-1.5-1.5a1 1 0 010-1.4z" clip-rule="evenodd"/>
+                                        </svg>
+                                        {{ __('home.status_orderable') }}
+                                    </span>
                                 </div>
                                 @if(isset($store->distance_km))
                                     <div class="absolute right-4 top-4">
@@ -238,26 +204,44 @@
                                 </div>
 
                                 <div class="mt-auto pt-6">
-                                    @if($store->is_active)
-                                        <a href="{{ route('stores.enter', ['store' => $store]) }}" class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-primary px-4 py-3 text-base font-semibold text-white transition hover:bg-brand-accent hover:text-brand-dark">
+                                    @php
+                                        $canShowNavigation = $hasUserLocation && ($store->latitude !== null && $store->longitude !== null || !empty($store->address));
+                                    @endphp
+                                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                        <a href="{{ route('stores.enter', ['store' => $store]) }}" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-primary px-4 py-3 text-base font-semibold text-white transition hover:bg-brand-accent hover:text-brand-dark {{ $canShowNavigation ? '' : 'sm:col-span-2' }}">
                                             <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                                 <path fill-rule="evenodd" d="M10.3 4.3a1 1 0 011.4 0l5 5a1 1 0 010 1.4l-5 5a1 1 0 01-1.4-1.4L13.59 11H4a1 1 0 110-2h9.59l-3.3-3.3a1 1 0 010-1.4z" clip-rule="evenodd"/>
                                             </svg>
                                             {{ __('home.enter_store') }}
                                         </a>
-                                    @else
-                                        <button disabled class="inline-flex w-full cursor-not-allowed items-center justify-center rounded-2xl bg-slate-200 px-4 py-3 text-base font-semibold text-slate-500">
-                                            {{ __('home.not_open_yet') }}
-                                        </button>
-                                    @endif
+
+                                        @if($canShowNavigation)
+                                            @php
+                                                $destination = $store->latitude !== null && $store->longitude !== null
+                                                    ? $store->latitude . ',' . $store->longitude
+                                                    : $store->address;
+                                                $navigationUrl = 'https://www.google.com/maps/dir/?api=1'
+                                                    . '&origin=' . urlencode((string) $userLatitude . ',' . (string) $userLongitude)
+                                                    . '&destination=' . urlencode((string) $destination)
+                                                    . '&travelmode=driving';
+                                            @endphp
+                                            <a
+                                                href="{{ $navigationUrl }}"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                class="inline-flex items-center justify-center gap-2 rounded-2xl border border-brand-soft/70 bg-white px-4 py-3 text-base font-semibold text-brand-primary transition hover:bg-brand-soft/20"
+                                            >
+                                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                    <path fill-rule="evenodd" d="M10 2a6 6 0 00-6 6c0 4.03 4.86 8.84 5.07 9.04a1.3 1.3 0 001.86 0c.2-.2 5.07-5.01 5.07-9.04a6 6 0 00-6-6zm0 8a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                                                </svg>
+                                                {{ __('stores.open_map') }}
+                                            </a>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     @endforeach
-                </div>
-
-                <div class="mt-10">
-                    {{ $stores->links() }}
                 </div>
             @else
                 <div class="rounded-[2rem] border border-brand-soft/60 bg-white px-6 py-16 text-center shadow-[0_20px_40px_rgba(90,30,14,0.08)]">
@@ -267,11 +251,9 @@
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold text-brand-dark">{{ __('home.no_store_found_title') }}</h3>
-                    <p class="mt-3 text-lg text-brand-primary/75">
-                        {{ __('home.no_store_found_desc') }}
-                    </p>
+                    <p class="mt-3 text-lg text-brand-primary/75">{{ __('home.no_store_found_desc') }}</p>
                     <div class="mt-6">
-                        <a href="{{ route('home') }}" class="inline-flex items-center rounded-2xl border border-brand-soft/70 bg-white px-5 py-3 text-base font-semibold text-brand-primary transition hover:bg-brand-soft/20">
+                        <a href="{{ route('stores.list') }}" class="inline-flex items-center rounded-2xl border border-brand-soft/70 bg-white px-5 py-3 text-base font-semibold text-brand-primary transition hover:bg-brand-soft/20">
                             {{ __('home.view_all_stores') }}
                         </a>
                     </div>
@@ -409,15 +391,10 @@
         </div>
     </footer>
 </div>
-
 <script>
 (() => {
-    const locationButton = document.getElementById('use-current-location');
-    const locationButtonLabel = document.getElementById('use-current-location-label');
-    const latInput = document.getElementById('home-latitude');
-    const lngInput = document.getElementById('home-longitude');
-    const form = latInput?.closest('form');
-    const hasServerLocation = @json($hasUserLocation);
+    const locationButton = document.getElementById('home-use-current-location');
+    const locationButtonLabel = document.getElementById('home-use-current-location-label');
     const i18n = {
         locating: @json(__('home.locating')),
         useMyLocation: @json(__('home.use_my_location')),
@@ -427,7 +404,7 @@
         locationTimeout: @json(__('home.location_timeout')),
     };
 
-    if (!locationButton || !locationButtonLabel || !latInput || !lngInput || !form) {
+    if (!locationButton || !locationButtonLabel) {
         return;
     }
 
@@ -436,7 +413,14 @@
         locationButtonLabel.textContent = i18n.useMyLocation;
     };
 
-    const updateLocationAndSubmit = () => {
+    const redirectWithLocation = (latitude, longitude) => {
+        const url = new URL(window.location.href);
+        url.searchParams.set('lat', String(latitude));
+        url.searchParams.set('lng', String(longitude));
+        window.location.href = url.toString();
+    };
+
+    const updateLocation = () => {
         if (!navigator.geolocation) {
             alert(i18n.locationNotSupported);
             return;
@@ -446,9 +430,7 @@
         locationButtonLabel.textContent = i18n.locating;
 
         navigator.geolocation.getCurrentPosition((position) => {
-            latInput.value = String(position.coords.latitude);
-            lngInput.value = String(position.coords.longitude);
-            form.submit();
+            redirectWithLocation(position.coords.latitude, position.coords.longitude);
         }, (error) => {
             resetButtonState();
 
@@ -470,11 +452,11 @@
         });
     };
 
-    locationButton.addEventListener('click', updateLocationAndSubmit);
+    locationButton.addEventListener('click', updateLocation);
 
-    if (!hasServerLocation && !sessionStorage.getItem('home-location-auto-attempted')) {
+    if (!@json($hasUserLocation) && !sessionStorage.getItem('home-location-auto-attempted')) {
         sessionStorage.setItem('home-location-auto-attempted', '1');
-        updateLocationAndSubmit();
+        updateLocation();
     }
 })();
 </script>

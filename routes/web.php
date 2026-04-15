@@ -140,6 +140,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('super-admin')->na
 Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::view('/product-intro', 'product-intro')->name('product.intro');
+Route::get('/stores', [HomeController::class, 'stores'])->name('stores.list');
 Route::get('/stores/{store:slug}', [StoreController::class, 'enter'])->name('stores.enter');
 Route::get('/sitemap.xml', function () {
     $urls = collect([

@@ -11,6 +11,40 @@ class HomeController extends Controller
 
     public function index(Request $request)
     {
+        $userLatitude = $this->parseLatitude($request->query('lat'));
+        $userLongitude = $this->parseLongitude($request->query('lng'));
+        $hasUserLocation = $userLatitude !== null && $userLongitude !== null;
+
+        $featuredStoresQuery = Store::query()
+            ->where('is_active', 1)
+            ->where('takeout_qr_enabled', 1);
+
+        if ($hasUserLocation) {
+            $distanceSql = '6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))';
+
+            $featuredStoresQuery
+                ->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->select('stores.*')
+                ->selectRaw($distanceSql . ' as distance_km', [$userLatitude, $userLongitude, $userLatitude])
+                ->whereRaw($distanceSql . ' <= ?', [$userLatitude, $userLongitude, $userLatitude, self::MAX_DISTANCE_KM])
+                ->orderBy('distance_km')
+                ->orderBy('name');
+        } else {
+            $featuredStoresQuery
+                ->orderByDesc('updated_at')
+                ->orderBy('name');
+        }
+
+        $featuredStores = $featuredStoresQuery
+            ->limit(6)
+            ->get();
+
+        return view('home', compact('featuredStores', 'userLatitude', 'userLongitude', 'hasUserLocation'));
+    }
+
+    public function stores(Request $request)
+    {
         $keyword = trim((string) $request->get('keyword', ''));
         $userLatitude = $this->parseLatitude($request->query('lat'));
         $userLongitude = $this->parseLongitude($request->query('lng'));
@@ -48,7 +82,7 @@ class HomeController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return view('home', compact('stores', 'keyword', 'userLatitude', 'userLongitude', 'hasUserLocation'));
+        return view('stores.index', compact('stores', 'keyword', 'userLatitude', 'userLongitude', 'hasUserLocation'));
     }
 
     private function parseLatitude(mixed $value): ?float

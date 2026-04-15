@@ -52,17 +52,17 @@
 
                     <label class="space-y-1 text-left">
                         <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.trend_granularity') }}</span>
-                        <select name="trend_granularity" class="w-full rounded-lg border-slate-300 bg-white text-sm text-slate-900">
-                            <option value="day" @selected($trendGranularity === 'day')>{{ __('merchant.trend_granularity_day') }}</option>
-                            <option value="hour" @selected($trendGranularity === 'hour')>{{ __('merchant.trend_granularity_hour') }}</option>
+                        <select name="trend_granularity" class="w-full rounded-lg border-slate-200 bg-white text-sm font-semibold text-slate-900 [color-scheme:light] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" style="color:#0f172a;background-color:#ffffff;">
+                            <option class="bg-white text-slate-900" value="day" @selected($trendGranularity === 'day')>{{ __('merchant.trend_granularity_day') }}</option>
+                            <option class="bg-white text-slate-900" value="hour" @selected($trendGranularity === 'hour')>{{ __('merchant.trend_granularity_hour') }}</option>
                         </select>
                     </label>
 
                     <label class="space-y-1 text-left">
                         <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.hour_step') }}</span>
-                        <select name="hour_step" class="w-full rounded-lg border-slate-300 bg-white text-sm text-slate-900">
+                        <select name="hour_step" class="w-full rounded-lg border-slate-200 bg-white text-sm font-semibold text-slate-900 [color-scheme:light] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" style="color:#0f172a;background-color:#ffffff;">
                             @foreach([1,2,3,4,6,12] as $step)
-                                <option value="{{ $step }}" @selected((int) $hourStep === $step)>{{ __('merchant.hour_step_option', ['hours' => $step]) }}</option>
+                                <option class="bg-white text-slate-900" value="{{ $step }}" @selected((int) $hourStep === $step)>{{ __('merchant.hour_step_option', ['hours' => $step]) }}</option>
                             @endforeach
                         </select>
                     </label>
@@ -70,10 +70,10 @@
                     @if($stores->count() > 1)
                         <label class="space-y-1 text-left">
                             <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.store') }}</span>
-                            <select name="store_id" class="w-full rounded-lg border-slate-300 bg-white text-sm text-slate-900">
-                                <option value="">{{ __('merchant.all_stores') }}</option>
+                            <select name="store_id" class="w-full rounded-lg border-slate-200 bg-white text-sm font-semibold text-slate-900 [color-scheme:light] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" style="color:#0f172a;background-color:#ffffff;">
+                                <option class="bg-white text-slate-900" value="">{{ __('merchant.all_stores') }}</option>
                                 @foreach($stores as $store)
-                                    <option value="{{ $store->id }}" @selected((int) $selectedStoreId === (int) $store->id)>{{ $store->name }}</option>
+                                    <option class="bg-white text-slate-900" value="{{ $store->id }}" @selected((int) $selectedStoreId === (int) $store->id)>{{ $store->name }}</option>
                                 @endforeach
                             </select>
                         </label>
@@ -91,11 +91,11 @@
 
             <x-slot name="extra">
                 <div class="flex flex-wrap items-center gap-2 text-xs">
-                    <span class="rounded-full border border-white/30 bg-white/10 px-3 py-1 text-slate-100">{{ __('merchant.range') }}：{{ $startDate }} 至 {{ $endDate }}</span>
+                    <span class="rounded-full border border-white/30 bg-white/10 px-3 py-1 text-slate-100">{{ __('merchant.range') }}：{{ $startDate }} ～ {{ $endDate }}</span>
                     <span class="rounded-full border border-white/30 bg-white/10 px-3 py-1 text-slate-100">{{ __('merchant.store') }}：{{ $selectedStoreId ? ($stores->firstWhere('id', $selectedStoreId)->name ?? __('merchant.unknown_store')) : __('merchant.all_stores') }}</span>
                     <span class="rounded-full border border-white/30 bg-white/10 px-3 py-1 text-slate-100">{{ __('merchant.trend_granularity') }}：{{ $trendGranularity === 'hour' ? __('merchant.trend_granularity_hour') : __('merchant.trend_granularity_day') }}{{ $trendGranularity === 'hour' ? ' / ' . __('merchant.hour_step_option', ['hours' => $hourStep]) : '' }}</span>
                     @if($comparison)
-                        <span class="rounded-full border border-white/30 bg-white/10 px-3 py-1 text-slate-100">{{ __('merchant.compare_range') }}：{{ $comparison['start_date'] }} 至 {{ $comparison['end_date'] }}</span>
+                        <span class="rounded-full border border-white/30 bg-white/10 px-3 py-1 text-slate-100">{{ __('merchant.compare_range') }}：{{ $comparison['start_date'] }} ～ {{ $comparison['end_date'] }}</span>
                     @endif
                 </div>
                 <div class="mt-3 flex flex-wrap gap-2">

@@ -41,7 +41,7 @@ class ChefManagementController extends Controller
         ]);
 
         return redirect()->route('admin.stores.chefs.index', $store)
-            ->with('success', '廚師帳號已建立');
+            ->with('success', __('chef.created_success'));
     }
 
     public function destroy(Request $request, Store $store, User $chef): RedirectResponse
@@ -53,7 +53,7 @@ class ChefManagementController extends Controller
         $chef->delete();
 
         return redirect()->route('admin.stores.chefs.index', $store)
-            ->with('success', '廚師帳號已刪除');
+            ->with('success', __('chef.deleted_success'));
     }
 
     private function authorizeStore(Request $request, Store $store): void

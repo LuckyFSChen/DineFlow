@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+require_once __DIR__ . '/MultiStoreDemoSeeder.php';
+
 use App\Models\SubscriptionPlan;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -60,10 +62,7 @@ class DatabaseSeeder extends Seeder
         );
 
         $this->call([
-            StoreSeeder::class,
-            CategorySeeder::class,
-            ProductSeeder::class,
-            DiningTableSeeder::class,
+            MultiStoreDemoSeeder::class,
             FinancialReportDemoSeeder::class,
         ]);
     }

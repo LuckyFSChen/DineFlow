@@ -133,6 +133,16 @@ body.is-admin-area .mx-auto.max-w-7xl > :nth-child(3) {
 	animation-delay: 0.09s;
 }
 
+@media (min-width: 1280px) {
+	body.is-admin-area .mx-auto.max-w-7xl {
+		max-width: 92rem;
+	}
+
+	body.is-admin-area .mx-auto.max-w-6xl {
+		max-width: 86rem;
+	}
+}
+
 @keyframes admin-rise-in {
 	from {
 		opacity: 0;
@@ -336,4 +346,15 @@ body.is-admin-area .bg-slate-900.text-white .rounded-2xl.border.overflow-hidden 
 
 body.is-admin-area .bg-slate-900.text-white .sticky.top-0 {
 	box-shadow: 0 10px 22px rgba(2, 12, 18, 0.38);
+}
+
+body.is-admin-area .board-store-select option {
+	color: #0f172a;
+	background-color: #ffffff;
+}
+
+body.is-admin-area .board-store-select option:checked {
+	color: #ffffff;
+	background-color: #1d4ed8;
+	font-weight: 600;
 }

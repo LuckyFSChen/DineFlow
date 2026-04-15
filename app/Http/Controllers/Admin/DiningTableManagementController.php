@@ -131,6 +131,11 @@ class DiningTableManagementController extends Controller
                 'required',
                 'string',
                 'max:50',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if ($this->isReservedTableNo((string) $value)) {
+                        $fail('桌號不可使用「外帶」，請輸入內用桌號。');
+                    }
+                },
                 Rule::unique('dining_tables', 'table_no')
                     ->where(fn ($query) => $query->where('store_id', $store->id)->whereNull('deleted_at')),
             ],
@@ -222,5 +227,21 @@ class DiningTableManagementController extends Controller
         return DiningTable::query()
             ->where('store_id', $store->id)
             ->whereNotIn(DB::raw('LOWER(table_no)'), ['takeout', '外帶', '外带']);
+    }
+
+    private function isReservedTableNo(string $tableNo): bool
+    {
+        return in_array(
+            $this->normalizeTableNo($tableNo),
+            ['takeout', '外帶', '外带'],
+            true
+        );
+    }
+
+    private function normalizeTableNo(string $tableNo): string
+    {
+        $normalized = trim(mb_strtolower($tableNo, 'UTF-8'));
+
+        return preg_replace('/[\s\-_]+/u', '', $normalized) ?? $normalized;
     }
 }
