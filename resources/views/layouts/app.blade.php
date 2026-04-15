@@ -81,10 +81,18 @@
             }
 
             input.dataset.phoneAutoHyphenBound = '1';
+            const isStrictNumeric = (input.getAttribute('pattern') || '').trim() === '[0-9]*';
             input.setAttribute('inputmode', input.getAttribute('inputmode') || 'numeric');
-            input.setAttribute('maxlength', '12');
+            if (!input.getAttribute('maxlength')) {
+                input.setAttribute('maxlength', '12');
+            }
 
             const apply = () => {
+                if (isStrictNumeric) {
+                    input.value = String(input.value || '').replace(/\D/g, '');
+                    return;
+                }
+
                 input.value = formatTaiwanMobile(input.value);
             };
 

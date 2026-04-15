@@ -184,8 +184,8 @@
                                            name="customer_phone"
                                            value="{{ old('customer_phone', $rememberedCustomerInfo['customer_phone'] ?? '') }}"
                                            inputmode="numeric"
-                                                                                     maxlength="{{ $phoneDigits }}"
-                                                                                     pattern="[0-9]*"
+                                                                                                                                                                         maxlength="{{ $phoneDigits + 2 }}"
+                                                                                                                                                                         pattern="[0-9-]*"
                                          placeholder="{{ __('customer.phone_placeholder') }}"
                                            class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">
                                                                          <p class="mt-1 text-xs text-brand-primary/70">{{ __('customer.phone_format_hint', ['digits' => $phoneDigits]) }}</p>

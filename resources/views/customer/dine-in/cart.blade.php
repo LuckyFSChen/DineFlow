@@ -155,8 +155,8 @@
                                        name="customer_phone"
                                        value="{{ old('customer_phone', $rememberedCustomerInfo['customer_phone'] ?? '') }}"
                                        inputmode="numeric"
-                                       maxlength="{{ $phoneDigits }}"
-                                       pattern="[0-9]*"
+                                        maxlength="{{ $phoneDigits + 2 }}"
+                                        pattern="[0-9-]*"
                                        class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
                                         placeholder="{{ __('customer.phone_placeholder') }}">
                                     <p class="mt-1 text-xs text-orange-600">{{ __('customer.phone_format_hint', ['digits' => $phoneDigits]) }}</p>
@@ -221,15 +221,26 @@
         }
 
         const normalizePhoneInput = (raw) => {
-            return String(raw || '').replace(/\D/g, '').slice(0, Number(maxDigits || 10));
+            const digits = String(raw || '').replace(/\D/g, '').slice(0, Number(maxDigits || 10));
+
+            if (digits.length <= 4) {
+                return digits;
+            }
+
+            if (digits.length <= 7) {
+                return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+            }
+
+            return `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
         };
 
         const apply = () => {
             input.value = normalizePhoneInput(input.value);
         };
 
-        input.setAttribute('maxlength', String(maxDigits || 10));
+        input.setAttribute('maxlength', String((maxDigits || 10) + 2));
         input.setAttribute('inputmode', 'numeric');
+        input.setAttribute('pattern', '[0-9-]*');
         input.addEventListener('input', apply);
         input.addEventListener('blur', apply);
         apply();
