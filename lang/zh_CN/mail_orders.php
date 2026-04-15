@@ -12,11 +12,17 @@ return [
         'heading' => '您的订单已完成',
         'intro' => '您在 **:store** 的订单已完成，欢迎前往取餐。',
     ],
+    'cancelled' => [
+        'subject' => '[:store] 订单已取消 #:order_no',
+        'heading' => '您的订单已取消',
+        'intro' => '您在 **:store** 的订单已取消。',
+    ],
     'fields' => [
         'order_no' => '订单编号：',
         'order_type' => '订单类型：',
         'status' => '订单状态：',
         'total' => '订单金额：',
+        'cancel_reason' => '取消原因：',
     ],
     'order_type' => [
         'takeout' => '外带',

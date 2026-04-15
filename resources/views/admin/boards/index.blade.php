@@ -75,13 +75,6 @@ $allBoardsI18n = [
                 <button @click="boardFilter = 'kitchen'" :class="boardFilter === 'kitchen' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">{{ __('admin.board_label_kitchen') }}</button>
             </div>
 
-            <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
-                <a href="{{ route('locale.switch', 'zh_TW') }}" class="px-2.5 py-1.5 transition {{ app()->getLocale() === 'zh_TW' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-700' }}">ZH</a>
-                <a href="{{ route('locale.switch', 'zh_CN') }}" class="px-2.5 py-1.5 transition {{ app()->getLocale() === 'zh_CN' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-700' }}">CN</a>
-                <a href="{{ route('locale.switch', 'en') }}" class="px-2.5 py-1.5 transition {{ app()->getLocale() === 'en' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-700' }}">EN</a>
-                <a href="{{ route('locale.switch', 'vi') }}" class="px-2.5 py-1.5 transition {{ app()->getLocale() === 'vi' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-700' }}">VI</a>
-            </div>
-
             <div class="flex items-center gap-1.5 rounded-full border border-emerald-700 bg-emerald-900/50 px-3 py-1 text-xs text-emerald-400">
                 <span class="relative flex h-2 w-2">
                     <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
@@ -116,12 +109,6 @@ $allBoardsI18n = [
                     <div>
                         <span class="font-mono text-lg font-bold text-white" x-text="'#' + (order.order_no || order.id)"></span>
                         <div class="mt-0.5 flex items-center gap-2 text-xs">
-                            <template x-if="order.order_type === 'dine_in' && order.table">
-                                <span class="rounded bg-slate-700 px-1.5 py-0.5 text-slate-300">{{ __('admin.board_table_no') }} <span x-text="order.table.table_no"></span></span>
-                            </template>
-                            <template x-if="order.order_type === 'takeout' || order.order_type === 'take_out'">
-                                <span class="rounded bg-orange-800/60 px-1.5 py-0.5 text-orange-300">{{ __('admin.board_takeout') }}</span>
-                            </template>
                                 <span class="text-slate-500" x-text="timeAgo(order.created_at)"></span>
                                 <span class="rounded px-1.5 py-0.5 text-[10px] font-semibold"
                                     :class="waitBadgeClass(order)"
@@ -137,6 +124,12 @@ $allBoardsI18n = [
                     <div class="flex flex-col items-end gap-1.5">
                         <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="boardBadgeClass(order)" x-text="boardLabel(order)"></span>
                         <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="statusBadgeClass(order)" x-text="statusLabel(order)"></span>
+                        <template x-if="order.order_type === 'dine_in' && order.table">
+                            <span class="rounded bg-slate-700 px-2.5 py-1 text-sm font-semibold text-slate-200">{{ __('admin.board_table_no') }} <span x-text="order.table.table_no"></span></span>
+                        </template>
+                        <template x-if="order.order_type === 'takeout' || order.order_type === 'take_out'">
+                            <span class="rounded bg-orange-800/60 px-2.5 py-1 text-sm font-semibold text-orange-200">{{ __('admin.board_takeout') }}</span>
+                        </template>
                     </div>
                 </div>
 

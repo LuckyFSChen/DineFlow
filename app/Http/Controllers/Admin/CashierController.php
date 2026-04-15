@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Store;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class CashierController extends Controller
 {
@@ -74,7 +75,18 @@ class CashierController extends Controller
                 return response()->json(['ok' => false, 'message' => 'Only pending orders can be cancelled'], 422);
             }
 
-            $order->update(['status' => 'cancelled']);
+            $cancelReasonOptions = $this->normalizeCancelReasonOptions($request->input('cancel_reason_options'));
+            $cancelReasonOther = trim((string) $request->input('cancel_reason_other', ''));
+
+            if ($cancelReasonOptions->isEmpty() && $cancelReasonOther === '') {
+                return response()->json(['ok' => false, 'message' => 'Please provide at least one cancellation reason'], 422);
+            }
+
+            $order->update([
+                'status' => 'cancelled',
+                'cancel_reason_options' => $cancelReasonOptions->isNotEmpty() ? $cancelReasonOptions->values()->all() : null,
+                'cancel_reason_other' => $cancelReasonOther !== '' ? $cancelReasonOther : null,
+            ]);
 
             return response()->json([
                 'ok'             => true,
@@ -169,5 +181,18 @@ class CashierController extends Controller
         }
 
         return Store::query()->whereRaw('1 = 0')->get(['id', 'name', 'slug']);
+    }
+
+    private function normalizeCancelReasonOptions(mixed $value): Collection
+    {
+        if (! is_array($value)) {
+            return collect();
+        }
+
+        return collect($value)
+            ->map(fn ($reason) => trim((string) $reason))
+            ->filter(fn (string $reason) => $reason !== '')
+            ->unique()
+            ->values();
     }
 }

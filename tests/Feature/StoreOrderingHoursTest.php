@@ -72,4 +72,32 @@ class StoreOrderingHoursTest extends TestCase
 
         Date::setTestNow();
     }
+
+    public function test_store_is_unavailable_during_weekday_break_hours(): void
+    {
+        $store = Store::create([
+            'name' => 'Lunch Break Cafe',
+            'slug' => 'lunch-break-cafe',
+            'is_active' => true,
+            'opening_time' => '09:00',
+            'closing_time' => '18:00',
+            'weekly_break_hours' => [
+                'mon' => [
+                    'start' => '12:00',
+                    'end' => '13:00',
+                ],
+            ],
+        ]);
+
+        Date::setTestNow('2026-04-13 11:30:00');
+        $this->assertTrue($store->fresh()->isOrderingAvailable());
+
+        Date::setTestNow('2026-04-13 12:30:00');
+        $this->assertFalse($store->fresh()->isOrderingAvailable());
+
+        Date::setTestNow('2026-04-13 13:30:00');
+        $this->assertTrue($store->fresh()->isOrderingAvailable());
+
+        Date::setTestNow();
+    }
 }

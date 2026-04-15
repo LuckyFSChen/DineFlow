@@ -46,6 +46,7 @@
 
                 @php
                     $isTakeout = ($order->order_type ?? null) === 'takeout';
+                    $cancelReasons = $order->resolvedCancelReasons();
                 @endphp
 
                 <div class="mt-4 grid gap-4 sm:grid-cols-2">
@@ -73,6 +74,16 @@
                         <p class="text-sm text-gray-500">{{ __('customer.order_amount') }}</p>
                         <p class="mt-1 font-semibold text-gray-900">{{ $currencySymbol }} {{ number_format($order->total) }}</p>
                     </div>
+                </div>
+
+                <div id="customer-cancel-reason-box" class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 {{ in_array(strtolower((string) $order->status), ['cancel', 'cancelled', 'canceled'], true) ? '' : 'hidden' }}">
+                    <p class="text-sm text-rose-700">{{ __('customer.cancel_reason_title') }}</p>
+                    <ul id="customer-cancel-reason-list" class="mt-2 list-disc space-y-1 pl-5 text-sm text-rose-800 {{ empty($cancelReasons) ? 'hidden' : '' }}">
+                        @foreach ($cancelReasons as $cancelReason)
+                            <li>{{ $cancelReason }}</li>
+                        @endforeach
+                    </ul>
+                    <p id="customer-cancel-reason-empty" class="mt-2 text-sm text-rose-700 {{ empty($cancelReasons) ? '' : 'hidden' }}">{{ __('customer.cancel_reason_empty') }}</p>
                 </div>
             </section>
 
@@ -147,6 +158,9 @@
     (() => {
         const statusLabel = document.getElementById('customer-order-status-label');
         const paymentLabel = document.getElementById('customer-order-payment-label');
+        const cancelReasonBox = document.getElementById('customer-cancel-reason-box');
+        const cancelReasonList = document.getElementById('customer-cancel-reason-list');
+        const cancelReasonEmpty = document.getElementById('customer-cancel-reason-empty');
         const toast = document.getElementById('order-status-toast');
         const endpoint = @json(route('customer.order.status', ['store' => $store, 'order' => $order]));
         const paidLabel = @json(__('customer.payment_status_paid'));
@@ -159,6 +173,44 @@
         let lastStatus = @json($order->status);
         let lastPaymentStatus = @json($order->payment_status);
         let audioContext = null;
+
+        const isCancelledStatus = (status) => ['cancel', 'cancelled', 'canceled'].includes(String(status || '').toLowerCase());
+
+        const renderCancelReasons = (status, reasons) => {
+            if (!cancelReasonBox || !cancelReasonList || !cancelReasonEmpty) {
+                return;
+            }
+
+            if (!isCancelledStatus(status)) {
+                cancelReasonBox.classList.add('hidden');
+                return;
+            }
+
+            cancelReasonBox.classList.remove('hidden');
+
+            const list = Array.isArray(reasons)
+                ? reasons.filter((reason) => String(reason || '').trim() !== '')
+                : [];
+
+            cancelReasonList.innerHTML = '';
+
+            if (list.length === 0) {
+                cancelReasonList.classList.add('hidden');
+                cancelReasonEmpty.classList.remove('hidden');
+                return;
+            }
+
+            cancelReasonList.classList.remove('hidden');
+            cancelReasonEmpty.classList.add('hidden');
+
+            list.forEach((reason) => {
+                const li = document.createElement('li');
+                li.textContent = reason;
+                cancelReasonList.appendChild(li);
+            });
+        };
+
+        renderCancelReasons(lastStatus, @json($cancelReasons));
 
         const initAudio = () => {
             const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -240,6 +292,7 @@
 
                 statusLabel.textContent = data.customer_status_label || statusLabel.textContent;
                 paymentLabel.textContent = nextPaymentStatus === 'paid' ? paidLabel : unpaidLabel;
+                renderCancelReasons(nextStatus, data.cancel_reasons || []);
 
                 if (changed) {
                     playSound();

@@ -14,6 +14,10 @@
         'usd' => 'USD',
         default => 'NT$',
     };
+    $phoneDigits = match (strtolower((string) ($store->country_code ?? 'tw'))) {
+        'cn' => 11,
+        default => 10,
+    };
 @endphp
 <body class="bg-orange-50 text-gray-900">
     <div class="min-h-screen pb-32">
@@ -151,11 +155,11 @@
                                        name="customer_phone"
                                        value="{{ old('customer_phone', $rememberedCustomerInfo['customer_phone'] ?? '') }}"
                                        inputmode="numeric"
-                                       maxlength="12"
-                                       pattern="09[0-9]{2}-[0-9]{3}-[0-9]{3}"
+                                       maxlength="{{ $phoneDigits }}"
+                                       pattern="[0-9]*"
                                        class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
                                         placeholder="{{ __('customer.phone_placeholder') }}">
-                                    <p class="mt-1 text-xs text-orange-600">{{ __('customer.phone_format_hint') }}</p>
+                                    <p class="mt-1 text-xs text-orange-600">{{ __('customer.phone_format_hint', ['digits' => $phoneDigits]) }}</p>
                             </div>
 
                             <div>
@@ -211,29 +215,20 @@
     <script>
     (() => {
         const input = document.querySelector('input[name="customer_phone"]');
+        const maxDigits = @json($phoneDigits);
         if (!input) {
             return;
         }
 
-        const formatTaiwanMobile = (raw) => {
-            const digits = String(raw || '').replace(/\D/g, '').slice(0, 10);
-
-            if (digits.length <= 4) {
-                return digits;
-            }
-
-            if (digits.length <= 7) {
-                return `${digits.slice(0, 4)}-${digits.slice(4)}`;
-            }
-
-            return `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
+        const normalizePhoneInput = (raw) => {
+            return String(raw || '').replace(/\D/g, '').slice(0, Number(maxDigits || 10));
         };
 
         const apply = () => {
-            input.value = formatTaiwanMobile(input.value);
+            input.value = normalizePhoneInput(input.value);
         };
 
-        input.setAttribute('maxlength', '12');
+        input.setAttribute('maxlength', String(maxDigits || 10));
         input.setAttribute('inputmode', 'numeric');
         input.addEventListener('input', apply);
         input.addEventListener('blur', apply);

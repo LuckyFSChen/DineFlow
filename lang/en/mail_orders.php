@@ -12,11 +12,17 @@ return [
         'heading' => 'Your Order Is Ready',
         'intro' => 'Your order at **:store** has been completed. Please come pick it up.',
     ],
+    'cancelled' => [
+        'subject' => '[:store] Order Cancelled #:order_no',
+        'heading' => 'Your Order Has Been Cancelled',
+        'intro' => 'Your order at **:store** has been cancelled.',
+    ],
     'fields' => [
         'order_no' => 'Order No: ',
         'order_type' => 'Order Type: ',
         'status' => 'Order Status: ',
         'total' => 'Order Total: ',
+        'cancel_reason' => 'Cancellation reason: ',
     ],
     'order_type' => [
         'takeout' => 'Takeout',

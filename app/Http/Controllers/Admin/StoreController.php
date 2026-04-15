@@ -159,13 +159,31 @@ class StoreController extends Controller
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
             'timezone' => ['nullable', 'timezone'],
-            'phone' => ['nullable', 'regex:/^(09\d{2}-\d{3}-\d{3}|09\d{8})$/'],
+            'country_code' => ['nullable', 'in:tw,vn,cn,us'],
+            'phone' => [
+                'nullable',
+                'string',
+                'max:32',
+                function (string $attribute, mixed $value, \Closure $fail) use ($request): void {
+                    $raw = trim((string) ($value ?? ''));
+                    if ($raw === '') {
+                        return;
+                    }
+
+                    $countryCode = strtolower((string) $request->input('country_code', 'tw'));
+                    $expectedLength = $this->expectedPhoneLengthByCountry($countryCode);
+                    $digits = preg_replace('/\D+/', '', $raw);
+                    if (! is_string($digits) || strlen($digits) !== $expectedLength) {
+                        $fail(__('admin.phone_length_error', ['digits' => $expectedLength]));
+                    }
+                },
+            ],
             'banner_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
-        ], [
-            'phone.regex' => '電話格式需為 0922333444 或 0922-333-444。',
         ]);
 
-        $data['phone'] = $this->normalizeTaiwanMobilePhone($data['phone'] ?? null);
+        $countryCode = strtolower((string) ($data['country_code'] ?? $request->input('country_code', 'tw')));
+        $data['country_code'] = $countryCode;
+        $data['phone'] = $this->normalizePhoneByCountry($data['phone'] ?? null, $countryCode);
         $data['latitude'] = $this->normalizeCoordinate($data['latitude'] ?? null);
         $data['longitude'] = $this->normalizeCoordinate($data['longitude'] ?? null);
         $data['timezone'] = trim((string) ($data['timezone'] ?? '')) ?: null;
@@ -173,7 +191,15 @@ class StoreController extends Controller
         return $data;
     }
 
-    protected function normalizeTaiwanMobilePhone(?string $phone): ?string
+    protected function expectedPhoneLengthByCountry(string $countryCode): int
+    {
+        return match (strtolower($countryCode)) {
+            'cn' => 11,
+            default => 10,
+        };
+    }
+
+    protected function normalizePhoneByCountry(?string $phone, string $countryCode): ?string
     {
         if ($phone === null) {
             return null;
@@ -185,11 +211,13 @@ class StoreController extends Controller
         }
 
         $digits = preg_replace('/\D+/', '', $phone);
-        if (preg_match('/^09\d{8}$/', $digits) !== 1) {
-            return $phone;
+        $expectedLength = $this->expectedPhoneLengthByCountry($countryCode);
+
+        if (! is_string($digits) || strlen($digits) !== $expectedLength) {
+            return null;
         }
 
-        return substr($digits, 0, 4) . '-' . substr($digits, 4, 3) . '-' . substr($digits, 7, 3);
+        return $digits;
     }
 
     protected function normalizeCoordinate(mixed $value): ?float

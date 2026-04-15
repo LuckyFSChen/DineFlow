@@ -1,4 +1,8 @@
 @csrf
+@php
+    $selectedCountryCode = strtolower((string) old('country_code', $store->country_code ?? 'tw'));
+    $phoneDigits = $selectedCountryCode === 'cn' ? 11 : 10;
+@endphp
 
 <div class="grid gap-6 lg:grid-cols-2">
     <div class="lg:col-span-2">
@@ -23,10 +27,12 @@
     <div>
         <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('admin.phone') }}</label>
         <input type="text" name="phone" value="{{ old('phone', $store->phone) }}"
-               placeholder="0922-333-444"
-               pattern="09[0-9]{2}-[0-9]{3}-[0-9]{3}"
+               placeholder="{{ __('admin.phone_placeholder', ['digits' => $phoneDigits]) }}"
+               inputmode="numeric"
+               maxlength="{{ $phoneDigits }}"
+               pattern="[0-9]*"
                class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
-        <p class="mt-2 text-xs text-slate-500">{{ __('admin.phone_format_hint') }}</p>
+        <p class="mt-2 text-xs text-slate-500">{{ __('admin.phone_format_hint', ['digits' => $phoneDigits]) }}</p>
         @error('phone')
             <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
         @enderror

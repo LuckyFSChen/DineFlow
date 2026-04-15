@@ -27,7 +27,8 @@ return [
     'name'                        => 'Name',
     'phone'                       => 'Phone',
     'note'                        => 'Note',
-    'phone_format_hint'           => 'Format: 0922-333-444',
+    'phone_format_hint'           => 'Enter a :digits-digit phone number (numbers only).',
+    'phone_length_error'          => 'Phone number must be :digits digits.',
     'remember_info'               => 'Remember my info (Name / Email / Phone)',
     'clear_remembered_info'       => 'Clear saved info',
     'cart_empty'                  => 'Your cart is empty',
@@ -109,4 +110,6 @@ return [
     'order_history_no_results'     => 'No matching order records were found.',
     'view_order_detail'            => 'View Order Detail',
     'view_my_order_history'        => 'View My Order History',
+    'cancel_reason_title'          => 'Cancellation Reason',
+    'cancel_reason_empty'          => 'The store did not provide a cancellation reason.',
 ];

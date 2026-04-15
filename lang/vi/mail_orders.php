@@ -12,11 +12,17 @@ return [
         'heading' => 'Don Hang Cua Ban Da San Sang',
         'intro' => 'Don hang cua ban tai **:store** da hoan thanh. Vui long den nhan mon.',
     ],
+    'cancelled' => [
+        'subject' => '[:store] Don hang da bi huy #:order_no',
+        'heading' => 'Don Hang Cua Ban Da Bi Huy',
+        'intro' => 'Don hang cua ban tai **:store** da bi huy.',
+    ],
     'fields' => [
         'order_no' => 'Ma don hang: ',
         'order_type' => 'Loai don: ',
         'status' => 'Trang thai: ',
         'total' => 'Tong tien: ',
+        'cancel_reason' => 'Ly do huy: ',
     ],
     'order_type' => [
         'takeout' => 'Mang di',

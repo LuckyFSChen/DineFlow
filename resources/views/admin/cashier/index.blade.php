@@ -40,6 +40,16 @@ $cashierI18n = [
     'error_update_failed' => __('admin.board_error_update_failed'),
     'error_missing_csrf' => __('admin.board_error_missing_csrf'),
     'error_network' => __('admin.board_error_network'),
+    'cancel_dialog_title' => __('admin.board_cancel_dialog_title'),
+    'cancel_dialog_hint' => __('admin.board_cancel_dialog_hint'),
+    'cancel_shortcuts_label' => __('admin.board_cancel_shortcuts_label'),
+    'cancel_selected_label' => __('admin.board_cancel_selected_label'),
+    'cancel_other_label' => __('admin.board_cancel_other_label'),
+    'cancel_other_placeholder' => __('admin.board_cancel_other_placeholder'),
+    'cancel_confirm' => __('admin.board_cancel_confirm'),
+    'cancel_close' => __('admin.board_cancel_close'),
+    'cancel_reason_required' => __('admin.board_cancel_reason_required'),
+    'cancel_quick_reasons' => __('admin.board_cancel_quick_reasons'),
     'status_unpaid_collect' => __('admin.board_status_unpaid_collect'),
     'status_pending' => __('admin.board_status_pending'),
     'status_accepted' => __('admin.board_status_accepted'),
@@ -257,7 +267,7 @@ $cashierI18n = [
                             </button>
 
                             <button
-                                @click="cancelOrder(order)"
+                                @click="openCancelDialog(order)"
                                 :disabled="order._loading"
                                 class="flex-1 rounded-xl bg-rose-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-500 disabled:opacity-50">
                                 <span x-text="order._loading ? i18n.processing : i18n.cancel_order"></span>
@@ -277,6 +287,66 @@ $cashierI18n = [
                 </div>
             </div>
         </template>
+    </div>
+
+    {{-- Cancel reason modal --}}
+    <div
+        x-show="cancelModalOpen"
+        x-transition.opacity
+        class="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4"
+        @keydown.escape.window="closeCancelDialog()">
+        <div
+            class="w-full max-w-xl rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl"
+            @click.outside="closeCancelDialog()">
+            <div class="border-b border-slate-700 px-5 py-4">
+                <h3 class="text-base font-semibold text-white" x-text="i18n.cancel_dialog_title"></h3>
+                <p class="mt-1 text-xs text-slate-400" x-text="i18n.cancel_dialog_hint"></p>
+            </div>
+
+            <div class="space-y-4 px-5 py-4">
+                <div>
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400" x-text="i18n.cancel_shortcuts_label"></p>
+                    <div class="flex flex-wrap gap-2">
+                        <template x-for="reason in cancelQuickReasons" :key="reason">
+                            <button
+                                type="button"
+                                @click="toggleCancelReason(reason)"
+                                class="rounded-full border px-3 py-1.5 text-xs font-semibold transition"
+                                :class="selectedCancelReasons.includes(reason)
+                                    ? 'border-rose-400 bg-rose-500/20 text-rose-200'
+                                    : 'border-slate-600 bg-slate-800 text-slate-300 hover:border-slate-500 hover:bg-slate-700'"
+                                x-text="reason">
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400" x-text="i18n.cancel_other_label"></p>
+                    <textarea
+                        x-model.trim="cancelReasonOther"
+                        rows="3"
+                        :placeholder="i18n.cancel_other_placeholder"
+                        class="w-full rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-rose-500 focus:outline-none"></textarea>
+                </div>
+
+                <p class="text-xs text-slate-500" x-text="i18n.cancel_selected_label + selectedCancelReasons.length"></p>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 border-t border-slate-700 px-5 py-4">
+                <button
+                    type="button"
+                    @click="closeCancelDialog()"
+                    class="rounded-lg border border-slate-600 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-800"
+                    x-text="i18n.cancel_close"></button>
+
+                <button
+                    type="button"
+                    @click="confirmCancelOrder()"
+                    class="rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-500"
+                    x-text="i18n.cancel_confirm"></button>
+            </div>
+        </div>
     </div>
 
     {{-- New order toast --}}
@@ -329,6 +399,11 @@ function cashierBoard() {
         _errorTimer: null,
         _audioContext: null,
         _audioUnlockHandler: null,
+        cancelModalOpen: false,
+        cancelTargetOrder: null,
+        cancelQuickReasons: [],
+        selectedCancelReasons: [],
+        cancelReasonOther: '',
 
         get filteredOrders() {
             let result = [...this.orders];
@@ -381,6 +456,9 @@ function cashierBoard() {
             clearInterval(this._pollTimer);
             clearInterval(this._countdownTimer);
             this.initAudio();
+            this.cancelQuickReasons = Array.isArray(this.i18n.cancel_quick_reasons)
+                ? this.i18n.cancel_quick_reasons
+                : [];
             this.lastUpdatedAt = Date.now();
             this.nextRefreshIn = this.pollSeconds;
             this._pollTimer = setInterval(() => this.poll(), this.pollSeconds * 1000);
@@ -472,11 +550,58 @@ function cashierBoard() {
             this.setStatus(order, 'preparing');
         },
 
-        cancelOrder(order) {
-            this.setStatus(order, 'cancelled');
+        openCancelDialog(order) {
+            if (!order || order._loading) {
+                return;
+            }
+
+            this.cancelTargetOrder = order;
+            this.selectedCancelReasons = [];
+            this.cancelReasonOther = '';
+            this.cancelModalOpen = true;
         },
 
-        async setStatus(order, status) {
+        closeCancelDialog() {
+            this.cancelModalOpen = false;
+            this.cancelTargetOrder = null;
+            this.selectedCancelReasons = [];
+            this.cancelReasonOther = '';
+        },
+
+        toggleCancelReason(reason) {
+            const idx = this.selectedCancelReasons.indexOf(reason);
+
+            if (idx >= 0) {
+                this.selectedCancelReasons.splice(idx, 1);
+                return;
+            }
+
+            this.selectedCancelReasons.push(reason);
+        },
+
+        confirmCancelOrder() {
+            if (!this.cancelTargetOrder) {
+                return;
+            }
+
+            const customReason = String(this.cancelReasonOther || '').trim();
+
+            if (this.selectedCancelReasons.length === 0 && customReason === '') {
+                this.showError(this.i18n.cancel_reason_required);
+                return;
+            }
+
+            const order = this.cancelTargetOrder;
+            const payload = {
+                cancel_reason_options: [...this.selectedCancelReasons],
+                cancel_reason_other: customReason,
+            };
+
+            this.closeCancelDialog();
+            this.setStatus(order, 'cancelled', payload);
+        },
+
+        async setStatus(order, status, payload = {}) {
             order._loading = true;
             try {
                 const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -493,7 +618,7 @@ function cashierBoard() {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': token,
                     },
-                    body: JSON.stringify({ status }),
+                    body: JSON.stringify({ status, ...payload }),
                 });
 
                 if (!res.ok) {

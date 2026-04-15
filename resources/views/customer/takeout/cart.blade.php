@@ -9,6 +9,10 @@
         'usd' => 'USD',
         default => 'NT$',
     };
+    $phoneDigits = match (strtolower((string) ($store->country_code ?? 'tw'))) {
+        'cn' => 11,
+        default => 10,
+    };
 @endphp
 <div class="min-h-screen bg-brand-soft/20">
     <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -180,11 +184,11 @@
                                            name="customer_phone"
                                            value="{{ old('customer_phone', $rememberedCustomerInfo['customer_phone'] ?? '') }}"
                                            inputmode="numeric"
-                                           maxlength="12"
-                                           pattern="09[0-9]{2}-[0-9]{3}-[0-9]{3}"
+                                                                                     maxlength="{{ $phoneDigits }}"
+                                                                                     pattern="[0-9]*"
                                          placeholder="{{ __('customer.phone_placeholder') }}"
                                            class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">
-                                     <p class="mt-1 text-xs text-brand-primary/70">{{ __('customer.phone_format_hint') }}</p>
+                                                                         <p class="mt-1 text-xs text-brand-primary/70">{{ __('customer.phone_format_hint', ['digits' => $phoneDigits]) }}</p>
                                 </div>
 
                                 <div>

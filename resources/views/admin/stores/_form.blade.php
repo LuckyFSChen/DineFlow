@@ -1,4 +1,27 @@
 @csrf
+@php
+    $selectedCountryCode = strtolower((string) old('country_code', $store->country_code ?? 'tw'));
+    $phoneDigits = $selectedCountryCode === 'cn' ? 11 : 10;
+    $breakWeekdays = [
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
+        'sunday',
+    ];
+    $breakHoursStorageMap = [
+        'monday' => 'mon',
+        'tuesday' => 'tue',
+        'wednesday' => 'wed',
+        'thursday' => 'thu',
+        'friday' => 'fri',
+        'saturday' => 'sat',
+        'sunday' => 'sun',
+    ];
+    $storedWeeklyBreakHours = is_array($store->weekly_break_hours ?? null) ? $store->weekly_break_hours : [];
+@endphp
 
 <div class="grid gap-6 lg:grid-cols-2">
     <div class="lg:col-span-2">
@@ -23,10 +46,12 @@
     <div>
         <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('admin.phone') }}</label>
         <input type="text" name="phone" value="{{ old('phone', $store->phone) }}"
-               placeholder="0922-333-444"
-               pattern="09[0-9]{2}-[0-9]{3}-[0-9]{3}"
+               placeholder="{{ __('admin.phone_placeholder', ['digits' => $phoneDigits]) }}"
+               inputmode="numeric"
+               maxlength="{{ $phoneDigits }}"
+               pattern="[0-9]*"
                class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
-        <p class="mt-2 text-xs text-slate-500">{{ __('admin.phone_format_hint') }}</p>
+        <p class="mt-2 text-xs text-slate-500">{{ __('admin.phone_format_hint', ['digits' => $phoneDigits]) }}</p>
         @error('phone')
             <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
         @enderror
@@ -81,6 +106,65 @@
         @error('timezone')
             <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
         @enderror
+    </div>
+
+    <div>
+        <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('admin.opening_time') }}</label>
+        <input type="time" name="opening_time" value="{{ old('opening_time', $store->opening_time ? substr($store->opening_time, 0, 5) : '') }}"
+               class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+        <p class="mt-2 text-xs text-slate-500">{{ __('admin.opening_time_hint') }}</p>
+        @error('opening_time')
+            <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+        @enderror
+    </div>
+
+    <div>
+        <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('admin.closing_time') }}</label>
+        <input type="time" name="closing_time" value="{{ old('closing_time', $store->closing_time ? substr($store->closing_time, 0, 5) : '') }}"
+               class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+        <p class="mt-2 text-xs text-slate-500">{{ __('admin.closing_time_hint') }}</p>
+        @error('closing_time')
+            <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+        @enderror
+    </div>
+
+    <div class="lg:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+        <h3 class="text-sm font-semibold text-slate-800">{{ __('admin.break_hours_title') }}</h3>
+        <p class="mt-1 text-xs text-slate-500">{{ __('admin.break_hours_hint') }}</p>
+
+        <div class="mt-4 grid gap-3">
+            @foreach ($breakWeekdays as $weekday)
+                @php
+                    $storageKey = $breakHoursStorageMap[$weekday];
+                    $storedSlot = is_array($storedWeeklyBreakHours[$storageKey] ?? null) ? $storedWeeklyBreakHours[$storageKey] : [];
+                    $breakStartValue = old("break_hours.$weekday.start", isset($storedSlot['start']) ? substr((string) $storedSlot['start'], 0, 5) : '');
+                    $breakEndValue = old("break_hours.$weekday.end", isset($storedSlot['end']) ? substr((string) $storedSlot['end'], 0, 5) : '');
+                @endphp
+                <div class="grid items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 md:grid-cols-[120px_1fr_1fr]">
+                    <p class="pt-2 text-sm font-semibold text-slate-700">{{ __('admin.weekday_' . $weekday) }}</p>
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.break_start_time') }}</label>
+                        <input type="time"
+                               name="break_hours[{{ $weekday }}][start]"
+                               value="{{ $breakStartValue }}"
+                               class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                        @error("break_hours.$weekday.start")
+                            <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.break_end_time') }}</label>
+                        <input type="time"
+                               name="break_hours[{{ $weekday }}][end]"
+                               value="{{ $breakEndValue }}"
+                               class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                        @error("break_hours.$weekday.end")
+                            <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            @endforeach
+        </div>
     </div>
 
     <div class="lg:col-span-2">

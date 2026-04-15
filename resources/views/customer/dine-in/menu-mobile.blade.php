@@ -36,18 +36,18 @@
     <div class="min-h-screen pb-32">
         <header class="sticky top-0 z-30 border-b border-brand-soft/60 bg-white/95 backdrop-blur">
             <div class="mx-auto max-w-5xl px-4">
-                <div class="flex min-h-[160px] flex-col justify-center py-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
+                <div class="flex flex-col justify-center py-4">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="min-w-0">
                             <p class="text-sm font-medium uppercase tracking-[0.24em] text-brand-primary">DineFlow</p>
-                            <h1 class="mt-2 text-2xl font-bold tracking-tight text-brand-dark">{{ $store->name }}</h1>
+                            <h1 class="mt-2 break-words text-2xl font-bold tracking-tight text-brand-dark">{{ $store->name }}</h1>
                             <p class="mt-1 text-sm text-brand-primary/75">{{ __('customer.table_no') }} {{ $table->table_no }}</p>
                             <p class="mt-1 text-sm text-brand-primary/75">{{ __('customer.business_hours') }} {{ $store->businessHoursLabel() }}</p>
                         </div>
-                        <div class="flex flex-col items-end gap-2">
-                            <a href="{{ route('customer.dinein.cart.show', ['store' => $store, 'table' => $table]) }}" class="inline-flex items-center rounded-2xl border border-brand-soft bg-brand-soft/20 px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-highlight/50">{{ __('customer.view_cart') }}</a>
+                        <div class="flex w-full flex-row flex-wrap items-center justify-between gap-2 sm:w-auto sm:flex-col sm:items-end sm:justify-start">
+                            <a href="{{ route('customer.dinein.cart.show', ['store' => $store, 'table' => $table]) }}" class="inline-flex items-center whitespace-nowrap rounded-2xl border border-brand-soft bg-brand-soft/20 px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-highlight/50">{{ __('customer.view_cart') }}</a>
                             @if(isset($orderHistory) && $orderHistory->isNotEmpty())
-                                <div class="flex flex-wrap justify-end gap-2">
+                                <div class="flex w-full flex-wrap justify-start gap-2 sm:w-auto sm:justify-end">
                                     @foreach($orderHistory->take(3) as $historyOrder)
                                         <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="inline-flex items-center rounded-xl border border-brand-soft bg-white px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30">{{ __('customer.status_prefix') }} {{ $historyOrder->order_no }}</a>
                                     @endforeach
@@ -92,9 +92,9 @@
         </nav>
 
         <main class="mx-auto max-w-5xl px-4 py-6">
-            <div class="relative grid grid-cols-[5.5rem,minmax(0,1fr)] items-start gap-4 md:block">
-                <aside class="self-stretch md:hidden">
-                    <div class="sticky top-[10.5rem]">
+            <div class="relative grid grid-cols-[5.5rem,minmax(0,1fr)] items-start gap-4 max-[420px]:grid-cols-1 md:block">
+                <aside class="self-stretch max-[420px]:hidden md:hidden">
+                    <div class="sticky top-4">
                         <div class="h-[calc(100vh-12rem)] overflow-hidden rounded-[1.75rem] border border-brand-soft/60 bg-white shadow-[0_18px_40px_rgba(90,30,14,0.08)]">
                             <div class="h-full overflow-y-auto p-2">
                                 <div class="flex flex-col gap-2">
@@ -110,6 +110,14 @@
                 </aside>
 
                 <div class="min-w-0">
+                    <div class="mb-4 hidden flex-wrap gap-2 max-[420px]:flex">
+                        @foreach($categories as $category)
+                            <a href="#category-{{ $category->id }}" class="inline-flex items-center rounded-full border border-brand-soft/70 bg-brand-soft/20 px-3 py-2 text-xs font-semibold text-brand-primary transition hover:border-brand-accent hover:bg-brand-highlight/50">
+                                {{ $category->name }}
+                            </a>
+                        @endforeach
+                    </div>
+
                     @foreach($categories as $category)
                         <section id="category-{{ $category->id }}" class="mb-8 scroll-mt-24 md:scroll-mt-[230px]">
                             <div class="mb-4 flex items-center justify-between">

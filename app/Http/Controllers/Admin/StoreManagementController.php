@@ -226,14 +226,31 @@ class StoreManagementController extends Controller
 
     protected function validatedData(Request $request, ?int $storeId = null): array
     {
-        $data = $request->validate([
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255', 'unique:stores,slug,' . $storeId],
             'description' => ['nullable', 'string'],
             'address' => ['nullable', 'string', 'max:255'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
-            'phone' => ['nullable', 'regex:/^(09\d{2}-\d{3}-\d{3}|09\d{8})$/'],
+            'phone' => [
+                'nullable',
+                'string',
+                'max:32',
+                function (string $attribute, mixed $value, \Closure $fail) use ($request): void {
+                    $raw = trim((string) ($value ?? ''));
+                    if ($raw === '') {
+                        return;
+                    }
+
+                    $countryCode = strtolower((string) $request->input('country_code', 'tw'));
+                    $expectedLength = $this->expectedPhoneLengthByCountry($countryCode);
+                    $digits = preg_replace('/\D+/', '', $raw);
+                    if (! is_string($digits) || strlen($digits) !== $expectedLength) {
+                        $fail(__('admin.phone_length_error', ['digits' => $expectedLength]));
+                    }
+                },
+            ],
             'currency' => ['nullable', 'in:twd,vnd,cny,usd'],
             'country_code' => ['nullable', 'in:tw,vn,cn,us'],
             'timezone' => ['nullable', 'timezone'],
@@ -241,26 +258,43 @@ class StoreManagementController extends Controller
             'checkout_timing' => ['nullable', 'in:prepay,postpay'],
             'opening_time' => ['nullable', 'date_format:H:i', 'required_with:closing_time'],
             'closing_time' => ['nullable', 'date_format:H:i', 'required_with:opening_time'],
-        ], [
-            'phone.regex' => '電話格式需為 0922333444 或 0922-333-444。',
-        ]);
+        ];
 
-        $data['phone'] = $this->normalizeTaiwanMobilePhone($data['phone'] ?? null);
+        foreach (array_keys($this->weekdayFormToStorageMap()) as $weekday) {
+            $rules["break_hours.{$weekday}.start"] = ['nullable', 'date_format:H:i', "required_with:break_hours.{$weekday}.end"];
+            $rules["break_hours.{$weekday}.end"] = ['nullable', 'date_format:H:i', "required_with:break_hours.{$weekday}.start"];
+        }
+
+        $data = $request->validate($rules);
+
+        $countryCode = strtolower((string) ($data['country_code'] ?? 'tw'));
+        $data['country_code'] = $countryCode;
+        $data['phone'] = $this->normalizePhoneByCountry($data['phone'] ?? null, $countryCode);
         $data['latitude'] = $this->normalizeCoordinate($data['latitude'] ?? null);
         $data['longitude'] = $this->normalizeCoordinate($data['longitude'] ?? null);
         $data['slug'] = $data['slug'] ?: (Str::slug($data['name']) ?: 'store');
         $data['is_active'] = $request->boolean('is_active');
         $data['currency'] = strtolower($data['currency'] ?? 'twd');
-        $data['country_code'] = strtolower($data['country_code'] ?? $this->inferCountryCodeFromCurrency($data['currency']));
+        $data['country_code'] = $countryCode !== '' ? $countryCode : strtolower($this->inferCountryCodeFromCurrency($data['currency']));
         $timezone = trim((string) ($data['timezone'] ?? ''));
         $data['timezone'] = $timezone !== '' ? $timezone : $this->inferTimezoneFromCountryCode($data['country_code']);
         $data['checkout_timing'] = $data['checkout_timing'] ?? 'postpay';
         $data['takeout_qr_enabled'] = true;
+        $data['weekly_break_hours'] = $this->normalizeWeeklyBreakHours($data['break_hours'] ?? []);
+        unset($data['break_hours']);
 
         return $data;
     }
 
-    protected function normalizeTaiwanMobilePhone(?string $phone): ?string
+    protected function expectedPhoneLengthByCountry(string $countryCode): int
+    {
+        return match (strtolower($countryCode)) {
+            'cn' => 11,
+            default => 10,
+        };
+    }
+
+    protected function normalizePhoneByCountry(?string $phone, string $countryCode): ?string
     {
         if ($phone === null) {
             return null;
@@ -272,11 +306,13 @@ class StoreManagementController extends Controller
         }
 
         $digits = preg_replace('/\D+/', '', $phone);
-        if (preg_match('/^09\d{8}$/', $digits) !== 1) {
-            return $phone;
+        $expectedLength = $this->expectedPhoneLengthByCountry($countryCode);
+
+        if (! is_string($digits) || strlen($digits) !== $expectedLength) {
+            return null;
         }
 
-        return substr($digits, 0, 4) . '-' . substr($digits, 4, 3) . '-' . substr($digits, 7, 3);
+        return $digits;
     }
 
     protected function normalizeCoordinate(mixed $value): ?float
@@ -420,6 +456,7 @@ class StoreManagementController extends Controller
             'is_active' => (bool) $store->is_active,
             'opening_time' => $this->formatTimeForInput($store->opening_time),
             'closing_time' => $this->formatTimeForInput($store->closing_time),
+            'weekly_break_hours' => $this->weeklyBreakHoursForForm($store),
             'banner_image' => $store->banner_image,
             'banner_image_url' => $store->banner_image
                 ? asset('storage/' . ltrim($store->banner_image, '/'))
@@ -455,6 +492,67 @@ class StoreManagementController extends Controller
             'us' => 'America/New_York',
             default => 'Asia/Taipei',
         };
+    }
+
+    protected function weekdayFormToStorageMap(): array
+    {
+        return [
+            'monday' => 'mon',
+            'tuesday' => 'tue',
+            'wednesday' => 'wed',
+            'thursday' => 'thu',
+            'friday' => 'fri',
+            'saturday' => 'sat',
+            'sunday' => 'sun',
+        ];
+    }
+
+    protected function normalizeWeeklyBreakHours(mixed $input): ?array
+    {
+        if (! is_array($input)) {
+            return null;
+        }
+
+        $normalized = [];
+        foreach ($this->weekdayFormToStorageMap() as $formWeekday => $storageWeekday) {
+            $slot = $input[$formWeekday] ?? null;
+            if (! is_array($slot)) {
+                continue;
+            }
+
+            $start = $this->formatTimeForInput((string) ($slot['start'] ?? ''));
+            $end = $this->formatTimeForInput((string) ($slot['end'] ?? ''));
+
+            if ($start === null || $end === null) {
+                continue;
+            }
+
+            $normalized[$storageWeekday] = [
+                'start' => $start,
+                'end' => $end,
+            ];
+        }
+
+        return $normalized === [] ? null : $normalized;
+    }
+
+    protected function weeklyBreakHoursForForm(Store $store): array
+    {
+        $raw = is_array($store->weekly_break_hours) ? $store->weekly_break_hours : [];
+        $output = [];
+
+        foreach ($this->weekdayFormToStorageMap() as $formWeekday => $storageWeekday) {
+            $slot = $raw[$storageWeekday] ?? null;
+            $start = is_array($slot) ? $this->formatTimeForInput((string) ($slot['start'] ?? '')) : null;
+            $end = is_array($slot) ? $this->formatTimeForInput((string) ($slot['end'] ?? '')) : null;
+
+            $output[$formWeekday] = [
+                'start' => $start,
+                'end' => $end,
+            ];
+        }
+
+        return $output;
     }
 
     protected function formatTimeForInput(?string $time): ?string

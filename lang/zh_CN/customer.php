@@ -27,7 +27,8 @@ return [
     'name'                        => '姓名',
     'phone'                       => '電話',
     'note'                        => '備註',
-    'phone_format_hint'           => '請輸入格式：0922-333-444',
+    'phone_format_hint'           => '请输入 :digits 位手机号码（仅数字）',
+    'phone_length_error'          => '手机号需为 :digits 位数字。',
     'remember_info'               => '記住這次填寫的訂單資訊（姓名 / Email / 電話）',
     'clear_remembered_info'       => '清除已記住資訊',
     'cart_empty'                  => '購物車目前是空的',
@@ -109,4 +110,6 @@ return [
     'order_history_no_results'     => '查無符合條件的訂單紀錄。',
     'view_order_detail'            => '查看訂單詳情',
     'view_my_order_history'        => '查看我的訂單紀錄',
+    'cancel_reason_title'          => '取消原因',
+    'cancel_reason_empty'          => '店家未提供取消原因。',
 ];

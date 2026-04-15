@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Mail\CustomerOrderCompletedMail;
+use App\Mail\CustomerOrderCancelledMail;
 use App\Mail\CustomerOrderCreatedMail;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -27,8 +28,14 @@ class Order extends Model
         'customer_email',
         'order_locale',
         'note',
+        'cancel_reason_options',
+        'cancel_reason_other',
         'subtotal',
         'total',
+    ];
+
+    protected $casts = [
+        'cancel_reason_options' => 'array',
     ];
 
     public function store() {
@@ -88,6 +95,30 @@ class Order extends Model
             $currentStatus = (string) $order->status;
             $previousStatus = (string) $order->getOriginal('status');
 
+            if (self::isCancelledStatus($currentStatus) && ! self::isCancelledStatus($previousStatus)) {
+                if (blank($order->customer_email)) {
+                    return;
+                }
+
+                DB::afterCommit(function () use ($order): void {
+                    $freshOrder = self::query()->with(['store', 'table', 'items'])->find($order->id);
+
+                    if (! $freshOrder || blank($freshOrder->customer_email)) {
+                        return;
+                    }
+
+                    try {
+                        Mail::to($freshOrder->customer_email)
+                            ->locale(self::resolveOrderLocale($freshOrder->order_locale))
+                            ->send(new CustomerOrderCancelledMail($freshOrder));
+                    } catch (Throwable $e) {
+                        report($e);
+                    }
+                });
+
+                return;
+            }
+
             if (! self::isCompletedStatus($currentStatus) || self::isCompletedStatus($previousStatus)) {
                 return;
             }
@@ -117,6 +148,30 @@ class Order extends Model
     private static function isCompletedStatus(?string $status): bool
     {
         return in_array(strtolower((string) $status), ['complete', 'completed', 'ready', 'ready_for_pickup'], true);
+    }
+
+    private static function isCancelledStatus(?string $status): bool
+    {
+        return in_array(strtolower((string) $status), ['cancel', 'cancelled', 'canceled'], true);
+    }
+
+    public function resolvedCancelReasons(): array
+    {
+        $reasons = collect(is_array($this->cancel_reason_options) ? $this->cancel_reason_options : [])
+            ->map(fn ($reason) => trim((string) $reason))
+            ->filter(fn (string $reason) => $reason !== '');
+
+        $otherReason = trim((string) ($this->cancel_reason_other ?? ''));
+        if ($otherReason !== '') {
+            $reasons->push($otherReason);
+        }
+
+        return $reasons->unique()->values()->all();
+    }
+
+    public function hasCancelReasons(): bool
+    {
+        return count($this->resolvedCancelReasons()) > 0;
     }
 
     public function getCustomerStatusLabelAttribute(): string

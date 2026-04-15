@@ -112,12 +112,12 @@ class DineInOrderController extends Controller
         $validated = $request->validate([
             'customer_name' => ['nullable', 'string', 'max:255'],
             'customer_email' => ['nullable', 'email', 'max:255'],
-            'customer_phone' => ['nullable', 'regex:/^09\d{2}-?\d{3}-?\d{3}$/'],
+            'customer_phone' => $this->customerPhoneValidationRules($store),
             'note' => ['nullable', 'string'],
             'remember_customer_info' => ['nullable', 'boolean'],
         ]);
 
-        $validated['customer_phone'] = $this->normalizeTaiwanMobilePhone($validated['customer_phone'] ?? null);
+        $validated['customer_phone'] = $this->normalizeCustomerPhone($validated['customer_phone'] ?? null, $store);
 
         if ($request->boolean('remember_customer_info')) {
             session()->put(self::CUSTOMER_PROFILE_SESSION_KEY, [
@@ -198,6 +198,7 @@ class DineInOrderController extends Controller
             'status' => $order->status,
             'payment_status' => $order->payment_status,
             'customer_status_label' => $order->customer_status_label,
+            'cancel_reasons' => $order->resolvedCancelReasons(),
         ]);
     }
 
@@ -213,14 +214,14 @@ class DineInOrderController extends Controller
             'customer_phone' => $phoneRaw,
         ], [
             'customer_email' => ['nullable', 'email', 'max:255'],
-            'customer_phone' => ['nullable', 'regex:/^09\d{2}-?\d{3}-?\d{3}$/'],
+            'customer_phone' => $this->customerPhoneValidationRules($store),
         ]);
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
         }
 
-        $phone = $this->normalizeTaiwanMobilePhone($phoneRaw);
+        $phone = $this->normalizeCustomerPhone($phoneRaw, $store);
         $hasFilters = $email !== '' || $phone !== null;
 
         $orders = collect();
@@ -445,18 +446,54 @@ class DineInOrderController extends Controller
         ];
     }
 
-    private function normalizeTaiwanMobilePhone(?string $phone): ?string
+    private function customerPhoneValidationRules(Store $store): array
+    {
+        $expectedLength = $this->expectedCustomerPhoneLength($store);
+
+        return [
+            'nullable',
+            'string',
+            'max:32',
+            function (string $attribute, mixed $value, \Closure $fail) use ($expectedLength): void {
+                $raw = trim((string) ($value ?? ''));
+                if ($raw === '') {
+                    return;
+                }
+
+                $digits = preg_replace('/\D+/', '', $raw);
+                if (! is_string($digits) || strlen($digits) !== $expectedLength) {
+                    $fail(__('customer.phone_length_error', ['digits' => $expectedLength]));
+                }
+            },
+        ];
+    }
+
+    private function expectedCustomerPhoneLength(Store $store): int
+    {
+        return match (strtolower((string) ($store->country_code ?? 'tw'))) {
+            'cn' => 11,
+            'tw', 'vn', 'us' => 10,
+            default => 10,
+        };
+    }
+
+    private function normalizeCustomerPhone(?string $phone, Store $store): ?string
     {
         if ($phone === null) {
             return null;
         }
 
-        $digits = preg_replace('/\D+/', '', $phone ?? '');
-        if (! is_string($digits) || strlen($digits) !== 10 || ! str_starts_with($digits, '09')) {
+        $raw = trim($phone);
+        if ($raw === '') {
             return null;
         }
 
-        return substr($digits, 0, 4) . '-' . substr($digits, 4, 3) . '-' . substr($digits, 7, 3);
+        $digits = preg_replace('/\D+/', '', $raw);
+        if (! is_string($digits) || strlen($digits) !== $this->expectedCustomerPhoneLength($store)) {
+            return null;
+        }
+
+        return $digits;
     }
 
     private function getDineInOrderHistorySessionKey(Store $store, DiningTable $table): string

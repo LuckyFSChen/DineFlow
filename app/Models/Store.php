@@ -31,6 +31,7 @@ class Store extends Model
         'banner_image',
         'opening_time',
         'closing_time',
+        'weekly_break_hours',
     ];
 
     protected $casts = [
@@ -39,6 +40,7 @@ class Store extends Model
         'monthly_revenue_target' => 'integer',
         'latitude' => 'float',
         'longitude' => 'float',
+        'weekly_break_hours' => 'array',
     ];
 
     public function getBannerImageUrlAttribute(): ?string
@@ -94,10 +96,16 @@ class Store extends Model
         }
 
         if ($openingTime < $closingTime) {
-            return $current >= $openingTime && $current <= $closingTime;
+            $isWithinOpeningRange = $current >= $openingTime && $current <= $closingTime;
+        } else {
+            $isWithinOpeningRange = $current >= $openingTime || $current <= $closingTime;
         }
 
-        return $current >= $openingTime || $current <= $closingTime;
+        if (! $isWithinOpeningRange) {
+            return false;
+        }
+
+        return ! $this->isWithinWeeklyBreakHours($dateTime);
     }
 
     public function businessTimezone(): string
@@ -211,5 +219,93 @@ class Store extends Model
         }
 
         return strlen($time) === 5 ? $time . ':00' : substr($time, 0, 8);
+    }
+
+    private function isWithinWeeklyBreakHours(Carbon $dateTime): bool
+    {
+        $weeklyBreakHours = $this->normalizedWeeklyBreakHours();
+        if ($weeklyBreakHours === []) {
+            return false;
+        }
+
+        $today = $dateTime->copy()->startOfDay();
+
+        foreach ([0, -1] as $dayOffset) {
+            $targetDate = $today->copy()->addDays($dayOffset);
+            $dayKey = $this->weekdayKeyFromCarbon($targetDate);
+            $slot = $weeklyBreakHours[$dayKey] ?? null;
+
+            if (! is_array($slot)) {
+                continue;
+            }
+
+            $start = $this->normalizeTime((string) ($slot['start'] ?? ''));
+            $end = $this->normalizeTime((string) ($slot['end'] ?? ''));
+
+            if ($start === null || $end === null) {
+                continue;
+            }
+
+            if ($start === $end) {
+                return true;
+            }
+
+            $startAt = $targetDate->copy()->setTimeFromTimeString($start);
+            $endAt = $targetDate->copy()->setTimeFromTimeString($end);
+
+            if ($endAt->lessThan($startAt)) {
+                $endAt->addDay();
+            }
+
+            if ($dateTime->between($startAt, $endAt, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function normalizedWeeklyBreakHours(): array
+    {
+        if (! is_array($this->weekly_break_hours)) {
+            return [];
+        }
+
+        $allowedWeekdays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+        $normalized = [];
+
+        foreach ($allowedWeekdays as $weekday) {
+            $slot = $this->weekly_break_hours[$weekday] ?? null;
+            if (! is_array($slot)) {
+                continue;
+            }
+
+            $start = $this->normalizeTime((string) ($slot['start'] ?? ''));
+            $end = $this->normalizeTime((string) ($slot['end'] ?? ''));
+
+            if ($start === null || $end === null) {
+                continue;
+            }
+
+            $normalized[$weekday] = [
+                'start' => $start,
+                'end' => $end,
+            ];
+        }
+
+        return $normalized;
+    }
+
+    private function weekdayKeyFromCarbon(Carbon $date): string
+    {
+        return match ($date->dayOfWeekIso) {
+            1 => 'mon',
+            2 => 'tue',
+            3 => 'wed',
+            4 => 'thu',
+            5 => 'fri',
+            6 => 'sat',
+            default => 'sun',
+        };
     }
 }

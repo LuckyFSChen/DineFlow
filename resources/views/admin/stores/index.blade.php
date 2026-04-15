@@ -274,7 +274,8 @@
 
                 <div>
                     <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.phone') }}</label>
-                    <input type="text" name="phone" id="store-modal-phone" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="0922-333-444" maxlength="12">
+                    <input type="text" name="phone" id="store-modal-phone" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="{{ __('admin.phone_placeholder', ['digits' => 10]) }}" maxlength="10" inputmode="numeric" pattern="[0-9]*">
+                    <p id="store-modal-phone-hint" class="mt-1 text-xs text-slate-500">{{ __('admin.phone_format_hint', ['digits' => 10]) }}</p>
                 </div>
 
                 <div class="md:col-span-2">
@@ -404,6 +405,8 @@
     const modalError = document.getElementById('store-modal-error');
     const openModalBtn = document.getElementById('open-store-modal-btn');
     const phoneInput = document.getElementById('store-modal-phone');
+    const modalCountrySelect = modalForm?.elements['country_code'] ?? null;
+    const phoneHint = document.getElementById('store-modal-phone-hint');
 
     const bannerDropzone = document.getElementById('store-banner-dropzone');
     const bannerInput = document.getElementById('store-banner-input');
@@ -443,6 +446,8 @@
         storeSaved: @json(__('admin.store_saved')),
         actionsExpand: @json(__('admin.store_actions_expand')),
         actionsCollapse: @json(__('admin.store_actions_collapse')),
+        phoneFormatHint: @json(__('admin.phone_format_hint', ['digits' => '__digits__'])),
+        phonePlaceholder: @json(__('admin.phone_placeholder', ['digits' => '__digits__'])),
     };
 
     const showFlash = (message, type = 'success') => {
@@ -472,15 +477,31 @@
         currentStoreId = null;
     };
 
-    const formatTaiwanPhone = (value) => {
-        const digits = String(value || '').replace(/\D+/g, '').slice(0, 10);
-        if (digits.length <= 4) {
-            return digits;
+    const expectedPhoneDigitsByCountry = (countryCode) => {
+        const code = String(countryCode || 'tw').toLowerCase();
+        return code === 'cn' ? 11 : 10;
+    };
+
+    const normalizePhoneDigits = (value, countryCode) => {
+        const maxDigits = expectedPhoneDigitsByCountry(countryCode);
+        return String(value || '').replace(/\D+/g, '').slice(0, maxDigits);
+    };
+
+    const applyPhoneInputRules = () => {
+        if (!phoneInput) {
+            return;
         }
-        if (digits.length <= 7) {
-            return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+
+        const countryCode = modalCountrySelect ? modalCountrySelect.value : 'tw';
+        const digits = expectedPhoneDigitsByCountry(countryCode);
+        phoneInput.value = normalizePhoneDigits(phoneInput.value, countryCode);
+        phoneInput.setAttribute('maxlength', String(digits));
+        phoneInput.setAttribute('inputmode', 'numeric');
+        phoneInput.setAttribute('pattern', '[0-9]*');
+        phoneInput.placeholder = i18n.phonePlaceholder.replace('__digits__', String(digits));
+        if (phoneHint) {
+            phoneHint.textContent = i18n.phoneFormatHint.replace('__digits__', String(digits));
         }
-        return `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
     };
 
     const revokeBannerObjectUrl = () => {
@@ -719,6 +740,7 @@
         modalForm.elements['country_code'].value = 'tw';
         modalForm.elements['currency'].value = 'twd';
         modalForm.elements['timezone'].value = 'Asia/Taipei';
+        applyPhoneInputRules();
 
         if (!store) {
             return;
@@ -736,6 +758,7 @@
         modalForm.elements['currency'].value = (store.currency || 'twd').toLowerCase();
         modalForm.elements['timezone'].value = store.timezone || 'Asia/Taipei';
         modalForm.elements['is_active'].checked = !!store.is_active;
+        applyPhoneInputRules();
 
         if (store.banner_image_url) {
             setBannerFromUrl(store.banner_image_url);
@@ -869,8 +892,9 @@
     });
 
     phoneInput?.addEventListener('input', (event) => {
-        event.target.value = formatTaiwanPhone(event.target.value);
+        event.target.value = normalizePhoneDigits(event.target.value, modalCountrySelect?.value || 'tw');
     });
+    modalCountrySelect?.addEventListener('change', applyPhoneInputRules);
 
     bannerDropzone?.addEventListener('click', () => bannerInput?.click());
     bannerDropzone?.addEventListener('dragover', (event) => {

@@ -27,7 +27,8 @@ return [
     'name'                        => 'Tên',
     'phone'                       => 'Điện Thoại',
     'note'                        => 'Ghi Chú',
-    'phone_format_hint'           => 'Định dạng: 0922-333-444',
+    'phone_format_hint'           => 'Nhập số điện thoại :digits chữ số (chỉ gồm số).',
+    'phone_length_error'          => 'Số điện thoại phải có :digits chữ số.',
     'remember_info'               => 'Ghi nhớ thông tin (Tên / Email / Điện Thoại)',
     'clear_remembered_info'       => 'Xóa thông tin đã lưu',
     'cart_empty'                  => 'Giỏ hàng của bạn đang trống',
@@ -109,4 +110,6 @@ return [
     'order_history_no_results'     => 'Không tìm thấy đơn hàng phù hợp.',
     'view_order_detail'            => 'Xem chi tiết đơn hàng',
     'view_my_order_history'        => 'Xem lịch sử đơn hàng của tôi',
+        'cancel_reason_title'          => 'Lý do hủy đơn',
+        'cancel_reason_empty'          => 'Quán không cung cấp lý do hủy đơn.',
 ];
