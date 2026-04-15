@@ -33,65 +33,73 @@
     };
 @endphp
 <body class="bg-brand-soft/20 text-brand-dark">
-    <div class="min-h-screen pb-32">
-        <header class="sticky top-0 z-30 border-b border-brand-soft/60 bg-white/95 backdrop-blur">
-            <div class="mx-auto max-w-5xl px-4">
-                <div class="flex flex-col justify-center py-4">
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div class="min-w-0">
-                            <p class="text-sm font-medium uppercase tracking-[0.24em] text-brand-primary">DineFlow</p>
-                            <h1 class="mt-2 break-words text-2xl font-bold tracking-tight text-brand-dark">{{ $store->name }}</h1>
-                            <p class="mt-1 text-sm text-brand-primary/75">{{ __('customer.table_no') }} {{ $table->table_no }}</p>
-                            <p class="mt-1 text-sm text-brand-primary/75">{{ __('customer.business_hours') }} {{ $store->businessHoursLabel() }}</p>
+    <div class="min-h-screen bg-brand-soft/20">
+        <div class="mx-auto max-w-7xl px-4 py-8 pb-32 sm:px-6 lg:px-8">
+            <div class="mb-8 overflow-hidden rounded-[2rem] border border-brand-soft/60 bg-white shadow-[0_24px_60px_rgba(90,30,14,0.12)]">
+                <div class="relative isolate overflow-hidden bg-brand-dark px-6 py-8 text-white sm:px-8">
+                    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,214,112,0.28),_transparent_34%),linear-gradient(135deg,_rgba(90,30,14,0.96),_rgba(236,144,87,0.88))]"></div>
+                    <div class="absolute -right-12 -top-10 h-36 w-36 rounded-full bg-brand-highlight/20 blur-3xl"></div>
+                    <div class="absolute -bottom-14 left-10 h-32 w-32 rounded-full bg-brand-accent/20 blur-3xl"></div>
+                    <div class="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                        <div class="max-w-3xl">
+                            <a href="{{ route('home') }}" class="inline-flex items-center text-sm font-medium text-white/70 transition hover:text-white">{{ __('customer.back_home_btn') }}</a>
+                            <div class="mt-4 flex flex-wrap items-center gap-3">
+                                <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold tracking-[0.2em] text-brand-highlight">{{ __('customer.dine_in') }}</span>
+                                <span class="inline-flex rounded-full border border-brand-soft/30 bg-white/10 px-3 py-1 text-xs font-semibold text-white/80">{{ __('customer.table_no') }} {{ $table->table_no }}</span>
+                                <span class="inline-flex rounded-full border border-brand-soft/30 bg-white/10 px-3 py-1 text-xs font-semibold text-white/80">{{ __('customer.business_hours') }} {{ $store->businessHoursLabel() }}</span>
+                            </div>
+                            <h1 class="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">{{ $store->name }}</h1>
+                            <p class="mt-3 max-w-2xl text-sm leading-7 text-white/75 sm:text-base">{{ $store->description ?: __('customer.select_instruction_short') }}</p>
                         </div>
-                        <div class="flex w-full flex-row flex-wrap items-center justify-between gap-2 sm:w-auto sm:flex-col sm:items-end sm:justify-start">
-                            <a href="{{ route('customer.dinein.cart.show', ['store' => $store, 'table' => $table]) }}" class="inline-flex items-center whitespace-nowrap rounded-2xl border border-brand-soft bg-brand-soft/20 px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-highlight/50">{{ __('customer.view_cart') }}</a>
-                            @if(isset($orderHistory) && $orderHistory->isNotEmpty())
-                                <div class="flex w-full flex-wrap justify-start gap-2 sm:w-auto sm:justify-end">
-                                    @foreach($orderHistory->take(3) as $historyOrder)
-                                        <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="inline-flex items-center rounded-xl border border-brand-soft bg-white px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30">{{ __('customer.status_prefix') }} {{ $historyOrder->order_no }}</a>
-                                    @endforeach
-                                </div>
-                            @endif
+
+                        <div class="hidden md:flex">
+                            <div class="flex gap-3">
+                                @if(isset($orderHistory) && $orderHistory->isNotEmpty())
+                                    <div class="flex items-center gap-2">
+                                        @foreach($orderHistory->take(3) as $historyOrder)
+                                            <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="inline-flex items-center justify-center rounded-2xl border border-white/25 bg-white/10 px-4 py-3 text-xs font-semibold text-white transition hover:-translate-y-0.5 hover:bg-white/20">{{ __('customer.status_prefix') }} {{ $historyOrder->order_no }}</a>
+                                        @endforeach
+                                    </div>
+                                @endif
+                                <a href="{{ route('customer.dinein.cart.show', ['store' => $store, 'table' => $table]) }}" class="inline-flex items-center justify-center rounded-2xl bg-brand-highlight px-5 py-3 text-sm font-semibold text-brand-dark shadow-lg shadow-brand-highlight/30 transition hover:-translate-y-0.5 hover:bg-brand-soft">{{ __('customer.view_cart') }}</a>
+                            </div>
                         </div>
                     </div>
-
-                    @if(! $orderingAvailable)
-                        <div class="mt-4 rounded-2xl border border-brand-soft bg-brand-soft/35 px-4 py-3 text-sm text-brand-dark">{{ $store->orderingClosedMessage() }}</div>
-                    @else
-                        <div class="mt-4 rounded-2xl border border-brand-soft/70 bg-brand-soft/20 px-4 py-3 text-sm text-brand-primary/80">{{ __('customer.select_instruction_short') }}</div>
-                    @endif
-
-                    @if(session('success'))
-                        <div class="mt-4 rounded-2xl border border-brand-accent/30 bg-brand-accent/10 px-4 py-3 text-sm font-medium text-brand-primary">{{ session('success') }}</div>
-                    @endif
-
-                    @if(session('error'))
-                        <div class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ session('error') }}</div>
-                    @endif
-
-                    @if($errors->any())
-                        <div class="mt-4 rounded-2xl border border-brand-soft bg-brand-soft/30 px-4 py-3 text-sm text-brand-dark">
-                            @foreach($errors->all() as $error)
-                                <div>{{ $error }}</div>
-                            @endforeach
-                        </div>
-                    @endif
                 </div>
             </div>
-        </header>
 
-        <nav class="sticky top-[160px] z-20 hidden h-16 border-b border-brand-soft/60 bg-white/95 backdrop-blur md:block">
-            <div class="mx-auto flex h-full max-w-5xl items-center overflow-x-auto px-4">
-                <div class="flex min-w-max gap-2">
+            @if(! $orderingAvailable)
+                <div class="mb-6 rounded-2xl border border-brand-soft bg-brand-soft/35 px-4 py-3 text-sm text-brand-dark shadow-sm">{{ $store->orderingClosedMessage() }}</div>
+            @endif
+
+            @if(session('success'))
+                <div class="mb-6 rounded-2xl border border-brand-accent/30 bg-brand-accent/10 px-4 py-3 text-sm text-brand-primary shadow-sm">{{ session('success') }}</div>
+            @endif
+
+            @if(session('error'))
+                <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-sm">{{ session('error') }}</div>
+            @endif
+
+            @if($errors->any())
+                <div class="mb-6 rounded-2xl border border-brand-soft bg-brand-soft/30 px-4 py-4 text-sm text-brand-dark shadow-sm">
+                    <div class="mb-2 font-semibold">{{ __('customer.confirm_fields') }}</div>
+                    <ul class="space-y-1">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <div class="mb-8 hidden overflow-x-auto rounded-[1.75rem] border border-brand-soft/60 bg-white px-4 py-4 shadow-[0_12px_32px_rgba(90,30,14,0.08)] md:block">
+                <div class="flex min-w-max items-center gap-3">
                     @foreach($categories as $category)
-                        <a href="#category-{{ $category->id }}" class="inline-flex h-10 items-center whitespace-nowrap rounded-full border border-brand-soft/70 bg-brand-soft/20 px-4 text-sm font-medium text-brand-primary transition hover:-translate-y-0.5 hover:border-brand-accent hover:bg-brand-highlight/60">{{ $category->name }}</a>
+                        <a href="#category-{{ $category->id }}" class="inline-flex rounded-full border border-brand-soft/70 bg-brand-soft/20 px-4 py-2 text-sm font-medium text-brand-primary transition hover:-translate-y-0.5 hover:border-brand-accent hover:bg-brand-highlight/60">{{ $category->name }}</a>
                     @endforeach
                 </div>
             </div>
-        </nav>
 
-        <main class="mx-auto max-w-5xl px-4 py-6">
+            <main>
             <div class="relative grid grid-cols-[5.5rem,minmax(0,1fr)] items-start gap-4 max-[420px]:grid-cols-1 md:block">
                 <aside class="self-stretch max-[420px]:hidden md:hidden">
                     <div class="sticky top-4">
@@ -187,8 +195,10 @@
             </div>
         </main>
 
+        </div>
+
         <div class="fixed inset-x-0 bottom-0 z-40 border-t border-brand-soft/60 bg-white/95 px-4 py-4 backdrop-blur">
-            <div class="mx-auto flex max-w-5xl items-center justify-between gap-3 rounded-[1.75rem] bg-brand-dark px-4 py-3 text-white shadow-[0_18px_44px_rgba(90,30,14,0.24)] transition-transform duration-200" data-cart-bar>
+            <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-[1.75rem] bg-brand-dark px-4 py-3 text-white shadow-[0_18px_44px_rgba(90,30,14,0.24)] transition-transform duration-200" data-cart-bar>
                 <div>
                     <p class="text-xs uppercase tracking-[0.2em] text-brand-highlight/80">{{ __('customer.table_no') }} {{ $table->table_no }}</p>
                     <p class="text-sm font-semibold">{{ $orderingAvailable ? __('customer.cart_bar_ordering_available') : __('customer.cart_bar_not_available') }}</p>
