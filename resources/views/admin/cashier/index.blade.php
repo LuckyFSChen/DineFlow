@@ -604,6 +604,8 @@ function cashierBoard() {
             const payload = {
                 cancel_reason_options: [...this.selectedCancelReasons],
                 cancel_reason_other: customReason,
+                cancelReasonOptions: [...this.selectedCancelReasons],
+                cancelReasonOther: customReason,
             };
 
             this.closeCancelDialog();

@@ -8,6 +8,7 @@ use App\Models\Store;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use JsonException;
 
 class CashierController extends Controller
 {
@@ -75,8 +76,12 @@ class CashierController extends Controller
                 return response()->json(['ok' => false, 'message' => 'Only pending orders can be cancelled'], 422);
             }
 
-            $cancelReasonOptions = $this->normalizeCancelReasonOptions($request->input('cancel_reason_options'));
-            $cancelReasonOther = trim((string) $request->input('cancel_reason_other', ''));
+            $cancelReasonOptions = $this->normalizeCancelReasonOptions(
+                $request->input('cancel_reason_options', $request->input('cancelReasonOptions', $request->input('cancel_reasons')))
+            );
+            $cancelReasonOther = $this->normalizeCancelReasonText(
+                $request->input('cancel_reason_other', $request->input('cancelReasonOther', $request->input('cancel_reason')))
+            );
 
             if ($cancelReasonOptions->isEmpty() && $cancelReasonOther === '') {
                 return response()->json(['ok' => false, 'message' => 'Please provide at least one cancellation reason'], 422);
@@ -185,14 +190,47 @@ class CashierController extends Controller
 
     private function normalizeCancelReasonOptions(mixed $value): Collection
     {
-        if (! is_array($value)) {
+        $options = $value;
+
+        if (is_string($options)) {
+            $decoded = null;
+
+            try {
+                $decoded = json_decode($options, true, 512, JSON_THROW_ON_ERROR);
+            } catch (JsonException) {
+                $decoded = null;
+            }
+
+            if (is_array($decoded)) {
+                $options = $decoded;
+            } else {
+                $options = preg_split('/[\r\n,;|]+/u', $options) ?: [];
+            }
+        }
+
+        if (! is_array($options)) {
             return collect();
         }
 
-        return collect($value)
+        return collect($options)
             ->map(fn ($reason) => trim((string) $reason))
             ->filter(fn (string $reason) => $reason !== '')
             ->unique()
             ->values();
+    }
+
+    private function normalizeCancelReasonText(mixed $value): string
+    {
+        if (! is_scalar($value) && $value !== null) {
+            return '';
+        }
+
+        $text = trim((string) ($value ?? ''));
+
+        if ($text === '' || strtolower($text) === 'null') {
+            return '';
+        }
+
+        return $text;
     }
 }
