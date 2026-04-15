@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'start_date' => 'Start Date',
+    'end_date' => 'End Date',
     'subscription_title' => 'Merchant Subscription Plans',
     'subscription_desc' => 'Activate a plan to create and manage store content.',
     'current_status' => 'Current Subscription Status',
@@ -78,12 +80,14 @@ return [
     'trend_granularity' => 'Trend Granularity',
     'trend_granularity_day' => 'Daily',
     'trend_granularity_hour' => 'Hourly',
+    'hour_step' => 'Hour Step',
     'hour_step_option' => 'Every :hours hour(s)',
     'compare_range' => 'Compare Range',
     'compare_start_date' => 'Compare Start Date',
     'compare_end_date' => 'Compare End Date',
     'compare_summary' => 'Range Comparison Summary',
     'compare_empty_hint' => 'Pick compare start/end dates to view differences between two ranges.',
+    'clear_compare' => 'Clear Compare',
     'monthly_target' => 'Monthly Revenue Target',
     'save_target' => 'Save Target',
     'month_revenue_actual' => 'Current Month Actual',

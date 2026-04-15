@@ -32,33 +32,60 @@
             align="center"
         >
             <x-slot name="actions">
-                <form method="GET" class="grid gap-2 rounded-xl border border-white/30 bg-white/10 p-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-                    <input type="date" name="start_date" value="{{ $startDate }}" class="rounded-lg border-slate-300 bg-white text-sm text-slate-900">
-                    <input type="date" name="end_date" value="{{ $endDate }}" class="rounded-lg border-slate-300 bg-white text-sm text-slate-900">
-                    <input type="date" name="compare_start_date" value="{{ $compareStartDate }}" class="rounded-lg border-slate-300 bg-white text-sm text-slate-900" placeholder="{{ __('merchant.compare_start_date') }}">
-                    <input type="date" name="compare_end_date" value="{{ $compareEndDate }}" class="rounded-lg border-slate-300 bg-white text-sm text-slate-900" placeholder="{{ __('merchant.compare_end_date') }}">
+                <form id="financial-filter-form" method="GET" class="grid gap-3 rounded-xl border border-white/30 bg-white/10 p-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+                    <label class="space-y-1 text-left">
+                        <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.start_date') }}</span>
+                        <input type="date" name="start_date" value="{{ $startDate }}" class="w-full rounded-lg border-slate-300 bg-white text-sm text-slate-900">
+                    </label>
+                    <label class="space-y-1 text-left">
+                        <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.end_date') }}</span>
+                        <input type="date" name="end_date" value="{{ $endDate }}" class="w-full rounded-lg border-slate-300 bg-white text-sm text-slate-900">
+                    </label>
+                    <label class="space-y-1 text-left">
+                        <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.compare_start_date') }}</span>
+                        <input type="date" name="compare_start_date" value="{{ $compareStartDate }}" class="w-full rounded-lg border-slate-300 bg-white text-sm text-slate-900" placeholder="{{ __('merchant.compare_start_date') }}">
+                    </label>
+                    <label class="space-y-1 text-left">
+                        <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.compare_end_date') }}</span>
+                        <input type="date" name="compare_end_date" value="{{ $compareEndDate }}" class="w-full rounded-lg border-slate-300 bg-white text-sm text-slate-900" placeholder="{{ __('merchant.compare_end_date') }}">
+                    </label>
 
-                    <select name="trend_granularity" class="rounded-lg border-slate-300 bg-white text-sm text-slate-900">
-                        <option value="day" @selected($trendGranularity === 'day')>{{ __('merchant.trend_granularity_day') }}</option>
-                        <option value="hour" @selected($trendGranularity === 'hour')>{{ __('merchant.trend_granularity_hour') }}</option>
-                    </select>
+                    <label class="space-y-1 text-left">
+                        <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.trend_granularity') }}</span>
+                        <select name="trend_granularity" class="w-full rounded-lg border-slate-300 bg-white text-sm text-slate-900">
+                            <option value="day" @selected($trendGranularity === 'day')>{{ __('merchant.trend_granularity_day') }}</option>
+                            <option value="hour" @selected($trendGranularity === 'hour')>{{ __('merchant.trend_granularity_hour') }}</option>
+                        </select>
+                    </label>
 
-                    <select name="hour_step" class="rounded-lg border-slate-300 bg-white text-sm text-slate-900">
-                        @foreach([1,2,3,4,6,12] as $step)
-                            <option value="{{ $step }}" @selected((int) $hourStep === $step)>{{ __('merchant.hour_step_option', ['hours' => $step]) }}</option>
-                        @endforeach
-                    </select>
-
-                    @if($stores->count() > 1)
-                        <select name="store_id" class="rounded-lg border-slate-300 bg-white text-sm text-slate-900">
-                            <option value="">{{ __('merchant.all_stores') }}</option>
-                            @foreach($stores as $store)
-                                <option value="{{ $store->id }}" @selected((int) $selectedStoreId === (int) $store->id)>{{ $store->name }}</option>
+                    <label class="space-y-1 text-left">
+                        <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.hour_step') }}</span>
+                        <select name="hour_step" class="w-full rounded-lg border-slate-300 bg-white text-sm text-slate-900">
+                            @foreach([1,2,3,4,6,12] as $step)
+                                <option value="{{ $step }}" @selected((int) $hourStep === $step)>{{ __('merchant.hour_step_option', ['hours' => $step]) }}</option>
                             @endforeach
                         </select>
+                    </label>
+
+                    @if($stores->count() > 1)
+                        <label class="space-y-1 text-left">
+                            <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.store') }}</span>
+                            <select name="store_id" class="w-full rounded-lg border-slate-300 bg-white text-sm text-slate-900">
+                                <option value="">{{ __('merchant.all_stores') }}</option>
+                                @foreach($stores as $store)
+                                    <option value="{{ $store->id }}" @selected((int) $selectedStoreId === (int) $store->id)>{{ $store->name }}</option>
+                                @endforeach
+                            </select>
+                        </label>
                     @endif
 
-                    <button type="submit" class="rounded-lg bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-accent hover:text-brand-dark">{{ __('merchant.apply_filter') }}</button>
+                    <div class="sm:col-span-2 lg:col-span-4 xl:col-span-5 flex flex-wrap items-center gap-2">
+                        <button type="submit" class="rounded-lg bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-accent hover:text-brand-dark">{{ __('merchant.apply_filter') }}</button>
+                        <a href="{{ route('merchant.reports.financial') }}" class="rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-white/20">{{ __('merchant.reset_all') }}</a>
+                        @if($comparison)
+                            <a href="{{ route('merchant.reports.financial', array_merge($storeQuery, ['start_date' => $startDate, 'end_date' => $endDate, 'compare_start_date' => null, 'compare_end_date' => null])) }}" class="rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-white/20">{{ __('merchant.clear_compare') }}</a>
+                        @endif
+                    </div>
                 </form>
             </x-slot>
 
@@ -74,10 +101,17 @@
                 <div class="mt-3 flex flex-wrap gap-2">
                     @foreach($quickRanges as $range)
                         <a href="{{ route('merchant.reports.financial', array_merge($storeQuery, ['start_date' => $range['start'], 'end_date' => $range['end']])) }}"
-                           class="rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-100 hover:bg-white/20">
+                           class="rounded-full border {{ $startDate === $range['start'] && $endDate === $range['end'] ? 'border-brand-highlight bg-brand-highlight/30 text-white' : 'border-white/30 bg-white/10 text-slate-100 hover:bg-white/20' }} px-3 py-1.5 text-xs font-semibold">
                             {{ $range['label'] }}
                         </a>
                     @endforeach
+                </div>
+
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <a href="#summary-kpis" class="rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-100 hover:bg-white/20">{{ __('merchant.total_revenue') }}</a>
+                    <a href="#trend-section" class="rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-100 hover:bg-white/20">{{ __('merchant.revenue_trend') }}</a>
+                    <a href="#ranking-section" class="rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-100 hover:bg-white/20">{{ __('merchant.top_products') }}</a>
+                    <a href="#share-section" class="rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-100 hover:bg-white/20">{{ __('merchant.product_share_title') }}</a>
                 </div>
             </x-slot>
         </x-backend-header>
@@ -88,7 +122,7 @@
             </div>
         @endif
 
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div id="summary-kpis" class="grid gap-4 scroll-mt-24 sm:grid-cols-2 xl:grid-cols-4">
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('merchant.total_revenue') }}</p>
                 <p class="mt-2 text-2xl font-bold text-slate-900">{{ $chartCurrencySymbol }} {{ number_format($totalRevenue) }}</p>
@@ -199,7 +233,7 @@
             </div>
         </div>
 
-        <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div id="trend-section" class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm scroll-mt-24">
             <h2 class="text-lg font-semibold text-slate-900">{{ __('merchant.revenue_trend') }}</h2>
             <p class="mt-1 text-sm text-slate-500">
                 {{ $trendGranularity === 'hour' ? __('merchant.revenue_trend_desc_hourly', ['hours' => $hourStep]) : __('merchant.revenue_trend_desc') }}
@@ -209,7 +243,7 @@
             </div>
         </div>
 
-        <div class="mt-6 grid gap-6 lg:grid-cols-2">
+        <div id="ranking-section" class="mt-6 grid gap-6 lg:grid-cols-2 scroll-mt-24">
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 class="text-lg font-semibold text-slate-900">{{ __('merchant.top_products') }}</h2>
                 <div class="mt-4 overflow-x-auto">
@@ -269,7 +303,7 @@
             </div>
         </div>
 
-        <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div id="share-section" class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm scroll-mt-24">
             <h2 class="text-lg font-semibold text-slate-900">{{ __('merchant.product_share_title') }}</h2>
             <p class="mt-1 text-sm text-slate-500">{{ __('merchant.product_share_desc') }}</p>
 
@@ -319,6 +353,24 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (() => {
+    const filterForm = document.getElementById('financial-filter-form');
+    const trendGranularitySelect = filterForm?.querySelector('select[name="trend_granularity"]');
+    const hourStepSelect = filterForm?.querySelector('select[name="hour_step"]');
+
+    const syncHourStepState = () => {
+        if (!trendGranularitySelect || !hourStepSelect) {
+            return;
+        }
+
+        const useHourly = trendGranularitySelect.value === 'hour';
+        hourStepSelect.disabled = !useHourly;
+        hourStepSelect.classList.toggle('opacity-60', !useHourly);
+        hourStepSelect.classList.toggle('cursor-not-allowed', !useHourly);
+    };
+
+    trendGranularitySelect?.addEventListener('change', syncHourStepState);
+    syncHourStepState();
+
     const labels = @json($chartLabels);
     const revenue = @json($chartRevenue);
     const orders = @json($chartOrders);
@@ -327,68 +379,67 @@
     const chartCurrencySymbol = @json($chartCurrencySymbol);
     const productShareLabels = @json($topProducts->pluck('display_name')->values());
     const productShareValues = @json($topProducts->pluck('sold_amount')->map(fn($v) => (int) $v)->values());
+    const canRenderChart = typeof Chart !== 'undefined';
 
     const el = document.getElementById('revenue-chart');
-    if (!el || typeof Chart === 'undefined') {
-        return;
-    }
-
-    new Chart(el, {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [
-                {
-                    label: chartRevenueLabel,
-                    data: revenue,
-                    yAxisID: 'yRevenue',
-                    borderColor: '#ec9057',
-                    backgroundColor: 'rgba(236, 144, 87, 0.2)',
-                    fill: true,
-                    tension: 0.3,
-                },
-                {
-                    label: chartOrdersLabel,
-                    data: orders,
-                    yAxisID: 'yOrders',
-                    borderColor: '#5A1E0E',
-                    backgroundColor: 'rgba(90, 30, 14, 0.15)',
-                    fill: false,
-                    tension: 0.3,
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            },
-            scales: {
-                x: {
-                    ticks: {
-                        autoSkip: true,
-                        maxRotation: 0,
-                        maxTicksLimit: 18,
+    if (el && canRenderChart) {
+        new Chart(el, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: chartRevenueLabel,
+                        data: revenue,
+                        yAxisID: 'yRevenue',
+                        borderColor: '#ec9057',
+                        backgroundColor: 'rgba(236, 144, 87, 0.2)',
+                        fill: true,
+                        tension: 0.3,
+                    },
+                    {
+                        label: chartOrdersLabel,
+                        data: orders,
+                        yAxisID: 'yOrders',
+                        borderColor: '#5A1E0E',
+                        backgroundColor: 'rgba(90, 30, 14, 0.15)',
+                        fill: false,
+                        tension: 0.3,
                     }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
                 },
-                yRevenue: {
-                    type: 'linear',
-                    position: 'left',
-                    beginAtZero: true,
-                    title: { display: true, text: chartRevenueLabel }
-                },
-                yOrders: {
-                    type: 'linear',
-                    position: 'right',
-                    beginAtZero: true,
-                    grid: { drawOnChartArea: false },
-                    title: { display: true, text: chartOrdersLabel }
+                scales: {
+                    x: {
+                        ticks: {
+                            autoSkip: true,
+                            maxRotation: 0,
+                            maxTicksLimit: 18,
+                        }
+                    },
+                    yRevenue: {
+                        type: 'linear',
+                        position: 'left',
+                        beginAtZero: true,
+                        title: { display: true, text: chartRevenueLabel }
+                    },
+                    yOrders: {
+                        type: 'linear',
+                        position: 'right',
+                        beginAtZero: true,
+                        grid: { drawOnChartArea: false },
+                        title: { display: true, text: chartOrdersLabel }
+                    }
                 }
             }
-        }
-    });
+        });
+    }
 
     const productShareEl = document.getElementById('product-share-chart');
     const productShareLegendEl = document.getElementById('product-share-legend');
@@ -402,7 +453,7 @@
     const productShareEmptyEl = document.getElementById('product-share-empty');
     const productShareChartWrap = document.getElementById('product-share-chart-wrap');
 
-    if (productShareEl && productShareLegendEl && productSharePickerEl && Array.isArray(productShareValues)) {
+    if (canRenderChart && productShareEl && productShareLegendEl && productSharePickerEl && Array.isArray(productShareValues)) {
         const pieColors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16', '#06b6d4', '#e11d48'];
         const selectedShareIndices = new Set(productShareValues.map((_, idx) => idx).slice(0, Math.min(5, productShareValues.length)));
         let productShareChart = null;

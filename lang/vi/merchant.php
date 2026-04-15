@@ -1,6 +1,9 @@
+
 <?php
 
 return [
+    'start_date' => 'Ngày bắt đầu',
+    'end_date' => 'Ngày kết thúc',
     'subscription_title' => 'Gói Đăng Ký Thương Nhân',
     'subscription_desc' => 'Kích hoạt gói để tạo và quản lý nội dung cửa hàng.',
     'current_status' => 'Trạng Thái Đăng Ký Hiện Tại',
@@ -78,12 +81,14 @@ return [
     'trend_granularity' => 'Độ mịn xu hướng',
     'trend_granularity_day' => 'Theo ngày',
     'trend_granularity_hour' => 'Theo giờ',
+    'hour_step' => 'Bước giờ',
     'hour_step_option' => 'Mỗi :hours giờ',
     'compare_range' => 'Khoảng so sánh',
     'compare_start_date' => 'Ngày bắt đầu so sánh',
     'compare_end_date' => 'Ngày kết thúc so sánh',
     'compare_summary' => 'Tóm tắt so sánh khoảng',
     'compare_empty_hint' => 'Chọn ngày bắt đầu/kết thúc so sánh để xem chênh lệch giữa hai khoảng.',
+    'clear_compare' => 'Xóa so sánh',
     'monthly_target' => 'Mục tiêu doanh thu tháng',
     'save_target' => 'Lưu mục tiêu',
     'month_revenue_actual' => 'Thực tế tháng này',

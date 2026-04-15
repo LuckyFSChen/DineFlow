@@ -117,11 +117,12 @@
 
         <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[1080px] divide-y divide-slate-200 text-sm">
+                <table class="w-full min-w-[1240px] divide-y divide-slate-200 text-sm">
                     <thead class="bg-slate-50">
                         <tr>
                             <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.store_name') }}</th>
                             <th class="px-6 py-4 text-left font-semibold text-slate-700">Slug</th>
+                            <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.merchant_account') }}</th>
                             <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.phone') }}</th>
                             <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.currency') }}</th>
                             <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.store_country') }}</th>
@@ -152,6 +153,10 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 text-slate-600">{{ $store->slug }}</td>
+                                <td class="px-6 py-4 text-slate-600">
+                                    <div class="font-medium text-slate-800">{{ $store->owner?->name ?: '-' }}</div>
+                                    <div class="text-xs text-slate-500">{{ $store->owner?->email ?: '-' }}</div>
+                                </td>
                                 <td class="px-6 py-4 text-slate-600">{{ $store->phone ?: '-' }}</td>
                                 <td class="px-6 py-4 text-slate-600">{{ strtoupper($store->currency ?? 'twd') }}</td>
                                 <td class="px-6 py-4 text-slate-600">{{ $countryLabelMap[strtolower($store->country_code ?? 'tw')] ?? strtoupper($store->country_code ?? 'tw') }}</td>
@@ -185,7 +190,7 @@
                                 </td>
                             </tr>
                             <tr class="hidden bg-slate-50/70" data-store-actions-row="{{ $store->id }}">
-                                <td colspan="7" class="px-6 pb-5 pt-0">
+                                <td colspan="9" class="px-6 pb-5 pt-0">
                                     <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                                         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('admin.store_actionable_items') }}</p>
                                         <div class="mt-3 flex flex-wrap gap-2">
@@ -232,7 +237,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-12 text-center text-slate-500">
+                                <td colspan="9" class="px-6 py-12 text-center text-slate-500">
                                     {{ __('admin.no_stores') }}
                                 </td>
                             </tr>

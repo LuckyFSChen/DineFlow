@@ -131,9 +131,18 @@ class FinancialReportController extends Controller
         $dailyOrderCount = [];
 
         if ($trendGranularity === 'hour') {
-            $bucketExpression = $hourStep === 1
-                ? "DATE_FORMAT(orders.created_at, '%Y-%m-%d %H:00:00')"
-                : "CONCAT(DATE_FORMAT(orders.created_at, '%Y-%m-%d '), LPAD(FLOOR(HOUR(orders.created_at) / {$hourStep}) * {$hourStep}, 2, '0'), ':00:00')";
+            $driver = DB::getDriverName();
+            if ($driver === 'pgsql') {
+                if ($hourStep === 1) {
+                    $bucketExpression = "to_char(date_trunc('hour', orders.created_at), 'YYYY-MM-DD HH24:00:00')";
+                } else {
+                    $bucketExpression = "to_char(date_trunc('hour', orders.created_at) + INTERVAL '1 hour' * FLOOR(EXTRACT(hour from orders.created_at)::int / {$hourStep}) * {$hourStep}, 'YYYY-MM-DD HH24:00:00')";
+                }
+            } else {
+                $bucketExpression = $hourStep === 1
+                    ? "DATE_FORMAT(orders.created_at, '%Y-%m-%d %H:00:00')"
+                    : "CONCAT(DATE_FORMAT(orders.created_at, '%Y-%m-%d '), LPAD(FLOOR(HOUR(orders.created_at) / {$hourStep}) * {$hourStep}, 2, '0'), ':00:00')";
+            }
 
             $hourlyRows = (clone $baseOrders)
                 ->selectRaw("{$bucketExpression} as bucket, COALESCE(SUM(orders.total), 0) as revenue, COUNT(*) as order_count")

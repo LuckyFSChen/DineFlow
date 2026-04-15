@@ -39,6 +39,7 @@ class StoreManagementController extends Controller
         }
 
         $stores = Store::query()
+            ->with(['owner:id,name,email'])
             ->when($user && $user->isMerchant(), function ($query) use ($user) {
                 $query->where('user_id', $user->id);
             })

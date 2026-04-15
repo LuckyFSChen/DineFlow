@@ -1,6 +1,9 @@
+
 <?php
 
 return [
+    'start_date' => '開始日期',
+    'end_date' => '結束日期',
     'subscription_title' => '商家訂閱方案',
     'subscription_desc' => '啟用方案後，才能建立與管理店家內容。',
     'current_status' => '目前訂閱狀態',
@@ -78,12 +81,14 @@ return [
     'trend_granularity' => '趨勢粒度',
     'trend_granularity_day' => '按日',
     'trend_granularity_hour' => '按小時',
+    'hour_step' => '小時區段',
     'hour_step_option' => '每 :hours 小時',
     'compare_range' => '對比區間',
     'compare_start_date' => '對比開始日',
     'compare_end_date' => '對比結束日',
     'compare_summary' => '區間對比摘要',
     'compare_empty_hint' => '請選擇對比開始日與結束日，即可看到兩個區間的差異。',
+    'clear_compare' => '清除對比',
     'monthly_target' => '月營收目標',
     'save_target' => '儲存目標',
     'month_revenue_actual' => '本月實績',

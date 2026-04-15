@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'start_date' => '开始日期',
+    'end_date' => '结束日期',
     'subscription_title' => '商家訂閱方案',
     'subscription_desc' => '啟用方案後，才能建立與管理店家內容。',
     'current_status' => '目前訂閱狀態',
@@ -78,12 +80,14 @@ return [
     'trend_granularity' => '趋势粒度',
     'trend_granularity_day' => '按日',
     'trend_granularity_hour' => '按小时',
+    'hour_step' => '小时区段',
     'hour_step_option' => '每 :hours 小时',
     'compare_range' => '对比区间',
     'compare_start_date' => '对比开始日',
     'compare_end_date' => '对比结束日',
     'compare_summary' => '区间对比摘要',
     'compare_empty_hint' => '请选择对比开始日与结束日，即可看到两个区间差异。',
+    'clear_compare' => '清除对比',
     'monthly_target' => '月营收目标',
     'save_target' => '储存目标',
     'month_revenue_actual' => '本月实绩',
