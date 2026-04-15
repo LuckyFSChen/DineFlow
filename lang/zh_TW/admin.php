@@ -286,6 +286,8 @@ return [
     'products_form_product_name'            => '商品名稱',
     'products_form_category'                => '分類',
     'products_form_price'                   => '價格',
+    'products_form_cost'                    => '成本',
+    'products_gross_margin_rate'            => '毛利率',
     'products_form_sort'                    => '排序',
     'products_form_image_url'               => '圖片 URL',
     'products_form_image_url_optional'      => '圖片 URL (可留空)',

@@ -68,6 +68,13 @@ class FinancialReportController extends Controller
 
         $totalOrders = (int) ($summary->total_orders ?? 0);
         $totalRevenue = (int) ($summary->total_revenue ?? 0);
+        $totalCost = (int) ((clone $baseOrders)
+            ->join('order_items', 'order_items.order_id', '=', 'orders.id')
+            ->leftJoin('products', 'products.id', '=', 'order_items.product_id')
+            ->selectRaw('COALESCE(SUM(order_items.qty * COALESCE(products.cost, 0)), 0) as total_cost')
+            ->value('total_cost'));
+        $totalProfit = $totalRevenue - $totalCost;
+        $grossMarginRate = $totalRevenue > 0 ? round(($totalProfit / $totalRevenue) * 100, 1) : 0;
         $avgOrderValue = $totalOrders > 0 ? (int) round($totalRevenue / $totalOrders) : 0;
 
         $itemsSold = (int) ((clone $baseOrders)
@@ -198,6 +205,15 @@ class FinancialReportController extends Controller
 
             $compareTotalOrders = (int) ($compareSummary->total_orders ?? 0);
             $compareTotalRevenue = (int) ($compareSummary->total_revenue ?? 0);
+            $compareTotalCost = (int) ((clone $compareBaseOrders)
+                ->join('order_items', 'order_items.order_id', '=', 'orders.id')
+                ->leftJoin('products', 'products.id', '=', 'order_items.product_id')
+                ->selectRaw('COALESCE(SUM(order_items.qty * COALESCE(products.cost, 0)), 0) as total_cost')
+                ->value('total_cost'));
+            $compareTotalProfit = $compareTotalRevenue - $compareTotalCost;
+            $compareGrossMarginRate = $compareTotalRevenue > 0
+                ? round(($compareTotalProfit / $compareTotalRevenue) * 100, 1)
+                : 0;
             $compareAvgOrderValue = $compareTotalOrders > 0
                 ? (int) round($compareTotalRevenue / $compareTotalOrders)
                 : 0;
@@ -207,11 +223,19 @@ class FinancialReportController extends Controller
                 'end_date' => $compareEnd->toDateString(),
                 'total_orders' => $compareTotalOrders,
                 'total_revenue' => $compareTotalRevenue,
+                'total_cost' => $compareTotalCost,
+                'total_profit' => $compareTotalProfit,
+                'gross_margin_rate' => $compareGrossMarginRate,
                 'avg_order_value' => $compareAvgOrderValue,
                 'delta_revenue' => $totalRevenue - $compareTotalRevenue,
+                'delta_cost' => $totalCost - $compareTotalCost,
+                'delta_profit' => $totalProfit - $compareTotalProfit,
                 'delta_orders' => $totalOrders - $compareTotalOrders,
                 'delta_avg_order_value' => $avgOrderValue - $compareAvgOrderValue,
+                'delta_gross_margin_rate' => round($grossMarginRate - $compareGrossMarginRate, 1),
                 'delta_revenue_ratio' => $this->calculateRatioChange($totalRevenue, $compareTotalRevenue),
+                'delta_cost_ratio' => $this->calculateRatioChange($totalCost, $compareTotalCost),
+                'delta_profit_ratio' => $this->calculateRatioChange($totalProfit, $compareTotalProfit),
                 'delta_orders_ratio' => $this->calculateRatioChange($totalOrders, $compareTotalOrders),
                 'delta_avg_order_value_ratio' => $this->calculateRatioChange($avgOrderValue, $compareAvgOrderValue),
             ];
@@ -273,6 +297,9 @@ class FinancialReportController extends Controller
             'isMultiStoreView' => $isMultiStoreView,
             'totalOrders' => $totalOrders,
             'totalRevenue' => $totalRevenue,
+            'totalCost' => $totalCost,
+            'totalProfit' => $totalProfit,
+            'grossMarginRate' => $grossMarginRate,
             'avgOrderValue' => $avgOrderValue,
             'itemsSold' => $itemsSold,
             'takeoutRevenue' => $takeoutRevenue,

@@ -67,6 +67,7 @@ class ProductManagementController extends Controller
             'is_active' => true,
             'is_sold_out' => false,
             'allow_item_note' => false,
+            'cost' => 0,
         ]);
 
         $categories = Category::query()
@@ -444,6 +445,7 @@ class ProductManagementController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'integer', 'min:0'],
+            'cost' => ['required', 'integer', 'min:0'],
             'sort' => ['nullable', 'integer', 'min:1'],
             'image_upload' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
             'remove_image' => ['nullable', 'boolean'],
@@ -588,6 +590,10 @@ class ProductManagementController extends Controller
             'name' => $product->name,
             'description' => $product->description,
             'price' => (int) $product->price,
+            'cost' => (int) ($product->cost ?? 0),
+            'gross_margin_rate' => (int) $product->price > 0
+                ? round((((int) $product->price - (int) ($product->cost ?? 0)) / (int) $product->price) * 100, 1)
+                : 0,
             'sort' => (int) ($product->sort ?? 1),
             'image' => $product->image,
             'image_url' => $this->resolveImageUrl($product->image),

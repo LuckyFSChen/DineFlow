@@ -286,6 +286,8 @@ return [
     'products_form_product_name'            => 'Product Name',
     'products_form_category'                => 'Category',
     'products_form_price'                   => 'Price',
+    'products_form_cost'                    => 'Cost',
+    'products_gross_margin_rate'            => 'Gross Margin',
     'products_form_sort'                    => 'Sort Order',
     'products_form_image_url'               => 'Image URL',
     'products_form_image_url_optional'      => 'Image URL (Optional)',

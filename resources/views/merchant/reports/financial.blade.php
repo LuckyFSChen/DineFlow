@@ -122,7 +122,7 @@
             </div>
         @endif
 
-        <div id="summary-kpis" class="grid gap-4 scroll-mt-24 sm:grid-cols-2 xl:grid-cols-4">
+        <div id="summary-kpis" class="grid gap-4 scroll-mt-24 sm:grid-cols-2 xl:grid-cols-6">
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('merchant.total_revenue') }}</p>
                 <p class="mt-2 text-2xl font-bold text-slate-900">{{ $chartCurrencySymbol }} {{ number_format($totalRevenue) }}</p>
@@ -142,6 +142,16 @@
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('merchant.items_sold') }}</p>
                 <p class="mt-2 text-2xl font-bold text-slate-900">{{ number_format($itemsSold) }}</p>
                 <p class="mt-1 text-xs text-slate-500">{{ __('merchant.items_sold_hint') }}</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('merchant.total_profit') }}</p>
+                <p class="mt-2 text-2xl font-bold text-emerald-700">{{ $chartCurrencySymbol }} {{ number_format($totalProfit) }}</p>
+                <p class="mt-1 text-xs text-slate-500">{{ __('merchant.profit_formula') }}</p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('merchant.gross_margin_rate') }}</p>
+                <p class="mt-2 text-2xl font-bold text-slate-900">{{ number_format($grossMarginRate, 1) }}%</p>
+                <p class="mt-1 text-xs text-slate-500">{{ __('merchant.gross_margin_formula') }}</p>
             </div>
         </div>
 
@@ -195,7 +205,7 @@
                 <h3 class="text-sm font-semibold text-slate-800">{{ __('merchant.compare_summary') }}</h3>
                 @if($comparison)
                     <p class="mt-1 text-xs text-slate-500">{{ $comparison['start_date'] }} ~ {{ $comparison['end_date'] }}</p>
-                    <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div class="mt-4 grid gap-3 sm:grid-cols-4">
                         <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
                             <p class="text-xs text-slate-500">{{ __('merchant.total_revenue') }}</p>
                             <p class="mt-1 text-lg font-bold text-slate-900">{{ $chartCurrencySymbol }} {{ number_format($comparison['total_revenue']) }}</p>
@@ -211,7 +221,18 @@
                             <p class="mt-1 text-lg font-bold text-slate-900">{{ $chartCurrencySymbol }} {{ number_format($comparison['avg_order_value']) }}</p>
                             <p class="mt-1 text-xs font-semibold {{ $comparison['delta_avg_order_value'] >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">{{ $comparison['delta_avg_order_value'] >= 0 ? '+' : '' }}{{ number_format($comparison['delta_avg_order_value']) }} ({{ $comparison['delta_avg_order_value_ratio'] >= 0 ? '+' : '' }}{{ number_format($comparison['delta_avg_order_value_ratio'], 1) }}%)</p>
                         </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <p class="text-xs text-slate-500">{{ __('merchant.total_profit') }}</p>
+                            <p class="mt-1 text-lg font-bold text-emerald-700">{{ $chartCurrencySymbol }} {{ number_format($comparison['total_profit']) }}</p>
+                            <p class="mt-1 text-xs font-semibold {{ $comparison['delta_profit'] >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">{{ $comparison['delta_profit'] >= 0 ? '+' : '' }}{{ number_format($comparison['delta_profit']) }} ({{ $comparison['delta_profit_ratio'] >= 0 ? '+' : '' }}{{ number_format($comparison['delta_profit_ratio'], 1) }}%)</p>
+                        </div>
                     </div>
+                    <p class="mt-3 text-xs text-slate-500">
+                        {{ __('merchant.gross_margin_rate') }}: {{ number_format($comparison['gross_margin_rate'], 1) }}%
+                        <span class="{{ $comparison['delta_gross_margin_rate'] >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">
+                            ({{ $comparison['delta_gross_margin_rate'] >= 0 ? '+' : '' }}{{ number_format($comparison['delta_gross_margin_rate'], 1) }}%)
+                        </span>
+                    </p>
                 @else
                     <p class="mt-3 text-sm text-slate-500">{{ __('merchant.compare_empty_hint') }}</p>
                 @endif

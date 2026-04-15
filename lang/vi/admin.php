@@ -285,6 +285,8 @@ return [
     'products_form_product_name'            => 'Tên Sản phẩm',
     'products_form_category'                => 'Danh mục',
     'products_form_price'                   => 'Giá',
+    'products_form_cost'                    => 'Giá vốn',
+    'products_gross_margin_rate'            => 'Tỷ suất lợi nhuận gộp',
     'products_form_sort'                    => 'Thứ tự Sắp xếp',
     'products_form_image_url'               => 'URL Hình ảnh',
     'products_form_image_url_optional'      => 'URL Hình ảnh (Tùy chọn)',

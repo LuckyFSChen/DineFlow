@@ -88,6 +88,8 @@
                                             <div class="min-w-0">
                                             <h3 class="text-base font-semibold text-slate-900">{{ $product->name }}</h3>
                                             <p class="mt-1 text-sm text-slate-500">{{ $currencySymbol }} {{ number_format($product->price) }} ・ <span data-product-sort>{{ __('admin.products_sort_label') }} {{ $product->sort }}</span></p>
+                                            <p class="mt-1 text-xs text-slate-500">{{ __('admin.products_form_cost') }}: {{ $currencySymbol }} {{ number_format((int) ($product->cost ?? 0)) }}</p>
+                                            <p class="mt-1 text-xs text-slate-500">{{ __('admin.products_gross_margin_rate') }}: {{ (int) $product->price > 0 ? number_format((((int) $product->price - (int) ($product->cost ?? 0)) / (int) $product->price) * 100, 1) : '0.0' }}%</p>
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-2">
@@ -186,6 +188,11 @@
                     <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.products_form_price') }} ({{ $currencySymbol }})</label>
                     <input type="number" name="price" min="0" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100" required>
                 </div>
+                <div>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.products_form_cost') }} ({{ $currencySymbol }})</label>
+                    <input type="number" name="cost" min="0" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100" required>
+                </div>
+
 
                 <div>
                     <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.products_form_sort') }}</label>
@@ -1112,6 +1119,7 @@
         modalForm.elements['name'].value = product.name ?? '';
         modalForm.elements['category_id'].value = String(product.category_id ?? '');
         modalForm.elements['price'].value = product.price ?? 0;
+        modalForm.elements['cost'].value = product.cost ?? 0;
         modalForm.elements['sort'].value = product.sort ?? 1;
         modalForm.elements['description'].value = product.description ?? '';
         setImageFromUrl(product.image_url ?? null, '目前圖片（可拖曳調整裁切）');

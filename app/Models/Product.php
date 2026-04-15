@@ -15,6 +15,7 @@ class Product extends Model
         'name',
         'description',
         'price',
+        'cost',
         'is_active',
         'is_sold_out',
         'image',
@@ -23,6 +24,8 @@ class Product extends Model
     ];
 
     protected $casts = [
+        'price' => 'integer',
+        'cost' => 'integer',
         'is_active' => 'boolean',
         'is_sold_out' => 'boolean',
         'option_groups' => 'array',
