@@ -8,6 +8,12 @@ return [
     'add_store_limit'       => 'Add Store (Limit Reached)',
     'store_name'            => 'Store Name',
     'phone'                 => 'Phone',
+    'store_country'         => 'Country',
+    'filter_all_countries'  => 'All Countries',
+    'country_tw'            => 'Taiwan',
+    'country_vn'            => 'Vietnam',
+    'country_cn'            => 'China',
+    'country_us'            => 'United States',
     'currency'              => 'Currency',
     'currency_twd'          => 'New Taiwan Dollar (TWD)',
     'currency_vnd'          => 'Vietnamese Dong (VND)',
@@ -235,6 +241,7 @@ return [
     
     // Sorting & Counting
     'products_drag_to_sort'                 => 'Drag to Sort',
+    'products_sorting_hint'                 => 'Drag products to reorder. Categories can be quickly enabled or disabled.',
     'products_sort_label'                   => 'Sort Order',
     'products_items_count_suffix'           => 'items',
     'products_unit_count'                   => 'entries',
@@ -249,7 +256,7 @@ return [
     // Form labels
     'products_form_product_name'            => 'Product Name',
     'products_form_category'                => 'Category',
-    'products_form_price'                   => 'Price (NT$)',
+    'products_form_price'                   => 'Price',
     'products_form_sort'                    => 'Sort Order',
     'products_form_image_url'               => 'Image URL',
     'products_form_image_url_optional'      => 'Image URL (Optional)',

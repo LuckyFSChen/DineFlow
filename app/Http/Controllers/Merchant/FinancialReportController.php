@@ -23,10 +23,23 @@ class FinancialReportController extends Controller
         $validated = $request->validate([
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'compare_start_date' => ['nullable', 'date', 'required_with:compare_end_date'],
+            'compare_end_date' => ['nullable', 'date', 'required_with:compare_start_date', 'after_or_equal:compare_start_date'],
+            'trend_granularity' => ['nullable', 'in:day,hour'],
+            'hour_step' => ['nullable', 'integer', 'in:1,2,3,4,6,12'],
         ]);
 
         $startDate = (string) ($validated['start_date'] ?? $defaultStart);
         $endDate = (string) ($validated['end_date'] ?? $defaultEnd);
+        $compareStartDate = isset($validated['compare_start_date'])
+            ? (string) $validated['compare_start_date']
+            : null;
+        $compareEndDate = isset($validated['compare_end_date'])
+            ? (string) $validated['compare_end_date']
+            : null;
+
+        $trendGranularity = (string) ($validated['trend_granularity'] ?? 'day');
+        $hourStep = (int) ($validated['hour_step'] ?? 1);
 
         $start = Carbon::parse($startDate)->startOfDay();
         $end = Carbon::parse($endDate)->endOfDay();
@@ -34,9 +47,12 @@ class FinancialReportController extends Controller
         $stores = Store::query()
             ->where('user_id', $user->id)
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'monthly_revenue_target']);
 
-        $selectedStoreId = null;
+        $selectedStoreId = $stores->count() === 1
+            ? (int) $stores->first()->id
+            : null;
+
         if ($request->filled('store_id')) {
             $candidateStoreId = (int) $request->input('store_id');
             if ($stores->contains('id', $candidateStoreId)) {
@@ -44,18 +60,7 @@ class FinancialReportController extends Controller
             }
         }
 
-        $baseOrders = Order::query()
-            ->join('stores', 'stores.id', '=', 'orders.store_id')
-            ->where('stores.user_id', $user->id)
-            ->whereBetween('orders.created_at', [$start, $end])
-            ->where(function ($query) {
-                $query->whereNull('orders.status')
-                    ->orWhereNotIn(DB::raw('LOWER(orders.status)'), ['cancel', 'cancelled', 'canceled']);
-            });
-
-        if ($selectedStoreId !== null) {
-            $baseOrders->where('orders.store_id', $selectedStoreId);
-        }
+        $baseOrders = $this->buildBaseOrdersQuery($user->id, $start, $end, $selectedStoreId);
 
         $summary = (clone $baseOrders)
             ->selectRaw('COUNT(*) as total_orders, COALESCE(SUM(orders.total), 0) as total_revenue')
@@ -74,9 +79,15 @@ class FinancialReportController extends Controller
             ->groupBy('orders.order_type')
             ->get();
 
-        $orderTypeMap = $orderTypeStats->keyBy(fn ($row) => (string) $row->order_type);
-        $takeoutRevenue = (int) ($orderTypeMap->get('takeout')->revenue ?? 0);
-        $dineInRevenue = (int) ($orderTypeMap->get('dine_in')->revenue ?? $orderTypeMap->get('dinein')->revenue ?? 0);
+        $takeoutRevenue = $this->getOrderTypeMetric($orderTypeStats, ['takeout', 'take_out'], 'revenue');
+        $dineInRevenue = $this->getOrderTypeMetric($orderTypeStats, ['dine_in', 'dinein'], 'revenue');
+        $takeoutOrders = $this->getOrderTypeMetric($orderTypeStats, ['takeout', 'take_out'], 'order_count');
+        $dineInOrders = $this->getOrderTypeMetric($orderTypeStats, ['dine_in', 'dinein'], 'order_count');
+
+        $takeoutRevenueRatio = $totalRevenue > 0 ? round(($takeoutRevenue / $totalRevenue) * 100, 1) : 0;
+        $dineInRevenueRatio = $totalRevenue > 0 ? round(($dineInRevenue / $totalRevenue) * 100, 1) : 0;
+        $takeoutOrdersRatio = $totalOrders > 0 ? round(($takeoutOrders / $totalOrders) * 100, 1) : 0;
+        $dineInOrdersRatio = $totalOrders > 0 ? round(($dineInOrders / $totalOrders) * 100, 1) : 0;
 
         $topProducts = (clone $baseOrders)
             ->join('order_items', 'order_items.order_id', '=', 'orders.id')
@@ -115,26 +126,104 @@ class FinancialReportController extends Controller
             ->orderByDesc('revenue')
             ->get();
 
-        $dailyRows = (clone $baseOrders)
-            ->selectRaw('DATE(orders.created_at) as day, COALESCE(SUM(orders.total), 0) as revenue, COUNT(*) as order_count')
-            ->groupBy(DB::raw('DATE(orders.created_at)'))
-            ->orderBy('day')
-            ->get()
-            ->keyBy('day');
-
         $labels = [];
         $dailyRevenue = [];
         $dailyOrderCount = [];
 
-        $cursor = $start->copy()->startOfDay();
-        $endDay = $end->copy()->startOfDay();
-        while ($cursor->lte($endDay)) {
-            $key = $cursor->toDateString();
-            $labels[] = $cursor->format('m/d');
-            $dailyRevenue[] = (int) ($dailyRows->get($key)->revenue ?? 0);
-            $dailyOrderCount[] = (int) ($dailyRows->get($key)->order_count ?? 0);
-            $cursor->addDay();
+        if ($trendGranularity === 'hour') {
+            $bucketExpression = $hourStep === 1
+                ? "DATE_FORMAT(orders.created_at, '%Y-%m-%d %H:00:00')"
+                : "CONCAT(DATE_FORMAT(orders.created_at, '%Y-%m-%d '), LPAD(FLOOR(HOUR(orders.created_at) / {$hourStep}) * {$hourStep}, 2, '0'), ':00:00')";
+
+            $hourlyRows = (clone $baseOrders)
+                ->selectRaw("{$bucketExpression} as bucket, COALESCE(SUM(orders.total), 0) as revenue, COUNT(*) as order_count")
+                ->groupBy(DB::raw($bucketExpression))
+                ->orderBy('bucket')
+                ->get()
+                ->keyBy('bucket');
+
+            $cursor = $start->copy()->startOfHour();
+            $cursorHour = (int) $cursor->format('G');
+            $cursor->setTime((int) (floor($cursorHour / $hourStep) * $hourStep), 0, 0);
+
+            $endCursor = $end->copy()->startOfHour();
+            $endHour = (int) $endCursor->format('G');
+            $endCursor->setTime((int) (floor($endHour / $hourStep) * $hourStep), 0, 0);
+
+            while ($cursor->lte($endCursor)) {
+                $key = $cursor->format('Y-m-d H:00:00');
+                $labels[] = $cursor->format('m/d H:00');
+                $dailyRevenue[] = (int) ($hourlyRows->get($key)->revenue ?? 0);
+                $dailyOrderCount[] = (int) ($hourlyRows->get($key)->order_count ?? 0);
+                $cursor->addHours($hourStep);
+            }
+        } else {
+            $dailyRows = (clone $baseOrders)
+                ->selectRaw('DATE(orders.created_at) as day, COALESCE(SUM(orders.total), 0) as revenue, COUNT(*) as order_count')
+                ->groupBy(DB::raw('DATE(orders.created_at)'))
+                ->orderBy('day')
+                ->get()
+                ->keyBy('day');
+
+            $cursor = $start->copy()->startOfDay();
+            $endDay = $end->copy()->startOfDay();
+            while ($cursor->lte($endDay)) {
+                $key = $cursor->toDateString();
+                $labels[] = $cursor->format('m/d');
+                $dailyRevenue[] = (int) ($dailyRows->get($key)->revenue ?? 0);
+                $dailyOrderCount[] = (int) ($dailyRows->get($key)->order_count ?? 0);
+                $cursor->addDay();
+            }
         }
+
+        $comparison = null;
+        if ($compareStartDate !== null && $compareEndDate !== null) {
+            $compareStart = Carbon::parse($compareStartDate)->startOfDay();
+            $compareEnd = Carbon::parse($compareEndDate)->endOfDay();
+
+            $compareBaseOrders = $this->buildBaseOrdersQuery($user->id, $compareStart, $compareEnd, $selectedStoreId);
+
+            $compareSummary = (clone $compareBaseOrders)
+                ->selectRaw('COUNT(*) as total_orders, COALESCE(SUM(orders.total), 0) as total_revenue')
+                ->first();
+
+            $compareTotalOrders = (int) ($compareSummary->total_orders ?? 0);
+            $compareTotalRevenue = (int) ($compareSummary->total_revenue ?? 0);
+            $compareAvgOrderValue = $compareTotalOrders > 0
+                ? (int) round($compareTotalRevenue / $compareTotalOrders)
+                : 0;
+
+            $comparison = [
+                'start_date' => $compareStart->toDateString(),
+                'end_date' => $compareEnd->toDateString(),
+                'total_orders' => $compareTotalOrders,
+                'total_revenue' => $compareTotalRevenue,
+                'avg_order_value' => $compareAvgOrderValue,
+                'delta_revenue' => $totalRevenue - $compareTotalRevenue,
+                'delta_orders' => $totalOrders - $compareTotalOrders,
+                'delta_avg_order_value' => $avgOrderValue - $compareAvgOrderValue,
+                'delta_revenue_ratio' => $this->calculateRatioChange($totalRevenue, $compareTotalRevenue),
+                'delta_orders_ratio' => $this->calculateRatioChange($totalOrders, $compareTotalOrders),
+                'delta_avg_order_value_ratio' => $this->calculateRatioChange($avgOrderValue, $compareAvgOrderValue),
+            ];
+        }
+
+        $selectedStore = $selectedStoreId !== null
+            ? $stores->firstWhere('id', $selectedStoreId)
+            : null;
+        $monthlyRevenueTarget = $selectedStore !== null
+            ? (int) ($selectedStore->monthly_revenue_target ?? 0)
+            : (int) $stores->sum('monthly_revenue_target');
+        $canEditMonthlyTarget = $selectedStore !== null;
+
+        $monthStart = now()->copy()->startOfMonth()->startOfDay();
+        $monthEnd = now()->copy()->endOfMonth()->endOfDay();
+        $currentMonthRevenue = (int) ((clone $this->buildBaseOrdersQuery($user->id, $monthStart, $monthEnd, $selectedStoreId))
+            ->sum('orders.total'));
+        $monthlyTargetProgress = $monthlyRevenueTarget > 0
+            ? round(($currentMonthRevenue / $monthlyRevenueTarget) * 100, 1)
+            : 0;
+        $monthlyTargetRemaining = max(0, $monthlyRevenueTarget - $currentMonthRevenue);
 
         $trendRowsByProduct = $productTrendRows->groupBy('product_id');
         $trendColors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16', '#06b6d4', '#e11d48'];
@@ -166,6 +255,10 @@ class FinancialReportController extends Controller
         return view('merchant.reports.financial', [
             'startDate' => $start->toDateString(),
             'endDate' => $end->toDateString(),
+            'compareStartDate' => $compareStartDate,
+            'compareEndDate' => $compareEndDate,
+            'trendGranularity' => $trendGranularity,
+            'hourStep' => $hourStep,
             'stores' => $stores,
             'selectedStoreId' => $selectedStoreId,
             'isMultiStoreView' => $isMultiStoreView,
@@ -175,6 +268,18 @@ class FinancialReportController extends Controller
             'itemsSold' => $itemsSold,
             'takeoutRevenue' => $takeoutRevenue,
             'dineInRevenue' => $dineInRevenue,
+            'takeoutOrders' => $takeoutOrders,
+            'dineInOrders' => $dineInOrders,
+            'takeoutRevenueRatio' => $takeoutRevenueRatio,
+            'dineInRevenueRatio' => $dineInRevenueRatio,
+            'takeoutOrdersRatio' => $takeoutOrdersRatio,
+            'dineInOrdersRatio' => $dineInOrdersRatio,
+            'comparison' => $comparison,
+            'monthlyRevenueTarget' => $monthlyRevenueTarget,
+            'canEditMonthlyTarget' => $canEditMonthlyTarget,
+            'currentMonthRevenue' => $currentMonthRevenue,
+            'monthlyTargetProgress' => $monthlyTargetProgress,
+            'monthlyTargetRemaining' => $monthlyTargetRemaining,
             'topProducts' => $topProducts,
             'storeRevenue' => $storeRevenue,
             'chartLabels' => $labels,
@@ -183,5 +288,74 @@ class FinancialReportController extends Controller
             'productTrendLabels' => $labels,
             'productTrendDatasets' => $productTrendDatasets,
         ]);
+    }
+
+    public function updateMonthlyTarget(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'store_id' => ['required', 'integer'],
+            'monthly_revenue_target' => ['required', 'integer', 'min:0'],
+        ]);
+
+        $store = Store::query()
+            ->where('user_id', $user->id)
+            ->where('id', (int) $validated['store_id'])
+            ->firstOrFail();
+
+        $store->monthly_revenue_target = (int) $validated['monthly_revenue_target'];
+        $store->save();
+
+        return redirect()
+            ->route('merchant.reports.financial', [
+                'store_id' => $store->id,
+                'start_date' => $request->input('start_date'),
+                'end_date' => $request->input('end_date'),
+                'compare_start_date' => $request->input('compare_start_date'),
+                'compare_end_date' => $request->input('compare_end_date'),
+                'trend_granularity' => $request->input('trend_granularity', 'day'),
+                'hour_step' => $request->input('hour_step', 1),
+            ])
+            ->with('status', __('merchant.monthly_target_updated'));
+    }
+
+    private function buildBaseOrdersQuery(int $userId, Carbon $start, Carbon $end, ?int $selectedStoreId)
+    {
+        $query = Order::query()
+            ->join('stores', 'stores.id', '=', 'orders.store_id')
+            ->where('stores.user_id', $userId)
+            ->whereBetween('orders.created_at', [$start, $end])
+            ->where(function ($builder) {
+                $builder->whereNull('orders.status')
+                    ->orWhereNotIn(DB::raw('LOWER(orders.status)'), ['cancel', 'cancelled', 'canceled']);
+            });
+
+        if ($selectedStoreId !== null) {
+            $query->where('orders.store_id', $selectedStoreId);
+        }
+
+        return $query;
+    }
+
+    private function getOrderTypeMetric($orderTypeStats, array $typeKeys, string $metric): int
+    {
+        foreach ($typeKeys as $typeKey) {
+            $row = $orderTypeStats->firstWhere('order_type', $typeKey);
+            if ($row !== null) {
+                return (int) ($row->{$metric} ?? 0);
+            }
+        }
+
+        return 0;
+    }
+
+    private function calculateRatioChange(int $currentValue, int $baseValue): float
+    {
+        if ($baseValue === 0) {
+            return $currentValue > 0 ? 100 : 0;
+        }
+
+        return round((($currentValue - $baseValue) / $baseValue) * 100, 1);
     }
 }

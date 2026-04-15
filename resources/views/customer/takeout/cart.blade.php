@@ -1,6 +1,15 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $currencyCode = strtolower((string) ($store->currency ?? 'twd'));
+    $currencySymbol = match ($currencyCode) {
+        'vnd' => 'VND',
+        'cny' => 'CNY',
+        'usd' => 'USD',
+        default => 'NT$',
+    };
+@endphp
 <div class="min-h-screen bg-brand-soft/20">
     <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 
@@ -97,13 +106,13 @@
                                             <p class="mt-1 text-xs text-amber-700">{{ __('customer.item_note_prefix') }} {{ $item['item_note'] }}</p>
                                         @endif
                                         <div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-brand-primary/75">
-                                            <span>{{ __('customer.unit_price') }} NT$ {{ number_format($item['price']) }}</span>
+                                            <span>{{ __('customer.unit_price') }} {{ $currencySymbol }} {{ number_format($item['price']) }}</span>
                                             <span>{{ __('customer.qty') }} × {{ $item['qty'] }}</span>
                                         </div>
                                     </div>
 
                                     <div class="text-lg font-bold text-brand-dark">
-                                        NT$ {{ number_format($item['subtotal']) }}
+                                        {{ $currencySymbol }} {{ number_format($item['subtotal']) }}
                                     </div>
                                 </div>
                             @endforeach
@@ -120,13 +129,13 @@
                             <div class="mt-5 space-y-4 text-sm">
                                 <div class="flex items-center justify-between text-brand-primary/80">
                                     <span>{{ __('customer.subtotal') }}</span>
-                                    <span>NT$ {{ number_format($total) }}</span>
+                                    <span>{{ $currencySymbol }} {{ number_format($total) }}</span>
                                 </div>
 
                                 <div class="border-t border-brand-soft/60 pt-4">
                                     <div class="flex items-center justify-between text-lg font-bold text-brand-dark">
                                         <span>{{ __('customer.total_amount') }}</span>
-                                        <span>NT$ {{ number_format($total) }}</span>
+                                        <span>{{ $currencySymbol }} {{ number_format($total) }}</span>
                                     </div>
                                 </div>
                             </div>

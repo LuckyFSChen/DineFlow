@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Store;
+use App\Support\GooglePlaceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -41,6 +42,7 @@ class StoreController extends Controller
     public function store(Request $request)
     {
         $data = $this->validatedData($request);
+        $data = $this->fillCoordinatesFromAddress($data);
 
         if (empty($data['slug'])) {
             $data['slug'] = Str::slug($data['name']);
@@ -54,8 +56,11 @@ class StoreController extends Controller
             'slug' => $data['slug'],
             'description' => $data['description'] ?? null,
             'address' => $data['address'] ?? null,
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
             'phone' => $data['phone'] ?? null,
             'is_active' => $data['is_active'],
+            'takeout_qr_enabled' => true,
         ]);
 
         if ($request->hasFile('banner_image')) {
@@ -86,6 +91,7 @@ class StoreController extends Controller
     public function update(Request $request, Store $store)
     {
         $data = $this->validatedData($request, $store->id);
+        $data = $this->fillCoordinatesFromAddress($data, $store);
 
         if (empty($data['slug'])) {
             $data['slug'] = Str::slug($data['name']);
@@ -98,6 +104,8 @@ class StoreController extends Controller
             'slug' => $data['slug'],
             'description' => $data['description'] ?? null,
             'address' => $data['address'] ?? null,
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
             'phone' => $data['phone'] ?? null,
             'is_active' => $data['is_active'],
         ];
@@ -146,6 +154,8 @@ class StoreController extends Controller
             'slug' => ['nullable', 'string', 'max:255', 'unique:stores,slug,' . $storeId],
             'description' => ['nullable', 'string'],
             'address' => ['nullable', 'string', 'max:255'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
             'phone' => ['nullable', 'regex:/^(09\d{2}-\d{3}-\d{3}|09\d{8})$/'],
             'banner_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
         ], [
@@ -153,6 +163,8 @@ class StoreController extends Controller
         ]);
 
         $data['phone'] = $this->normalizeTaiwanMobilePhone($data['phone'] ?? null);
+        $data['latitude'] = $this->normalizeCoordinate($data['latitude'] ?? null);
+        $data['longitude'] = $this->normalizeCoordinate($data['longitude'] ?? null);
 
         return $data;
     }
@@ -174,5 +186,38 @@ class StoreController extends Controller
         }
 
         return substr($digits, 0, 4) . '-' . substr($digits, 4, 3) . '-' . substr($digits, 7, 3);
+    }
+
+    protected function normalizeCoordinate(mixed $value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return round((float) $value, 7);
+    }
+
+    protected function fillCoordinatesFromAddress(array $data, ?Store $existingStore = null): array
+    {
+        $address = trim((string) ($data['address'] ?? ''));
+        if ($address === '') {
+            $data['latitude'] = null;
+            $data['longitude'] = null;
+            return $data;
+        }
+
+        $geocoded = app(GooglePlaceService::class)->geocodeAddress($address);
+        if ($geocoded === null) {
+            if ($existingStore) {
+                $data['latitude'] = $existingStore->latitude;
+                $data['longitude'] = $existingStore->longitude;
+            }
+            return $data;
+        }
+
+        $data['latitude'] = $geocoded['latitude'];
+        $data['longitude'] = $geocoded['longitude'];
+
+        return $data;
     }
 }

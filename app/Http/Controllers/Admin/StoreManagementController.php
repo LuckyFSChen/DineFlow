@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Store;
 use App\Models\User;
+use App\Support\GooglePlaceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -15,6 +16,11 @@ class StoreManagementController extends Controller
     public function index(Request $request)
     {
         $keyword = $request->get('keyword');
+        $countryCode = strtolower((string) $request->query('country_code', ''));
+        $countryOptions = $this->countryOptions();
+        if (! array_key_exists($countryCode, $countryOptions)) {
+            $countryCode = '';
+        }
         $user = $request->user();
 
         $maxStores = null;
@@ -45,6 +51,9 @@ class StoreManagementController extends Controller
                         ->orWhere('phone', 'like', "%{$keyword}%");
                 });
             })
+            ->when($countryCode !== '', function ($query) use ($countryCode) {
+                $query->where('country_code', $countryCode);
+            })
             ->latest()
             ->paginate(10)
             ->withQueryString();
@@ -52,6 +61,8 @@ class StoreManagementController extends Controller
         return view('admin.stores.index', compact(
             'stores',
             'keyword',
+            'countryCode',
+            'countryOptions',
             'maxStores',
             'usedStores',
             'remainingStores',
@@ -90,6 +101,7 @@ class StoreManagementController extends Controller
         }
 
         $data = $this->validatedData($request);
+        $data = $this->fillCoordinatesFromAddress($data);
 
         if ($user && $user->isMerchant()) {
             $data['user_id'] = $user->id;
@@ -148,6 +160,7 @@ class StoreManagementController extends Controller
         $this->authorizeStoreAccess($request, $store);
 
         $updateData = $this->validatedData($request, $store->id);
+        $updateData = $this->fillCoordinatesFromAddress($updateData, $store);
 
         $user = $request->user();
         if ($user && $user->isMerchant() && $updateData['is_active']) {
@@ -218,8 +231,11 @@ class StoreManagementController extends Controller
             'slug' => ['nullable', 'string', 'max:255', 'unique:stores,slug,' . $storeId],
             'description' => ['nullable', 'string'],
             'address' => ['nullable', 'string', 'max:255'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
             'phone' => ['nullable', 'regex:/^(09\d{2}-\d{3}-\d{3}|09\d{8})$/'],
             'currency' => ['nullable', 'in:twd,vnd,cny,usd'],
+            'country_code' => ['nullable', 'in:tw,vn,cn,us'],
             'banner_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
             'checkout_timing' => ['nullable', 'in:prepay,postpay'],
             'opening_time' => ['nullable', 'date_format:H:i', 'required_with:closing_time'],
@@ -229,10 +245,14 @@ class StoreManagementController extends Controller
         ]);
 
         $data['phone'] = $this->normalizeTaiwanMobilePhone($data['phone'] ?? null);
+        $data['latitude'] = $this->normalizeCoordinate($data['latitude'] ?? null);
+        $data['longitude'] = $this->normalizeCoordinate($data['longitude'] ?? null);
         $data['slug'] = $data['slug'] ?: (Str::slug($data['name']) ?: 'store');
         $data['is_active'] = $request->boolean('is_active');
         $data['currency'] = strtolower($data['currency'] ?? 'twd');
+        $data['country_code'] = strtolower($data['country_code'] ?? $this->inferCountryCodeFromCurrency($data['currency']));
         $data['checkout_timing'] = $data['checkout_timing'] ?? 'postpay';
+        $data['takeout_qr_enabled'] = true;
 
         return $data;
     }
@@ -254,6 +274,39 @@ class StoreManagementController extends Controller
         }
 
         return substr($digits, 0, 4) . '-' . substr($digits, 4, 3) . '-' . substr($digits, 7, 3);
+    }
+
+    protected function normalizeCoordinate(mixed $value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return round((float) $value, 7);
+    }
+
+    protected function fillCoordinatesFromAddress(array $data, ?Store $existingStore = null): array
+    {
+        $address = trim((string) ($data['address'] ?? ''));
+        if ($address === '') {
+            $data['latitude'] = null;
+            $data['longitude'] = null;
+            return $data;
+        }
+
+        $geocoded = app(GooglePlaceService::class)->geocodeAddress($address);
+        if ($geocoded === null) {
+            if ($existingStore) {
+                $data['latitude'] = $existingStore->latitude;
+                $data['longitude'] = $existingStore->longitude;
+            }
+            return $data;
+        }
+
+        $data['latitude'] = $geocoded['latitude'];
+        $data['longitude'] = $geocoded['longitude'];
+
+        return $data;
     }
 
     protected function authorizeStoreAccess(Request $request, Store $store): void
@@ -354,8 +407,11 @@ class StoreManagementController extends Controller
             'slug' => $store->slug,
             'description' => $store->description,
             'address' => $store->address,
+            'latitude' => $store->latitude,
+            'longitude' => $store->longitude,
             'phone' => $store->phone,
             'currency' => strtolower($store->currency ?? 'twd'),
+            'country_code' => strtolower($store->country_code ?? $this->inferCountryCodeFromCurrency($store->currency ?? 'twd')),
             'checkout_timing' => $store->checkout_timing ?? 'postpay',
             'is_active' => (bool) $store->is_active,
             'opening_time' => $store->opening_time,
@@ -365,5 +421,25 @@ class StoreManagementController extends Controller
                 ? asset('storage/' . ltrim($store->banner_image, '/'))
                 : null,
         ];
+    }
+
+    protected function countryOptions(): array
+    {
+        return [
+            'tw' => 'admin.country_tw',
+            'vn' => 'admin.country_vn',
+            'cn' => 'admin.country_cn',
+            'us' => 'admin.country_us',
+        ];
+    }
+
+    protected function inferCountryCodeFromCurrency(string $currency): string
+    {
+        return match (strtolower($currency)) {
+            'vnd' => 'vn',
+            'cny' => 'cn',
+            'usd' => 'us',
+            default => 'tw',
+        };
     }
 }

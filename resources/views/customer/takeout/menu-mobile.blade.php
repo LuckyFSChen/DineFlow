@@ -1,6 +1,15 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $currencyCode = strtolower((string) ($store->currency ?? 'twd'));
+    $currencySymbol = match ($currencyCode) {
+        'vnd' => 'VND',
+        'cny' => 'CNY',
+        'usd' => 'USD',
+        default => 'NT$',
+    };
+@endphp
 <style>
     .cart-fly-clone {
         position: fixed;
@@ -131,7 +140,7 @@
                                                 <img src="{{ $productImage }}" alt="{{ $product->name }}" class="h-48 w-full object-cover transition duration-500 group-hover:scale-105">
                                                 <div class="absolute inset-0 bg-gradient-to-t from-brand-dark/85 via-brand-dark/20 to-transparent"></div>
                                                 <div class="absolute left-4 top-4 inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur">{{ $category->name }}</div>
-                                                <div class="absolute bottom-4 right-4 rounded-full bg-brand-highlight px-3 py-1.5 text-sm font-bold text-brand-dark shadow-lg">NT$ {{ number_format($product->price) }}</div>
+                                                <div class="absolute bottom-4 right-4 rounded-full bg-brand-highlight px-3 py-1.5 text-sm font-bold text-brand-dark shadow-lg">{{ $currencySymbol }} {{ number_format($product->price) }}</div>
                                             </div>
 
                                             <div class="p-5">
@@ -200,7 +209,7 @@
                     @if(!empty($item['option_label']))
                         <p class="mt-1 text-xs text-brand-primary/75">{{ $item['option_label'] }}</p>
                     @endif
-                    <p class="mt-2 text-xs font-semibold text-brand-accent">{{ __('customer.subtotal') }} NT$ {{ number_format((int) ($item['subtotal'] ?? 0)) }}</p>
+                    <p class="mt-2 text-xs font-semibold text-brand-accent">{{ __('customer.subtotal') }} {{ $currencySymbol }} {{ number_format((int) ($item['subtotal'] ?? 0)) }}</p>
                 </article>
             @empty
                 <div class="rounded-2xl border border-dashed border-brand-soft/80 bg-brand-soft/10 px-3 py-8 text-center text-sm text-brand-primary/75">
@@ -266,6 +275,7 @@
         optionsTitleWithProduct: @json(__('customer.select_options_title_with_product', ['product' => '__product__'])),
         requiredSuffix: @json(__('customer.required_suffix')),
         free: @json(__('customer.free')),
+        currencySymbol: @json($currencySymbol),
         requiredError: @json(__('customer.option_required_error', ['group' => '__group__'])),
         maxSelectError: @json(__('customer.option_max_select_error', ['group' => '__group__', 'max' => '__max__'])),
         unnamedProduct: @json(__('customer.product_default_name')),
@@ -341,7 +351,7 @@
                 const price = document.createElement('span');
                 const p = Number(choice.price || 0);
                 price.className = 'text-xs font-semibold ' + (p > 0 ? 'text-brand-primary' : 'text-slate-500');
-                price.textContent = p > 0 ? `+NT$ ${p}` : i18n.free;
+                price.textContent = p > 0 ? `+${i18n.currencySymbol} ${p}` : i18n.free;
 
                 row.appendChild(left);
                 row.appendChild(price);

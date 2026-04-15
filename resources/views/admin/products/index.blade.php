@@ -1,6 +1,15 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $currencyCode = strtolower((string) ($store->currency ?? 'twd'));
+    $currencySymbol = match ($currencyCode) {
+        'vnd' => 'VND',
+        'cny' => 'CNY',
+        'usd' => 'USD',
+        default => 'NT$',
+    };
+@endphp
 <div class="min-h-screen bg-slate-50" x-data="{}">
     <div class="mx-auto max-w-7xl px-6 py-10 lg:px-8">
         <div class="admin-hero mb-6 rounded-3xl px-5 py-5 md:px-7">
@@ -38,7 +47,7 @@
         <div class="mb-4">
             <div class="admin-pill-nav inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-slate-700">
                 <span class="rounded-full bg-cyan-100 px-2 py-1 text-cyan-700">{{ $store->name }}</span>
-                <span>拖曳可排序商品，分類可快速啟用/停用</span>
+                <span>{{ __('admin.products_sorting_hint') }}</span>
             </div>
         </div>
 
@@ -78,11 +87,11 @@
                                             @endif
                                             <div class="min-w-0">
                                             <h3 class="text-base font-semibold text-slate-900">{{ $product->name }}</h3>
-                                            <p class="mt-1 text-sm text-slate-500">NT$ {{ number_format($product->price) }} ・ <span data-product-sort>{{ __('admin.products_sort_label') }} {{ $product->sort }}</span></p>
+                                            <p class="mt-1 text-sm text-slate-500">{{ $currencySymbol }} {{ number_format($product->price) }} ・ <span data-product-sort>{{ __('admin.products_sort_label') }} {{ $product->sort }}</span></p>
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-2">
-                                            <span class="inline-flex cursor-grab rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 active:cursor-grabbing" data-drag-product-handle>{{ __('admin.products_drag_to_sort') }}</span>
+                                            <span class="inline-flex cursor-grab select-none touch-none rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 active:cursor-grabbing" data-drag-product-handle>{{ __('admin.products_drag_to_sort') }}</span>
                                             <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $product->is_active && ! $product->is_sold_out ? 'bg-emerald-50 text-emerald-700' : ($product->is_sold_out ? 'bg-amber-50 text-amber-700' : 'bg-slate-200 text-slate-600') }}">
                                                 {{ $product->is_active && ! $product->is_sold_out ? __('admin.products_stats_available') : ($product->is_sold_out ? __('admin.products_status_sold_out') : __('admin.products_status_inactive')) }}
                                             </span>
@@ -145,7 +154,7 @@
     </div>
 </div>
 
-<div id="product-modal" class="fixed inset-0 z-[120] hidden items-end justify-center bg-black/50 p-4 sm:items-center">
+<div id="product-modal" class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/50 p-4">
     <div class="w-full max-w-3xl rounded-3xl bg-white shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
             <div>
@@ -174,7 +183,7 @@
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.products_form_price') }}</label>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.products_form_price') }} ({{ $currencySymbol }})</label>
                     <input type="number" name="price" min="0" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100" required>
                 </div>
 
@@ -268,7 +277,7 @@
     </div>
 </div>
 
-<div id="category-modal" class="fixed inset-0 z-[130] hidden items-end justify-center bg-black/50 p-4 sm:items-center">
+<div id="category-modal" class="fixed inset-0 z-[130] hidden items-center justify-center bg-black/50 p-4">
     <div class="w-full max-w-xl rounded-3xl bg-white shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
             <div>
@@ -1336,6 +1345,11 @@
             startSourceSignature: '',
         };
 
+        const touchState = {
+            active: false,
+            touchId: null,
+        };
+
         const toggleEmptyPlaceholder = (container) => {
             if (!container) {
                 return;
@@ -1350,6 +1364,180 @@
             placeholder.classList.toggle('hidden', hasCards);
         };
 
+        const applyPendingDrop = (container) => {
+            if (!container || !dragState.card) {
+                return;
+            }
+
+            const dragged = dragState.card;
+            const reference = dragState.pendingReference;
+            const placeholder = container.querySelector('[data-empty-placeholder]');
+
+            if (!reference) {
+                if (placeholder) {
+                    container.insertBefore(dragged, placeholder);
+                } else {
+                    container.appendChild(dragged);
+                }
+            } else {
+                container.insertBefore(dragged, reference);
+            }
+
+            toggleEmptyPlaceholder(container);
+            toggleEmptyPlaceholder(dragState.sourceContainer);
+        };
+
+        const updateDropReference = (container, clientX, clientY) => {
+            if (!container || !dragState.card) {
+                return;
+            }
+
+            containers.forEach((c) => {
+                clearDropTargetStyles(c);
+                c.classList.remove('ring-2', 'ring-amber-300');
+            });
+
+            container.classList.add('ring-2', 'ring-amber-300');
+
+            const hoverState = hoverStateByContainer.get(container) || { targetId: null, decision: null };
+            const dropRef = getDropReference(container, dragState.card, clientX, clientY, hoverState);
+            hoverStateByContainer.set(container, hoverState);
+            dragState.pendingReference = dropRef.reference || null;
+
+            if (dropRef.target && dropRef.target !== dragState.card) {
+                dropRef.target.classList.add('drop-target', 'ring-2', 'ring-amber-300');
+            }
+        };
+
+        const finishDrag = async () => {
+            const dragged = dragState.card;
+            if (!dragged) {
+                touchState.active = false;
+                touchState.touchId = null;
+                return;
+            }
+
+            dragged.classList.remove('is-dragging', 'opacity-60', 'ring-2', 'ring-indigo-300');
+            dragged.draggable = false;
+            delete dragged.dataset.dragEnabled;
+
+            containers.forEach((container) => {
+                clearDropTargetStyles(container);
+                container.classList.remove('ring-2', 'ring-amber-300');
+            });
+
+            if (dragState.rafId) {
+                cancelAnimationFrame(dragState.rafId);
+                dragState.rafId = 0;
+            }
+
+            const sourceContainer = dragState.sourceContainer;
+            const targetContainer = dragState.currentContainer || sourceContainer;
+            const sourceCategoryId = sourceContainer?.getAttribute('data-category-id');
+            const targetCategoryId = targetContainer?.getAttribute('data-category-id');
+
+            if (sourceContainer && targetContainer && sourceCategoryId && targetCategoryId) {
+                const sourceIds = [...sourceContainer.querySelectorAll('[data-product-card]')]
+                    .map((el) => Number(el.getAttribute('data-product-id')))
+                    .filter((id) => Number.isInteger(id) && id > 0);
+
+                const targetIds = [...targetContainer.querySelectorAll('[data-product-card]')]
+                    .map((el) => Number(el.getAttribute('data-product-id')))
+                    .filter((id) => Number.isInteger(id) && id > 0);
+
+                const movedProductId = Number(dragged.getAttribute('data-product-id'));
+
+                const movedAcrossCategory = sourceCategoryId !== targetCategoryId;
+                const reorderedWithinCategory = sourceCategoryId === targetCategoryId
+                    && sourceContainer
+                    && dragState.startSourceSignature !== orderSignature(sourceContainer);
+
+                const shouldPersist = movedAcrossCategory || reorderedWithinCategory;
+
+                if (shouldPersist && Number.isInteger(movedProductId) && movedProductId > 0) {
+                    try {
+                        const data = await persistCategoryMove({
+                            moved_product_id: movedProductId,
+                            source_category_id: Number(sourceCategoryId),
+                            target_category_id: Number(targetCategoryId),
+                            source_product_ids: sourceIds,
+                            target_product_ids: targetIds,
+                        });
+                        showFlash(data.message || i18n.moveUpdated);
+                    } catch (e) {
+                        showFlash(e.message || i18n.moveUpdateFailed, 'error');
+                        window.location.reload();
+                    }
+                }
+
+                updateSortLabels(sourceContainer);
+                if (targetContainer !== sourceContainer) {
+                    updateSortLabels(targetContainer);
+                }
+                toggleEmptyPlaceholder(sourceContainer);
+                toggleEmptyPlaceholder(targetContainer);
+            }
+
+            dragState.card = null;
+            dragState.sourceContainer = null;
+            dragState.currentContainer = null;
+            dragState.pendingReference = null;
+            dragState.startSourceSignature = '';
+            touchState.active = false;
+            touchState.touchId = null;
+        };
+
+        const onTouchMove = (event) => {
+            if (!touchState.active || !dragState.card) {
+                return;
+            }
+
+            const touch = [...event.changedTouches].find((item) => item.identifier === touchState.touchId);
+            if (!touch) {
+                return;
+            }
+
+            event.preventDefault();
+            dragState.clientX = touch.clientX;
+            dragState.clientY = touch.clientY;
+
+            const targetContainer = document
+                .elementFromPoint(touch.clientX, touch.clientY)
+                ?.closest('[data-category-products][data-category-id]');
+
+            if (!targetContainer) {
+                return;
+            }
+
+            dragState.currentContainer = targetContainer;
+            updateDropReference(targetContainer, touch.clientX, touch.clientY);
+        };
+
+        const onTouchEnd = async (event) => {
+            if (!touchState.active || !dragState.card) {
+                return;
+            }
+
+            const touch = [...event.changedTouches].find((item) => item.identifier === touchState.touchId);
+            if (!touch) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const targetContainer = dragState.currentContainer
+                || document
+                    .elementFromPoint(touch.clientX, touch.clientY)
+                    ?.closest('[data-category-products][data-category-id]');
+
+            applyPendingDrop(targetContainer || dragState.sourceContainer);
+            await finishDrag();
+        };
+
+        document.addEventListener('touchmove', onTouchMove, { passive: false });
+        document.addEventListener('touchend', onTouchEnd, { passive: false });
+        document.addEventListener('touchcancel', onTouchEnd, { passive: false });
+
         const attachCardEvents = (card) => {
             if (!card) {
                 return;
@@ -1362,6 +1550,28 @@
                 card.draggable = true;
                 card.dataset.dragEnabled = '1';
             });
+
+            handle?.addEventListener('touchstart', (event) => {
+                if (event.touches.length === 0 || dragState.card) {
+                    return;
+                }
+
+                event.preventDefault();
+                const touch = event.changedTouches[0];
+                card.dataset.dragEnabled = '1';
+                touchState.active = true;
+                touchState.touchId = touch.identifier;
+
+                dragState.card = card;
+                dragState.sourceContainer = card.closest('[data-category-products][data-category-id]');
+                dragState.currentContainer = dragState.sourceContainer;
+                dragState.pendingReference = null;
+                dragState.clientX = touch.clientX;
+                dragState.clientY = touch.clientY;
+                dragState.startSourceSignature = dragState.sourceContainer ? orderSignature(dragState.sourceContainer) : '';
+
+                card.classList.add('is-dragging', 'opacity-60', 'ring-2', 'ring-indigo-300');
+            }, { passive: false });
 
             card.addEventListener('mouseup', () => {
                 if (!card.classList.contains('is-dragging')) {
@@ -1387,79 +1597,7 @@
                 card.classList.add('is-dragging', 'opacity-60', 'ring-2', 'ring-indigo-300');
             });
 
-            card.addEventListener('dragend', async () => {
-                const dragged = dragState.card;
-                if (!dragged) {
-                    return;
-                }
-
-                dragged.classList.remove('is-dragging', 'opacity-60', 'ring-2', 'ring-indigo-300');
-                dragged.draggable = false;
-                delete dragged.dataset.dragEnabled;
-
-                containers.forEach((container) => {
-                    clearDropTargetStyles(container);
-                    container.classList.remove('ring-2', 'ring-amber-300');
-                });
-
-                if (dragState.rafId) {
-                    cancelAnimationFrame(dragState.rafId);
-                    dragState.rafId = 0;
-                }
-
-                const sourceContainer = dragState.sourceContainer;
-                const targetContainer = dragState.currentContainer || sourceContainer;
-                const sourceCategoryId = sourceContainer?.getAttribute('data-category-id');
-                const targetCategoryId = targetContainer?.getAttribute('data-category-id');
-
-                if (sourceContainer && targetContainer && sourceCategoryId && targetCategoryId) {
-                    const sourceIds = [...sourceContainer.querySelectorAll('[data-product-card]')]
-                        .map((el) => Number(el.getAttribute('data-product-id')))
-                        .filter((id) => Number.isInteger(id) && id > 0);
-
-                    const targetIds = [...targetContainer.querySelectorAll('[data-product-card]')]
-                        .map((el) => Number(el.getAttribute('data-product-id')))
-                        .filter((id) => Number.isInteger(id) && id > 0);
-
-                    const movedProductId = Number(dragged.getAttribute('data-product-id'));
-
-                    const movedAcrossCategory = sourceCategoryId !== targetCategoryId;
-                    const reorderedWithinCategory = sourceCategoryId === targetCategoryId
-                        && sourceContainer
-                        && dragState.startSourceSignature !== orderSignature(sourceContainer);
-
-                    const shouldPersist = movedAcrossCategory || reorderedWithinCategory;
-
-                    if (shouldPersist && Number.isInteger(movedProductId) && movedProductId > 0) {
-                        try {
-                            const data = await persistCategoryMove({
-                                moved_product_id: movedProductId,
-                                source_category_id: Number(sourceCategoryId),
-                                target_category_id: Number(targetCategoryId),
-                                source_product_ids: sourceIds,
-                                target_product_ids: targetIds,
-                            });
-                            showFlash(data.message || i18n.moveUpdated);
-                        } catch (e) {
-                            showFlash(e.message || i18n.moveUpdateFailed, 'error');
-                            window.location.reload();
-                        }
-                    }
-
-                    updateSortLabels(sourceContainer);
-                    if (targetContainer !== sourceContainer) {
-                        updateSortLabels(targetContainer);
-                    }
-                    toggleEmptyPlaceholder(sourceContainer);
-                    toggleEmptyPlaceholder(targetContainer);
-                }
-
-                dragState.card = null;
-                dragState.sourceContainer = null;
-                dragState.currentContainer = null;
-                dragState.pendingReference = null;
-                dragState.startSourceSignature = '';
-            });
+            card.addEventListener('dragend', finishDrag);
         };
 
         containers.forEach((container) => {

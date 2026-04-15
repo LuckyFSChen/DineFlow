@@ -1,6 +1,15 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $currencyCode = strtolower((string) ($store->currency ?? 'twd'));
+    $currencySymbol = match ($currencyCode) {
+        'vnd' => 'VND',
+        'cny' => 'CNY',
+        'usd' => 'USD',
+        default => 'NT$',
+    };
+@endphp
 <div class="min-h-screen bg-slate-50">
     <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 
@@ -127,7 +136,7 @@
 
                                             {{-- Price --}}
                                             <div class="absolute bottom-3 right-3 rounded-full bg-white/90 px-3 py-1 text-sm font-bold text-brand-primary shadow">
-                                                NT$ {{ number_format($product->price) }}
+                                                {{ $currencySymbol }} {{ number_format($product->price) }}
                                             </div>
                                         </div>
 

@@ -8,6 +8,12 @@ return [
     'add_store_limit'       => 'Thêm Cửa Hàng (Đã Đạt Giới Hạn)',
     'store_name'            => 'Tên Cửa Hàng',
     'phone'                 => 'Điện Thoại',
+    'store_country'         => 'Quốc gia',
+    'filter_all_countries'  => 'Tất cả quốc gia',
+    'country_tw'            => 'Đài Loan',
+    'country_vn'            => 'Việt Nam',
+    'country_cn'            => 'Trung Quốc',
+    'country_us'            => 'Hoa Kỳ',
     'currency'              => 'Tiền tệ',
     'currency_twd'          => 'Đài tệ mới (TWD)',
     'currency_vnd'          => 'Đồng Việt Nam (VND)',
@@ -234,6 +240,7 @@ return [
     
     // Sorting & Counting
     'products_drag_to_sort'                 => 'Kéo để Sắp xếp',
+    'products_sorting_hint'                 => 'Kéo để sắp xếp sản phẩm, danh mục có thể bật/tắt nhanh.',
     'products_sort_label'                   => 'Thứ tự Sắp xếp',
     'products_items_count_suffix'           => 'mục sản phẩm',
     'products_unit_count'                   => 'mục',
@@ -248,7 +255,7 @@ return [
     // Form labels
     'products_form_product_name'            => 'Tên Sản phẩm',
     'products_form_category'                => 'Danh mục',
-    'products_form_price'                   => 'Giá (NT$)',
+    'products_form_price'                   => 'Giá',
     'products_form_sort'                    => 'Thứ tự Sắp xếp',
     'products_form_image_url'               => 'URL Hình ảnh',
     'products_form_image_url_optional'      => 'URL Hình ảnh (Tùy chọn)',

@@ -8,6 +8,12 @@ return [
     'add_store_limit'       => '新增店家（已達上限）',
     'store_name'            => '店家名稱',
     'phone'                 => '電話',
+    'store_country'         => '國家',
+    'filter_all_countries'  => '全部國家',
+    'country_tw'            => '台灣',
+    'country_vn'            => '越南',
+    'country_cn'            => '中國',
+    'country_us'            => '美國',
     'currency'              => '幣別',
     'currency_twd'          => '新台幣 (TWD)',
     'currency_vnd'          => '越南盾 (VND)',
@@ -235,6 +241,7 @@ return [
     
     // Sorting & Counting
     'products_drag_to_sort'                 => '拖曳排序',
+    'products_sorting_hint'                 => '拖曳可排序商品，分類可快速啟用/停用',
     'products_sort_label'                   => '排序',
     'products_items_count_suffix'           => '項商品',
     'products_unit_count'                   => '筆',
@@ -249,7 +256,7 @@ return [
     // Form labels
     'products_form_product_name'            => '商品名稱',
     'products_form_category'                => '分類',
-    'products_form_price'                   => '價格 (NT$)',
+    'products_form_price'                   => '價格',
     'products_form_sort'                    => '排序',
     'products_form_image_url'               => '圖片 URL',
     'products_form_image_url_optional'      => '圖片 URL (可留空)',

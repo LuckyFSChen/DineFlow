@@ -6,6 +6,15 @@
     <title>{{ __('customer.menu_page_title', ['store' => $store->name]) }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
+@php
+    $currencyCode = strtolower((string) ($store->currency ?? 'twd'));
+    $currencySymbol = match ($currencyCode) {
+        'vnd' => 'VND',
+        'cny' => 'CNY',
+        'usd' => 'USD',
+        default => 'NT$',
+    };
+@endphp
 <body class="bg-orange-50 text-gray-900">
     <div class="min-h-screen pb-28">
         {{-- Header --}}
@@ -94,7 +103,7 @@
 
                                         <div class="mt-4 flex items-center gap-2">
                                             <span class="text-xl font-bold text-orange-600">
-                                                NT$ {{ number_format($product->price) }}
+                                                {{ $currencySymbol }} {{ number_format($product->price) }}
                                             </span>
 
                                             @if ($product->is_sold_out)

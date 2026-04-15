@@ -17,7 +17,11 @@ class Store extends Model
         'description',
         'phone',
         'address',
+        'latitude',
+        'longitude',
         'currency',
+        'country_code',
+        'monthly_revenue_target',
         'contact_email',
         'notification_email',
         'is_active',
@@ -31,6 +35,9 @@ class Store extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'takeout_qr_enabled' => 'boolean',
+        'monthly_revenue_target' => 'integer',
+        'latitude' => 'float',
+        'longitude' => 'float',
     ];
 
     public function getBannerImageUrlAttribute(): ?string

@@ -23,6 +23,15 @@
         }
     </style>
 </head>
+@php
+    $currencyCode = strtolower((string) ($store->currency ?? 'twd'));
+    $currencySymbol = match ($currencyCode) {
+        'vnd' => 'VND',
+        'cny' => 'CNY',
+        'usd' => 'USD',
+        default => 'NT$',
+    };
+@endphp
 <body class="bg-brand-soft/20 text-brand-dark">
     <div class="min-h-screen pb-32">
         <header class="sticky top-0 z-30 border-b border-brand-soft/60 bg-white/95 backdrop-blur">
@@ -123,7 +132,7 @@
                                             <img src="{{ $productImage }}" alt="{{ $product->name }}" class="h-44 w-full object-cover transition duration-500 group-hover:scale-105">
                                             <div class="absolute inset-0 bg-gradient-to-t from-brand-dark/85 via-brand-dark/20 to-transparent"></div>
                                             <div class="absolute left-4 top-4 inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur">{{ $category->name }}</div>
-                                            <div class="absolute bottom-4 right-4 rounded-full bg-brand-highlight px-3 py-1.5 text-sm font-bold text-brand-dark shadow-lg">NT$ {{ number_format($product->price) }}</div>
+                                            <div class="absolute bottom-4 right-4 rounded-full bg-brand-highlight px-3 py-1.5 text-sm font-bold text-brand-dark shadow-lg">{{ $currencySymbol }} {{ number_format($product->price) }}</div>
                                         </div>
 
                                         <div class="p-5">
@@ -219,6 +228,7 @@
             optionsTitleWithProduct: @json(__('customer.select_options_title_with_product', ['product' => '__product__'])),
             requiredSuffix: @json(__('customer.required_suffix')),
             free: @json(__('customer.free')),
+            currencySymbol: @json($currencySymbol),
             requiredError: @json(__('customer.option_required_error', ['group' => '__group__'])),
             maxSelectError: @json(__('customer.option_max_select_error', ['group' => '__group__', 'max' => '__max__'])),
             unnamedProduct: @json(__('customer.product_default_name')),
@@ -296,7 +306,7 @@
                     const price = document.createElement('span');
                     const p = Number(choice.price || 0);
                     price.className = 'text-xs font-semibold ' + (p > 0 ? 'text-brand-primary' : 'text-slate-500');
-                    price.textContent = p > 0 ? `+NT$ ${p}` : i18n.free;
+                    price.textContent = p > 0 ? `+${i18n.currencySymbol} ${p}` : i18n.free;
 
                     row.appendChild(left);
                     row.appendChild(price);

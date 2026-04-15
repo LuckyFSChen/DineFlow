@@ -114,6 +114,8 @@
 
             <div class="mx-auto mb-10 max-w-3xl rounded-[1.75rem] border border-brand-soft/80 bg-white p-4 shadow-[0_18px_40px_rgba(90,30,14,0.08)]">
                 <form method="GET" action="{{ route('home') }}" class="flex flex-row gap-3">
+                    <input type="hidden" name="lat" id="home-latitude" value="{{ $userLatitude ?? '' }}">
+                    <input type="hidden" name="lng" id="home-longitude" value="{{ $userLongitude ?? '' }}">
                     <input
                         type="text"
                         name="keyword"
@@ -130,7 +132,20 @@
                         </svg>
                         {{ __('home.search') }}
                     </button>
+                    <button
+                        type="button"
+                        id="use-current-location"
+                        class="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl border border-brand-soft/70 bg-white px-4 py-3 text-base font-semibold text-brand-primary transition hover:bg-brand-soft/20"
+                    >
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1.07a6.01 6.01 0 014.93 4.93H17a1 1 0 110 2h-1.07a6.01 6.01 0 01-4.93 4.93V17a1 1 0 11-2 0v-1.07a6.01 6.01 0 01-4.93-4.93H3a1 1 0 110-2h1.07A6.01 6.01 0 019 4.07V3a1 1 0 011-1zm0 4a4 4 0 100 8 4 4 0 000-8z" clip-rule="evenodd"/>
+                        </svg>
+                        <span id="use-current-location-label">{{ __('home.use_my_location') }}</span>
+                    </button>
                 </form>
+                @if($hasUserLocation)
+                    <p class="mt-3 text-sm font-medium text-emerald-700">{{ __('home.location_filtered_hint') }}</p>
+                @endif
             </div>
 
             @if($stores->count())
@@ -168,6 +183,16 @@
                                         </span>
                                     @endif
                                 </div>
+                                @if(isset($store->distance_km))
+                                    <div class="absolute right-4 top-4">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-brand-dark shadow">
+                                            <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                <path fill-rule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm.75 4.25a.75.75 0 00-1.5 0v3c0 .2.08.39.22.53l1.75 1.75a.75.75 0 101.06-1.06l-1.53-1.53V6.25z" clip-rule="evenodd"/>
+                                            </svg>
+                                            {{ __('home.distance_km', ['km' => number_format((float) $store->distance_km, 1)]) }}
+                                        </span>
+                                    </div>
+                                @endif
                                 <div class="absolute bottom-4 left-4 right-4 text-white">
                                     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-highlight/80">{{ __('home.store_label') }}</p>
                                     <h3 class="mt-2 text-2xl font-bold">{{ $store->name }}</h3>
@@ -200,6 +225,14 @@
                                                 <path d="M2.4 2.9a1 1 0 011.1-.3l2.2.7a1 1 0 01.7 1v2a1 1 0 01-.3.7l-1 1a12.5 12.5 0 005 5l1-1a1 1 0 01.7-.3h2a1 1 0 011 .7l.7 2.2a1 1 0 01-.3 1.1l-1.4 1.1a2 2 0 01-1.8.3A16.3 16.3 0 012.9 7.1a2 2 0 01.3-1.8L4.3 3.9z"/>
                                             </svg>
                                             <span>{{ __('home.phone') }} {{ $store->phone }}</span>
+                                        </div>
+                                    @endif
+                                    @if(isset($store->distance_km))
+                                        <div class="flex items-center gap-2">
+                                            <svg class="h-4 w-4 text-brand-primary/70" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                <path fill-rule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm.75 4.25a.75.75 0 00-1.5 0v3c0 .2.08.39.22.53l1.75 1.75a.75.75 0 101.06-1.06l-1.53-1.53V6.25z" clip-rule="evenodd"/>
+                                            </svg>
+                                            <span>{{ __('home.distance_km', ['km' => number_format((float) $store->distance_km, 1)]) }}</span>
                                         </div>
                                     @endif
                                 </div>
@@ -376,4 +409,73 @@
         </div>
     </footer>
 </div>
+
+<script>
+(() => {
+    const locationButton = document.getElementById('use-current-location');
+    const locationButtonLabel = document.getElementById('use-current-location-label');
+    const latInput = document.getElementById('home-latitude');
+    const lngInput = document.getElementById('home-longitude');
+    const form = latInput?.closest('form');
+    const hasServerLocation = @json($hasUserLocation);
+    const i18n = {
+        locating: @json(__('home.locating')),
+        useMyLocation: @json(__('home.use_my_location')),
+        locationNotSupported: @json(__('home.location_not_supported')),
+        locationPermissionDenied: @json(__('home.location_permission_denied')),
+        locationUnavailable: @json(__('home.location_unavailable')),
+        locationTimeout: @json(__('home.location_timeout')),
+    };
+
+    if (!locationButton || !locationButtonLabel || !latInput || !lngInput || !form) {
+        return;
+    }
+
+    const resetButtonState = () => {
+        locationButton.disabled = false;
+        locationButtonLabel.textContent = i18n.useMyLocation;
+    };
+
+    const updateLocationAndSubmit = () => {
+        if (!navigator.geolocation) {
+            alert(i18n.locationNotSupported);
+            return;
+        }
+
+        locationButton.disabled = true;
+        locationButtonLabel.textContent = i18n.locating;
+
+        navigator.geolocation.getCurrentPosition((position) => {
+            latInput.value = String(position.coords.latitude);
+            lngInput.value = String(position.coords.longitude);
+            form.submit();
+        }, (error) => {
+            resetButtonState();
+
+            if (error.code === error.PERMISSION_DENIED) {
+                alert(i18n.locationPermissionDenied);
+                return;
+            }
+
+            if (error.code === error.TIMEOUT) {
+                alert(i18n.locationTimeout);
+                return;
+            }
+
+            alert(i18n.locationUnavailable);
+        }, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000,
+        });
+    };
+
+    locationButton.addEventListener('click', updateLocationAndSubmit);
+
+    if (!hasServerLocation && !sessionStorage.getItem('home-location-auto-attempted')) {
+        sessionStorage.setItem('home-location-auto-attempted', '1');
+        updateLocationAndSubmit();
+    }
+})();
+</script>
 @endsection

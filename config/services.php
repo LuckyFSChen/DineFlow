@@ -47,4 +47,10 @@ return [
         'allow_redirect_fallback' => (bool) env('ECPAY_ALLOW_REDIRECT_FALLBACK', false),
     ],
 
+    'google_places' => [
+        'api_key' => env('GOOGLE_PLACES_API_KEY'),
+        'endpoint' => env('GOOGLE_PLACES_ENDPOINT', 'https://maps.googleapis.com/maps/api/place/findplacefromtext/json'),
+        'timeout' => (int) env('GOOGLE_PLACES_TIMEOUT', 8),
+    ],
+
 ];

@@ -6,6 +6,15 @@
     <title>{{ __('customer.cart_title') }}｜DineFlow</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
+@php
+    $currencyCode = strtolower((string) ($store->currency ?? 'twd'));
+    $currencySymbol = match ($currencyCode) {
+        'vnd' => 'VND',
+        'cny' => 'CNY',
+        'usd' => 'USD',
+        default => 'NT$',
+    };
+@endphp
 <body class="bg-orange-50 text-gray-900">
     <div class="min-h-screen pb-32">
         {{-- Header --}}
@@ -82,14 +91,14 @@
                                             <p class="mt-1 text-xs text-amber-700">{{ __('customer.item_note_prefix') }} {{ $item['item_note'] }}</p>
                                         @endif
                                         <p class="mt-1 text-sm text-gray-500">
-                                            {{ __('customer.unit_price') }} NT$ {{ number_format($item['price']) }}
+                                            {{ __('customer.unit_price') }} {{ $currencySymbol }} {{ number_format($item['price']) }}
                                         </p>
                                     </div>
 
                                     <div class="text-right">
                                         <p class="text-sm text-gray-500">x {{ $item['qty'] }}</p>
                                         <p class="mt-1 text-base font-bold text-orange-600">
-                                            NT$ {{ number_format($item['subtotal']) }}
+                                            {{ $currencySymbol }} {{ number_format($item['subtotal']) }}
                                         </p>
                                     </div>
                                 </div>
@@ -100,7 +109,7 @@
                             <div class="flex items-center justify-between">
                                 <span class="text-base font-medium text-gray-600">{{ __('customer.order_total') }}</span>
                                 <span class="text-2xl font-bold text-orange-600">
-                                    NT$ {{ number_format($total) }}
+                                    {{ $currencySymbol }} {{ number_format($total) }}
                                 </span>
                             </div>
                         </div>

@@ -2,7 +2,14 @@
 
 @section('content')
 @php
-    $storeQuery = $selectedStoreId ? ['store_id' => $selectedStoreId] : [];
+    $selectedStore = $selectedStoreId ? $stores->firstWhere('id', $selectedStoreId) : null;
+    $storeQuery = array_filter([
+        'store_id' => $selectedStoreId,
+        'trend_granularity' => $trendGranularity,
+        'hour_step' => $hourStep,
+        'compare_start_date' => $compareStartDate,
+        'compare_end_date' => $compareEndDate,
+    ], fn ($value) => $value !== null && $value !== '');
     $quickRanges = [
         ['label' => __('merchant.today'), 'start' => now()->toDateString(), 'end' => now()->toDateString()],
         ['label' => __('merchant.last_7_days'), 'start' => now()->subDays(6)->toDateString(), 'end' => now()->toDateString()],
@@ -18,9 +25,22 @@
             align="center"
         >
             <x-slot name="actions">
-                <form method="GET" class="grid gap-2 rounded-xl border border-white/30 bg-white/10 p-3 sm:grid-cols-3 {{ $stores->count() > 1 ? 'lg:grid-cols-4' : '' }}">
+                <form method="GET" class="grid gap-2 rounded-xl border border-white/30 bg-white/10 p-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
                     <input type="date" name="start_date" value="{{ $startDate }}" class="rounded-lg border-slate-300 bg-white text-sm text-slate-900">
                     <input type="date" name="end_date" value="{{ $endDate }}" class="rounded-lg border-slate-300 bg-white text-sm text-slate-900">
+                    <input type="date" name="compare_start_date" value="{{ $compareStartDate }}" class="rounded-lg border-slate-300 bg-white text-sm text-slate-900" placeholder="{{ __('merchant.compare_start_date') }}">
+                    <input type="date" name="compare_end_date" value="{{ $compareEndDate }}" class="rounded-lg border-slate-300 bg-white text-sm text-slate-900" placeholder="{{ __('merchant.compare_end_date') }}">
+
+                    <select name="trend_granularity" class="rounded-lg border-slate-300 bg-white text-sm text-slate-900">
+                        <option value="day" @selected($trendGranularity === 'day')>{{ __('merchant.trend_granularity_day') }}</option>
+                        <option value="hour" @selected($trendGranularity === 'hour')>{{ __('merchant.trend_granularity_hour') }}</option>
+                    </select>
+
+                    <select name="hour_step" class="rounded-lg border-slate-300 bg-white text-sm text-slate-900">
+                        @foreach([1,2,3,4,6,12] as $step)
+                            <option value="{{ $step }}" @selected((int) $hourStep === $step)>{{ __('merchant.hour_step_option', ['hours' => $step]) }}</option>
+                        @endforeach
+                    </select>
 
                     @if($stores->count() > 1)
                         <select name="store_id" class="rounded-lg border-slate-300 bg-white text-sm text-slate-900">
@@ -39,6 +59,10 @@
                 <div class="flex flex-wrap items-center gap-2 text-xs">
                     <span class="rounded-full border border-white/30 bg-white/10 px-3 py-1 text-slate-100">{{ __('merchant.range') }}：{{ $startDate }} 至 {{ $endDate }}</span>
                     <span class="rounded-full border border-white/30 bg-white/10 px-3 py-1 text-slate-100">{{ __('merchant.store') }}：{{ $selectedStoreId ? ($stores->firstWhere('id', $selectedStoreId)->name ?? __('merchant.unknown_store')) : __('merchant.all_stores') }}</span>
+                    <span class="rounded-full border border-white/30 bg-white/10 px-3 py-1 text-slate-100">{{ __('merchant.trend_granularity') }}：{{ $trendGranularity === 'hour' ? __('merchant.trend_granularity_hour') : __('merchant.trend_granularity_day') }}{{ $trendGranularity === 'hour' ? ' / ' . __('merchant.hour_step_option', ['hours' => $hourStep]) : '' }}</span>
+                    @if($comparison)
+                        <span class="rounded-full border border-white/30 bg-white/10 px-3 py-1 text-slate-100">{{ __('merchant.compare_range') }}：{{ $comparison['start_date'] }} 至 {{ $comparison['end_date'] }}</span>
+                    @endif
                 </div>
                 <div class="mt-3 flex flex-wrap gap-2">
                     @foreach($quickRanges as $range)
@@ -50,6 +74,12 @@
                 </div>
             </x-slot>
         </x-backend-header>
+
+        @if(session('status'))
+            <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                {{ session('status') }}
+            </div>
+        @endif
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
@@ -74,20 +104,99 @@
             </div>
         </div>
 
+        <div class="mt-4 grid gap-4 lg:grid-cols-2">
+            <div class="rounded-2xl border border-indigo-200 bg-indigo-50 p-5">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-indigo-700">{{ __('merchant.monthly_target') }}</p>
+                        <p class="mt-2 text-2xl font-bold text-indigo-900">NT$ {{ number_format($monthlyRevenueTarget) }}</p>
+                        <p class="mt-1 text-xs text-indigo-700">{{ __('merchant.month_revenue_actual') }}：NT$ {{ number_format($currentMonthRevenue) }}</p>
+                        <p class="text-xs text-indigo-700">{{ __('merchant.month_target_remaining') }}：NT$ {{ number_format($monthlyTargetRemaining) }}</p>
+                    </div>
+
+                    @if($canEditMonthlyTarget && $selectedStore)
+                        <form method="POST" action="{{ route('merchant.reports.financial.monthly-target') }}" class="flex items-center gap-2">
+                            @csrf
+                            <input type="hidden" name="store_id" value="{{ $selectedStore->id }}">
+                            <input type="hidden" name="start_date" value="{{ $startDate }}">
+                            <input type="hidden" name="end_date" value="{{ $endDate }}">
+                            <input type="hidden" name="compare_start_date" value="{{ $compareStartDate }}">
+                            <input type="hidden" name="compare_end_date" value="{{ $compareEndDate }}">
+                            <input type="hidden" name="trend_granularity" value="{{ $trendGranularity }}">
+                            <input type="hidden" name="hour_step" value="{{ $hourStep }}">
+                            <input
+                                type="number"
+                                min="0"
+                                step="100"
+                                name="monthly_revenue_target"
+                                value="{{ $monthlyRevenueTarget }}"
+                                class="w-36 rounded-lg border-indigo-300 bg-white text-sm text-slate-900"
+                            >
+                            <button type="submit" class="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700">{{ __('merchant.save_target') }}</button>
+                        </form>
+                    @else
+                        <p class="text-xs font-medium text-indigo-700">{{ __('merchant.monthly_target_hint_choose_store') }}</p>
+                    @endif
+                </div>
+
+                <div class="mt-4">
+                    <div class="mb-1 flex items-center justify-between text-xs font-semibold text-indigo-700">
+                        <span>{{ __('merchant.month_target_progress') }}</span>
+                        <span>{{ number_format($monthlyTargetProgress, 1) }}%</span>
+                    </div>
+                    <div class="h-2.5 rounded-full bg-indigo-100">
+                        <div class="h-2.5 rounded-full bg-indigo-500" style="width: {{ min(100, $monthlyTargetProgress) }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h3 class="text-sm font-semibold text-slate-800">{{ __('merchant.compare_summary') }}</h3>
+                @if($comparison)
+                    <p class="mt-1 text-xs text-slate-500">{{ $comparison['start_date'] }} ~ {{ $comparison['end_date'] }}</p>
+                    <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <p class="text-xs text-slate-500">{{ __('merchant.total_revenue') }}</p>
+                            <p class="mt-1 text-lg font-bold text-slate-900">NT$ {{ number_format($comparison['total_revenue']) }}</p>
+                            <p class="mt-1 text-xs font-semibold {{ $comparison['delta_revenue'] >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">{{ $comparison['delta_revenue'] >= 0 ? '+' : '' }}{{ number_format($comparison['delta_revenue']) }} ({{ $comparison['delta_revenue_ratio'] >= 0 ? '+' : '' }}{{ number_format($comparison['delta_revenue_ratio'], 1) }}%)</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <p class="text-xs text-slate-500">{{ __('merchant.total_orders') }}</p>
+                            <p class="mt-1 text-lg font-bold text-slate-900">{{ number_format($comparison['total_orders']) }}</p>
+                            <p class="mt-1 text-xs font-semibold {{ $comparison['delta_orders'] >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">{{ $comparison['delta_orders'] >= 0 ? '+' : '' }}{{ number_format($comparison['delta_orders']) }} ({{ $comparison['delta_orders_ratio'] >= 0 ? '+' : '' }}{{ number_format($comparison['delta_orders_ratio'], 1) }}%)</p>
+                        </div>
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <p class="text-xs text-slate-500">{{ __('merchant.avg_order_value') }}</p>
+                            <p class="mt-1 text-lg font-bold text-slate-900">NT$ {{ number_format($comparison['avg_order_value']) }}</p>
+                            <p class="mt-1 text-xs font-semibold {{ $comparison['delta_avg_order_value'] >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">{{ $comparison['delta_avg_order_value'] >= 0 ? '+' : '' }}{{ number_format($comparison['delta_avg_order_value']) }} ({{ $comparison['delta_avg_order_value_ratio'] >= 0 ? '+' : '' }}{{ number_format($comparison['delta_avg_order_value_ratio'], 1) }}%)</p>
+                        </div>
+                    </div>
+                @else
+                    <p class="mt-3 text-sm text-slate-500">{{ __('merchant.compare_empty_hint') }}</p>
+                @endif
+            </div>
+        </div>
+
         <div class="mt-4 grid gap-4 md:grid-cols-2">
             <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5">
                 <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">{{ __('merchant.dinein_revenue') }}</p>
                 <p class="mt-2 text-2xl font-bold text-amber-900">NT$ {{ number_format($dineInRevenue) }}</p>
+                <p class="mt-1 text-xs text-amber-700">{{ __('merchant.revenue_ratio') }}：{{ number_format($dineInRevenueRatio, 1) }}%</p>
+                <p class="text-xs text-amber-700">{{ __('merchant.order_ratio') }}：{{ number_format($dineInOrdersRatio, 1) }}% ({{ number_format($dineInOrders) }} {{ __('merchant.orders') }})</p>
             </div>
             <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
                 <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">{{ __('merchant.takeout_revenue') }}</p>
                 <p class="mt-2 text-2xl font-bold text-emerald-900">NT$ {{ number_format($takeoutRevenue) }}</p>
+                <p class="mt-1 text-xs text-emerald-700">{{ __('merchant.revenue_ratio') }}：{{ number_format($takeoutRevenueRatio, 1) }}%</p>
+                <p class="text-xs text-emerald-700">{{ __('merchant.order_ratio') }}：{{ number_format($takeoutOrdersRatio, 1) }}% ({{ number_format($takeoutOrders) }} {{ __('merchant.orders') }})</p>
             </div>
         </div>
 
         <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 class="text-lg font-semibold text-slate-900">{{ __('merchant.revenue_trend') }}</h2>
-            <p class="mt-1 text-sm text-slate-500">{{ __('merchant.revenue_trend_desc') }}</p>
+            <p class="mt-1 text-sm text-slate-500">
+                {{ $trendGranularity === 'hour' ? __('merchant.revenue_trend_desc_hourly', ['hours' => $hourStep]) : __('merchant.revenue_trend_desc') }}
+            </p>
             <div class="mt-4 h-[320px]">
                 <canvas id="revenue-chart"></canvas>
             </div>
@@ -249,6 +358,13 @@
                 intersect: false,
             },
             scales: {
+                x: {
+                    ticks: {
+                        autoSkip: true,
+                        maxRotation: 0,
+                        maxTicksLimit: 18,
+                    }
+                },
                 yRevenue: {
                     type: 'linear',
                     position: 'left',
