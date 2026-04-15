@@ -113,7 +113,7 @@ return [
     'revenue' => '營收',
     'no_sales_data' => '此區間尚無銷售資料',
     'no_store_revenue_data' => '此區間尚無門市營收資料',
-    'chart_revenue_label' => '營收 (NT$)',
+    'chart_revenue_label' => '營收 (:currency)',
     'chart_orders_label' => '訂單數',
     'payment_redirect_hint' => '付款將導向綠界金流頁面，完成付款後系統會自動同步訂閱狀態。',
 ];

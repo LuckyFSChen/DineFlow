@@ -196,7 +196,7 @@
     <div class="overflow-hidden rounded-[1.5rem] border border-brand-soft/70 bg-white shadow-[0_18px_40px_rgba(90,30,14,0.1)]">
         <div class="border-b border-brand-soft/60 bg-brand-dark px-4 py-4 text-white">
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-highlight/80">{{ __('customer.cart') }}</p>
-            <p class="mt-1 text-sm font-semibold">{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
+            <p class="mt-1 text-sm font-semibold">{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'currency' => $currencySymbol, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
         </div>
 
         <div class="max-h-[52vh] space-y-3 overflow-y-auto px-4 py-4">
@@ -233,7 +233,7 @@
     <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-[1.75rem] bg-brand-dark px-4 py-3 text-white shadow-[0_18px_44px_rgba(90,30,14,0.24)] transition-transform duration-200" data-cart-bar>
         <div>
             <p class="text-xs uppercase tracking-[0.2em] text-brand-highlight/80">{{ $orderingAvailable ? __('customer.open') : __('customer.ordering_closed') }}</p>
-            <p class="mt-1 text-sm font-semibold">{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
+            <p class="mt-1 text-sm font-semibold">{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'currency' => $currencySymbol, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
             @if(isset($orderHistory) && $orderHistory->isNotEmpty())
                 <div class="mt-1 flex flex-wrap gap-2">
                     @foreach($orderHistory->take(2) as $historyOrder)

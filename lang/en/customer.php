@@ -81,7 +81,7 @@ return [
     'ordering_closed'             => 'Outside business hours, ordering paused',
     'fresh_made'                  => 'Made fresh, perfect for your table.',
     'no_products_in_cat2'         => 'No items available in this category.',
-    'cart_bar_total'              => ':count items | NT$ :total',
+    'cart_bar_total'              => ':count items | :currency :total',
     'select_options_title'        => 'Select Options',
     'select_options_title_with_product' => 'Select Options: :product',
     'required_suffix'             => ' (Required)',

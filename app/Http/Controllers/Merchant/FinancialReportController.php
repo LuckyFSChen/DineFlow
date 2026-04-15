@@ -47,7 +47,7 @@ class FinancialReportController extends Controller
         $stores = Store::query()
             ->where('user_id', $user->id)
             ->orderBy('name')
-            ->get(['id', 'name', 'monthly_revenue_target']);
+            ->get(['id', 'name', 'currency', 'monthly_revenue_target']);
 
         $selectedStoreId = $stores->count() === 1
             ? (int) $stores->first()->id

@@ -81,7 +81,7 @@ return [
     'ordering_closed'             => 'Ngoài giờ mở cửa, tạm dừng đặt hàng',
     'fresh_made'                  => 'Nấu tươi, phù hợp đặt tại bàn.',
     'no_products_in_cat2'         => 'Danh mục này chưa có món nào.',
-    'cart_bar_total'              => ':count món | NT$ :total',
+    'cart_bar_total'              => ':count món | :currency :total',
     'select_options_title'        => 'Chọn Tùy Chọn',
     'select_options_title_with_product' => 'Chọn Tùy Chọn: :product',
     'required_suffix'             => ' (Bắt buộc)',

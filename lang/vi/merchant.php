@@ -113,7 +113,7 @@ return [
     'revenue' => 'Doanh Thu',
     'no_sales_data' => 'Không có dữ liệu bán hàng trong khoảng này',
     'no_store_revenue_data' => 'Không có dữ liệu doanh thu cửa hàng trong khoảng này',
-    'chart_revenue_label' => 'Doanh thu (NT$)',
+    'chart_revenue_label' => 'Doanh thu (:currency)',
     'chart_orders_label' => 'Đơn hàng',
     'payment_redirect_hint' => 'Bạn sẽ được chuyển đến ECPay. Trạng thái đăng ký sẽ tự đồng bộ sau khi thanh toán.',
 ];

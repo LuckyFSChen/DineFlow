@@ -113,7 +113,7 @@ return [
     'revenue' => 'Revenue',
     'no_sales_data' => 'No sales data in this range',
     'no_store_revenue_data' => 'No store revenue data in this range',
-    'chart_revenue_label' => 'Revenue (NT$)',
+    'chart_revenue_label' => 'Revenue (:currency)',
     'chart_orders_label' => 'Orders',
     'payment_redirect_hint' => 'You will be redirected to ECPay. Subscription status will sync automatically after payment.',
 ];

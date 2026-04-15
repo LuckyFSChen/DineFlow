@@ -81,7 +81,7 @@ return [
     'ordering_closed'             => '目前不在營業時間，暫停點餐',
     'fresh_made'                  => '現點現做，適合直接加入本桌訂單。',
     'no_products_in_cat2'         => '這個分類目前還沒有可點的商品。',
-    'cart_bar_total'              => ':count 項 | NT$ :total',
+    'cart_bar_total'              => ':count 項 | :currency :total',
     'select_options_title'        => '選擇搭配',
     'select_options_title_with_product' => '選擇搭配：:product',
     'required_suffix'             => '（必選）',

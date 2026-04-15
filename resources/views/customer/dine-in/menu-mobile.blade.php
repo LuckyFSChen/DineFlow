@@ -184,7 +184,7 @@
                 <div>
                     <p class="text-xs uppercase tracking-[0.2em] text-brand-highlight/80">{{ __('customer.table_no') }} {{ $table->table_no }}</p>
                     <p class="text-sm font-semibold">{{ $orderingAvailable ? __('customer.cart_bar_ordering_available') : __('customer.cart_bar_not_available') }}</p>
-                    <p class="mt-1 text-xs text-white/70">{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
+                    <p class="mt-1 text-xs text-white/70">{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'currency' => $currencySymbol, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
                     @if(isset($orderHistory) && $orderHistory->isNotEmpty())
                         <div class="mt-1 flex flex-wrap gap-2">
                             @foreach($orderHistory->take(2) as $historyOrder)

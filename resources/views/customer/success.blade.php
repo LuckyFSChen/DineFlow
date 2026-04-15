@@ -7,6 +7,15 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-orange-50 text-gray-900">
+    @php
+        $currencyCode = strtolower((string) ($order->store->currency ?? 'twd'));
+        $currencySymbol = match ($currencyCode) {
+            'vnd' => 'VND',
+            'cny' => 'CNY',
+            'usd' => 'USD',
+            default => 'NT$',
+        };
+    @endphp
     <div class="min-h-screen">
         <main class="mx-auto max-w-3xl px-4 py-8 sm:py-12">
             {{-- Success Banner --}}
@@ -62,7 +71,7 @@
 
                     <div class="rounded-2xl bg-orange-50 px-4 py-4">
                         <p class="text-sm text-gray-500">{{ __('customer.order_amount') }}</p>
-                        <p class="mt-1 font-semibold text-gray-900">NT$ {{ number_format($order->total) }}</p>
+                        <p class="mt-1 font-semibold text-gray-900">{{ $currencySymbol }} {{ number_format($order->total) }}</p>
                     </div>
                 </div>
             </section>
@@ -85,14 +94,14 @@
                                     <p class="mt-1 text-xs text-orange-600">{{ $item->note }}</p>
                                 @endif
                                 <p class="mt-1 text-sm text-gray-500">
-                                    {{ __('customer.unit_price') }} NT$ {{ number_format($item->price) }}
+                                    {{ __('customer.unit_price') }} {{ $currencySymbol }} {{ number_format($item->price) }}
                                 </p>
                             </div>
 
                             <div class="text-right">
                                 <p class="text-sm text-gray-500">x {{ $item->qty }}</p>
                                 <p class="mt-1 text-base font-bold text-orange-600">
-                                    NT$ {{ number_format($item->subtotal) }}
+                                    {{ $currencySymbol }} {{ number_format($item->subtotal) }}
                                 </p>
                             </div>
                         </div>
@@ -103,7 +112,7 @@
                     <div class="flex items-center justify-between">
                         <span class="text-base font-medium text-gray-600">{{ __('customer.total_label') }}</span>
                         <span class="text-2xl font-bold text-orange-600">
-                            NT$ {{ number_format($order->total) }}
+                            {{ $currencySymbol }} {{ number_format($order->total) }}
                         </span>
                     </div>
                 </div>

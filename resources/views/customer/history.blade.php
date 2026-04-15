@@ -7,6 +7,15 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-orange-50 text-gray-900">
+    @php
+        $currencyCode = strtolower((string) ($store->currency ?? 'twd'));
+        $currencySymbol = match ($currencyCode) {
+            'vnd' => 'VND',
+            'cny' => 'CNY',
+            'usd' => 'USD',
+            default => 'NT$',
+        };
+    @endphp
     <div class="min-h-screen">
         <main class="mx-auto max-w-4xl px-4 py-8 sm:py-12">
             <section class="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm">
@@ -62,7 +71,7 @@
                                     </div>
                                     <div class="text-right">
                                         <p class="text-sm font-semibold text-orange-700">{{ $historyOrder->customer_status_label }}</p>
-                                        <p class="text-xs text-gray-600">NT$ {{ number_format((int) $historyOrder->total) }}</p>
+                                        <p class="text-xs text-gray-600">{{ $currencySymbol }} {{ number_format((int) $historyOrder->total) }}</p>
                                     </div>
                                 </div>
 

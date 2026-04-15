@@ -3,6 +3,13 @@
 @section('content')
 @php
     $selectedStore = $selectedStoreId ? $stores->firstWhere('id', $selectedStoreId) : null;
+    $chartCurrencyCode = strtolower((string) ($selectedStore->currency ?? 'twd'));
+    $chartCurrencySymbol = match ($chartCurrencyCode) {
+        'vnd' => 'VND',
+        'cny' => 'CNY',
+        'usd' => 'USD',
+        default => 'NT$',
+    };
     $storeQuery = array_filter([
         'store_id' => $selectedStoreId,
         'trend_granularity' => $trendGranularity,
@@ -84,7 +91,7 @@
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('merchant.total_revenue') }}</p>
-                <p class="mt-2 text-2xl font-bold text-slate-900">NT$ {{ number_format($totalRevenue) }}</p>
+                <p class="mt-2 text-2xl font-bold text-slate-900">{{ $chartCurrencySymbol }} {{ number_format($totalRevenue) }}</p>
                 <p class="mt-1 text-xs text-slate-500">{{ __('merchant.exclude_cancelled') }}</p>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
@@ -94,7 +101,7 @@
             </div>
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('merchant.avg_order_value') }}</p>
-                <p class="mt-2 text-2xl font-bold text-slate-900">NT$ {{ number_format($avgOrderValue) }}</p>
+                <p class="mt-2 text-2xl font-bold text-slate-900">{{ $chartCurrencySymbol }} {{ number_format($avgOrderValue) }}</p>
                 <p class="mt-1 text-xs text-slate-500">{{ __('merchant.avg_formula') }}</p>
             </div>
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
@@ -109,9 +116,9 @@
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-indigo-700">{{ __('merchant.monthly_target') }}</p>
-                        <p class="mt-2 text-2xl font-bold text-indigo-900">NT$ {{ number_format($monthlyRevenueTarget) }}</p>
-                        <p class="mt-1 text-xs text-indigo-700">{{ __('merchant.month_revenue_actual') }}：NT$ {{ number_format($currentMonthRevenue) }}</p>
-                        <p class="text-xs text-indigo-700">{{ __('merchant.month_target_remaining') }}：NT$ {{ number_format($monthlyTargetRemaining) }}</p>
+                        <p class="mt-2 text-2xl font-bold text-indigo-900">{{ $chartCurrencySymbol }} {{ number_format($monthlyRevenueTarget) }}</p>
+                        <p class="mt-1 text-xs text-indigo-700">{{ __('merchant.month_revenue_actual') }}：{{ $chartCurrencySymbol }} {{ number_format($currentMonthRevenue) }}</p>
+                        <p class="text-xs text-indigo-700">{{ __('merchant.month_target_remaining') }}：{{ $chartCurrencySymbol }} {{ number_format($monthlyTargetRemaining) }}</p>
                     </div>
 
                     @if($canEditMonthlyTarget && $selectedStore)
@@ -157,7 +164,7 @@
                     <div class="mt-4 grid gap-3 sm:grid-cols-3">
                         <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
                             <p class="text-xs text-slate-500">{{ __('merchant.total_revenue') }}</p>
-                            <p class="mt-1 text-lg font-bold text-slate-900">NT$ {{ number_format($comparison['total_revenue']) }}</p>
+                            <p class="mt-1 text-lg font-bold text-slate-900">{{ $chartCurrencySymbol }} {{ number_format($comparison['total_revenue']) }}</p>
                             <p class="mt-1 text-xs font-semibold {{ $comparison['delta_revenue'] >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">{{ $comparison['delta_revenue'] >= 0 ? '+' : '' }}{{ number_format($comparison['delta_revenue']) }} ({{ $comparison['delta_revenue_ratio'] >= 0 ? '+' : '' }}{{ number_format($comparison['delta_revenue_ratio'], 1) }}%)</p>
                         </div>
                         <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -167,7 +174,7 @@
                         </div>
                         <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
                             <p class="text-xs text-slate-500">{{ __('merchant.avg_order_value') }}</p>
-                            <p class="mt-1 text-lg font-bold text-slate-900">NT$ {{ number_format($comparison['avg_order_value']) }}</p>
+                            <p class="mt-1 text-lg font-bold text-slate-900">{{ $chartCurrencySymbol }} {{ number_format($comparison['avg_order_value']) }}</p>
                             <p class="mt-1 text-xs font-semibold {{ $comparison['delta_avg_order_value'] >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">{{ $comparison['delta_avg_order_value'] >= 0 ? '+' : '' }}{{ number_format($comparison['delta_avg_order_value']) }} ({{ $comparison['delta_avg_order_value_ratio'] >= 0 ? '+' : '' }}{{ number_format($comparison['delta_avg_order_value_ratio'], 1) }}%)</p>
                         </div>
                     </div>
@@ -180,13 +187,13 @@
         <div class="mt-4 grid gap-4 md:grid-cols-2">
             <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5">
                 <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">{{ __('merchant.dinein_revenue') }}</p>
-                <p class="mt-2 text-2xl font-bold text-amber-900">NT$ {{ number_format($dineInRevenue) }}</p>
+                <p class="mt-2 text-2xl font-bold text-amber-900">{{ $chartCurrencySymbol }} {{ number_format($dineInRevenue) }}</p>
                 <p class="mt-1 text-xs text-amber-700">{{ __('merchant.revenue_ratio') }}：{{ number_format($dineInRevenueRatio, 1) }}%</p>
                 <p class="text-xs text-amber-700">{{ __('merchant.order_ratio') }}：{{ number_format($dineInOrdersRatio, 1) }}% ({{ number_format($dineInOrders) }} {{ __('merchant.orders') }})</p>
             </div>
             <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
                 <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">{{ __('merchant.takeout_revenue') }}</p>
-                <p class="mt-2 text-2xl font-bold text-emerald-900">NT$ {{ number_format($takeoutRevenue) }}</p>
+                <p class="mt-2 text-2xl font-bold text-emerald-900">{{ $chartCurrencySymbol }} {{ number_format($takeoutRevenue) }}</p>
                 <p class="mt-1 text-xs text-emerald-700">{{ __('merchant.revenue_ratio') }}：{{ number_format($takeoutRevenueRatio, 1) }}%</p>
                 <p class="text-xs text-emerald-700">{{ __('merchant.order_ratio') }}：{{ number_format($takeoutOrdersRatio, 1) }}% ({{ number_format($takeoutOrders) }} {{ __('merchant.orders') }})</p>
             </div>
@@ -221,7 +228,7 @@
                                     <td class="px-3 py-2 text-slate-500">#{{ $index + 1 }}</td>
                                     <td class="px-3 py-2 font-medium text-slate-800">{{ $product->display_name }}</td>
                                     <td class="px-3 py-2 text-right text-slate-700">{{ number_format((int) $product->sold_qty) }}</td>
-                                    <td class="px-3 py-2 text-right text-slate-900">NT$ {{ number_format((int) $product->sold_amount) }}</td>
+                                    <td class="px-3 py-2 text-right text-slate-900">{{ $chartCurrencySymbol }} {{ number_format((int) $product->sold_amount) }}</td>
                                 </tr>
                             @empty
                                 <tr>
@@ -249,7 +256,7 @@
                                 <tr class="border-t border-slate-100">
                                     <td class="px-3 py-2 font-medium text-slate-800">{{ $row->store_name }}</td>
                                     <td class="px-3 py-2 text-right text-slate-700">{{ number_format((int) $row->order_count) }}</td>
-                                    <td class="px-3 py-2 text-right text-slate-900">NT$ {{ number_format((int) $row->revenue) }}</td>
+                                    <td class="px-3 py-2 text-right text-slate-900">{{ $chartCurrencySymbol }} {{ number_format((int) $row->revenue) }}</td>
                                 </tr>
                             @empty
                                 <tr>
@@ -283,7 +290,7 @@
                     <div class="mb-3 flex items-start justify-between gap-3">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ __('merchant.rank_total_sales') }}</p>
-                            <p id="product-share-total" class="mt-1 text-xl font-bold text-slate-900">NT$ 0</p>
+                            <p id="product-share-total" class="mt-1 text-xl font-bold text-slate-900">{{ $chartCurrencySymbol }} 0</p>
                         </div>
                         <div class="text-right">
                             <p class="text-xs text-slate-500">{{ __('merchant.top_ratio') }}</p>
@@ -315,8 +322,9 @@
     const labels = @json($chartLabels);
     const revenue = @json($chartRevenue);
     const orders = @json($chartOrders);
-    const chartRevenueLabel = @json(__('merchant.chart_revenue_label'));
+    const chartRevenueLabel = @json(__('merchant.chart_revenue_label', ['currency' => $chartCurrencySymbol]));
     const chartOrdersLabel = @json(__('merchant.chart_orders_label'));
+    const chartCurrencySymbol = @json($chartCurrencySymbol);
     const productShareLabels = @json($topProducts->pluck('display_name')->values());
     const productShareValues = @json($topProducts->pluck('sold_amount')->map(fn($v) => (int) $v)->values());
 
@@ -421,7 +429,7 @@
             }
 
             if (productShareTotalEl) {
-                productShareTotalEl.textContent = `NT$ ${totalShareValue.toLocaleString('zh-TW')}`;
+                productShareTotalEl.textContent = `${chartCurrencySymbol} ${totalShareValue.toLocaleString('zh-TW')}`;
             }
 
             if (rows.length > 0 && productShareTopEl) {
@@ -484,7 +492,7 @@
                                 label: (ctx) => {
                                     const val = Number(ctx.raw || 0);
                                     const ratio = totalShareValue > 0 ? (val / totalShareValue) * 100 : 0;
-                                    return `${ctx.label}: NT$ ${val.toLocaleString('zh-TW')} (${ratio.toFixed(1)}%)`;
+                                    return `${ctx.label}: ${chartCurrencySymbol} ${val.toLocaleString('zh-TW')} (${ratio.toFixed(1)}%)`;
                                 },
                             }
                         }
@@ -508,7 +516,7 @@
 
                 const sub = document.createElement('p');
                 sub.className = 'text-xs text-slate-500';
-                sub.textContent = `NT$ ${row.value.toLocaleString('zh-TW')}`;
+                sub.textContent = `${chartCurrencySymbol} ${row.value.toLocaleString('zh-TW')}`;
 
                 const badge = document.createElement('span');
                 badge.className = 'rounded-full px-2 py-1 text-xs font-semibold text-white';
