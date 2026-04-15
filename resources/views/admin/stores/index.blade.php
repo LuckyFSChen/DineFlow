@@ -325,6 +325,16 @@
                     </select>
                 </div>
 
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">Timezone</label>
+                    <select name="timezone" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        <option value="Asia/Taipei">Asia/Taipei</option>
+                        <option value="Asia/Ho_Chi_Minh">Asia/Ho_Chi_Minh</option>
+                        <option value="Asia/Shanghai">Asia/Shanghai</option>
+                        <option value="America/New_York">America/New_York</option>
+                    </select>
+                </div>
+
                 <div class="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
                     <label class="mb-2 block text-xs font-semibold text-slate-600">{{ __('admin.banner_image') }}</label>
                     <div id="store-banner-dropzone" class="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-white p-5 text-center transition hover:border-indigo-400 hover:bg-indigo-50">
@@ -708,6 +718,7 @@
         modalForm.elements['checkout_timing'].value = 'postpay';
         modalForm.elements['country_code'].value = 'tw';
         modalForm.elements['currency'].value = 'twd';
+        modalForm.elements['timezone'].value = 'Asia/Taipei';
 
         if (!store) {
             return;
@@ -723,6 +734,7 @@
         modalForm.elements['checkout_timing'].value = store.checkout_timing || 'postpay';
         modalForm.elements['country_code'].value = (store.country_code || 'tw').toLowerCase();
         modalForm.elements['currency'].value = (store.currency || 'twd').toLowerCase();
+        modalForm.elements['timezone'].value = store.timezone || 'Asia/Taipei';
         modalForm.elements['is_active'].checked = !!store.is_active;
 
         if (store.banner_image_url) {

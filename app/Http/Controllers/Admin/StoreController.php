@@ -58,6 +58,7 @@ class StoreController extends Controller
             'address' => $data['address'] ?? null,
             'latitude' => $data['latitude'] ?? null,
             'longitude' => $data['longitude'] ?? null,
+            'timezone' => $data['timezone'] ?? null,
             'phone' => $data['phone'] ?? null,
             'is_active' => $data['is_active'],
             'takeout_qr_enabled' => true,
@@ -106,6 +107,7 @@ class StoreController extends Controller
             'address' => $data['address'] ?? null,
             'latitude' => $data['latitude'] ?? null,
             'longitude' => $data['longitude'] ?? null,
+            'timezone' => $data['timezone'] ?? null,
             'phone' => $data['phone'] ?? null,
             'is_active' => $data['is_active'],
         ];
@@ -156,6 +158,7 @@ class StoreController extends Controller
             'address' => ['nullable', 'string', 'max:255'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
+            'timezone' => ['nullable', 'timezone'],
             'phone' => ['nullable', 'regex:/^(09\d{2}-\d{3}-\d{3}|09\d{8})$/'],
             'banner_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
         ], [
@@ -165,6 +168,7 @@ class StoreController extends Controller
         $data['phone'] = $this->normalizeTaiwanMobilePhone($data['phone'] ?? null);
         $data['latitude'] = $this->normalizeCoordinate($data['latitude'] ?? null);
         $data['longitude'] = $this->normalizeCoordinate($data['longitude'] ?? null);
+        $data['timezone'] = trim((string) ($data['timezone'] ?? '')) ?: null;
 
         return $data;
     }

@@ -21,6 +21,7 @@ class Store extends Model
         'longitude',
         'currency',
         'country_code',
+        'timezone',
         'monthly_revenue_target',
         'contact_email',
         'notification_email',
@@ -79,7 +80,10 @@ class Store extends Model
             return true;
         }
 
-        $dateTime ??= now();
+        $timezone = $this->businessTimezone();
+        $dateTime = $dateTime
+            ? $dateTime->copy()->setTimezone($timezone)
+            : now($timezone);
 
         $current = $dateTime->format('H:i:s');
         $openingTime = $this->normalizeTime($this->opening_time);
@@ -94,6 +98,22 @@ class Store extends Model
         }
 
         return $current >= $openingTime || $current <= $closingTime;
+    }
+
+    public function businessTimezone(): string
+    {
+        $storeTimezone = (string) ($this->timezone ?? '');
+        if ($storeTimezone !== '' && in_array($storeTimezone, timezone_identifiers_list(), true)) {
+            return $storeTimezone;
+        }
+
+        return match (strtolower((string) $this->country_code)) {
+            'vn' => 'Asia/Ho_Chi_Minh',
+            'cn' => 'Asia/Shanghai',
+            'us' => 'America/New_York',
+            'tw' => 'Asia/Taipei',
+            default => config('app.timezone', 'Asia/Taipei'),
+        };
     }
 
     public function isOrderingAvailable(?Carbon $dateTime = null): bool

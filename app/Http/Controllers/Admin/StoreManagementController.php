@@ -236,6 +236,7 @@ class StoreManagementController extends Controller
             'phone' => ['nullable', 'regex:/^(09\d{2}-\d{3}-\d{3}|09\d{8})$/'],
             'currency' => ['nullable', 'in:twd,vnd,cny,usd'],
             'country_code' => ['nullable', 'in:tw,vn,cn,us'],
+            'timezone' => ['nullable', 'timezone'],
             'banner_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
             'checkout_timing' => ['nullable', 'in:prepay,postpay'],
             'opening_time' => ['nullable', 'date_format:H:i', 'required_with:closing_time'],
@@ -251,6 +252,8 @@ class StoreManagementController extends Controller
         $data['is_active'] = $request->boolean('is_active');
         $data['currency'] = strtolower($data['currency'] ?? 'twd');
         $data['country_code'] = strtolower($data['country_code'] ?? $this->inferCountryCodeFromCurrency($data['currency']));
+        $timezone = trim((string) ($data['timezone'] ?? ''));
+        $data['timezone'] = $timezone !== '' ? $timezone : $this->inferTimezoneFromCountryCode($data['country_code']);
         $data['checkout_timing'] = $data['checkout_timing'] ?? 'postpay';
         $data['takeout_qr_enabled'] = true;
 
@@ -412,6 +415,7 @@ class StoreManagementController extends Controller
             'phone' => $store->phone,
             'currency' => strtolower($store->currency ?? 'twd'),
             'country_code' => strtolower($store->country_code ?? $this->inferCountryCodeFromCurrency($store->currency ?? 'twd')),
+            'timezone' => $store->timezone ?: $this->inferTimezoneFromCountryCode(strtolower($store->country_code ?? 'tw')),
             'checkout_timing' => $store->checkout_timing ?? 'postpay',
             'is_active' => (bool) $store->is_active,
             'opening_time' => $this->formatTimeForInput($store->opening_time),
@@ -440,6 +444,16 @@ class StoreManagementController extends Controller
             'cny' => 'cn',
             'usd' => 'us',
             default => 'tw',
+        };
+    }
+
+    protected function inferTimezoneFromCountryCode(string $countryCode): string
+    {
+        return match (strtolower($countryCode)) {
+            'vn' => 'Asia/Ho_Chi_Minh',
+            'cn' => 'Asia/Shanghai',
+            'us' => 'America/New_York',
+            default => 'Asia/Taipei',
         };
     }
 

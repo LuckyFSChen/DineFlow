@@ -69,6 +69,20 @@
         @enderror
     </div>
 
+    <div>
+        <label class="mb-2 block text-sm font-semibold text-slate-700">Timezone</label>
+        <select name="timezone"
+                class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+            <option value="Asia/Taipei" @selected(old('timezone', $store->timezone ?? 'Asia/Taipei') === 'Asia/Taipei')>Asia/Taipei</option>
+            <option value="Asia/Ho_Chi_Minh" @selected(old('timezone', $store->timezone ?? 'Asia/Taipei') === 'Asia/Ho_Chi_Minh')>Asia/Ho_Chi_Minh</option>
+            <option value="Asia/Shanghai" @selected(old('timezone', $store->timezone ?? 'Asia/Taipei') === 'Asia/Shanghai')>Asia/Shanghai</option>
+            <option value="America/New_York" @selected(old('timezone', $store->timezone ?? 'Asia/Taipei') === 'America/New_York')>America/New_York</option>
+        </select>
+        @error('timezone')
+            <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+        @enderror
+    </div>
+
     <div class="lg:col-span-2">
         <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('admin.store_description') }}</label>
         <textarea name="description" rows="5"
