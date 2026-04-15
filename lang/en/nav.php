@@ -1,11 +1,19 @@
 <?php
 
 return [
+    'admin_console'      => 'Admin Console',
+    'login'              => 'Log in',
+    'register'           => 'Register',
     'subscription'        => 'Subscription',
     'financial_report'    => 'Financial Report',
     'store_backend'       => 'Store Management',
+    'stores_short'        => 'Stores',
     'kitchen'             => 'Kitchen Board',
+    'kitchen_short'       => 'Kitchen',
     'cashier'             => 'Cashier Board',
+    'cashier_short'       => 'Cashier',
+    'plan_short'          => 'Plan',
+    'subscription_short'  => 'Subs',
     'super_admin'         => 'Super Admin',
     'account_center'      => 'Account Center',
     'profile'             => 'Profile',

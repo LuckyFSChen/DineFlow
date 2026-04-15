@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\SubscriptionChangeLog;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -11,20 +12,31 @@ use Illuminate\View\View;
 
 class UserSubscriptionController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $activeTab = in_array($request->query('tab'), ['manage', 'logs'], true)
+            ? $request->query('tab')
+            : 'manage';
+
         $merchants = User::query()
             ->where('role', 'merchant')
             ->with('subscriptionPlan')
             ->orderBy('id')
-            ->paginate(15);
+            ->paginate(15, ['*'], 'merchants_page')
+            ->withQueryString();
+
+        $logs = SubscriptionChangeLog::query()
+            ->with(['adminUser', 'merchantUser', 'oldPlan', 'newPlan'])
+            ->latest()
+            ->paginate(20, ['*'], 'logs_page')
+            ->withQueryString();
 
         $plans = SubscriptionPlan::query()
             ->where('is_active', true)
             ->orderBy('price_twd')
             ->get();
 
-        return view('admin.subscriptions.index', compact('merchants', 'plans'));
+        return view('admin.subscriptions.index', compact('activeTab', 'merchants', 'plans', 'logs'));
     }
 
     public function update(Request $request, User $user): RedirectResponse

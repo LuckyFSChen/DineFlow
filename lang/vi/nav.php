@@ -1,11 +1,19 @@
 <?php
 
 return [
+    'admin_console'      => 'Bảng Điều Khiển',
+    'login'              => 'Đăng Nhập',
+    'register'           => 'Đăng Ký',
     'subscription'        => 'Gói Đăng Ký',
     'financial_report'    => 'Báo Cáo Tài Chính',
     'store_backend'       => 'Quản Lý Cửa Hàng',
+    'stores_short'        => 'Cửa Hàng',
     'kitchen'             => 'Bảng Bếp',
+    'kitchen_short'       => 'Bếp',
     'cashier'             => 'Bảng Thu Ngân',
+    'cashier_short'       => 'Thu Ngân',
+    'plan_short'          => 'Gói',
+    'subscription_short'  => 'Đăng Ký',
     'super_admin'         => 'Quản Trị Tối Cao',
     'account_center'      => 'Trung Tâm Tài Khoản',
     'profile'             => 'Hồ Sơ',

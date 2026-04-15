@@ -4,14 +4,66 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Auth;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    protected static function booted(): void
+    {
+        static::updated(function (User $user): void {
+            if (! $user->isMerchant()) {
+                return;
+            }
+
+            if (! ($user->wasChanged('subscription_plan_id') || $user->wasChanged('subscription_ends_at'))) {
+                return;
+            }
+
+            $admin = Auth::user();
+            if (! ($admin instanceof User) || ! $admin->isAdmin()) {
+                return;
+            }
+
+            $oldPlanId = $user->getOriginal('subscription_plan_id');
+            $oldEndsAtRaw = $user->getOriginal('subscription_ends_at');
+            $oldEndsAt = $oldEndsAtRaw ? Carbon::parse($oldEndsAtRaw) : null;
+            $oldStatus = $oldEndsAt && $oldEndsAt->greaterThanOrEqualTo(now()->startOfDay())
+                ? 'active'
+                : 'inactive';
+
+            $oldPlanName = null;
+            if ($oldPlanId !== null) {
+                $oldPlanName = SubscriptionPlan::query()->whereKey($oldPlanId)->value('name');
+            }
+
+            $action = request()?->input('action');
+            if (! in_array($action, ['activate', 'expire'], true)) {
+                $action = $user->hasActiveSubscription() ? 'activate' : 'expire';
+            }
+
+            SubscriptionChangeLog::query()->create([
+                'admin_user_id' => $admin->id,
+                'merchant_user_id' => $user->id,
+                'store_names_snapshot' => $user->stores()->orderBy('id')->pluck('name')->implode(', ') ?: null,
+                'old_plan_id' => $oldPlanId,
+                'old_plan_name' => $oldPlanName,
+                'old_status' => $oldStatus,
+                'old_subscription_ends_at' => $oldEndsAt,
+                'new_plan_id' => $user->subscription_plan_id,
+                'new_plan_name' => $user->subscriptionPlan?->name,
+                'new_status' => $user->hasActiveSubscription() ? 'active' : 'inactive',
+                'new_subscription_ends_at' => $user->subscription_ends_at,
+                'action' => $action,
+            ]);
+        });
+    }
 
     /**
      * The attributes that are mass assignable.

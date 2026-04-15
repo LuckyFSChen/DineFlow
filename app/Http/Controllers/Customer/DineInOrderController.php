@@ -82,7 +82,7 @@ class DineInOrderController extends Controller
 
         return redirect()
             ->route('customer.dinein.menu', ['store' => $store, 'table' => $table])
-            ->with('success', '商品已加入購物車。');
+            ->with('success', __('customer.item_added_to_cart'));
     }
 
     public function cart(Store $store, DiningTable $table)

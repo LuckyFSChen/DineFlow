@@ -23,6 +23,12 @@ return [
     'customer_desc'              => 'Customer account for personal profile and ordering experience.',
     'merchant_type'              => 'Merchant',
     'merchant_desc'              => 'Merchant account. Requires an active subscription to manage stores.',
+    'secure_area_confirm_password' => 'This is a secure area of the application. Please confirm your password before continuing.',
+    'Confirm'                    => 'Confirm',
+    'Reset Password'             => 'Reset Password',
+    'Resend Verification Email'  => 'Resend Verification Email',
+    'verify_email_intro'         => 'Thanks for signing up! Before getting started, could you verify your email address by clicking on the link we just emailed to you? If you did not receive the email, we will gladly send you another.',
+    'verification_link_sent'     => 'A new verification link has been sent to the email address you provided during registration.',
     'Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.' =>
         'Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.',
     'Email Password Reset Link'  => 'Email Password Reset Link',

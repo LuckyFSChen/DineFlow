@@ -1,6 +1,30 @@
 @extends('layouts.app')
 
-@section('title', '所有看板 — ' . $store->name)
+@section('title', __('admin.board_all_title') . ' — ' . $store->name)
+
+@php
+$allBoardsI18n = [
+    'order_unit' => __('admin.board_order_unit'),
+    'waiting_prefix' => __('admin.board_waiting_prefix'),
+    'locale_prefix' => __('admin.board_locale_prefix'),
+    'accept_prepay' => __('admin.board_action_accept_prepay'),
+    'accept_postpay' => __('admin.board_action_accept_postpay'),
+    'error_update_failed' => __('admin.board_error_update_failed'),
+    'error_missing_csrf' => __('admin.board_error_missing_csrf'),
+    'error_network' => __('admin.board_error_network'),
+    'label_kitchen' => __('admin.board_label_kitchen'),
+    'label_cashier' => __('admin.board_label_cashier'),
+    'status_preparing' => __('admin.board_status_preparing'),
+    'status_unpaid_collect' => __('admin.board_status_unpaid_collect'),
+    'status_pending' => __('admin.board_status_pending'),
+    'status_accepted' => __('admin.board_status_accepted'),
+    'status_confirmed' => __('admin.board_status_confirmed'),
+    'status_received' => __('admin.board_status_received'),
+    'seconds_ago' => __('admin.board_time_seconds_ago'),
+    'minutes_ago' => __('admin.board_time_minutes_ago'),
+    'hours_ago' => __('admin.board_time_hours_ago'),
+];
+@endphp
 
 @section('content')
 <div class="min-h-screen bg-slate-900 text-white" x-data="allBoards()" x-init="init()">
@@ -9,10 +33,10 @@
         <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div class="flex items-center gap-4">
             <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700">
-                ← 回店家管理
+                ← {{ __('admin.board_back_to_stores') }}
             </a>
             <div>
-                <h1 class="text-lg font-bold text-white">🧩 所有看板</h1>
+                <h1 class="text-lg font-bold text-white">🧩 {{ __('admin.board_all_title') }}</h1>
                 <p class="text-xs text-slate-400">{{ $store->name }}</p>
             </div>
         </div>
@@ -21,18 +45,18 @@
             <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
                 @if($store->is_active)
                     <a href="{{ route('admin.stores.cashier', $store) }}" class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
-                        💳 結帳看板
+                        💳 {{ __('admin.board_cashier_title') }}
                     </a>
                     <a href="{{ route('admin.stores.kitchen', $store) }}" class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
-                        🍳 後廚看板
+                        🍳 {{ __('admin.board_kitchen_title') }}
                     </a>
                 @endif
-                <span class="px-3 py-1.5 bg-indigo-600 text-white">🧩 所有看板</span>
+                <span class="px-3 py-1.5 bg-indigo-600 text-white">🧩 {{ __('admin.board_all_title') }}</span>
             </div>
 
             @if(($availableStores ?? collect())->count() > 1)
                 <div class="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs">
-                    <span class="text-slate-400">店家</span>
+                    <span class="text-slate-400">{{ __('admin.board_store') }}</span>
                     <select
                         class="rounded border border-slate-600 bg-slate-900 px-2 py-1 text-xs text-slate-100 focus:border-indigo-500 focus:outline-none"
                         onchange="if (this.value) window.location.href = this.value;">
@@ -46,9 +70,16 @@
             @endif
 
             <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
-                <button @click="boardFilter = 'all'" :class="boardFilter === 'all' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">全部</button>
-                <button @click="boardFilter = 'cashier'" :class="boardFilter === 'cashier' ? 'bg-amber-500 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">結帳</button>
-                <button @click="boardFilter = 'kitchen'" :class="boardFilter === 'kitchen' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">後廚</button>
+                <button @click="boardFilter = 'all'" :class="boardFilter === 'all' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">{{ __('admin.board_filter_all') }}</button>
+                <button @click="boardFilter = 'cashier'" :class="boardFilter === 'cashier' ? 'bg-amber-500 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">{{ __('admin.board_label_cashier') }}</button>
+                <button @click="boardFilter = 'kitchen'" :class="boardFilter === 'kitchen' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">{{ __('admin.board_label_kitchen') }}</button>
+            </div>
+
+            <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
+                <a href="{{ route('locale.switch', 'zh_TW') }}" class="px-2.5 py-1.5 transition {{ app()->getLocale() === 'zh_TW' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-700' }}">ZH</a>
+                <a href="{{ route('locale.switch', 'zh_CN') }}" class="px-2.5 py-1.5 transition {{ app()->getLocale() === 'zh_CN' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-700' }}">CN</a>
+                <a href="{{ route('locale.switch', 'en') }}" class="px-2.5 py-1.5 transition {{ app()->getLocale() === 'en' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-700' }}">EN</a>
+                <a href="{{ route('locale.switch', 'vi') }}" class="px-2.5 py-1.5 transition {{ app()->getLocale() === 'vi' ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-700' }}">VI</a>
             </div>
 
             <div class="flex items-center gap-1.5 rounded-full border border-emerald-700 bg-emerald-900/50 px-3 py-1 text-xs text-emerald-400">
@@ -56,10 +87,10 @@
                     <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
                     <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
                 </span>
-                即時更新
+                {{ __('admin.board_live_updating') }}
             </div>
 
-            <span class="rounded-full bg-indigo-600 px-3 py-0.5 text-xs font-bold" x-text="filteredOrders.length + ' 單'"></span>
+            <span class="rounded-full bg-indigo-600 px-3 py-0.5 text-xs font-bold" x-text="filteredOrders.length + ' ' + i18n.order_unit"></span>
         </div>
         </div>
     </div>
@@ -68,8 +99,8 @@
         <svg class="mb-4 h-16 w-16 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
         </svg>
-        <p class="text-xl font-semibold">目前沒有待處理訂單</p>
-        <p class="mt-1 text-sm">新訂單進來時會自動顯示</p>
+        <p class="text-xl font-semibold">{{ __('admin.board_empty_pending') }}</p>
+        <p class="mt-1 text-sm">{{ __('admin.board_empty_auto') }}</p>
     </div>
 
     <div x-show="loading" class="flex items-center justify-center py-20">
@@ -86,15 +117,17 @@
                         <span class="font-mono text-lg font-bold text-white" x-text="'#' + (order.order_no || order.id)"></span>
                         <div class="mt-0.5 flex items-center gap-2 text-xs">
                             <template x-if="order.order_type === 'dine_in' && order.table">
-                                <span class="rounded bg-slate-700 px-1.5 py-0.5 text-slate-300">桌號 <span x-text="order.table.table_no"></span></span>
+                                <span class="rounded bg-slate-700 px-1.5 py-0.5 text-slate-300">{{ __('admin.board_table_no') }} <span x-text="order.table.table_no"></span></span>
                             </template>
                             <template x-if="order.order_type === 'takeout' || order.order_type === 'take_out'">
-                                <span class="rounded bg-orange-800/60 px-1.5 py-0.5 text-orange-300">外帶</span>
+                                <span class="rounded bg-orange-800/60 px-1.5 py-0.5 text-orange-300">{{ __('admin.board_takeout') }}</span>
                             </template>
                                 <span class="text-slate-500" x-text="timeAgo(order.created_at)"></span>
                                 <span class="rounded px-1.5 py-0.5 text-[10px] font-semibold"
                                     :class="waitBadgeClass(order)"
-                                    x-text="'等待 ' + waitMinutes(order) + 'm'"></span>
+                                    x-text="i18n.waiting_prefix + waitMinutes(order) + 'm'"></span>
+                                <span class="rounded border border-sky-500/40 bg-sky-900/40 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300"
+                                    x-text="i18n.locale_prefix + localeLabel(order.order_locale)"></span>
                         </div>
                         <div x-show="order.customer_name" class="mt-0.5 text-xs text-slate-400">
                             👤 <span x-text="order.customer_name"></span>
@@ -127,7 +160,7 @@
 
                 <template x-if="order.note">
                     <div class="mx-4 mb-3 rounded-lg bg-yellow-900/30 border border-yellow-700/30 px-3 py-2 text-xs text-yellow-300">
-                        <span class="font-semibold">備註：</span><span x-text="order.note"></span>
+                        <span class="font-semibold">{{ __('admin.board_note_label') }}</span><span x-text="order.note"></span>
                     </div>
                 </template>
 
@@ -138,33 +171,33 @@
                                 :disabled="order._loading"
                                 class="flex-1 rounded-xl px-3 py-2 text-xs font-semibold text-white transition disabled:opacity-50"
                                 :class="checkoutTiming === 'prepay' ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-blue-600 hover:bg-blue-500'"
-                                x-text="checkoutTiming === 'prepay' ? '💳 已收款・開始製作' : '✅ 接單・開始製作'">
+                                x-text="checkoutTiming === 'prepay' ? i18n.accept_prepay : i18n.accept_postpay">
                         </button>
 
                         <button x-show="canCancel(order)"
                                 @click="updateOrder(order, 'cancelled')"
                                 :disabled="order._loading"
                                 class="flex-1 rounded-xl bg-rose-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-500 disabled:opacity-50">
-                            ❌ 取消訂單
+                            {{ __('admin.board_action_cancel_order') }}
                         </button>
 
                         <button x-show="canCollect(order)"
                                 @click="updateOrder(order, 'paid')"
                                 :disabled="order._loading"
                                 class="flex-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50">
-                            💰 已收款
+                            {{ __('admin.board_action_mark_paid') }}
                         </button>
 
                         <button x-show="canComplete(order)"
                                 @click="updateOrder(order, 'completed')"
                                 :disabled="order._loading"
                                 class="flex-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50">
-                            🍽️ 製作完成
+                            {{ __('admin.board_action_mark_completed') }}
                         </button>
                     </div>
                     <p x-show="!canAccept(order) && !canCancel(order) && !canCollect(order) && !canComplete(order)"
                        class="text-xs text-slate-400">
-                        目前角色無可執行操作
+                        {{ __('admin.board_no_available_actions') }}
                     </p>
                 </div>
             </div>
@@ -181,8 +214,8 @@
          class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border border-emerald-500/50 bg-emerald-900 px-5 py-3 shadow-xl">
         <span class="text-2xl">🔔</span>
         <div>
-            <p class="font-bold text-white">新訂單進來了！</p>
-            <p class="text-xs text-emerald-300">已自動加入所有看板</p>
+            <p class="font-bold text-white">{{ __('admin.board_new_order_arrived') }}</p>
+            <p class="text-xs text-emerald-300">{{ __('admin.board_new_order_added_all') }}</p>
         </div>
     </div>
 
@@ -194,7 +227,7 @@
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
          class="fixed bottom-6 left-6 z-50 max-w-md rounded-2xl border border-rose-500/50 bg-rose-900 px-5 py-3 text-sm text-rose-100 shadow-xl">
-        <p class="font-semibold">操作失敗</p>
+        <p class="font-semibold">{{ __('admin.board_operation_failed') }}</p>
         <p class="mt-1" x-text="errorMessage"></p>
     </div>
 </div>
@@ -211,6 +244,7 @@ function allBoards() {
         kitchenOrdersUrl: @json(route('admin.stores.kitchen.orders', $store)),
         cashierStatusUrlTemplate: @json(route('admin.stores.cashier.orders.status', ['store' => $store, 'order' => '__ORDER__'])),
         kitchenStatusUrlTemplate: @json(route('admin.stores.kitchen.orders.status', ['store' => $store, 'order' => '__ORDER__'])),
+        i18n: @json($allBoardsI18n),
         loading: false,
         newOrderAlert: false,
         errorMessage: '',
@@ -272,7 +306,7 @@ function allBoards() {
             try {
                 const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
                 if (!token) {
-                    this.showError('找不到 CSRF Token，請重新整理頁面');
+                    this.showError(this.i18n.error_missing_csrf);
                     order._loading = false;
                     return;
                 }
@@ -304,7 +338,7 @@ function allBoards() {
 
                 await this.poll();
             } catch (e) {
-                this.showError(e?.message || '網路錯誤，請稍後重試');
+                this.showError(e?.message || this.i18n.error_network);
             }
             order._loading = false;
         },
@@ -339,7 +373,18 @@ function allBoards() {
         },
 
         boardLabel(order) {
-            return order.board === 'kitchen' ? '後廚' : '結帳';
+            return order.board === 'kitchen' ? this.i18n.label_kitchen : this.i18n.label_cashier;
+        },
+
+        localeLabel(locale) {
+            const map = {
+                zh_TW: 'ZH',
+                zh_CN: 'CN',
+                en: 'EN',
+                vi: 'VI',
+            };
+
+            return map[String(locale || '')] || 'ZH';
         },
 
         cardClass(order) {
@@ -413,16 +458,16 @@ function allBoards() {
 
         statusLabel(order) {
             if (this.isPreparing(order)) {
-                return '製作中';
+                return this.i18n.status_preparing;
             }
             if (this.isUnpaidCompleted(order)) {
-                return '代收款';
+                return this.i18n.status_unpaid_collect;
             }
             const map = {
-                pending: '待接單',
-                accepted: '已接單',
-                confirmed: '已確認',
-                received: '已收到',
+                pending: this.i18n.status_pending,
+                accepted: this.i18n.status_accepted,
+                confirmed: this.i18n.status_confirmed,
+                received: this.i18n.status_received,
             };
             return map[order.status] ?? order.status;
         },
@@ -435,19 +480,19 @@ function allBoards() {
 
         showError(message) {
             clearTimeout(this._errorTimer);
-            this.errorMessage = message || '更新狀態失敗，請稍後重試';
+            this.errorMessage = message || this.i18n.error_update_failed;
             this._errorTimer = setTimeout(() => { this.errorMessage = ''; }, 5000);
         },
 
         timeAgo(dateStr) {
             const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
             if (diff < 60) {
-                return `${diff} 秒前`;
+                return `${diff}${this.i18n.seconds_ago}`;
             }
             if (diff < 3600) {
-                return `${Math.floor(diff / 60)} 分鐘前`;
+                return `${Math.floor(diff / 60)}${this.i18n.minutes_ago}`;
             }
-            return `${Math.floor(diff / 3600)} 小時前`;
+            return `${Math.floor(diff / 3600)}${this.i18n.hours_ago}`;
         },
     };
 }

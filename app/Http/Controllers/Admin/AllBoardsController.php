@@ -95,6 +95,7 @@ class AllBoardsController extends Controller
         return [
             'id' => $order->id,
             'order_no' => $order->order_no,
+            'order_locale' => $order->order_locale,
             'status' => $order->status,
             'payment_status' => $order->payment_status,
             'order_type' => $order->order_type,

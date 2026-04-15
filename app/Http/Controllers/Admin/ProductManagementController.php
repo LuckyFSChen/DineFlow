@@ -445,7 +445,7 @@ class ProductManagementController extends Controller
             'description' => ['nullable', 'string'],
             'price' => ['required', 'integer', 'min:0'],
             'sort' => ['nullable', 'integer', 'min:1'],
-            'image_upload' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'image_upload' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
             'remove_image' => ['nullable', 'boolean'],
             'option_groups_json' => ['nullable', 'string'],
             'allow_item_note' => ['nullable', 'boolean'],

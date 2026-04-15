@@ -23,6 +23,12 @@ return [
     'customer_desc'              => 'Tài khoản khách hàng, dùng cho hồ sơ cá nhân và trải nghiệm đặt món.',
     'merchant_type'              => 'Thương Nhân',
     'merchant_desc'              => 'Tài khoản thương nhân, cần đăng ký gói để quản lý cửa hàng.',
+    'secure_area_confirm_password' => 'Đây là khu vực bảo mật của hệ thống. Vui lòng xác nhận mật khẩu trước khi tiếp tục.',
+    'Confirm'                    => 'Xác Nhận',
+    'Reset Password'             => 'Đặt Lại Mật Khẩu',
+    'Resend Verification Email'  => 'Gửi Lại Email Xác Minh',
+    'verify_email_intro'         => 'Cảm ơn bạn đã đăng ký! Trước khi bắt đầu, vui lòng xác minh địa chỉ email bằng cách nhấp vào liên kết chúng tôi vừa gửi. Nếu bạn chưa nhận được email, chúng tôi sẽ gửi lại cho bạn.',
+    'verification_link_sent'     => 'Một liên kết xác minh mới đã được gửi đến địa chỉ email bạn đã cung cấp khi đăng ký.',
     'Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.' =>
         'Quên mật khẩu? Không sao. Vui lòng nhập địa chỉ email và chúng tôi sẽ gửi liên kết đặt lại mật khẩu.',
     'Email Password Reset Link'  => 'Gửi Liên Kết Đặt Lại Mật Khẩu',

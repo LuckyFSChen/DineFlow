@@ -23,6 +23,12 @@ return [
     'customer_desc'              => '顧客帳號，可用於個人資料與訂單體驗。',
     'merchant_type'              => '商家',
     'merchant_desc'              => '商家帳號，需啟用訂閱後才能新增與管理商家。',
+    'secure_area_confirm_password' => '這是系統的安全區域，請先確認密碼後再繼續。',
+    'Confirm'                    => '確認',
+    'Reset Password'             => '重設密碼',
+    'Resend Verification Email'  => '重新寄送驗證信',
+    'verify_email_intro'         => '感謝註冊！在開始使用前，請先點擊我們剛寄到您信箱的驗證連結完成 Email 驗證。如果沒有收到，我們可以再寄一次。',
+    'verification_link_sent'     => '新的驗證連結已寄送到您註冊時提供的 Email。',
     'Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.' =>
         '忘記密碼了嗎？沒關係，請輸入您的 Email，系統將發送重設密碼連結到您的信箱。',
     'Email Password Reset Link'  => '發送重設密碼連結',

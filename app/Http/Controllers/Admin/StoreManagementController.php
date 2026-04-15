@@ -220,7 +220,7 @@ class StoreManagementController extends Controller
             'address' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'regex:/^(09\d{2}-\d{3}-\d{3}|09\d{8})$/'],
             'currency' => ['nullable', 'in:twd,vnd,cny,usd'],
-            'banner_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'banner_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
             'checkout_timing' => ['nullable', 'in:prepay,postpay'],
             'opening_time' => ['nullable', 'date_format:H:i', 'required_with:closing_time'],
             'closing_time' => ['nullable', 'date_format:H:i', 'required_with:opening_time'],

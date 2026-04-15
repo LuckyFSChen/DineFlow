@@ -124,7 +124,7 @@ class TakeoutOrderingController extends Controller
 
         return redirect()
             ->route('customer.takeout.menu', ['store' => $store])
-            ->with('success', '商品已加入購物車。');
+            ->with('success', __('customer.item_added_to_cart'));
     }
 
     public function cart(Store $store)

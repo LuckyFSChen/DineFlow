@@ -1,11 +1,19 @@
 <?php
 
 return [
+    'admin_console'      => '管理后台',
+    'login'              => '登录',
+    'register'           => '注册',
     'subscription'        => '订阅方案',
     'financial_report'    => '财务报表',
     'store_backend'       => '商家后台',
+    'stores_short'        => '店家',
     'kitchen'             => '后厨看板',
+    'kitchen_short'       => '后厨',
     'cashier'             => '收银看板',
+    'cashier_short'       => '收银',
+    'plan_short'          => '方案',
+    'subscription_short'  => '订阅',
     'super_admin'         => '最终后台',
     'account_center'      => '账号中心',
     'profile'             => '个人设置',

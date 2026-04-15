@@ -99,19 +99,18 @@
                  <p class="mt-1 text-xs text-slate-400">{{ __('admin.banner_file_hint') }}</p>
         </div>
 
-        <div id="banner-preview-wrapper" class="mt-4 {{ $store->banner_image ? '' : 'hidden' }}">
-            <div class="relative">
-                <img id="banner-preview"
-                     src="{{ $store->banner_image ? asset('storage/' . $store->banner_image) : '' }}"
-                     alt="{{ $store->name }}"
-                     class="h-40 w-full rounded-2xl object-cover transition">
-
-                <button type="button"
-                        id="banner-remove"
-                        class="absolute right-2 top-2 rounded-full bg-black/60 px-3 py-1 text-xs text-white hover:bg-black">
-                    {{ __('admin.remove') }}
-                </button>
+        <div id="banner-preview-wrapper" class="mt-4 {{ $store->banner_image ? '' : 'hidden' }}" data-existing-banner-url="{{ $store->banner_image ? asset('storage/' . $store->banner_image) : '' }}">
+            <canvas id="banner-crop-preview" width="1200" height="400" class="w-full rounded-2xl border border-slate-300 bg-white"></canvas>
+            <p id="banner-helper" class="mt-2 text-xs text-slate-500">尚未選擇橫幅</p>
+            <div class="mt-3">
+                <label for="banner-zoom" class="mb-1 block text-xs font-semibold text-slate-600">縮放</label>
+                <input id="banner-zoom" type="range" min="1" max="3" step="0.05" value="1" class="w-full">
             </div>
+            <div class="mt-2 flex flex-wrap gap-2">
+                <button type="button" id="banner-reset" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">重設位置</button>
+                <button type="button" id="banner-remove" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">{{ __('admin.remove') }}</button>
+            </div>
+            <p class="mt-2 text-[11px] text-slate-500">在預覽區拖曳可調整橫幅裁切範圍，儲存時會套用。</p>
         </div>
 
         @error('banner_image')
@@ -148,6 +147,7 @@
     const preview = document.getElementById('banner-preview');
     const wrapper = document.getElementById('banner-preview-wrapper');
     const removeButton = document.getElementById('banner-remove');
+    const maxUploadImageBytes = 2 * 1024 * 1024;
     const i18n = {
         imageOnly: @json(__('admin.error_select_image')),
         imageTooLarge: @json(__('admin.error_image_too_large_2')),
@@ -161,7 +161,79 @@
         dropzone.classList.remove('border-brand-primary', 'bg-brand-soft/30');
     };
 
-    const updatePreview = (file) => {
+    const loadImageFromFile = (file) => new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const image = new Image();
+
+        image.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(image);
+        };
+
+        image.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('圖片讀取失敗'));
+        };
+
+        image.src = url;
+    });
+
+    const canvasToBlob = (canvas, mimeType, quality) => new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+            if (blob) {
+                resolve(blob);
+                return;
+            }
+
+            reject(new Error('圖片轉換失敗'));
+        }, mimeType, quality);
+    });
+
+    const compressImageFileToLimit = async (file, maxBytes = maxUploadImageBytes) => {
+        if (file.size <= maxBytes) {
+            return file;
+        }
+
+        const image = await loadImageFromFile(file);
+        let targetWidth = image.naturalWidth;
+        let targetHeight = image.naturalHeight;
+        let quality = 0.9;
+        let blob = null;
+
+        while ((targetWidth >= 360 && targetHeight >= 360) && (!blob || blob.size > maxBytes)) {
+            const canvas = document.createElement('canvas');
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            const ctx = canvas.getContext('2d');
+
+            if (!ctx) {
+                break;
+            }
+
+            ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+            blob = await canvasToBlob(canvas, 'image/jpeg', quality);
+
+            if (blob.size <= maxBytes) {
+                break;
+            }
+
+            if (quality > 0.45) {
+                quality = Math.max(0.45, quality - 0.08);
+            } else {
+                targetWidth = Math.max(360, Math.floor(targetWidth * 0.85));
+                targetHeight = Math.max(360, Math.floor(targetHeight * 0.85));
+            }
+        }
+
+        if (!blob || blob.size > maxBytes) {
+            throw new Error(i18n.imageTooLarge);
+        }
+
+        const filename = (file.name || 'banner.jpg').replace(/\.[^.]+$/, '.jpg');
+        return new File([blob], filename, { type: 'image/jpeg' });
+    };
+
+    const updatePreview = async (file) => {
         if (!file) {
             return;
         }
@@ -171,18 +243,21 @@
             return;
         }
 
-        if (file.size > 2 * 1024 * 1024) {
-            alert(i18n.imageTooLarge);
+        let uploadFile = file;
+        try {
+            uploadFile = await compressImageFileToLimit(file, maxUploadImageBytes);
+        } catch (error) {
+            alert(error?.message || i18n.imageTooLarge);
             return;
         }
 
-        const url = URL.createObjectURL(file);
+        const url = URL.createObjectURL(uploadFile);
         preview.src = url;
         wrapper.classList.remove('hidden');
         preview.onload = () => URL.revokeObjectURL(url);
 
         const dataTransfer = new DataTransfer();
-        dataTransfer.items.add(file);
+        dataTransfer.items.add(uploadFile);
         input.files = dataTransfer.files;
     };
 
@@ -198,11 +273,11 @@
     dropzone.addEventListener('drop', (event) => {
         event.preventDefault();
         resetDropzoneState();
-        updatePreview(event.dataTransfer.files[0]);
+        void updatePreview(event.dataTransfer.files[0]);
     });
 
     input.addEventListener('change', (event) => {
-        updatePreview(event.target.files[0]);
+        void updatePreview(event.target.files[0]);
     });
 
     removeButton.addEventListener('click', () => {

@@ -147,7 +147,7 @@ class StoreController extends Controller
             'description' => ['nullable', 'string'],
             'address' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'regex:/^(09\d{2}-\d{3}-\d{3}|09\d{8})$/'],
-            'banner_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'banner_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
         ], [
             'phone.regex' => '電話格式需為 0922333444 或 0922-333-444。',
         ]);

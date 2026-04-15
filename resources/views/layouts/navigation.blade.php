@@ -76,7 +76,7 @@
                 @if($isAdminArea)
                     <div class="hidden items-center pl-3 sm:flex">
                         <span class="inline-flex items-center rounded-full border border-cyan-300/80 bg-cyan-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-cyan-700">
-                            Admin Console
+                            {{ __('nav.admin_console') }}
                         </span>
                     </div>
                 @endif
@@ -189,11 +189,11 @@
                     </x-dropdown>
                 @else
                     <a href="{{ route('login') }}" class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">
-                        {{ __('Log in') }}
+                        {{ __('nav.login') }}
                     </a>
                     @if (Route::has('register'))
                         <a href="{{ route('register') }}" class="inline-flex items-center rounded-xl bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-accent hover:text-brand-dark">
-                            {{ __('Register') }}
+                            {{ __('nav.register') }}
                         </a>
                     @endif
                 @endauth
@@ -277,11 +277,11 @@
             @else
                 <div class="mt-2 space-y-1 px-2">
                     <x-responsive-nav-link :href="route('login')">
-                        {{ __('Log in') }}
+                        {{ __('nav.login') }}
                     </x-responsive-nav-link>
                     @if (Route::has('register'))
                         <x-responsive-nav-link :href="route('register')">
-                            {{ __('Register') }}
+                            {{ __('nav.register') }}
                         </x-responsive-nav-link>
                     @endif
                 </div>
@@ -303,20 +303,20 @@
 @auth
     @if($isAdminArea)
         <div class="mobile-admin-dock">
-            <a href="{{ route('admin.stores.index') }}" class="{{ request()->routeIs('admin.stores.index') ? 'active' : '' }}">店家</a>
+            <a href="{{ route('admin.stores.index') }}" class="{{ request()->routeIs('admin.stores.index') ? 'active' : '' }}">{{ __('nav.stores_short') }}</a>
 
             @if($showKitchenNav)
-                <a href="{{ route('admin.stores.kitchen', $kitchenNavStore) }}" class="{{ request()->routeIs('admin.stores.kitchen*') ? 'active' : '' }}">後廚</a>
+                <a href="{{ route('admin.stores.kitchen', $kitchenNavStore) }}" class="{{ request()->routeIs('admin.stores.kitchen*') ? 'active' : '' }}">{{ __('nav.kitchen_short') }}</a>
             @endif
 
             @if($showCashierNav)
-                <a href="{{ route('admin.stores.cashier', $cashierNavStore) }}" class="{{ request()->routeIs('admin.stores.cashier*') ? 'active' : '' }}">收銀</a>
+                <a href="{{ route('admin.stores.cashier', $cashierNavStore) }}" class="{{ request()->routeIs('admin.stores.cashier*') ? 'active' : '' }}">{{ __('nav.cashier_short') }}</a>
             @endif
 
             @if(Auth::user()?->isMerchant())
-                <a href="{{ route('merchant.subscription.index') }}" class="{{ request()->routeIs('merchant.subscription.*') ? 'active' : '' }}">方案</a>
+                <a href="{{ route('merchant.subscription.index') }}" class="{{ request()->routeIs('merchant.subscription.*') ? 'active' : '' }}">{{ __('nav.plan_short') }}</a>
             @elseif(Auth::user()?->isAdmin())
-                <a href="{{ route('super-admin.subscriptions.index') }}" class="{{ request()->routeIs('super-admin.subscriptions.*') ? 'active' : '' }}">訂閱</a>
+                <a href="{{ route('super-admin.subscriptions.index') }}" class="{{ request()->routeIs('super-admin.subscriptions.*') ? 'active' : '' }}">{{ __('nav.subscription_short') }}</a>
             @endif
         </div>
     @endif

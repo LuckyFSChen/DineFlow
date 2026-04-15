@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', '結帳看板 — ' . $store->name)
+@section('title', __('admin.board_cashier_title') . ' — ' . $store->name)
 
 @php
 function cashierFormatOrder(\App\Models\Order $order): array {
@@ -26,6 +26,29 @@ function cashierFormatOrder(\App\Models\Order $order): array {
     ];
 }
 $ordersData = $orders->map(fn($o) => cashierFormatOrder($o))->values()->all();
+$cashierI18n = [
+    'order_unit' => __('admin.board_order_unit'),
+    'next_refresh' => __('admin.board_next_refresh'),
+    'not_updated_yet' => __('admin.board_not_updated_yet'),
+    'waiting_prefix' => __('admin.board_waiting_prefix'),
+    'locale_prefix' => __('admin.board_locale_prefix'),
+    'processing' => __('admin.board_processing'),
+    'accept_prepay' => __('admin.board_action_accept_prepay'),
+    'accept_postpay' => __('admin.board_action_accept_postpay'),
+    'cancel_order' => __('admin.board_action_cancel_order'),
+    'mark_paid' => __('admin.board_action_mark_paid'),
+    'error_update_failed' => __('admin.board_error_update_failed'),
+    'error_missing_csrf' => __('admin.board_error_missing_csrf'),
+    'error_network' => __('admin.board_error_network'),
+    'status_unpaid_collect' => __('admin.board_status_unpaid_collect'),
+    'status_pending' => __('admin.board_status_pending'),
+    'status_accepted' => __('admin.board_status_accepted'),
+    'status_confirmed' => __('admin.board_status_confirmed'),
+    'status_received' => __('admin.board_status_received'),
+    'seconds_ago' => __('admin.board_time_seconds_ago'),
+    'minutes_ago' => __('admin.board_time_minutes_ago'),
+    'hours_ago' => __('admin.board_time_hours_ago'),
+];
 @endphp
 
 @section('content')
@@ -36,10 +59,10 @@ $ordersData = $orders->map(fn($o) => cashierFormatOrder($o))->values()->all();
         <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div class="flex items-center gap-4">
             <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700">
-                ← 回店家管理
+                ← {{ __('admin.board_back_to_stores') }}
             </a>
             <div>
-                <h1 class="text-lg font-bold text-white">💳 結帳看板</h1>
+                <h1 class="text-lg font-bold text-white">💳 {{ __('admin.board_cashier_title') }}</h1>
                 <p class="text-xs text-slate-400">{{ $store->name }}</p>
             </div>
         </div>
@@ -47,22 +70,22 @@ $ordersData = $orders->map(fn($o) => cashierFormatOrder($o))->values()->all();
         <div class="flex flex-wrap items-center gap-2 xl:justify-end">
             {{-- Board switch --}}
             <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
-                <span class="px-3 py-1.5 bg-indigo-600 text-white">💳 結帳看板</span>
+                <span class="px-3 py-1.5 bg-indigo-600 text-white">💳 {{ __('admin.board_cashier_title') }}</span>
                 @if($store->is_active)
                     <a href="{{ route('admin.stores.kitchen', $store) }}"
                        class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
-                        🍳 後廚看板
+                        🍳 {{ __('admin.board_kitchen_title') }}
                     </a>
                 @endif
                 <a href="{{ route('admin.stores.boards', $store) }}"
                    class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
-                    🧩 所有看板
+                    🧩 {{ __('admin.board_all_title') }}
                 </a>
             </div>
 
             @if(($availableStores ?? collect())->count() > 1)
                 <div class="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs">
-                    <span class="text-slate-400">店家</span>
+                    <span class="text-slate-400">{{ __('admin.board_store') }}</span>
                     <select
                         class="rounded border border-slate-600 bg-slate-900 px-2 py-1 text-xs text-slate-100 focus:border-indigo-500 focus:outline-none"
                         onchange="if (this.value) window.location.href = this.value;">
@@ -79,7 +102,7 @@ $ordersData = $orders->map(fn($o) => cashierFormatOrder($o))->values()->all();
                 <input
                     x-model.trim="searchTerm"
                     type="text"
-                    placeholder="搜尋單號/顧客/桌號"
+                    placeholder="{{ __('admin.board_search_placeholder') }}"
                     class="w-52 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none">
             </div>
 
@@ -87,14 +110,14 @@ $ordersData = $orders->map(fn($o) => cashierFormatOrder($o))->values()->all();
                 @click="refreshNow()"
                 type="button"
                 class="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-700">
-                立即更新
+                {{ __('admin.board_refresh_now') }}
             </button>
 
             {{-- Status filter --}}
             <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
-                <button @click="filter = 'all'" :class="filter === 'all' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">全部</button>
-                <button @click="filter = 'pending'" :class="filter === 'pending' ? 'bg-amber-500 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">待接單</button>
-                <button @click="filter = 'unpaid'" :class="filter === 'unpaid' ? 'bg-emerald-500 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">代收款</button>
+                <button @click="filter = 'all'" :class="filter === 'all' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">{{ __('admin.board_filter_all') }}</button>
+                <button @click="filter = 'pending'" :class="filter === 'pending' ? 'bg-amber-500 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">{{ __('admin.board_status_pending') }}</button>
+                <button @click="filter = 'unpaid'" :class="filter === 'unpaid' ? 'bg-emerald-500 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">{{ __('admin.board_status_unpaid_collect') }}</button>
             </div>
 
             {{-- Live indicator --}}
@@ -103,26 +126,26 @@ $ordersData = $orders->map(fn($o) => cashierFormatOrder($o))->values()->all();
                     <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
                     <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
                 </span>
-                即時更新
+                {{ __('admin.board_live_updating') }}
             </div>
 
             {{-- Count badge --}}
-            <span class="rounded-full bg-indigo-600 px-3 py-0.5 text-xs font-bold" x-text="filteredOrders.length + ' / ' + orders.length + ' 單'"></span>
-            <span class="rounded-full border border-slate-700 bg-slate-800 px-3 py-0.5 text-xs text-slate-300" x-text="'下次更新 ' + nextRefreshIn + 's'"></span>
+            <span class="rounded-full bg-indigo-600 px-3 py-0.5 text-xs font-bold" x-text="filteredOrders.length + ' / ' + orders.length + ' ' + i18n.order_unit"></span>
+            <span class="rounded-full border border-slate-700 bg-slate-800 px-3 py-0.5 text-xs text-slate-300" x-text="i18n.next_refresh + nextRefreshIn + 's'"></span>
         </div>
         </div>
 
         <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
             <div class="rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2">
-                <p class="text-[11px] text-slate-400">待接單</p>
+                <p class="text-[11px] text-slate-400">{{ __('admin.board_status_pending') }}</p>
                 <p class="text-lg font-bold text-amber-300" x-text="pendingCount"></p>
             </div>
             <div class="rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2">
-                <p class="text-[11px] text-slate-400">待收款</p>
+                <p class="text-[11px] text-slate-400">{{ __('admin.board_stat_unpaid') }}</p>
                 <p class="text-lg font-bold text-emerald-300" x-text="unpaidCompletedCount"></p>
             </div>
             <div class="rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2">
-                <p class="text-[11px] text-slate-400">最後更新</p>
+                <p class="text-[11px] text-slate-400">{{ __('admin.board_last_updated') }}</p>
                 <p class="text-sm font-semibold text-slate-100" x-text="lastUpdatedText"></p>
             </div>
         </div>
@@ -133,8 +156,8 @@ $ordersData = $orders->map(fn($o) => cashierFormatOrder($o))->values()->all();
         <svg class="mb-4 h-16 w-16 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
         </svg>
-        <p class="text-xl font-semibold">目前沒有待處理訂單</p>
-        <p class="mt-1 text-sm">新訂單進來時會自動顯示</p>
+        <p class="text-xl font-semibold">{{ __('admin.board_empty_pending') }}</p>
+        <p class="mt-1 text-sm">{{ __('admin.board_empty_auto') }}</p>
     </div>
 
     {{-- Loading --}}
@@ -164,18 +187,18 @@ $ordersData = $orders->map(fn($o) => cashierFormatOrder($o))->values()->all();
                         <div class="mt-0.5 flex items-center gap-2 text-xs">
                             <template x-if="order.order_type === 'dine_in' && order.table">
                                 <span class="rounded bg-slate-700 px-1.5 py-0.5 text-slate-300">
-                                    桌號 <span x-text="order.table.table_no"></span>
+                                    {{ __('admin.board_table_no') }} <span x-text="order.table.table_no"></span>
                                 </span>
                             </template>
                             <template x-if="order.order_type === 'takeout' || order.order_type === 'take_out'">
-                                <span class="rounded bg-orange-800/60 px-1.5 py-0.5 text-orange-300">外帶</span>
+                                                                <span class="rounded bg-orange-800/60 px-1.5 py-0.5 text-orange-300">{{ __('admin.board_takeout') }}</span>
                             </template>
                             <span class="text-slate-500" x-text="timeAgo(order.created_at)"></span>
                             <span class="rounded px-1.5 py-0.5 text-[10px] font-semibold"
                                   :class="waitBadgeClass(order)"
-                                  x-text="'等待 ' + waitMinutes(order) + 'm'"></span>
+                                                                    x-text="i18n.waiting_prefix + waitMinutes(order) + 'm'"></span>
                                 <span class="rounded border border-sky-500/40 bg-sky-900/40 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300"
-                                    x-text="'語系 ' + localeLabel(order.order_locale)"></span>
+                                                                        x-text="i18n.locale_prefix + localeLabel(order.order_locale)"></span>
                         </div>
                         {{-- Customer name --}}
                         <div x-show="order.customer_name" class="mt-0.5 text-xs text-slate-400">
@@ -216,7 +239,7 @@ $ordersData = $orders->map(fn($o) => cashierFormatOrder($o))->values()->all();
                 {{-- Order note --}}
                 <template x-if="order.note">
                     <div class="mx-4 mb-3 rounded-lg bg-yellow-900/30 border border-yellow-700/30 px-3 py-2 text-xs text-yellow-300">
-                        <span class="font-semibold">備註：</span><span x-text="order.note"></span>
+                        <span class="font-semibold">{{ __('admin.board_note_label') }}</span><span x-text="order.note"></span>
                     </div>
                 </template>
 
@@ -230,14 +253,14 @@ $ordersData = $orders->map(fn($o) => cashierFormatOrder($o))->values()->all();
                                 :disabled="order._loading"
                                 class="flex-1 rounded-xl px-3 py-2 text-xs font-semibold text-white transition disabled:opacity-50"
                                 :class="checkoutTiming === 'prepay' ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-blue-600 hover:bg-blue-500'"
-                                x-text="order._loading ? '處理中...' : (checkoutTiming === 'prepay' ? '💳 已收款・開始製作' : '✅ 接單・開始製作')">
+                                x-text="order._loading ? i18n.processing : (checkoutTiming === 'prepay' ? i18n.accept_prepay : i18n.accept_postpay)">
                             </button>
 
                             <button
                                 @click="cancelOrder(order)"
                                 :disabled="order._loading"
                                 class="flex-1 rounded-xl bg-rose-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-500 disabled:opacity-50">
-                                <span x-text="order._loading ? '處理中...' : '❌ 取消訂單'"></span>
+                                <span x-text="order._loading ? i18n.processing : i18n.cancel_order"></span>
                             </button>
                         </div>
                     </template>
@@ -248,7 +271,7 @@ $ordersData = $orders->map(fn($o) => cashierFormatOrder($o))->values()->all();
                             @click="setStatus(order, 'paid')"
                             :disabled="order._loading"
                             class="flex-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50">
-                            <span x-text="order._loading ? '處理中...' : '💰 已收款'"></span>
+                            <span x-text="order._loading ? i18n.processing : i18n.mark_paid"></span>
                         </button>
                     </template>
                 </div>
@@ -267,8 +290,8 @@ $ordersData = $orders->map(fn($o) => cashierFormatOrder($o))->values()->all();
          class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border border-emerald-500/50 bg-emerald-900 px-5 py-3 shadow-xl">
         <span class="text-2xl">🔔</span>
         <div>
-            <p class="font-bold text-white">新訂單進來了！</p>
-            <p class="text-xs text-emerald-300">已自動加入看板</p>
+            <p class="font-bold text-white">{{ __('admin.board_new_order_arrived') }}</p>
+            <p class="text-xs text-emerald-300">{{ __('admin.board_new_order_added') }}</p>
         </div>
     </div>
 
@@ -280,7 +303,7 @@ $ordersData = $orders->map(fn($o) => cashierFormatOrder($o))->values()->all();
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
          class="fixed bottom-6 left-6 z-50 max-w-md rounded-2xl border border-rose-500/50 bg-rose-900 px-5 py-3 text-sm text-rose-100 shadow-xl">
-        <p class="font-semibold">操作失敗</p>
+        <p class="font-semibold">{{ __('admin.board_operation_failed') }}</p>
         <p class="mt-1" x-text="errorMessage"></p>
     </div>
 </div>
@@ -291,6 +314,7 @@ function cashierBoard() {
         orders: @json($ordersData),
         statusUrlTemplate: @json(route('admin.stores.cashier.orders.status', ['store' => $store, 'order' => '__ORDER__'])),
         checkoutTiming: @json($checkoutTiming ?? 'postpay'),
+        i18n: @json($cashierI18n),
         filter: 'all',
         searchTerm: '',
         loading: false,
@@ -346,14 +370,16 @@ function cashierBoard() {
 
         get lastUpdatedText() {
             if (!this.lastUpdatedAt) {
-                return '尚未更新';
+                return this.i18n.not_updated_yet;
             }
 
             const d = new Date(this.lastUpdatedAt);
-            return d.toLocaleTimeString('zh-TW', { hour12: false });
+            return d.toLocaleTimeString();
         },
 
         init() {
+            clearInterval(this._pollTimer);
+            clearInterval(this._countdownTimer);
             this.initAudio();
             this.lastUpdatedAt = Date.now();
             this.nextRefreshIn = this.pollSeconds;
@@ -437,7 +463,7 @@ function cashierBoard() {
 
         showError(message) {
             clearTimeout(this._errorTimer);
-            this.errorMessage = message || '更新狀態失敗，請稍後重試';
+            this.errorMessage = message || this.i18n.error_update_failed;
             this._errorTimer = setTimeout(() => { this.errorMessage = ''; }, 5000);
         },
 
@@ -455,7 +481,7 @@ function cashierBoard() {
             try {
                 const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
                 if (!token) {
-                    this.showError('找不到 CSRF Token，請重新整理頁面');
+                    this.showError(this.i18n.error_missing_csrf);
                     order._loading = false;
                     return;
                 }
@@ -485,7 +511,7 @@ function cashierBoard() {
                 this.orders = this.orders.filter(o => o.id !== order.id);
 
             } catch (e) {
-                this.showError(e?.message || '網路錯誤，請稍後重試');
+                this.showError(e?.message || this.i18n.error_network);
             }
             order._loading = false;
         },
@@ -502,22 +528,22 @@ function cashierBoard() {
         statusLabel(status, paymentStatus) {
             if (['complete', 'completed', 'ready', 'ready_for_pickup'].includes(status)
                 && (!paymentStatus || paymentStatus === 'unpaid')) {
-                return '代收款';
+                return this.i18n.status_unpaid_collect;
             }
             const map = {
-                pending:    '待接單',
-                accepted:   '已接單',
-                confirmed:  '已確認',
-                received:   '已收到',
+                pending:    this.i18n.status_pending,
+                accepted:   this.i18n.status_accepted,
+                confirmed:  this.i18n.status_confirmed,
+                received:   this.i18n.status_received,
             };
             return map[status] ?? status;
         },
 
         timeAgo(dateStr) {
             const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
-            if (diff < 60)   return diff + ' 秒前';
-            if (diff < 3600) return Math.floor(diff / 60) + ' 分鐘前';
-            return Math.floor(diff / 3600) + ' 小時前';
+            if (diff < 60)   return diff + this.i18n.seconds_ago;
+            if (diff < 3600) return Math.floor(diff / 60) + this.i18n.minutes_ago;
+            return Math.floor(diff / 3600) + this.i18n.hours_ago;
         },
 
         waitMinutes(order) {

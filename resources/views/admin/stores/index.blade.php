@@ -35,15 +35,15 @@
 
             <div class="grid gap-3 md:grid-cols-3">
                 <div class="admin-kpi rounded-2xl p-4 shadow-sm">
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">店家總數</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ __('admin.store_kpi_total') }}</p>
                     <p class="value mt-2 text-slate-900">{{ $storeCollection->count() }}</p>
                 </div>
                 <div class="admin-kpi rounded-2xl p-4 shadow-sm">
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">啟用中</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ __('admin.store_kpi_active') }}</p>
                     <p class="value mt-2 text-emerald-700">{{ $activeStoreCount }}</p>
                 </div>
                 <div class="admin-kpi rounded-2xl p-4 shadow-sm">
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">已關閉</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ __('admin.store_kpi_inactive') }}</p>
                     <p class="value mt-2 text-amber-700">{{ $inactiveStoreCount }}</p>
                 </div>
             </div>
@@ -52,8 +52,8 @@
         <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
                 <div class="admin-pill-nav inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-slate-700">
-                    <span class="rounded-full bg-cyan-100 px-2 py-1 text-cyan-700">總覽</span>
-                    <span>可管理所有門市與營運入口</span>
+                    <span class="rounded-full bg-cyan-100 px-2 py-1 text-cyan-700">{{ __('admin.store_overview_badge') }}</span>
+                    <span>{{ __('admin.store_overview_desc') }}</span>
                 </div>
             </div>
         </div>
@@ -162,7 +162,7 @@
                                             data-store-actions-toggle="{{ $store->id }}"
                                             aria-expanded="false"
                                             class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-                                            展開操作
+                                            {{ __('admin.store_actions_expand') }}
                                         </button>
                                     </div>
                                 </td>
@@ -170,7 +170,7 @@
                             <tr class="hidden bg-slate-50/70" data-store-actions-row="{{ $store->id }}">
                                 <td colspan="6" class="px-6 pb-5 pt-0">
                                     <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">可操作項目</p>
+                                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('admin.store_actionable_items') }}</p>
                                         <div class="mt-3 flex flex-wrap gap-2">
                                             <a href="{{ route('admin.stores.products.index', $store) }}"
                                                class="inline-flex items-center rounded-xl border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100">
@@ -190,7 +190,7 @@
 
                                                 <a href="{{ route('admin.stores.chefs.index', $store) }}"
                                                    class="inline-flex items-center rounded-xl border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100">
-                                                    👨‍🍳 廚師帳號
+                                                    👨‍🍳 {{ __('admin.chef_accounts') }}
                                                 </a>
                                             @endif
 
@@ -307,10 +307,17 @@
                     </div>
 
                     <div id="store-banner-preview-wrapper" class="mt-3 hidden">
-                        <div class="relative">
-                            <img id="store-banner-preview" src="" class="h-40 w-full rounded-xl object-cover">
-                            <button type="button" id="store-banner-remove" class="absolute right-2 top-2 rounded-full bg-black/60 px-3 py-1 text-xs text-white hover:bg-black">{{ __('admin.remove') }}</button>
+                        <canvas id="store-banner-crop-preview" width="1200" height="400" class="w-full rounded-xl border border-slate-300 bg-white"></canvas>
+                        <p id="store-banner-helper" class="mt-2 text-xs text-slate-500">尚未選擇橫幅</p>
+                        <div class="mt-3">
+                            <label for="store-banner-zoom" class="mb-1 block text-xs font-semibold text-slate-600">縮放</label>
+                            <input id="store-banner-zoom" type="range" min="1" max="3" step="0.05" value="1" class="w-full">
                         </div>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            <button type="button" id="store-banner-reset" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">重設位置</button>
+                            <button type="button" id="store-banner-remove" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">{{ __('admin.remove') }}</button>
+                        </div>
+                        <p class="mt-2 text-[11px] text-slate-500">在預覽區拖曳可調整橫幅裁切範圍，儲存時會套用。</p>
                     </div>
                 </div>
 
@@ -364,11 +371,29 @@
     const bannerDropzone = document.getElementById('store-banner-dropzone');
     const bannerInput = document.getElementById('store-banner-input');
     const bannerPreviewWrapper = document.getElementById('store-banner-preview-wrapper');
-    const bannerPreview = document.getElementById('store-banner-preview');
+    const bannerCropPreview = document.getElementById('store-banner-crop-preview');
+    const bannerCropCtx = bannerCropPreview?.getContext('2d');
+    const bannerHelper = document.getElementById('store-banner-helper');
+    const bannerZoomInput = document.getElementById('store-banner-zoom');
+    const bannerReset = document.getElementById('store-banner-reset');
     const bannerRemove = document.getElementById('store-banner-remove');
 
     let currentMode = 'create';
     let currentStoreId = null;
+    const maxUploadImageBytes = 2 * 1024 * 1024;
+    const bannerState = {
+        sourceImage: null,
+        sourceObjectUrl: null,
+        sourceFileName: 'banner.jpg',
+        hasNewUpload: false,
+        dirty: false,
+        zoom: 1,
+        offsetX: 0,
+        offsetY: 0,
+        dragging: false,
+        lastX: 0,
+        lastY: 0,
+    };
     const i18n = {
         imageOnly: @json(__('admin.error_image_only')),
         imageTooLarge: @json(__('admin.error_image_too_large')),
@@ -379,6 +404,8 @@
         fetchStoreFailed: @json(__('admin.fetch_store_failed')),
         saveFailed: @json(__('admin.save_failed')),
         storeSaved: @json(__('admin.store_saved')),
+        actionsExpand: @json(__('admin.store_actions_expand')),
+        actionsCollapse: @json(__('admin.store_actions_collapse')),
     };
 
     const showFlash = (message, type = 'success') => {
@@ -419,13 +446,198 @@
         return `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
     };
 
-    const clearBannerPreview = () => {
-        bannerInput.value = '';
-        bannerPreview.src = '';
-        bannerPreviewWrapper.classList.add('hidden');
+    const revokeBannerObjectUrl = () => {
+        if (!bannerState.sourceObjectUrl) {
+            return;
+        }
+
+        URL.revokeObjectURL(bannerState.sourceObjectUrl);
+        bannerState.sourceObjectUrl = null;
     };
 
-    const setBannerPreviewFromFile = (file) => {
+    const loadImageFromFile = (file) => new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const image = new Image();
+
+        image.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(image);
+        };
+
+        image.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error('圖片讀取失敗'));
+        };
+
+        image.src = url;
+    });
+
+    const clampBannerOffsets = () => {
+        if (!bannerCropPreview || !bannerState.sourceImage) {
+            return;
+        }
+
+        const baseScale = Math.max(
+            bannerCropPreview.width / bannerState.sourceImage.naturalWidth,
+            bannerCropPreview.height / bannerState.sourceImage.naturalHeight,
+        );
+        const drawWidth = bannerState.sourceImage.naturalWidth * baseScale * bannerState.zoom;
+        const drawHeight = bannerState.sourceImage.naturalHeight * baseScale * bannerState.zoom;
+        const minX = bannerCropPreview.width - drawWidth;
+        const minY = bannerCropPreview.height - drawHeight;
+
+        bannerState.offsetX = Math.min(0, Math.max(minX, bannerState.offsetX));
+        bannerState.offsetY = Math.min(0, Math.max(minY, bannerState.offsetY));
+    };
+
+    const centerBannerImage = () => {
+        if (!bannerCropPreview || !bannerState.sourceImage) {
+            return;
+        }
+
+        const baseScale = Math.max(
+            bannerCropPreview.width / bannerState.sourceImage.naturalWidth,
+            bannerCropPreview.height / bannerState.sourceImage.naturalHeight,
+        );
+        const drawWidth = bannerState.sourceImage.naturalWidth * baseScale * bannerState.zoom;
+        const drawHeight = bannerState.sourceImage.naturalHeight * baseScale * bannerState.zoom;
+        bannerState.offsetX = (bannerCropPreview.width - drawWidth) / 2;
+        bannerState.offsetY = (bannerCropPreview.height - drawHeight) / 2;
+        clampBannerOffsets();
+    };
+
+    const renderBannerPreview = () => {
+        if (!bannerCropPreview || !bannerCropCtx) {
+            return;
+        }
+
+        bannerCropCtx.clearRect(0, 0, bannerCropPreview.width, bannerCropPreview.height);
+        bannerCropCtx.fillStyle = '#f8fafc';
+        bannerCropCtx.fillRect(0, 0, bannerCropPreview.width, bannerCropPreview.height);
+
+        if (!bannerState.sourceImage) {
+            bannerCropCtx.strokeStyle = '#cbd5e1';
+            bannerCropCtx.lineWidth = 2;
+            bannerCropCtx.strokeRect(8, 8, bannerCropPreview.width - 16, bannerCropPreview.height - 16);
+            bannerCropCtx.fillStyle = '#64748b';
+            bannerCropCtx.font = '24px sans-serif';
+            bannerCropCtx.textAlign = 'center';
+            bannerCropCtx.fillText('尚未選擇橫幅', bannerCropPreview.width / 2, bannerCropPreview.height / 2 + 8);
+            return;
+        }
+
+        const baseScale = Math.max(
+            bannerCropPreview.width / bannerState.sourceImage.naturalWidth,
+            bannerCropPreview.height / bannerState.sourceImage.naturalHeight,
+        );
+        const drawWidth = bannerState.sourceImage.naturalWidth * baseScale * bannerState.zoom;
+        const drawHeight = bannerState.sourceImage.naturalHeight * baseScale * bannerState.zoom;
+        clampBannerOffsets();
+
+        bannerCropCtx.drawImage(
+            bannerState.sourceImage,
+            bannerState.offsetX,
+            bannerState.offsetY,
+            drawWidth,
+            drawHeight,
+        );
+    };
+
+    const canvasToBlob = (canvas, mimeType, quality) => new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+            if (blob) {
+                resolve(blob);
+                return;
+            }
+
+            reject(new Error('圖片轉換失敗'));
+        }, mimeType, quality);
+    });
+
+    const ensureBannerBlobWithinLimit = async (canvas, maxBytes = maxUploadImageBytes) => {
+        let quality = 0.92;
+        let outputCanvas = canvas;
+        let blob = await canvasToBlob(outputCanvas, 'image/jpeg', quality);
+
+        while (blob.size > maxBytes && quality > 0.45) {
+            quality = Math.max(0.45, quality - 0.08);
+            blob = await canvasToBlob(outputCanvas, 'image/jpeg', quality);
+        }
+
+        while (blob.size > maxBytes && outputCanvas.width > 360 && outputCanvas.height > 120) {
+            const nextCanvas = document.createElement('canvas');
+            nextCanvas.width = Math.max(360, Math.floor(outputCanvas.width * 0.9));
+            nextCanvas.height = Math.max(120, Math.floor(outputCanvas.height * 0.9));
+            const nextCtx = nextCanvas.getContext('2d');
+            if (!nextCtx) {
+                break;
+            }
+
+            nextCtx.drawImage(outputCanvas, 0, 0, nextCanvas.width, nextCanvas.height);
+            outputCanvas = nextCanvas;
+            quality = Math.min(quality, 0.78);
+            blob = await canvasToBlob(outputCanvas, 'image/jpeg', quality);
+        }
+
+        if (!blob || blob.size > maxBytes) {
+            throw new Error(i18n.imageTooLarge);
+        }
+
+        return blob;
+    };
+
+    const clearBannerPreview = () => {
+        revokeBannerObjectUrl();
+        bannerInput.value = '';
+        bannerState.sourceImage = null;
+        bannerState.sourceFileName = 'banner.jpg';
+        bannerState.hasNewUpload = false;
+        bannerState.dirty = false;
+        bannerState.zoom = 1;
+        bannerState.offsetX = 0;
+        bannerState.offsetY = 0;
+        bannerState.dragging = false;
+        if (bannerZoomInput) {
+            bannerZoomInput.value = '1';
+        }
+        if (bannerHelper) {
+            bannerHelper.textContent = '尚未選擇橫幅';
+        }
+        bannerPreviewWrapper.classList.add('hidden');
+        renderBannerPreview();
+    };
+
+    const setBannerFromUrl = (url) => {
+        if (!url) {
+            clearBannerPreview();
+            return;
+        }
+
+        revokeBannerObjectUrl();
+        const image = new Image();
+        image.onload = () => {
+            bannerState.sourceImage = image;
+            bannerState.sourceFileName = 'banner.jpg';
+            bannerState.hasNewUpload = false;
+            bannerState.dirty = false;
+            bannerState.zoom = 1;
+            if (bannerZoomInput) {
+                bannerZoomInput.value = '1';
+            }
+            centerBannerImage();
+            bannerPreviewWrapper.classList.remove('hidden');
+            if (bannerHelper) {
+                bannerHelper.textContent = '目前橫幅（可拖曳調整裁切）';
+            }
+            renderBannerPreview();
+        };
+        image.onerror = () => {
+            clearBannerPreview();
+        };
+        image.src = url;
+    };
+
+    const setBannerPreviewFromFile = async (file) => {
         if (!file) {
             return;
         }
@@ -435,19 +647,30 @@
             return;
         }
 
-        if (file.size > 2 * 1024 * 1024) {
-            showFlash(i18n.imageTooLarge, 'error');
-            return;
-        }
-
+        revokeBannerObjectUrl();
         const url = URL.createObjectURL(file);
-        bannerPreview.src = url;
-        bannerPreviewWrapper.classList.remove('hidden');
-        bannerPreview.onload = () => URL.revokeObjectURL(url);
-
-        const transfer = new DataTransfer();
-        transfer.items.add(file);
-        bannerInput.files = transfer.files;
+        bannerState.sourceObjectUrl = url;
+        const image = new Image();
+        image.onload = () => {
+            bannerState.sourceImage = image;
+            bannerState.sourceFileName = file.name || 'banner.jpg';
+            bannerState.hasNewUpload = true;
+            bannerState.dirty = false;
+            bannerState.zoom = 1;
+            if (bannerZoomInput) {
+                bannerZoomInput.value = '1';
+            }
+            centerBannerImage();
+            bannerPreviewWrapper.classList.remove('hidden');
+            if (bannerHelper) {
+                bannerHelper.textContent = `已選擇：${file.name}`;
+            }
+            renderBannerPreview();
+        };
+        image.onerror = () => {
+            showFlash('圖片讀取失敗，請重新選擇。', 'error');
+        };
+        image.src = url;
     };
 
     const setFormValues = (store = null) => {
@@ -474,8 +697,7 @@
         modalForm.elements['is_active'].checked = !!store.is_active;
 
         if (store.banner_image_url) {
-            bannerPreview.src = store.banner_image_url;
-            bannerPreviewWrapper.classList.remove('hidden');
+            setBannerFromUrl(store.banner_image_url);
         }
     };
 
@@ -524,8 +746,15 @@
         modalError.textContent = '';
 
         const formData = new FormData(modalForm);
+        formData.delete('banner_image');
         if (!formData.get('is_active')) {
             formData.set('is_active', '0');
+        }
+
+        if (bannerState.sourceImage && (bannerState.hasNewUpload || bannerState.dirty) && bannerCropPreview) {
+            const blob = await ensureBannerBlobWithinLimit(bannerCropPreview, maxUploadImageBytes);
+            const filename = (bannerState.sourceFileName || 'banner.jpg').replace(/\.[^.]+$/, '.jpg');
+            formData.set('banner_image', new File([blob], filename, { type: 'image/jpeg' }));
         }
 
         let url = createUrl;
@@ -587,13 +816,13 @@
 
             document.querySelectorAll('[data-store-actions-toggle]').forEach((toggleBtn) => {
                 toggleBtn.setAttribute('aria-expanded', 'false');
-                toggleBtn.textContent = '展開操作';
+                toggleBtn.textContent = i18n.actionsExpand;
             });
 
             if (isHidden) {
                 targetRow.classList.remove('hidden');
                 button.setAttribute('aria-expanded', 'true');
-                button.textContent = '收合操作';
+                button.textContent = i18n.actionsCollapse;
             }
         });
     });
@@ -614,13 +843,65 @@
         event.preventDefault();
         bannerDropzone.classList.remove('border-indigo-500', 'bg-indigo-50');
         const file = event.dataTransfer?.files?.[0];
-        setBannerPreviewFromFile(file);
+        void setBannerPreviewFromFile(file);
     });
     bannerInput?.addEventListener('change', (event) => {
         const file = event.target.files?.[0];
-        setBannerPreviewFromFile(file);
+        void setBannerPreviewFromFile(file);
+    });
+    bannerZoomInput?.addEventListener('input', () => {
+        if (!bannerState.sourceImage) {
+            return;
+        }
+
+        bannerState.zoom = Number(bannerZoomInput.value || '1');
+        bannerState.dirty = true;
+        centerBannerImage();
+        renderBannerPreview();
+    });
+    bannerCropPreview?.addEventListener('mousedown', (event) => {
+        if (!bannerState.sourceImage) {
+            return;
+        }
+
+        bannerState.dragging = true;
+        bannerState.lastX = event.clientX;
+        bannerState.lastY = event.clientY;
+    });
+    bannerCropPreview?.addEventListener('mousemove', (event) => {
+        if (!bannerState.dragging || !bannerState.sourceImage) {
+            return;
+        }
+
+        bannerState.offsetX += event.clientX - bannerState.lastX;
+        bannerState.offsetY += event.clientY - bannerState.lastY;
+        bannerState.lastX = event.clientX;
+        bannerState.lastY = event.clientY;
+        bannerState.dirty = true;
+        clampBannerOffsets();
+        renderBannerPreview();
+    });
+    bannerCropPreview?.addEventListener('mouseup', () => {
+        bannerState.dragging = false;
+    });
+    bannerCropPreview?.addEventListener('mouseleave', () => {
+        bannerState.dragging = false;
+    });
+    bannerReset?.addEventListener('click', () => {
+        if (!bannerState.sourceImage) {
+            return;
+        }
+
+        bannerState.zoom = 1;
+        bannerState.dirty = true;
+        if (bannerZoomInput) {
+            bannerZoomInput.value = '1';
+        }
+        centerBannerImage();
+        renderBannerPreview();
     });
     bannerRemove?.addEventListener('click', clearBannerPreview);
+    renderBannerPreview();
 })();
 </script>
 @endsection

@@ -203,7 +203,7 @@
                                     <button type="button" id="modal-image-reset" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">重設位置</button>
                                     <button type="button" id="modal-image-remove" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">移除圖片</button>
                                 </div>
-                                <p class="text-[11px] text-slate-500">支援 JPG / PNG / WEBP，檔案大小上限 4MB。</p>
+                                <p class="text-[11px] text-slate-500">支援 JPG / PNG / WEBP，若超過 2MB 會自動壓縮後上傳。</p>
                             </div>
                         </div>
                     </div>
@@ -450,6 +450,7 @@
         lastX: 0,
         lastY: 0,
     };
+    const maxUploadImageBytes = 2 * 1024 * 1024;
 
     const optionTemplates = {
         steak: [
@@ -780,11 +781,6 @@
             return;
         }
 
-        if (file.size > 4 * 1024 * 1024) {
-            showFlash(i18n.imageTooLarge, 'error');
-            return;
-        }
-
         revokeImageObjectUrl();
         const url = URL.createObjectURL(file);
         imageState.sourceObjectUrl = url;
@@ -827,6 +823,39 @@
             reject(new Error('圖片轉換失敗'));
         }, type, quality);
     });
+
+    const ensureCanvasBlobWithinLimit = async (canvas, type = 'image/jpeg', maxBytes = maxUploadImageBytes) => {
+        let quality = 0.92;
+        let outputCanvas = canvas;
+        let blob = await canvasToBlob(outputCanvas, type, quality);
+
+        while (blob.size > maxBytes && quality > 0.45) {
+            quality = Math.max(0.45, quality - 0.08);
+            blob = await canvasToBlob(outputCanvas, type, quality);
+        }
+
+        while (blob.size > maxBytes && outputCanvas.width > 120 && outputCanvas.height > 120) {
+            const nextCanvas = document.createElement('canvas');
+            nextCanvas.width = Math.max(120, Math.floor(outputCanvas.width * 0.9));
+            nextCanvas.height = Math.max(120, Math.floor(outputCanvas.height * 0.9));
+
+            const nextCtx = nextCanvas.getContext('2d');
+            if (!nextCtx) {
+                break;
+            }
+
+            nextCtx.drawImage(outputCanvas, 0, 0, nextCanvas.width, nextCanvas.height);
+            outputCanvas = nextCanvas;
+            quality = Math.min(quality, 0.78);
+            blob = await canvasToBlob(outputCanvas, type, quality);
+        }
+
+        if (blob.size > maxBytes) {
+            throw new Error(i18n.imageTooLarge);
+        }
+
+        return blob;
+    };
 
     const showFlash = (message, type = 'success') => {
         if (!flash) return;
@@ -1140,7 +1169,7 @@
 
         formData.delete('image_upload');
         if (imageState.hasNewUpload && imageState.sourceImage && imagePreviewCanvas) {
-            const blob = await canvasToBlob(imagePreviewCanvas, 'image/jpeg', 0.92);
+            const blob = await ensureCanvasBlobWithinLimit(imagePreviewCanvas, 'image/jpeg', maxUploadImageBytes);
             const filename = (imageState.sourceFileName || 'product-image.jpg').replace(/\.[^.]+$/, '.jpg');
             formData.set('image_upload', new File([blob], filename, { type: 'image/jpeg' }));
             formData.set('remove_image', '0');

@@ -59,7 +59,7 @@ class OrderController extends Controller
                 'store' => $store,
                 'table' => $table,
             ])
-            ->with('success', '已加入購物車');
+            ->with('success', __('customer.item_added_to_cart'));
     }
 
     public function cart(Store $store, DiningTable $table)
