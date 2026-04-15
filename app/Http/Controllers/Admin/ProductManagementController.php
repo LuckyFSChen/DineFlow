@@ -462,8 +462,22 @@ class ProductManagementController extends Controller
             ]);
         }
 
+        $resolvedSort = $data['sort'] ?? null;
+        if ($resolvedSort === null) {
+            if ($currentProduct) {
+                $resolvedSort = (int) ($currentProduct->sort ?? 1);
+            } else {
+                $maxSort = Product::query()
+                    ->where('store_id', $store->id)
+                    ->where('category_id', $data['category_id'])
+                    ->max('sort');
+
+                $resolvedSort = ((int) $maxSort) + 1;
+            }
+        }
+
         $data['store_id'] = $store->id;
-        $data['sort'] = $data['sort'] ?? 1;
+        $data['sort'] = max((int) $resolvedSort, 1);
         $data['is_active'] = $request->boolean('is_active');
         $data['is_sold_out'] = $request->boolean('is_sold_out');
         $data['allow_item_note'] = $request->boolean('allow_item_note');

@@ -414,8 +414,8 @@ class StoreManagementController extends Controller
             'country_code' => strtolower($store->country_code ?? $this->inferCountryCodeFromCurrency($store->currency ?? 'twd')),
             'checkout_timing' => $store->checkout_timing ?? 'postpay',
             'is_active' => (bool) $store->is_active,
-            'opening_time' => $store->opening_time,
-            'closing_time' => $store->closing_time,
+            'opening_time' => $this->formatTimeForInput($store->opening_time),
+            'closing_time' => $this->formatTimeForInput($store->closing_time),
             'banner_image' => $store->banner_image,
             'banner_image_url' => $store->banner_image
                 ? asset('storage/' . ltrim($store->banner_image, '/'))
@@ -441,5 +441,14 @@ class StoreManagementController extends Controller
             'usd' => 'us',
             default => 'tw',
         };
+    }
+
+    protected function formatTimeForInput(?string $time): ?string
+    {
+        if (! is_string($time) || $time === '') {
+            return null;
+        }
+
+        return substr($time, 0, 5);
     }
 }
