@@ -167,7 +167,7 @@
                                         </span>
                                     @endif
                                 </td>
-                                <td class="w-56 px-6 py-4 align-top">
+                                <td class="w-56 px-6 py-4 align-middle">
                                     <div class="flex flex-wrap justify-end gap-2 sm:flex-nowrap">
                                         <a href="{{ route('admin.stores.products.index', $store) }}"
                                            class="inline-flex items-center whitespace-nowrap rounded-xl border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100">
