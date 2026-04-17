@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Store;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
@@ -82,10 +83,12 @@ class HomeController extends Controller
             ->where('takeout_qr_enabled', 1);
 
         if ($keyword !== '') {
-            $query->where(function ($q) use ($keyword) {
-                $q->where('name', 'like', "%{$keyword}%")
-                ->orWhere('address', 'like', "%{$keyword}%")
-                ->orWhere('description', 'like', "%{$keyword}%");
+            $operator = $this->caseInsensitiveLikeOperator();
+
+            $query->where(function ($q) use ($keyword, $operator) {
+                $q->where('name', $operator, "%{$keyword}%")
+                    ->orWhere('address', $operator, "%{$keyword}%")
+                    ->orWhere('description', $operator, "%{$keyword}%");
             });
         }
 
@@ -132,5 +135,10 @@ class HomeController extends Controller
         }
 
         return (float) $longitude;
+    }
+
+    private function caseInsensitiveLikeOperator(): string
+    {
+        return DB::getDriverName() === 'pgsql' ? 'ILIKE' : 'like';
     }
 }

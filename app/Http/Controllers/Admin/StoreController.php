@@ -7,6 +7,7 @@ use App\Models\Store;
 use App\Support\GooglePlaceService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -31,12 +32,14 @@ class StoreController extends Controller
                 'created_at',
             ])
             ->when($keyword, function ($query) use ($keyword) {
-                $query->where(function ($q) use ($keyword) {
-                    $q->where('name', 'like', "%{$keyword}%")
-                        ->orWhere('slug', 'like', "%{$keyword}%")
-                        ->orWhere('description', 'like', "%{$keyword}%")
-                        ->orWhere('address', 'like', "%{$keyword}%")
-                        ->orWhere('phone', 'like', "%{$keyword}%");
+                $operator = $this->caseInsensitiveLikeOperator();
+
+                $query->where(function ($q) use ($keyword, $operator) {
+                    $q->where('name', $operator, "%{$keyword}%")
+                        ->orWhere('slug', $operator, "%{$keyword}%")
+                        ->orWhere('description', $operator, "%{$keyword}%")
+                        ->orWhere('address', $operator, "%{$keyword}%")
+                        ->orWhere('phone', $operator, "%{$keyword}%");
                 });
             })
             ->latest()
@@ -332,5 +335,10 @@ class StoreController extends Controller
         $data['longitude'] = $geocoded['longitude'];
 
         return $data;
+    }
+
+    protected function caseInsensitiveLikeOperator(): string
+    {
+        return DB::getDriverName() === 'pgsql' ? 'ILIKE' : 'like';
     }
 }

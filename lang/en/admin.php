@@ -371,10 +371,10 @@ return [
     'products_form_sales_status_description' => 'Control whether to publish or temporarily mark as sold out.',
     
     // Confirmations
-    'products_confirm_delete_category'      => 'Are you sure you want to delete the category "{name}"?',
-    'products_confirm_disable_category'     => 'Are you sure you want to disable the category "{name}"? After disabling, this category will no longer appear in the product management center.',
-    'products_confirm_enable_category'      => 'Are you sure you want to reactivate the category "{name}"?',
-    'products_confirm_delete_product'       => 'Are you sure you want to delete "{name}"?',
+    'products_confirm_delete_category'      => 'Are you sure you want to delete the category ":name"?',
+    'products_confirm_disable_category'     => 'Are you sure you want to disable the category ":name"? After disabling, this category will no longer appear in the product management center.',
+    'products_confirm_enable_category'      => 'Are you sure you want to reactivate the category ":name"?',
+    'products_confirm_delete_product'       => 'Are you sure you want to delete ":name"?',
     'products_confirm_apply_template'       => 'Applying a template will overwrite current option settings. Continue?',
     'products_confirm_clear_all_options'    => 'Are you sure you want to clear all option groups?',
     
@@ -460,6 +460,7 @@ return [
     'error_only_merchant_account_updatable'  => 'Only merchant accounts can be updated.',
     'error_image_read_failed'                => 'Failed to read image. Please select it again.',
     'error_image_convert_failed'             => 'Image conversion failed.',
+    'error_store_not_found'                  => 'Store not found.',
     'error_store_activation_subscription_expired' => 'Subscription expired. The store cannot be activated. Please renew first.',
     'error_store_activation_limit_reached'   => 'Active store limit reached. Close another store before enabling this one.',
 ];

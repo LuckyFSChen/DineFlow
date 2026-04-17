@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+@php
+    $isAdminArea = request()->routeIs('admin.*') || request()->routeIs('super-admin.*') || request()->routeIs('merchant.*');
+@endphp
 <head>
     @php
         $appName = config('app.name', 'DineFlow');
@@ -31,12 +34,14 @@
 
     @include('partials.favicon')
     @stack('structured-data')
+    @if ($isAdminArea)
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+    @endif
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-@php
-    $isAdminArea = request()->routeIs('admin.*') || request()->routeIs('super-admin.*') || request()->routeIs('merchant.*');
-@endphp
 <body class="font-sans antialiased bg-light {{ $isAdminArea ? 'is-admin-area' : '' }}">
     <div class="min-vh-100 app-shell">
         @include('layouts.navigation')
@@ -51,82 +56,5 @@
             @endif
         </main>
     </div>
-
-    <script>
-    (() => {
-        const phoneSelectors = [
-            'input[type="tel"]',
-            'input[name*="phone"]',
-            'input[id*="phone"]',
-        ];
-
-        const detectDigitsLimit = (input) => {
-            const explicit = Number(input.dataset.phoneDigits || 0);
-            if (explicit > 0) {
-                return explicit;
-            }
-
-            const rawMaxLength = Number(input.getAttribute('maxlength') || 0);
-            if (rawMaxLength > 0) {
-                return rawMaxLength > 11 ? rawMaxLength - 2 : rawMaxLength;
-            }
-
-            return 11;
-        };
-
-        const formatPhone = (raw, digitsLimit) => {
-            const digits = String(raw || '').replace(/\D/g, '').slice(0, digitsLimit);
-
-            if (digits.length <= 4) {
-                return digits;
-            }
-
-            if (digits.length === 11) {
-                return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
-            }
-
-            if (digits.length === 10) {
-                if (digits.startsWith('09')) {
-                    return `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
-                }
-
-                return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
-            }
-
-            if (digits.length <= 7) {
-                return `${digits.slice(0, 4)}-${digits.slice(4)}`;
-            }
-
-            return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
-        };
-
-        const bindInput = (input) => {
-            if (!input || input.dataset.phoneAutoHyphenBound === '1') {
-                return;
-            }
-
-            input.dataset.phoneAutoHyphenBound = '1';
-            const digitsLimit = detectDigitsLimit(input);
-            input.setAttribute('inputmode', input.getAttribute('inputmode') || 'numeric');
-            input.setAttribute('pattern', '[0-9-]*');
-            input.setAttribute('maxlength', String(digitsLimit + 2));
-
-            const apply = () => {
-                input.value = formatPhone(input.value, digitsLimit);
-            };
-
-            input.addEventListener('input', apply);
-            input.addEventListener('blur', apply);
-            apply();
-        };
-
-        const applyAll = () => {
-            const inputs = document.querySelectorAll(phoneSelectors.join(','));
-            inputs.forEach(bindInput);
-        };
-
-        applyAll();
-    })();
-    </script>
 </body>
 </html>

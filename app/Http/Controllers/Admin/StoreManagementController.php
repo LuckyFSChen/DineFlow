@@ -9,6 +9,7 @@ use App\Support\GooglePlaceService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -59,12 +60,14 @@ class StoreManagementController extends Controller
                 $query->where('user_id', $user->id);
             })
             ->when($keyword, function ($query) use ($keyword) {
-                $query->where(function ($q) use ($keyword) {
-                    $q->where('name', 'like', "%{$keyword}%")
-                        ->orWhere('slug', 'like', "%{$keyword}%")
-                        ->orWhere('description', 'like', "%{$keyword}%")
-                        ->orWhere('address', 'like', "%{$keyword}%")
-                        ->orWhere('phone', 'like', "%{$keyword}%");
+                $operator = $this->caseInsensitiveLikeOperator();
+
+                $query->where(function ($q) use ($keyword, $operator) {
+                    $q->where('name', $operator, "%{$keyword}%")
+                        ->orWhere('slug', $operator, "%{$keyword}%")
+                        ->orWhere('description', $operator, "%{$keyword}%")
+                        ->orWhere('address', $operator, "%{$keyword}%")
+                        ->orWhere('phone', $operator, "%{$keyword}%");
                 });
             })
             ->when($countryCode !== '', function ($query) use ($countryCode) {
@@ -711,5 +714,10 @@ class StoreManagementController extends Controller
         }
 
         return substr($time, 0, 5);
+    }
+
+    protected function caseInsensitiveLikeOperator(): string
+    {
+        return DB::getDriverName() === 'pgsql' ? 'ILIKE' : 'like';
     }
 }

@@ -84,6 +84,14 @@ class ProductManagementController extends Controller
         $this->authorizeStoreAccess($request, $store);
 
         $data = $this->validatedData($request, $store, null);
+
+        // New products are always appended to the end of the selected category.
+        $maxSortInCategory = Product::query()
+            ->where('store_id', $store->id)
+            ->where('category_id', $data['category_id'])
+            ->max('sort');
+        $data['sort'] = ((int) $maxSortInCategory) + 1;
+
         $product = Product::create($data);
 
         if ($request->expectsJson()) {

@@ -370,10 +370,10 @@ return [
     'products_form_sales_status_description' => 'Kiểm soát có xuất bản hay tạm thời đánh dấu là hết hàng.',
     
     // Confirmations
-    'products_confirm_delete_category'      => 'Bạn có chắc chắn muốn xóa danh mục "{name}" không?',
-    'products_confirm_disable_category'     => 'Bạn có chắc chắn muốn vô hiệu hóa danh mục "{name}" không? Sau khi vô hiệu hóa, danh mục này sẽ không còn xuất hiện trong trung tâm quản lý sản phẩm.',
-    'products_confirm_enable_category'      => 'Bạn có chắc chắn muốn kích hoạt lại danh mục "{name}" không?',
-    'products_confirm_delete_product'       => 'Bạn có chắc chắn muốn xóa "{name}" không?',
+    'products_confirm_delete_category'      => 'Bạn có chắc chắn muốn xóa danh mục ":name" không?',
+    'products_confirm_disable_category'     => 'Bạn có chắc chắn muốn vô hiệu hóa danh mục ":name" không? Sau khi vô hiệu hóa, danh mục này sẽ không còn xuất hiện trong trung tâm quản lý sản phẩm.',
+    'products_confirm_enable_category'      => 'Bạn có chắc chắn muốn kích hoạt lại danh mục ":name" không?',
+    'products_confirm_delete_product'       => 'Bạn có chắc chắn muốn xóa ":name" không?',
     'products_confirm_apply_template'       => 'Áp dụng mẫu sẽ ghi đè cài đặt tùy chọn hiện tại. Tiếp tục?',
     'products_confirm_clear_all_options'    => 'Bạn có chắc chắn muốn xóa tất cả các nhóm tùy chọn không?',
     
@@ -459,6 +459,7 @@ return [
     'error_only_merchant_account_updatable'  => 'Chỉ có thể cập nhật tài khoản thương nhân.',
     'error_image_read_failed'                => 'Đọc ảnh thất bại, vui lòng chọn lại.',
     'error_image_convert_failed'             => 'Chuyển đổi ảnh thất bại.',
+    'error_store_not_found'                  => 'Khong tim thay cua hang.',
     'error_store_activation_subscription_expired' => 'Gói đăng ký đã hết hạn, không thể bật cửa hàng. Vui lòng gia hạn trước.',
     'error_store_activation_limit_reached'   => 'Đã đạt giới hạn cửa hàng đang bật. Hãy tắt cửa hàng khác trước khi bật cửa hàng này.',
 ];

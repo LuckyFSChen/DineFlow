@@ -371,10 +371,10 @@ return [
     'products_form_sales_status_description' => '控制是否上架、或暫時標記售完。',
     
     // Confirmations
-    'products_confirm_delete_category'      => '確定要刪除分類「{name}」嗎？',
-    'products_confirm_disable_category'     => '確定要停用分類「{name}」嗎？停用後此分類將不顯示於商品管理中心。',
-    'products_confirm_enable_category'      => '確定要重新啟用分類「{name}」嗎？',
-    'products_confirm_delete_product'       => '確定要刪除「{name}」嗎？',
+    'products_confirm_delete_category'      => '確定要刪除分類「:name」嗎？',
+    'products_confirm_disable_category'     => '確定要停用分類「:name」嗎？停用後此分類將不顯示於商品管理中心。',
+    'products_confirm_enable_category'      => '確定要重新啟用分類「:name」嗎？',
+    'products_confirm_delete_product'       => '確定要刪除「:name」嗎？',
     'products_confirm_apply_template'       => '套用範本會覆蓋目前選配設定，是否繼續？',
     'products_confirm_clear_all_options'    => '確定要清空所有選配群組嗎？',
     
@@ -460,6 +460,7 @@ return [
     'error_only_merchant_account_updatable'  => '只能更新商家帳號。',
     'error_image_read_failed'                => '圖片讀取失敗，請重新選擇。',
     'error_image_convert_failed'             => '圖片轉換失敗。',
+    'error_store_not_found'                  => '找不到店家。',
     'error_store_activation_subscription_expired' => '訂閱已到期，店家無法開啟。請先續訂方案。',
     'error_store_activation_limit_reached'   => '目前已達可開啟店家上限。請先關閉其他店家，再開啟此店家。',
 ];

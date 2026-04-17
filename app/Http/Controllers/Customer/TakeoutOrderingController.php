@@ -159,6 +159,58 @@ class TakeoutOrderingController extends Controller
         return view('customer.takeout.cart', compact('store', 'cart', 'total', 'orderingAvailable', 'rememberedCustomerInfo', 'orderHistory'));
     }
 
+    public function updateCartItem(Request $request, Store $store, string $lineKey)
+    {
+        $this->ensureTakeoutEnabled($store);
+
+        $validated = $request->validate([
+            'action' => ['required', 'in:increase,decrease'],
+        ]);
+
+        $cartKey = $this->getTakeoutCartSessionKey($store);
+        $cart = session()->get($cartKey, []);
+
+        if (! isset($cart[$lineKey])) {
+            return redirect()
+                ->route('customer.takeout.cart.show', ['store' => $store])
+                ->with('error', __('customer.error_cart_empty'));
+        }
+
+        if ($validated['action'] === 'increase') {
+            $cart[$lineKey]['qty'] = (int) $cart[$lineKey]['qty'] + 1;
+        } else {
+            $cart[$lineKey]['qty'] = (int) $cart[$lineKey]['qty'] - 1;
+
+            if ($cart[$lineKey]['qty'] <= 0) {
+                unset($cart[$lineKey]);
+            }
+        }
+
+        foreach ($cart as &$item) {
+            $item['subtotal'] = (int) $item['price'] * (int) $item['qty'];
+        }
+        unset($item);
+
+        session()->put($cartKey, $cart);
+
+        return redirect()->route('customer.takeout.cart.show', ['store' => $store]);
+    }
+
+    public function removeCartItem(Store $store, string $lineKey)
+    {
+        $this->ensureTakeoutEnabled($store);
+
+        $cartKey = $this->getTakeoutCartSessionKey($store);
+        $cart = session()->get($cartKey, []);
+
+        if (isset($cart[$lineKey])) {
+            unset($cart[$lineKey]);
+            session()->put($cartKey, $cart);
+        }
+
+        return redirect()->route('customer.takeout.cart.show', ['store' => $store]);
+    }
+
     public function checkout(Request $request, Store $store)
     {
         $this->ensureTakeoutEnabled($store);

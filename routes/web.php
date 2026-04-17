@@ -61,27 +61,27 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin,chef'])->prefix('adm
     Route::get('stores/{store}/kitchen', [KitchenController::class, 'index'])
         ->name('stores.kitchen')
         ->missing(function () {
-            return redirect()->route('dashboard')->with('error', 'Store not found.');
+            return redirect()->route('dashboard')->with('error', __('admin.error_store_not_found'));
         });
 
     Route::get('stores/{store}/kitchen/orders', [KitchenController::class, 'orders'])
         ->name('stores.kitchen.orders')
         ->missing(function (Request $request) {
             if ($request->expectsJson()) {
-                return response()->json(['ok' => false, 'message' => 'Store not found'], 404);
+                return response()->json(['ok' => false, 'message' => __('admin.error_store_not_found')], 404);
             }
 
-            return redirect()->route('dashboard')->with('error', 'Store not found.');
+            return redirect()->route('dashboard')->with('error', __('admin.error_store_not_found'));
         });
 
     Route::patch('stores/{store}/kitchen/orders/{order:id}/status', [KitchenController::class, 'updateStatus'])
         ->name('stores.kitchen.orders.status')
         ->missing(function (Request $request) {
             if ($request->expectsJson()) {
-                return response()->json(['ok' => false, 'message' => 'Store not found'], 404);
+                return response()->json(['ok' => false, 'message' => __('admin.error_store_not_found')], 404);
             }
 
-            return redirect()->route('dashboard')->with('error', 'Store not found.');
+            return redirect()->route('dashboard')->with('error', __('admin.error_store_not_found'));
         });
 
 });
@@ -91,27 +91,27 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin,cashier'])->prefix('
     Route::get('stores/{store}/cashier', [CashierController::class, 'index'])
         ->name('stores.cashier')
         ->missing(function () {
-            return redirect()->route('dashboard')->with('error', 'Store not found.');
+            return redirect()->route('dashboard')->with('error', __('admin.error_store_not_found'));
         });
 
     Route::get('stores/{store}/cashier/orders', [CashierController::class, 'orders'])
         ->name('stores.cashier.orders')
         ->missing(function (Request $request) {
             if ($request->expectsJson()) {
-                return response()->json(['ok' => false, 'message' => 'Store not found'], 404);
+                return response()->json(['ok' => false, 'message' => __('admin.error_store_not_found')], 404);
             }
 
-            return redirect()->route('dashboard')->with('error', 'Store not found.');
+            return redirect()->route('dashboard')->with('error', __('admin.error_store_not_found'));
         });
 
     Route::patch('stores/{store}/cashier/orders/{order:id}/status', [CashierController::class, 'updateStatus'])
         ->name('stores.cashier.orders.status')
         ->missing(function (Request $request) {
             if ($request->expectsJson()) {
-                return response()->json(['ok' => false, 'message' => 'Store not found'], 404);
+                return response()->json(['ok' => false, 'message' => __('admin.error_store_not_found')], 404);
             }
 
-            return redirect()->route('dashboard')->with('error', 'Store not found.');
+            return redirect()->route('dashboard')->with('error', __('admin.error_store_not_found'));
         });
 });
 
@@ -119,17 +119,17 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin,chef,cashier'])->pre
     Route::get('stores/{store}/boards', [AllBoardsController::class, 'index'])
         ->name('stores.boards')
         ->missing(function () {
-            return redirect()->route('dashboard')->with('error', 'Store not found.');
+            return redirect()->route('dashboard')->with('error', __('admin.error_store_not_found'));
         });
 
     Route::get('stores/{store}/boards/orders', [AllBoardsController::class, 'orders'])
         ->name('stores.boards.orders')
         ->missing(function (Request $request) {
             if ($request->expectsJson()) {
-                return response()->json(['ok' => false, 'message' => 'Store not found'], 404);
+                return response()->json(['ok' => false, 'message' => __('admin.error_store_not_found')], 404);
             }
 
-            return redirect()->route('dashboard')->with('error', 'Store not found.');
+            return redirect()->route('dashboard')->with('error', __('admin.error_store_not_found'));
         });
 });
 

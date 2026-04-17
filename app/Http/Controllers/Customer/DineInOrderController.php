@@ -114,6 +114,58 @@ class DineInOrderController extends Controller
         return view('customer.dine-in.cart', compact('store', 'table', 'cart', 'total', 'orderingAvailable', 'rememberedCustomerInfo', 'orderHistory'));
     }
 
+    public function updateCartItem(Request $request, Store $store, DiningTable $table, string $lineKey)
+    {
+        abort_unless($table->store_id === $store->id, 404);
+
+        $validated = $request->validate([
+            'action' => ['required', 'in:increase,decrease'],
+        ]);
+
+        $cartKey = $this->getDineInCartSessionKey($store, $table);
+        $cart = session()->get($cartKey, []);
+
+        if (! isset($cart[$lineKey])) {
+            return redirect()
+                ->route('customer.dinein.cart.show', ['store' => $store, 'table' => $table])
+                ->with('error', __('customer.error_cart_empty'));
+        }
+
+        if ($validated['action'] === 'increase') {
+            $cart[$lineKey]['qty'] = (int) $cart[$lineKey]['qty'] + 1;
+        } else {
+            $cart[$lineKey]['qty'] = (int) $cart[$lineKey]['qty'] - 1;
+
+            if ($cart[$lineKey]['qty'] <= 0) {
+                unset($cart[$lineKey]);
+            }
+        }
+
+        foreach ($cart as &$item) {
+            $item['subtotal'] = (int) $item['price'] * (int) $item['qty'];
+        }
+        unset($item);
+
+        session()->put($cartKey, $cart);
+
+        return redirect()->route('customer.dinein.cart.show', ['store' => $store, 'table' => $table]);
+    }
+
+    public function removeCartItem(Store $store, DiningTable $table, string $lineKey)
+    {
+        abort_unless($table->store_id === $store->id, 404);
+
+        $cartKey = $this->getDineInCartSessionKey($store, $table);
+        $cart = session()->get($cartKey, []);
+
+        if (isset($cart[$lineKey])) {
+            unset($cart[$lineKey]);
+            session()->put($cartKey, $cart);
+        }
+
+        return redirect()->route('customer.dinein.cart.show', ['store' => $store, 'table' => $table]);
+    }
+
     public function submit(Request $request, Store $store, DiningTable $table)
     {
         abort_unless($table->store_id === $store->id, 404);

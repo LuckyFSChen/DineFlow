@@ -385,9 +385,16 @@ class LoyaltyController extends Controller
         }
 
         return $query->where(function (Builder $inner) use ($keyword): void {
-            $inner->where('name', 'like', "%{$keyword}%")
-                ->orWhere('email', 'like', "%{$keyword}%")
-                ->orWhere('phone', 'like', "%{$keyword}%");
+            $operator = $this->caseInsensitiveLikeOperator();
+
+            $inner->where('name', $operator, "%{$keyword}%")
+                ->orWhere('email', $operator, "%{$keyword}%")
+                ->orWhere('phone', $operator, "%{$keyword}%");
         });
+    }
+
+    private function caseInsensitiveLikeOperator(): string
+    {
+        return DB::getDriverName() === 'pgsql' ? 'ILIKE' : 'like';
     }
 }
