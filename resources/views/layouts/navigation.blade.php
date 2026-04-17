@@ -18,6 +18,22 @@
         $resolvedRouteStore = null;
     }
 
+    $storeRouteValue = static function ($store) {
+        if ($store instanceof \App\Models\Store) {
+            return $store->getRouteKey();
+        }
+
+        if (is_array($store)) {
+            return $store['slug'] ?? $store['id'] ?? null;
+        }
+
+        if (is_string($store) || is_int($store)) {
+            return $store;
+        }
+
+        return null;
+    };
+
     $firstOpenStore = fn () => \App\Models\Store::query()
         ->where('is_active', true)
         ->orderBy('id')
@@ -62,6 +78,9 @@
 
     $showCashierNav = $cashierNavStore
         && ($navUser?->isAdmin() || $navUser?->hasActiveSubscription() || $navUser?->isCashier());
+
+    $kitchenNavStoreRoute = $storeRouteValue($kitchenNavStore);
+    $cashierNavStoreRoute = $storeRouteValue($cashierNavStore);
 
     $merchantHasStores = $navUser?->isMerchant()
         ? $navUser->stores()->exists()
@@ -116,14 +135,14 @@
                         </x-nav-link>
                     @endif
 
-                    @if($showKitchenNav)
-                        <x-nav-link :href="route('admin.stores.kitchen', $kitchenNavStore)" :active="request()->routeIs('admin.stores.kitchen*')">
+                    @if($showKitchenNav && $kitchenNavStoreRoute)
+                        <x-nav-link :href="route('admin.stores.kitchen', ['store' => $kitchenNavStoreRoute])" :active="request()->routeIs('admin.stores.kitchen*')">
                             🍳 {{ __('nav.kitchen') }}
                         </x-nav-link>
                     @endif
 
-                    @if($showCashierNav)
-                        <x-nav-link :href="route('admin.stores.cashier', $cashierNavStore)" :active="request()->routeIs('admin.stores.cashier*')">
+                    @if($showCashierNav && $cashierNavStoreRoute)
+                        <x-nav-link :href="route('admin.stores.cashier', ['store' => $cashierNavStoreRoute])" :active="request()->routeIs('admin.stores.cashier*')">
                             💳 {{ __('nav.cashier') }}
                         </x-nav-link>
                     @endif
@@ -257,14 +276,14 @@
                 </x-responsive-nav-link>
             @endif
 
-            @if($showKitchenNav)
-                <x-responsive-nav-link :href="route('admin.stores.kitchen', $kitchenNavStore)" :active="request()->routeIs('admin.stores.kitchen*')">
+            @if($showKitchenNav && $kitchenNavStoreRoute)
+                <x-responsive-nav-link :href="route('admin.stores.kitchen', ['store' => $kitchenNavStoreRoute])" :active="request()->routeIs('admin.stores.kitchen*')">
                     🍳 {{ __('nav.kitchen') }}
                 </x-responsive-nav-link>
             @endif
 
-            @if($showCashierNav)
-                <x-responsive-nav-link :href="route('admin.stores.cashier', $cashierNavStore)" :active="request()->routeIs('admin.stores.cashier*')">
+            @if($showCashierNav && $cashierNavStoreRoute)
+                <x-responsive-nav-link :href="route('admin.stores.cashier', ['store' => $cashierNavStoreRoute])" :active="request()->routeIs('admin.stores.cashier*')">
                     💳 {{ __('nav.cashier') }}
                 </x-responsive-nav-link>
             @endif
@@ -332,12 +351,12 @@
         <div class="mobile-admin-dock">
             <a href="{{ route('admin.stores.index') }}" class="{{ request()->routeIs('admin.stores.index') ? 'active' : '' }}">{{ __('nav.stores_short') }}</a>
 
-            @if($showKitchenNav)
-                <a href="{{ route('admin.stores.kitchen', $kitchenNavStore) }}" class="{{ request()->routeIs('admin.stores.kitchen*') ? 'active' : '' }}">{{ __('nav.kitchen_short') }}</a>
+            @if($showKitchenNav && $kitchenNavStoreRoute)
+                <a href="{{ route('admin.stores.kitchen', ['store' => $kitchenNavStoreRoute]) }}" class="{{ request()->routeIs('admin.stores.kitchen*') ? 'active' : '' }}">{{ __('nav.kitchen_short') }}</a>
             @endif
 
-            @if($showCashierNav)
-                <a href="{{ route('admin.stores.cashier', $cashierNavStore) }}" class="{{ request()->routeIs('admin.stores.cashier*') ? 'active' : '' }}">{{ __('nav.cashier_short') }}</a>
+            @if($showCashierNav && $cashierNavStoreRoute)
+                <a href="{{ route('admin.stores.cashier', ['store' => $cashierNavStoreRoute]) }}" class="{{ request()->routeIs('admin.stores.cashier*') ? 'active' : '' }}">{{ __('nav.cashier_short') }}</a>
             @endif
 
             @if(Auth::user()?->isMerchant())

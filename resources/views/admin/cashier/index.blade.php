@@ -3,6 +3,19 @@
 @section('title', __('admin.board_cashier_title') . ' — ' . $store->name)
 
 @php
+function cashierStoreRouteValue($value) {
+    if ($value instanceof \App\Models\Store) {
+        return $value->getRouteKey();
+    }
+
+    if (is_array($value)) {
+        return $value['slug'] ?? $value['id'] ?? null;
+    }
+
+    return is_string($value) || is_int($value) ? $value : null;
+}
+
+$storeRoute = cashierStoreRouteValue($store);
 function cashierFormatOrder(\App\Models\Order $order): array {
     return [
         'id'             => $order->id,
@@ -78,10 +91,22 @@ $cashierI18n = [
         <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div class="flex items-center gap-4">
             <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700">
-                ← {{ __('admin.board_back_to_stores') }}
+                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path d="M8 5 3 10l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M4 10h13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+                {{ __('admin.board_back_to_stores') }}
             </a>
             <div>
-                <h1 class="text-lg font-bold text-white">💳 {{ __('admin.board_cashier_title') }}</h1>
+                <h1 class="flex items-center gap-2 text-lg font-bold text-white">
+                    <svg class="h-5 w-5 text-emerald-300" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4 7.5h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        <path d="M6 4.5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                        <path d="M8 15h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        <circle cx="16.5" cy="15" r="1.25" fill="currentColor"/>
+                    </svg>
+                    {{ __('admin.board_cashier_title') }}
+                </h1>
                 <p class="text-xs text-slate-400">{{ $store->name }}</p>
             </div>
         </div>
@@ -89,14 +114,14 @@ $cashierI18n = [
         <div class="flex flex-wrap items-center gap-2 xl:justify-end">
             {{-- Board switch --}}
             <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
-                <span class="px-3 py-1.5 bg-indigo-600 text-white">💳 {{ __('admin.board_cashier_title') }}</span>
+                <span class="px-3 py-1.5 bg-indigo-600 text-white">{{ __('admin.board_cashier_title') }}</span>
                 @if($store->is_active)
-                    <a href="{{ route('admin.stores.kitchen', $store) }}"
+                    <a href="{{ route('admin.stores.kitchen', ['store' => $storeRoute]) }}"
                        class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
                         🍳 {{ __('admin.board_kitchen_title') }}
                     </a>
                 @endif
-                <a href="{{ route('admin.stores.boards', $store) }}"
+                <a href="{{ route('admin.stores.boards', ['store' => $storeRoute]) }}"
                    class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
                     🧩 {{ __('admin.board_all_title') }}
                 </a>
@@ -109,7 +134,7 @@ $cashierI18n = [
                         class="board-store-select rounded border border-slate-600 bg-slate-900 px-2 py-1 text-xs text-slate-100 focus:border-indigo-500 focus:outline-none"
                         onchange="if (this.value) window.location.href = this.value;">
                         @foreach($availableStores as $availableStore)
-                            <option value="{{ route('admin.stores.cashier', $availableStore) }}" @selected((int) $availableStore->id === (int) $store->id)>
+                            <option value="{{ route('admin.stores.cashier', ['store' => cashierStoreRouteValue($availableStore)]) }}" @selected((int) $availableStore->id === (int) $store->id)>
                                 {{ $availableStore->name }}
                             </option>
                         @endforeach
