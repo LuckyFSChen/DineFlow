@@ -18,6 +18,16 @@ class DineInOrderController extends Controller
     private const CUSTOMER_PROFILE_SESSION_KEY = 'customer_order_profile';
     private const ORDER_HISTORY_SESSION_PREFIX = 'dinein_order_history_';
     private const ORDER_HISTORY_LIMIT = 8;
+    private const APPENDABLE_ORDER_STATUSES = [
+        'pending',
+        'accepted',
+        'confirmed',
+        'received',
+        'preparing',
+        'processing',
+        'cooking',
+        'in_progress',
+    ];
 
     protected function getDineInCartSessionKey(Store $store, DiningTable $table): string
     {
@@ -141,21 +151,34 @@ class DineInOrderController extends Controller
         $total = collect($cart)->sum('subtotal');
 
         $order = DB::transaction(function () use ($store, $table, $validated, $cart, $total) {
-            $order = Order::create([
-                'store_id' => $store->id,
-                'dining_table_id' => $table->id,
-                'order_type' => 'dine_in',
-                'cart_token' => null,
-                'order_no' => $this->generateOrderNo($store),
-                'status' => 'pending',
-                'payment_status' => 'unpaid',
-                'customer_name' => $validated['customer_name'] ?? null,
-                'customer_email' => $validated['customer_email'] ?? null,
-                'customer_phone' => $validated['customer_phone'] ?? null,
-                'note' => $validated['note'] ?? null,
-                'subtotal' => $total,
-                'total' => $total,
-            ]);
+            $customerName = $this->normalizeCustomerName($validated['customer_name'] ?? null);
+            $customerEmail = $this->normalizeOptionalText($validated['customer_email'] ?? null);
+            $customerPhone = $this->normalizeOptionalText($validated['customer_phone'] ?? null);
+            $customerNote = $this->normalizeOptionalText($validated['note'] ?? null);
+
+            $order = $this->findAppendableDineInOrder(
+                $store,
+                $table,
+                $customerName
+            );
+
+            if (! $order) {
+                $order = Order::create([
+                    'store_id' => $store->id,
+                    'dining_table_id' => $table->id,
+                    'order_type' => 'dine_in',
+                    'cart_token' => null,
+                    'order_no' => $this->generateOrderNo($store),
+                    'status' => 'pending',
+                    'payment_status' => 'unpaid',
+                    'customer_name' => $customerName,
+                    'customer_email' => $customerEmail,
+                    'customer_phone' => $customerPhone,
+                    'note' => $customerNote,
+                    'subtotal' => 0,
+                    'total' => 0,
+                ]);
+            }
 
             foreach ($cart as $item) {
                 $order->items()->create([
@@ -167,6 +190,22 @@ class DineInOrderController extends Controller
                     'note' => $this->composeOrderItemNote($item['option_label'] ?? null, $item['item_note'] ?? null),
                 ]);
             }
+
+            $order->subtotal = (int) $order->subtotal + (int) $total;
+            $order->total = (int) $order->total + (int) $total;
+            if ($order->customer_name === null && $customerName !== null) {
+                $order->customer_name = $customerName;
+            }
+            if ($order->customer_email === null && $customerEmail !== null) {
+                $order->customer_email = $customerEmail;
+            }
+            if ($order->customer_phone === null && $customerPhone !== null) {
+                $order->customer_phone = $customerPhone;
+            }
+            if ($order->note === null && $customerNote !== null) {
+                $order->note = $customerNote;
+            }
+            $order->save();
 
             return $order;
         });
@@ -494,6 +533,49 @@ class DineInOrderController extends Controller
         }
 
         return $digits;
+    }
+
+    private function normalizeCustomerName(?string $name): ?string
+    {
+        if ($name === null) {
+            return null;
+        }
+
+        $normalized = trim($name);
+
+        return $normalized === '' ? null : $normalized;
+    }
+
+    private function normalizeOptionalText(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = trim($value);
+
+        return $normalized === '' ? null : $normalized;
+    }
+
+    private function findAppendableDineInOrder(Store $store, DiningTable $table, ?string $customerName): ?Order
+    {
+        if ($customerName === null) {
+            return null;
+        }
+
+        return Order::query()
+            ->where('store_id', $store->id)
+            ->where('dining_table_id', $table->id)
+            ->where('order_type', 'dine_in')
+            ->where('customer_name', $customerName)
+            ->whereIn('status', self::APPENDABLE_ORDER_STATUSES)
+            ->where(function ($query) {
+                $query->where('payment_status', 'unpaid')
+                    ->orWhereNull('payment_status');
+            })
+            ->orderByDesc('id')
+            ->lockForUpdate()
+            ->first();
     }
 
     private function getDineInOrderHistorySessionKey(Store $store, DiningTable $table): string

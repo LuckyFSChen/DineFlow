@@ -15,6 +15,12 @@
             'usd' => 'USD',
             default => 'NT$',
         };
+        $prepTimeMinutes = (is_numeric($store->prep_time_minutes ?? null) && (int) $store->prep_time_minutes > 0)
+            ? (int) $store->prep_time_minutes
+            : null;
+        $estimatedReadyAt = ($prepTimeMinutes !== null && $order->created_at !== null)
+            ? $order->created_at->copy()->setTimezone($store->businessTimezone())->addMinutes($prepTimeMinutes)
+            : null;
     @endphp
     <div class="min-h-screen">
         <main class="mx-auto max-w-3xl px-4 py-8 sm:py-12">
@@ -73,6 +79,19 @@
                     <div class="rounded-2xl bg-orange-50 px-4 py-4">
                         <p class="text-sm text-gray-500">{{ __('customer.order_amount') }}</p>
                         <p class="mt-1 font-semibold text-gray-900">{{ $currencySymbol }} {{ number_format($order->total) }}</p>
+                    </div>
+
+                    <div class="rounded-2xl bg-orange-50 px-4 py-4">
+                        <p class="text-sm text-gray-500">{{ __('customer.estimated_ready_time') }}</p>
+                        <p class="mt-1 font-semibold text-gray-900">
+                            @if($estimatedReadyAt !== null && $prepTimeMinutes !== null)
+                                {{ __('customer.estimated_ready_time_with_minutes', ['time' => $estimatedReadyAt->format('H:i'), 'minutes' => $prepTimeMinutes]) }}
+                            @elseif($prepTimeMinutes !== null)
+                                {{ __('customer.estimated_prep_time_only', ['minutes' => $prepTimeMinutes]) }}
+                            @else
+                                {{ __('customer.estimated_ready_time_unknown') }}
+                            @endif
+                        </p>
                     </div>
                 </div>
 

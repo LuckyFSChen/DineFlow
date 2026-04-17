@@ -265,6 +265,17 @@
 
         <form id="store-modal-form" class="max-h-[78vh] overflow-y-auto px-6 py-5" enctype="multipart/form-data">
             <input type="hidden" name="_method" id="store-modal-method" value="POST">
+            @php
+                $businessWeekdays = [
+                    'monday' => 'mon',
+                    'tuesday' => 'tue',
+                    'wednesday' => 'wed',
+                    'thursday' => 'thu',
+                    'friday' => 'fri',
+                    'saturday' => 'sat',
+                    'sunday' => 'sun',
+                ];
+            @endphp
 
             <div class="grid gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
@@ -294,13 +305,63 @@
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.opening_time') }}</label>
-                    <input type="time" name="opening_time" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.prep_time_minutes') }}</label>
+                    <input type="number" name="prep_time_minutes" min="1" max="300" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="30">
                 </div>
 
-                <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.closing_time') }}</label>
-                    <input type="time" name="closing_time" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                <div class="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-3" data-modal-business-hours-editor>
+                    <h4 class="text-xs font-semibold text-slate-700">{{ __('admin.business_hours_weekly_title') }}</h4>
+                    <p class="mt-1 text-xs text-slate-500">{{ __('admin.business_hours_weekly_hint') }}</p>
+                    <div class="mt-2 rounded-xl border border-slate-200 bg-white p-2">
+                        <p class="text-[11px] font-semibold text-slate-700">{{ __('admin.business_hours_quick_title') }}</p>
+                        <div class="mt-2 grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+                            <div>
+                                <label class="mb-1 block text-[11px] font-semibold text-slate-600">{{ __('admin.business_hours_quick_start') }}</label>
+                                <input type="time" data-modal-quick-start class="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs">
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-[11px] font-semibold text-slate-600">{{ __('admin.business_hours_quick_end') }}</label>
+                                <input type="time" data-modal-quick-end class="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs">
+                            </div>
+                            <div class="flex flex-wrap items-end gap-2">
+                                <button type="button" data-modal-quick-action="apply_all" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">{{ __('admin.quick_apply_all') }}</button>
+                                <button type="button" data-modal-quick-action="apply_weekdays" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">{{ __('admin.quick_apply_weekdays') }}</button>
+                                <button type="button" data-modal-quick-action="apply_weekend" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">{{ __('admin.quick_apply_weekend') }}</button>
+                                <button type="button" data-modal-quick-action="clear_all" class="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">{{ __('admin.quick_clear_all') }}</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3 grid gap-2">
+                        @foreach ($businessWeekdays as $weekdayLabel => $weekdayStorageKey)
+                            <div class="grid items-start gap-2 rounded-xl border border-slate-200 bg-white p-2 md:grid-cols-[110px_1fr_1fr_auto]" data-modal-weekday="{{ $weekdayLabel }}">
+                                <div class="pt-1">
+                                    <p class="text-xs font-semibold text-slate-700">{{ __('admin.weekday_' . $weekdayLabel) }}</p>
+                                    <div class="mt-2 flex gap-1">
+                                        <button type="button"
+                                                data-modal-row-action="copy_prev"
+                                                class="rounded-md border border-slate-300 bg-white px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-100 {{ $loop->first ? 'opacity-40 pointer-events-none' : '' }}">
+                                            {{ __('admin.quick_copy_prev_day') }}
+                                        </button>
+                                        <button type="button"
+                                                data-modal-row-action="clear_day"
+                                                class="rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-[10px] font-semibold text-rose-700 hover:bg-rose-100">
+                                            {{ __('admin.quick_clear_day') }}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-[11px] font-semibold text-slate-600">{{ __('admin.business_start_time') }}</label>
+                                    <input type="time" name="business_hours[{{ $weekdayLabel }}][start]" data-role="start" class="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs">
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-[11px] font-semibold text-slate-600">{{ __('admin.business_end_time') }}</label>
+                                    <input type="time" name="business_hours[{{ $weekdayLabel }}][end]" data-role="end" class="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs">
+                                </div>
+                                <div></div>
+                            </div>
+                        @endforeach
+                    </div>
+                    <p class="mt-2 text-[11px] text-slate-500">{{ __('admin.business_hours_fallback_hint') }}</p>
                 </div>
 
                 <div class="md:col-span-2">
@@ -485,6 +546,101 @@
     const expectedPhoneDigitsByCountry = (countryCode) => {
         const code = String(countryCode || 'tw').toLowerCase();
         return code === 'cn' ? 11 : 10;
+    };
+    const businessWeekdayMap = {
+        monday: 'mon',
+        tuesday: 'tue',
+        wednesday: 'wed',
+        thursday: 'thu',
+        friday: 'fri',
+        saturday: 'sat',
+        sunday: 'sun',
+    };
+    const businessWeekdayOrder = Object.keys(businessWeekdayMap);
+
+    const setupModalBusinessHoursEditor = () => {
+        const editor = modalForm?.querySelector('[data-modal-business-hours-editor]');
+        if (!editor || !modalForm) {
+            return;
+        }
+
+        const quickStartInput = editor.querySelector('[data-modal-quick-start]');
+        const quickEndInput = editor.querySelector('[data-modal-quick-end]');
+
+        const setDay = (weekday, start, end) => {
+            const startField = modalForm.elements[`business_hours[${weekday}][start]`];
+            const endField = modalForm.elements[`business_hours[${weekday}][end]`];
+            if (startField) startField.value = start || '';
+            if (endField) endField.value = end || '';
+        };
+
+        const quickTimeRange = () => ({
+            start: quickStartInput ? String(quickStartInput.value || '') : '',
+            end: quickEndInput ? String(quickEndInput.value || '') : '',
+        });
+
+        editor.addEventListener('click', (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) {
+                return;
+            }
+
+            const quickAction = target.getAttribute('data-modal-quick-action');
+            if (quickAction) {
+                const { start, end } = quickTimeRange();
+                if (quickAction !== 'clear_all' && (!start || !end)) {
+                    return;
+                }
+
+                if (quickAction === 'apply_all') {
+                    businessWeekdayOrder.forEach((weekday) => setDay(weekday, start, end));
+                } else if (quickAction === 'apply_weekdays') {
+                    ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].forEach((weekday) => setDay(weekday, start, end));
+                } else if (quickAction === 'apply_weekend') {
+                    ['saturday', 'sunday'].forEach((weekday) => setDay(weekday, start, end));
+                } else if (quickAction === 'clear_all') {
+                    businessWeekdayOrder.forEach((weekday) => setDay(weekday, '', ''));
+                }
+
+                return;
+            }
+
+            const rowAction = target.getAttribute('data-modal-row-action');
+            if (!rowAction) {
+                return;
+            }
+
+            const row = target.closest('[data-modal-weekday]');
+            if (!(row instanceof HTMLElement)) {
+                return;
+            }
+
+            const weekday = row.getAttribute('data-modal-weekday');
+            if (!weekday) {
+                return;
+            }
+
+            if (rowAction === 'clear_day') {
+                setDay(weekday, '', '');
+                return;
+            }
+
+            if (rowAction === 'copy_prev') {
+                const index = businessWeekdayOrder.indexOf(weekday);
+                if (index <= 0) {
+                    return;
+                }
+
+                const prevWeekday = businessWeekdayOrder[index - 1];
+                const prevStart = modalForm.elements[`business_hours[${prevWeekday}][start]`];
+                const prevEnd = modalForm.elements[`business_hours[${prevWeekday}][end]`];
+                setDay(
+                    weekday,
+                    prevStart ? String(prevStart.value || '') : '',
+                    prevEnd ? String(prevEnd.value || '') : '',
+                );
+            }
+        });
     };
 
     const normalizePhoneDigits = (value, countryCode) => {
@@ -742,9 +898,16 @@
         clearBannerPreview();
         modalForm.elements['is_active'].checked = true;
         modalForm.elements['checkout_timing'].value = 'postpay';
+        modalForm.elements['prep_time_minutes'].value = '';
         modalForm.elements['country_code'].value = 'tw';
         modalForm.elements['currency'].value = 'twd';
         modalForm.elements['timezone'].value = 'Asia/Taipei';
+        Object.keys(businessWeekdayMap).forEach((weekday) => {
+            const startField = modalForm.elements[`business_hours[${weekday}][start]`];
+            const endField = modalForm.elements[`business_hours[${weekday}][end]`];
+            if (startField) startField.value = '';
+            if (endField) endField.value = '';
+        });
         applyPhoneInputRules();
 
         if (!store) {
@@ -756,13 +919,22 @@
         modalForm.elements['phone'].value = store.phone || '';
         modalForm.elements['address'].value = store.address || '';
         modalForm.elements['description'].value = store.description || '';
-        modalForm.elements['opening_time'].value = store.opening_time || '';
-        modalForm.elements['closing_time'].value = store.closing_time || '';
+        modalForm.elements['prep_time_minutes'].value = store.prep_time_minutes ?? '';
         modalForm.elements['checkout_timing'].value = store.checkout_timing || 'postpay';
         modalForm.elements['country_code'].value = (store.country_code || 'tw').toLowerCase();
         modalForm.elements['currency'].value = (store.currency || 'twd').toLowerCase();
         modalForm.elements['timezone'].value = store.timezone || 'Asia/Taipei';
         modalForm.elements['is_active'].checked = !!store.is_active;
+        const weeklyBusinessHours = (store.weekly_business_hours && typeof store.weekly_business_hours === 'object')
+            ? store.weekly_business_hours
+            : {};
+        Object.entries(businessWeekdayMap).forEach(([weekday, storageKey]) => {
+            const slot = weeklyBusinessHours[storageKey] || {};
+            const startField = modalForm.elements[`business_hours[${weekday}][start]`];
+            const endField = modalForm.elements[`business_hours[${weekday}][end]`];
+            if (startField) startField.value = String(slot.start || '').slice(0, 5);
+            if (endField) endField.value = String(slot.end || '').slice(0, 5);
+        });
         applyPhoneInputRules();
 
         if (store.banner_image_url) {
@@ -857,6 +1029,8 @@
             modalError.textContent = e.message || i18n.saveFailed;
         }
     };
+
+    setupModalBusinessHoursEditor();
 
     openModalBtn?.addEventListener('click', openCreateModal);
     modalClose?.addEventListener('click', closeModal);

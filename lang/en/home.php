@@ -53,6 +53,7 @@ return [
     'store_label' => 'Store',
     'default_store_desc' => 'Welcome to the DineFlow store ordering experience.',
     'business_hours' => 'Business Hours',
+    'prep_time_minutes' => 'Estimated prep time: :minutes min',
     'address' => 'Address',
     'phone' => 'Phone',
     'enter_store' => 'Enter Store',

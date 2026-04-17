@@ -53,6 +53,7 @@ return [
     'store_label' => '门市',
     'default_store_desc' => '欢迎使用 DineFlow 进入店家专属点餐体验。',
     'business_hours' => '营业时段',
+    'prep_time_minutes' => '预估制作时间：:minutes 分钟',
     'address' => '地址',
     'phone' => '电话',
     'enter_store' => '进入店家',

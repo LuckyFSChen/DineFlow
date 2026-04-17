@@ -150,6 +150,14 @@
                                         </svg>
                                         <span>{{ __('home.business_hours') }} {{ $store->businessHoursLabel() }}</span>
                                     </div>
+                                    @if(!empty($store->prep_time_minutes))
+                                        <div class="flex items-center gap-2">
+                                            <svg class="h-4 w-4 text-brand-primary/70" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                <path fill-rule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm.75 4.25a.75.75 0 00-1.5 0V10c0 .2.08.39.22.53l2.5 2.5a.75.75 0 101.06-1.06l-2.28-2.28V6.25z" clip-rule="evenodd"/>
+                                            </svg>
+                                            <span>{{ __('home.prep_time_minutes', ['minutes' => (int) $store->prep_time_minutes]) }}</span>
+                                        </div>
+                                    @endif
                                     @if(!empty($store->address))
                                         <div class="flex items-center gap-2">
                                             <svg class="h-4 w-4 text-brand-primary/70" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

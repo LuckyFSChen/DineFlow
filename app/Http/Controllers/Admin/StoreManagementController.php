@@ -259,9 +259,12 @@ class StoreManagementController extends Controller
             'checkout_timing' => ['nullable', 'in:prepay,postpay'],
             'opening_time' => ['nullable', 'date_format:H:i', 'required_with:closing_time'],
             'closing_time' => ['nullable', 'date_format:H:i', 'required_with:opening_time'],
+            'prep_time_minutes' => ['nullable', 'integer', 'min:1', 'max:300'],
         ];
 
         foreach (array_keys($this->weekdayFormToStorageMap()) as $weekday) {
+            $rules["business_hours.{$weekday}.start"] = ['nullable', 'date_format:H:i', "required_with:business_hours.{$weekday}.end"];
+            $rules["business_hours.{$weekday}.end"] = ['nullable', 'date_format:H:i', "required_with:business_hours.{$weekday}.start"];
             $rules["break_hours.{$weekday}.start"] = ['nullable', 'date_format:H:i', "required_with:break_hours.{$weekday}.end"];
             $rules["break_hours.{$weekday}.end"] = ['nullable', 'date_format:H:i', "required_with:break_hours.{$weekday}.start"];
         }
@@ -280,8 +283,11 @@ class StoreManagementController extends Controller
         $timezone = trim((string) ($data['timezone'] ?? ''));
         $data['timezone'] = $timezone !== '' ? $timezone : $this->inferTimezoneFromCountryCode($data['country_code']);
         $data['checkout_timing'] = $data['checkout_timing'] ?? 'postpay';
+        $data['prep_time_minutes'] = isset($data['prep_time_minutes']) ? (int) $data['prep_time_minutes'] : null;
         $data['takeout_qr_enabled'] = true;
+        $data['weekly_business_hours'] = $this->normalizeWeeklyBusinessHours($data['business_hours'] ?? []);
         $data['weekly_break_hours'] = $this->normalizeWeeklyBreakHours($data['break_hours'] ?? []);
+        unset($data['business_hours']);
         unset($data['break_hours']);
 
         return $data;
@@ -457,6 +463,8 @@ class StoreManagementController extends Controller
             'is_active' => (bool) $store->is_active,
             'opening_time' => $this->formatTimeForInput($store->opening_time),
             'closing_time' => $this->formatTimeForInput($store->closing_time),
+            'weekly_business_hours' => $this->weeklyBusinessHoursForForm($store),
+            'prep_time_minutes' => $store->prep_time_minutes,
             'weekly_break_hours' => $this->weeklyBreakHoursForForm($store),
             'banner_image' => $store->banner_image,
             'banner_image_url' => $store->banner_image
@@ -535,6 +543,54 @@ class StoreManagementController extends Controller
         }
 
         return $normalized === [] ? null : $normalized;
+    }
+
+    protected function normalizeWeeklyBusinessHours(mixed $input): ?array
+    {
+        if (! is_array($input)) {
+            return null;
+        }
+
+        $normalized = [];
+        foreach ($this->weekdayFormToStorageMap() as $formWeekday => $storageWeekday) {
+            $slot = $input[$formWeekday] ?? null;
+            if (! is_array($slot)) {
+                continue;
+            }
+
+            $start = $this->formatTimeForInput((string) ($slot['start'] ?? ''));
+            $end = $this->formatTimeForInput((string) ($slot['end'] ?? ''));
+
+            if ($start === null || $end === null) {
+                continue;
+            }
+
+            $normalized[$storageWeekday] = [
+                'start' => $start,
+                'end' => $end,
+            ];
+        }
+
+        return $normalized === [] ? null : $normalized;
+    }
+
+    protected function weeklyBusinessHoursForForm(Store $store): array
+    {
+        $raw = is_array($store->weekly_business_hours) ? $store->weekly_business_hours : [];
+        $output = [];
+
+        foreach ($this->weekdayFormToStorageMap() as $formWeekday => $storageWeekday) {
+            $slot = $raw[$storageWeekday] ?? null;
+            $start = is_array($slot) ? $this->formatTimeForInput((string) ($slot['start'] ?? '')) : null;
+            $end = is_array($slot) ? $this->formatTimeForInput((string) ($slot['end'] ?? '')) : null;
+
+            $output[$formWeekday] = [
+                'start' => $start,
+                'end' => $end,
+            ];
+        }
+
+        return $output;
     }
 
     protected function weeklyBreakHoursForForm(Store $store): array

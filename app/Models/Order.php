@@ -80,7 +80,7 @@ class Order extends Model
                 try {
                     Mail::to($freshOrder->customer_email)
                         ->locale(self::resolveOrderLocale($freshOrder->order_locale))
-                        ->send(new CustomerOrderCreatedMail($freshOrder));
+                        ->queue(new CustomerOrderCreatedMail($freshOrder));
                 } catch (Throwable $e) {
                     report($e);
                 }
@@ -110,7 +110,7 @@ class Order extends Model
                     try {
                         Mail::to($freshOrder->customer_email)
                             ->locale(self::resolveOrderLocale($freshOrder->order_locale))
-                            ->send(new CustomerOrderCancelledMail($freshOrder));
+                            ->queue(new CustomerOrderCancelledMail($freshOrder));
                     } catch (Throwable $e) {
                         report($e);
                     }
@@ -137,7 +137,7 @@ class Order extends Model
                 try {
                     Mail::to($freshOrder->customer_email)
                         ->locale(self::resolveOrderLocale($freshOrder->order_locale))
-                        ->send(new CustomerOrderCompletedMail($freshOrder));
+                        ->queue(new CustomerOrderCompletedMail($freshOrder));
                 } catch (Throwable $e) {
                     report($e);
                 }

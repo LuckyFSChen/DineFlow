@@ -53,6 +53,7 @@ return [
     'store_label' => 'Cửa Hàng',
     'default_store_desc' => 'Chào mừng đến trải nghiệm gọi món của DineFlow.',
     'business_hours' => 'Giờ Hoạt Động',
+    'prep_time_minutes' => 'Thời gian chuẩn bị dự kiến: :minutes phút',
     'address' => 'Địa Chỉ',
     'phone' => 'Điện Thoại',
     'enter_store' => 'Vào Cửa Hàng',

@@ -53,6 +53,7 @@ return [
     'store_label' => '門市',
     'default_store_desc' => '歡迎使用 DineFlow 進入店家專屬點餐體驗。',
     'business_hours' => '營業時段',
+    'prep_time_minutes' => '預估製作時間：:minutes 分鐘',
     'address' => '地址',
     'phone' => '電話',
     'enter_store' => '進入店家',

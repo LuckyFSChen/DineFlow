@@ -31,6 +31,8 @@ class Store extends Model
         'banner_image',
         'opening_time',
         'closing_time',
+        'weekly_business_hours',
+        'prep_time_minutes',
         'weekly_break_hours',
         'cancel_quick_reasons',
     ];
@@ -41,6 +43,8 @@ class Store extends Model
         'monthly_revenue_target' => 'integer',
         'latitude' => 'float',
         'longitude' => 'float',
+        'weekly_business_hours' => 'array',
+        'prep_time_minutes' => 'integer',
         'weekly_break_hours' => 'array',
         'cancel_quick_reasons' => 'array',
     ];
@@ -75,19 +79,31 @@ class Store extends Model
 
     public function hasBusinessHours(): bool
     {
+        if ($this->hasWeeklyBusinessHours()) {
+            return true;
+        }
+
         return filled($this->opening_time) && filled($this->closing_time);
     }
 
     public function isWithinBusinessHours(?Carbon $dateTime = null): bool
     {
-        if (! $this->hasBusinessHours()) {
-            return true;
-        }
-
         $timezone = $this->businessTimezone();
         $dateTime = $dateTime
             ? $dateTime->copy()->setTimezone($timezone)
             : now($timezone);
+
+        if ($this->hasWeeklyBusinessHours()) {
+            if (! $this->isWithinWeeklyBusinessHours($dateTime)) {
+                return false;
+            }
+
+            return ! $this->isWithinWeeklyBreakHours($dateTime);
+        }
+
+        if (! $this->hasBusinessHours()) {
+            return true;
+        }
 
         $current = $dateTime->format('H:i:s');
         $openingTime = $this->normalizeTime($this->opening_time);
@@ -133,8 +149,31 @@ class Store extends Model
 
     public function businessHoursLabel(): string
     {
+        if ($this->hasWeeklyBusinessHours()) {
+            $timezone = $this->businessTimezone();
+            $today = now($timezone);
+            $slot = $this->businessHoursSlotForDate($today);
+
+            if (! is_array($slot)) {
+                return '--';
+            }
+
+            $start = $this->normalizeTime((string) ($slot['start'] ?? ''));
+            $end = $this->normalizeTime((string) ($slot['end'] ?? ''));
+
+            if ($start === null || $end === null) {
+                return '--';
+            }
+
+            if ($start === $end) {
+                return '00:00 - 24:00';
+            }
+
+            return sprintf('%s - %s', substr($start, 0, 5), substr($end, 0, 5));
+        }
+
         if (! $this->hasBusinessHours()) {
-            return '未設定';
+            return '--';
         }
 
         return sprintf(
@@ -147,28 +186,28 @@ class Store extends Model
     public function orderingStatusLabel(?Carbon $dateTime = null): string
     {
         if (! $this->is_active) {
-            return '停用';
+            return __('home.status_closed');
         }
 
         if (! $this->isWithinBusinessHours($dateTime)) {
-            return '非營業時間';
+            return __('home.status_closed');
         }
 
-        return '營業中';
+        return __('home.status_open');
     }
 
     public function orderingClosedMessage(?Carbon $dateTime = null): string
     {
         if (! $this->is_active) {
-            return '此店家目前暫停接單。';
+            return __('customer.ordering_closed');
         }
 
         if (! $this->isWithinBusinessHours($dateTime)) {
             if ($this->hasBusinessHours()) {
-                return '目前非營業時間，暫不開放點餐。營業時間為 ' . $this->businessHoursLabel() . '。';
+                return __('customer.ordering_closed') . ' (' . $this->businessHoursLabel() . ')';
             }
 
-            return '此店家目前暫不開放點餐。';
+            return __('customer.ordering_closed');
         }
 
         return '';
@@ -181,7 +220,7 @@ class Store extends Model
 
     public function checkoutTimingLabel(): string
     {
-        return $this->isPrepayCheckout() ? '餐前結帳' : '餐後結帳';
+        return $this->isPrepayCheckout() ? __('admin.checkout_prepay') : __('admin.checkout_postpay');
     }
 
     public function tables()
@@ -221,6 +260,52 @@ class Store extends Model
         }
 
         return strlen($time) === 5 ? $time . ':00' : substr($time, 0, 8);
+    }
+
+    private function hasWeeklyBusinessHours(): bool
+    {
+        return $this->normalizedWeeklyBusinessHours() !== [];
+    }
+
+    private function isWithinWeeklyBusinessHours(Carbon $dateTime): bool
+    {
+        $weeklyBusinessHours = $this->normalizedWeeklyBusinessHours();
+        if ($weeklyBusinessHours === []) {
+            return false;
+        }
+
+        $today = $dateTime->copy()->startOfDay();
+
+        foreach ([0, -1] as $dayOffset) {
+            $targetDate = $today->copy()->addDays($dayOffset);
+            $slot = $this->businessHoursSlotForDate($targetDate, $weeklyBusinessHours);
+
+            if (! is_array($slot)) {
+                continue;
+            }
+
+            $start = $this->normalizeTime((string) ($slot['start'] ?? ''));
+            $end = $this->normalizeTime((string) ($slot['end'] ?? ''));
+
+            if ($start === null || $end === null) {
+                continue;
+            }
+
+            $startAt = $targetDate->copy()->setTimeFromTimeString($start);
+            $endAt = $targetDate->copy()->setTimeFromTimeString($end);
+
+            if ($start === $end) {
+                $endAt = $startAt->copy()->addDay();
+            } elseif ($endAt->lessThan($startAt)) {
+                $endAt->addDay();
+            }
+
+            if ($dateTime->between($startAt, $endAt, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function isWithinWeeklyBreakHours(Carbon $dateTime): bool
@@ -267,6 +352,37 @@ class Store extends Model
         return false;
     }
 
+    private function normalizedWeeklyBusinessHours(): array
+    {
+        if (! is_array($this->weekly_business_hours)) {
+            return [];
+        }
+
+        $allowedWeekdays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+        $normalized = [];
+
+        foreach ($allowedWeekdays as $weekday) {
+            $slot = $this->weekly_business_hours[$weekday] ?? null;
+            if (! is_array($slot)) {
+                continue;
+            }
+
+            $start = $this->normalizeTime((string) ($slot['start'] ?? ''));
+            $end = $this->normalizeTime((string) ($slot['end'] ?? ''));
+
+            if ($start === null || $end === null) {
+                continue;
+            }
+
+            $normalized[$weekday] = [
+                'start' => $start,
+                'end' => $end,
+            ];
+        }
+
+        return $normalized;
+    }
+
     private function normalizedWeeklyBreakHours(): array
     {
         if (! is_array($this->weekly_break_hours)) {
@@ -296,6 +412,19 @@ class Store extends Model
         }
 
         return $normalized;
+    }
+
+    private function businessHoursSlotForDate(Carbon $date, ?array $weeklyBusinessHours = null): ?array
+    {
+        $source = $weeklyBusinessHours ?? $this->normalizedWeeklyBusinessHours();
+        if ($source === []) {
+            return null;
+        }
+
+        $dayKey = $this->weekdayKeyFromCarbon($date);
+        $slot = $source[$dayKey] ?? null;
+
+        return is_array($slot) ? $slot : null;
     }
 
     private function weekdayKeyFromCarbon(Carbon $date): string

@@ -21,6 +21,7 @@
         'sunday' => 'sun',
     ];
     $storedWeeklyBreakHours = is_array($store->weekly_break_hours ?? null) ? $store->weekly_break_hours : [];
+    $storedWeeklyBusinessHours = is_array($store->weekly_business_hours ?? null) ? $store->weekly_business_hours : [];
 @endphp
 
 <div class="grid gap-6 lg:grid-cols-2">
@@ -108,22 +109,90 @@
         @enderror
     </div>
 
-    <div>
-        <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('admin.opening_time') }}</label>
-        <input type="time" name="opening_time" value="{{ old('opening_time', $store->opening_time ? substr($store->opening_time, 0, 5) : '') }}"
-               class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
-        <p class="mt-2 text-xs text-slate-500">{{ __('admin.opening_time_hint') }}</p>
-        @error('opening_time')
-            <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
-        @enderror
+    <div class="lg:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-4" data-business-hours-editor>
+        <h3 class="text-sm font-semibold text-slate-800">{{ __('admin.business_hours_weekly_title') }}</h3>
+        <p class="mt-1 text-xs text-slate-500">{{ __('admin.business_hours_weekly_hint') }}</p>
+
+        <div class="mt-3 rounded-xl border border-slate-200 bg-white p-3">
+            <p class="text-xs font-semibold text-slate-700">{{ __('admin.business_hours_quick_title') }}</p>
+            <div class="mt-2 grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+                <div>
+                    <label class="mb-1 block text-[11px] font-semibold text-slate-600">{{ __('admin.business_hours_quick_start') }}</label>
+                    <input type="time" data-quick-start class="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs">
+                </div>
+                <div>
+                    <label class="mb-1 block text-[11px] font-semibold text-slate-600">{{ __('admin.business_hours_quick_end') }}</label>
+                    <input type="time" data-quick-end class="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs">
+                </div>
+                <div class="flex flex-wrap items-end gap-2">
+                    <button type="button" data-quick-action="apply_all" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">{{ __('admin.quick_apply_all') }}</button>
+                    <button type="button" data-quick-action="apply_weekdays" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">{{ __('admin.quick_apply_weekdays') }}</button>
+                    <button type="button" data-quick-action="apply_weekend" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">{{ __('admin.quick_apply_weekend') }}</button>
+                    <button type="button" data-quick-action="clear_all" class="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">{{ __('admin.quick_clear_all') }}</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 grid gap-3">
+            @foreach ($breakWeekdays as $weekday)
+                @php
+                    $storageKey = $breakHoursStorageMap[$weekday];
+                    $storedSlot = is_array($storedWeeklyBusinessHours[$storageKey] ?? null) ? $storedWeeklyBusinessHours[$storageKey] : [];
+                    $businessStartValue = old("business_hours.$weekday.start", isset($storedSlot['start']) ? substr((string) $storedSlot['start'], 0, 5) : '');
+                    $businessEndValue = old("business_hours.$weekday.end", isset($storedSlot['end']) ? substr((string) $storedSlot['end'], 0, 5) : '');
+                @endphp
+                <div class="grid items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 md:grid-cols-[120px_1fr_1fr_auto]" data-weekday="{{ $weekday }}">
+                    <div class="pt-1">
+                        <p class="text-sm font-semibold text-slate-700">{{ __('admin.weekday_' . $weekday) }}</p>
+                        <div class="mt-2 flex gap-2">
+                            <button type="button"
+                                    data-row-action="copy_prev"
+                                    class="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 {{ $loop->first ? 'opacity-40 pointer-events-none' : '' }}">
+                                {{ __('admin.quick_copy_prev_day') }}
+                            </button>
+                            <button type="button"
+                                    data-row-action="clear_day"
+                                    class="rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100">
+                                {{ __('admin.quick_clear_day') }}
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.business_start_time') }}</label>
+                        <input type="time"
+                               name="business_hours[{{ $weekday }}][start]"
+                               value="{{ $businessStartValue }}"
+                               data-role="start"
+                               class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                        @error("business_hours.$weekday.start")
+                            <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.business_end_time') }}</label>
+                        <input type="time"
+                               name="business_hours[{{ $weekday }}][end]"
+                               value="{{ $businessEndValue }}"
+                               data-role="end"
+                               class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                        @error("business_hours.$weekday.end")
+                            <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div></div>
+                </div>
+            @endforeach
+        </div>
+
+        <p class="mt-3 text-xs text-slate-500">{{ __('admin.business_hours_fallback_hint') }}</p>
     </div>
 
     <div>
-        <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('admin.closing_time') }}</label>
-        <input type="time" name="closing_time" value="{{ old('closing_time', $store->closing_time ? substr($store->closing_time, 0, 5) : '') }}"
+        <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('admin.prep_time_minutes') }}</label>
+        <input type="number" name="prep_time_minutes" value="{{ old('prep_time_minutes', $store->prep_time_minutes) }}" min="1" max="300"
                class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
-        <p class="mt-2 text-xs text-slate-500">{{ __('admin.closing_time_hint') }}</p>
-        @error('closing_time')
+        <p class="mt-2 text-xs text-slate-500">{{ __('admin.prep_time_minutes_hint') }}</p>
+        @error('prep_time_minutes')
             <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
         @enderror
     </div>
@@ -256,6 +325,98 @@
         imageOnly: @json(__('admin.error_image_only')),
         imageTooLarge: @json(__('admin.error_image_too_large')),
     };
+    const weekdayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+    const setupBusinessHoursEditor = () => {
+        const editor = document.querySelector('[data-business-hours-editor]');
+        if (!editor || !form) {
+            return;
+        }
+
+        const quickStartInput = editor.querySelector('[data-quick-start]');
+        const quickEndInput = editor.querySelector('[data-quick-end]');
+
+        const setDay = (weekday, start, end) => {
+            const startField = form.elements[`business_hours[${weekday}][start]`];
+            const endField = form.elements[`business_hours[${weekday}][end]`];
+            if (startField) {
+                startField.value = start || '';
+            }
+            if (endField) {
+                endField.value = end || '';
+            }
+        };
+
+        const getQuickTimeRange = () => ({
+            start: quickStartInput ? String(quickStartInput.value || '') : '',
+            end: quickEndInput ? String(quickEndInput.value || '') : '',
+        });
+
+        editor.addEventListener('click', (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) {
+                return;
+            }
+
+            const quickAction = target.getAttribute('data-quick-action');
+            if (quickAction) {
+                const { start, end } = getQuickTimeRange();
+                if (quickAction !== 'clear_all' && (!start || !end)) {
+                    return;
+                }
+
+                if (quickAction === 'apply_all') {
+                    weekdayOrder.forEach((weekday) => setDay(weekday, start, end));
+                } else if (quickAction === 'apply_weekdays') {
+                    ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].forEach((weekday) => setDay(weekday, start, end));
+                } else if (quickAction === 'apply_weekend') {
+                    ['saturday', 'sunday'].forEach((weekday) => setDay(weekday, start, end));
+                } else if (quickAction === 'clear_all') {
+                    weekdayOrder.forEach((weekday) => setDay(weekday, '', ''));
+                }
+
+                return;
+            }
+
+            const rowAction = target.getAttribute('data-row-action');
+            if (!rowAction) {
+                return;
+            }
+
+            const row = target.closest('[data-weekday]');
+            if (!(row instanceof HTMLElement)) {
+                return;
+            }
+
+            const weekday = row.getAttribute('data-weekday');
+            if (!weekday) {
+                return;
+            }
+
+            if (rowAction === 'clear_day') {
+                setDay(weekday, '', '');
+                return;
+            }
+
+            if (rowAction === 'copy_prev') {
+                const index = weekdayOrder.indexOf(weekday);
+                if (index <= 0) {
+                    return;
+                }
+
+                const prevWeekday = weekdayOrder[index - 1];
+                const prevStart = form.elements[`business_hours[${prevWeekday}][start]`];
+                const prevEnd = form.elements[`business_hours[${prevWeekday}][end]`];
+                setDay(
+                    weekday,
+                    prevStart ? String(prevStart.value || '') : '',
+                    prevEnd ? String(prevEnd.value || '') : '',
+                );
+            }
+        });
+    };
+
+    setupBusinessHoursEditor();
 
     if (!dropzone || !input || !wrapper || !cropCanvas || !cropCtx || !zoomInput || !removeButton || !form) {
         return;
