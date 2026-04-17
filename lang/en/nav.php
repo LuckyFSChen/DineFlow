@@ -2,8 +2,8 @@
 
 return [
     'admin_console'      => 'Admin Console',
-    'admin_login'        => 'Admin Login',
-    'login'              => 'Log in',
+    'admin_login'        => 'Merchant Login',
+    'login'              => 'Customer Login',
     'register'           => 'Register',
     'subscription'       => 'Subscription',
     'financial_report'   => 'Financial Report',

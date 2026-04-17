@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,6 +28,13 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $request->session()->regenerate();
+
+        $user = $request->user();
+        if ($user instanceof User && (bool) $user->must_change_password) {
+            return redirect()
+                ->route('profile.edit')
+                ->with('warning', __('auth.force_password_change_notice'));
+        }
 
         return redirect()->intended(route('dashboard', absolute: false));
     }

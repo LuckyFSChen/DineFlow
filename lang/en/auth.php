@@ -22,6 +22,8 @@ return [
     'Log Out'                    => 'Log Out',
     'customer_type'              => 'Customer',
     'customer_desc'              => 'Customer account for personal profile and ordering experience.',
+    'first_login_password_hint'  => 'If this account was auto-created from an order and password has not been changed, the first login password is 0000.',
+    'force_password_change_notice' => 'Your account is still using the initial password. Please update your password before continuing.',
     'merchant_type'              => 'Merchant',
     'merchant_desc'              => 'Merchant account. Requires an active subscription to manage stores.',
     'customer_email_optional_hint' => 'Email is optional for customers. You can sign up and log in with phone.',

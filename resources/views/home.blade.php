@@ -1,5 +1,34 @@
 ﻿@extends('layouts.app')
 
+@section('title', __('home.hero_title') . ' | ' . config('app.name', 'DineFlow'))
+@section('meta_description', __('home.hero_desc'))
+@section('canonical', route('home'))
+@section('meta_image', asset('images/logo-256.png'))
+
+@push('structured-data')
+<script type="application/ld+json">
+{!! json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'WebPage',
+    'name' => __('home.hero_title'),
+    'description' => __('home.hero_desc'),
+    'url' => route('home'),
+    'inLanguage' => str_replace('_', '-', app()->getLocale()),
+    'mainEntity' => [
+        '@type' => 'ItemList',
+        'name' => __('home.orderable_stores'),
+        'numberOfItems' => $featuredStores->count(),
+        'itemListElement' => $featuredStores->values()->map(fn ($store, $index) => [
+            '@type' => 'ListItem',
+            'position' => $index + 1,
+            'url' => route('customer.takeout.menu', ['store' => $store]),
+            'name' => $store->name,
+        ])->all(),
+    ],
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
+</script>
+@endpush
+
 @section('content')
 <div class="min-h-screen bg-brand-soft/20 text-brand-dark">
     <section class="relative isolate overflow-hidden border-b border-brand-soft/60 bg-brand-dark text-white">
@@ -377,19 +406,6 @@
             </div>
         </div>
     </section>
-
-    <footer class="border-t border-brand-soft/60 bg-brand-dark">
-        <div class="mx-auto max-w-7xl px-6 py-8 text-center text-white/80 lg:px-8">
-            <div class="text-base font-semibold text-white">DineFlow</div>
-            <div class="mt-2 text-base">{{ __('home.footer_subtitle') }}</div>
-            <div class="mt-2 text-sm text-white/85">
-                如有需求可洽談：
-                <a href="tel:0979300504" class="font-semibold text-brand-highlight hover:text-brand-soft">0979-300-504</a>
-                /
-                <a href="mailto:bigtw178@gmail.com" class="font-semibold text-brand-highlight hover:text-brand-soft">bigtw178@gmail.com</a>
-            </div>
-        </div>
-    </footer>
 </div>
 <script>
 (() => {

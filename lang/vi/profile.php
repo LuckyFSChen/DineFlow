@@ -28,6 +28,7 @@ return [
     // Password form
     'password_settings'      => 'Cài Đặt Mật Khẩu',
     'password_settings_desc' => 'Dùng mật khẩu mạnh, duy nhất để bảo mật tài khoản.',
+    'first_login_password_change_required' => 'Bạn đang dùng mật khẩu khởi tạo của hệ thống, vui lòng đổi mật khẩu trước.',
     'current_password'       => 'Mật Khẩu Hiện Tại',
     'new_password'           => 'Mật Khẩu Mới',
     'confirm_password'       => 'Xác Nhận Mật Khẩu Mới',

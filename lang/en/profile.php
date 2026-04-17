@@ -28,6 +28,7 @@ return [
     // Password form
     'password_settings'      => 'Password Settings',
     'password_settings_desc' => 'Use a strong, unique password to secure your account.',
+    'first_login_password_change_required' => 'You are using the system-initialized password. Please change your password first.',
     'current_password'       => 'Current Password',
     'new_password'           => 'New Password',
     'confirm_password'       => 'Confirm New Password',

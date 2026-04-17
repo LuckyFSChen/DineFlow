@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
@@ -15,7 +16,7 @@ class ChefManagementController extends Controller
 {
     public function index(Request $request, Store $store): View
     {
-        $this->authorizeStore($request, $store);
+        $this->authorize('manageChefs', $store);
 
         $chefs = $store->chefs()->orderBy('created_at', 'desc')->get();
 
@@ -24,11 +25,18 @@ class ChefManagementController extends Controller
 
     public function store(Request $request, Store $store): RedirectResponse
     {
-        $this->authorizeStore($request, $store);
+        $this->authorize('manageChefs', $store);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
+            'email' => [
+                'required',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->where(fn ($query) => $query->where('role', 'chef')),
+            ],
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
 
@@ -46,7 +54,7 @@ class ChefManagementController extends Controller
 
     public function destroy(Request $request, Store $store, User $chef): RedirectResponse
     {
-        $this->authorizeStore($request, $store);
+        $this->authorize('manageChefs', $store);
 
         abort_unless($chef->isChef() && (int) $chef->store_id === (int) $store->id, 404);
 
@@ -56,14 +64,4 @@ class ChefManagementController extends Controller
             ->with('success', __('chef.deleted_success'));
     }
 
-    private function authorizeStore(Request $request, Store $store): void
-    {
-        $user = $request->user();
-
-        if ($user->isAdmin()) {
-            return;
-        }
-
-        abort_unless($user->isMerchant() && (int) $store->user_id === (int) $user->id, 403);
-    }
 }

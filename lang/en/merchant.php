@@ -1,6 +1,12 @@
 <?php
 
 return [
+    'plan_tier_basic' => 'Basic',
+    'plan_tier_growth' => 'Growth',
+    'plan_tier_pro' => 'Pro',
+    'plan_cycle_monthly' => 'Monthly',
+    'plan_cycle_quarterly' => 'Quarterly',
+    'plan_cycle_yearly' => 'Yearly',
     'start_date' => 'Start Date',
     'end_date' => 'End Date',
     'subscription_title' => 'Merchant Subscription Plans',

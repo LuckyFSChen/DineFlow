@@ -7,6 +7,18 @@
 
     <div class="py-10 bg-slate-50 min-h-screen">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+            @if(session('warning'))
+                <div class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    {{ session('warning') }}
+                </div>
+            @endif
+
+            @if((bool) ($user->must_change_password ?? false))
+                <div class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    {{ __('profile.first_login_password_change_required') }}
+                </div>
+            @endif
+
             <div class="p-4 sm:p-6 bg-white shadow sm:rounded-lg border border-slate-200">
                 <h3 class="text-lg font-semibold text-slate-900">{{ __('profile.role_settings_title') }}</h3>
                 <p class="mt-1 text-sm text-slate-600">{{ __('profile.current_role') }}：<span class="font-semibold text-slate-800">{{ strtoupper((string) $user->role) }}</span></p>

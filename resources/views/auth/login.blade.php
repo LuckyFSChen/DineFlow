@@ -2,6 +2,16 @@
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
+    @if(session('warning'))
+        <div class="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {{ session('warning') }}
+        </div>
+    @endif
+
+    <div class="mb-4 rounded-lg border border-brand-soft bg-brand-soft/20 px-4 py-3 text-sm text-brand-dark">
+        {{ __('auth.first_login_password_hint') }}
+    </div>
+
     <form method="POST" action="{{ route('login') }}">
         @csrf
 
@@ -22,6 +32,7 @@
                             required autocomplete="current-password" />
 
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
+            <p class="mt-2 text-xs text-gray-500">{{ __('auth.first_login_password_hint') }}</p>
         </div>
 
         <!-- Remember Me -->

@@ -15,6 +15,7 @@ return [
     'select_instruction'          => 'Select items to add to your cart. The store will receive your order after submission.',
     'ready_go_to_cart'            => 'Ready? Head to your cart',
     'view_selected_items'         => 'View selected items and submit order',
+    'menu_section'                => 'Menu Section',
     'no_products_in_category'     => 'No products in this category yet',
     'items'                       => ' items',
     'items_in_menu'               => ' items',
@@ -55,6 +56,7 @@ return [
     'continue_ordering'           => 'You can return to the menu to add more items, or wait for your food.',
     'total_label'                 => 'Total',
     // Takeout
+    'dine_in'                     => 'Dine-in',
     'takeout'                     => 'Takeout',
     'takeout_short'               => 'Takeout',
     'back_home'                   => 'Back to Home',
@@ -128,5 +130,5 @@ return [
     'coupon_min_order_not_met'     => 'Minimum order amount for this coupon has not been met.',
     'coupon_member_required'       => 'This coupon requires member login (please provide phone or email).',
     'coupon_points_insufficient'   => 'Insufficient member points to use this coupon.',
-    'guest_register_points_prompt' => 'Register with this phone number to become a member and accumulate points for this order?',
+    'guest_register_points_prompt' => 'This phone number is not registered yet. Create an account and accumulate points for this order? Initial login password is 0000 and must be changed on first login.',
 ];

@@ -16,7 +16,7 @@ class DiningTableManagementController extends Controller
 {
     public function index(Request $request, Store $store)
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
 
         $takeoutMenuUrl = route('customer.takeout.menu', ['store' => $store->slug]);
         $takeoutQrSvg = null;
@@ -55,7 +55,7 @@ class DiningTableManagementController extends Controller
 
     public function updateTakeoutQr(Request $request, Store $store): RedirectResponse
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
 
         $store->update([
             'takeout_qr_enabled' => $request->boolean('takeout_qr_enabled'),
@@ -68,7 +68,7 @@ class DiningTableManagementController extends Controller
 
     public function print(Request $request, Store $store)
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
 
         $validated = $request->validate([
             'table_ids' => ['nullable', 'array'],
@@ -124,7 +124,7 @@ class DiningTableManagementController extends Controller
 
     public function store(Request $request, Store $store): RedirectResponse
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
 
         $validated = $request->validate([
             'table_no' => [
@@ -158,7 +158,7 @@ class DiningTableManagementController extends Controller
 
     public function updateStatus(Request $request, Store $store, DiningTable $table): RedirectResponse
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
         $this->ensureTableBelongsToStore($store, $table);
 
         $validated = $request->validate([
@@ -176,7 +176,7 @@ class DiningTableManagementController extends Controller
 
     public function regenerateQr(Request $request, Store $store, DiningTable $table): RedirectResponse
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
         $this->ensureTableBelongsToStore($store, $table);
 
         $table->update([
@@ -193,24 +193,6 @@ class DiningTableManagementController extends Controller
         if ((int) $table->store_id !== (int) $store->id) {
             abort(404);
         }
-    }
-
-    private function authorizeStoreAccess(Request $request, Store $store): void
-    {
-        $user = $request->user();
-        if (! $user) {
-            abort(403, __('admin.error_login_required'));
-        }
-
-        if ($user->isAdmin()) {
-            return;
-        }
-
-        if ($user->isMerchant() && (int) $store->user_id === (int) $user->id) {
-            return;
-        }
-
-        abort(403, __('admin.error_cannot_manage_store'));
     }
 
     private function generateUniqueQrToken(): string

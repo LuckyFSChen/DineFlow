@@ -111,7 +111,7 @@ class DineInOrderController extends Controller
         $rememberedCustomerInfo = session()->get(self::CUSTOMER_PROFILE_SESSION_KEY, []);
         $orderHistory = $this->getDineInOrderHistory($store, $table);
 
-        return view('customer.dine-in.cart', compact('store', 'table', 'cart', 'total', 'orderingAvailable', 'rememberedCustomerInfo', 'orderHistory'));
+        return view('customer.cart', compact('store', 'table', 'cart', 'total', 'orderingAvailable', 'rememberedCustomerInfo', 'orderHistory'));
     }
 
     public function updateCartItem(Request $request, Store $store, DiningTable $table, string $lineKey)
@@ -207,7 +207,11 @@ class DineInOrderController extends Controller
         }
 
         $total = collect($cart)->sum('subtotal');
-        $shouldCreateAccount = ! $request->user() && $request->boolean('create_account_with_phone');
+        $customerPhone = $this->normalizeOptionalText($validated['customer_phone'] ?? null);
+        $phoneAlreadyRegistered = $this->customerAccountService->isPhoneRegistered($customerPhone);
+        $shouldCreateAccount = ! $request->user()
+            && $request->boolean('create_account_with_phone')
+            && ! $phoneAlreadyRegistered;
 
         $order = DB::transaction(function () use ($store, $table, $validated, $cart, $total, $shouldCreateAccount) {
             $customerName = $this->normalizeCustomerName($validated['customer_name'] ?? null);
@@ -283,6 +287,22 @@ class DineInOrderController extends Controller
         return redirect()->route('customer.order.success', [
             'store' => $store->slug,
             'order' => $order->uuid,
+        ]);
+    }
+
+    public function checkPhoneRegistered(Request $request, Store $store, DiningTable $table): JsonResponse
+    {
+        abort_unless($table->store_id === $store->id, 404);
+
+        $validated = $request->validate([
+            'customer_phone' => ['nullable', 'string', 'max:32'],
+        ]);
+
+        $normalizedPhone = $this->normalizeCustomerPhone($validated['customer_phone'] ?? null, $store);
+
+        return response()->json([
+            'ok' => true,
+            'registered' => $this->customerAccountService->isPhoneRegistered($normalizedPhone),
         ]);
     }
 

@@ -1,5 +1,36 @@
 @extends('layouts.app')
 
+@php
+    $takeoutMetaTitle = __('customer.takeout') . ' - ' . $store->name . ' | ' . config('app.name', 'DineFlow');
+    $takeoutMetaDescription = $store->description ?: __('customer.welcome_takeout_desc');
+    $takeoutCanonical = route('customer.takeout.menu', ['store' => $store]);
+    $takeoutMetaImage = $store->banner_image
+        ? asset('storage/' . $store->banner_image)
+        : asset('images/logo-256.png');
+@endphp
+
+@section('title', $takeoutMetaTitle)
+@section('meta_description', \Illuminate\Support\Str::limit($takeoutMetaDescription, 160))
+@section('canonical', $takeoutCanonical)
+@section('meta_image', $takeoutMetaImage)
+
+@push('structured-data')
+<script type="application/ld+json">
+{!! json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'Restaurant',
+    'name' => $store->name,
+    'description' => \Illuminate\Support\Str::limit($takeoutMetaDescription, 160),
+    'url' => $takeoutCanonical,
+    'image' => $takeoutMetaImage,
+    'telephone' => $store->phone,
+    'address' => $store->address,
+    'hasMenu' => $takeoutCanonical,
+    'inLanguage' => str_replace('_', '-', app()->getLocale()),
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
+</script>
+@endpush
+
 @section('content')
 @php
     $currencyCode = strtolower((string) ($store->currency ?? 'twd'));
@@ -121,7 +152,7 @@
                         <section id="category-{{ $category->id }}" class="scroll-mt-24 md:scroll-mt-24">
                             <div class="mb-5 flex items-end justify-between gap-4">
                                 <div>
-                                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brand-accent">Menu Section</p>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brand-accent">{{ __('customer.menu_section') }}</p>
                                     <h2 class="mt-2 text-2xl font-bold tracking-tight text-brand-dark">{{ $category->name }}</h2>
                                     <p class="mt-1 text-sm text-brand-primary/70">{{ $category->products->count() }} {{ __('customer.items_in_menu') }}</p>
                                 </div>

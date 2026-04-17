@@ -15,6 +15,7 @@ return [
     'select_instruction'          => '請直接點選餐點加入購物車，送出後店家就會收到您的訂單。',
     'ready_go_to_cart'            => '準備好了就前往購物車',
     'view_selected_items'         => '查看已選餐點與送出訂單',
+    'menu_section'                => '菜单分类',
     'no_products_in_category'     => '目前這個分類尚未上架商品',
     'items'                       => '項',
     'items_in_menu'               => '項餐點',
@@ -55,6 +56,7 @@ return [
     'continue_ordering'           => '您可以返回菜單繼續加點，或等待店家出餐。',
     'total_label'                 => '總計',
     // Takeout
+    'dine_in'                     => '内用',
     'takeout'                     => '外帶點餐',
     'takeout_short'               => '外帶',
     'back_home'                   => '回首頁',
@@ -128,5 +130,5 @@ return [
     'coupon_min_order_not_met'     => '未达优惠券最低消费门槛',
     'coupon_member_required'       => '此优惠券需登录会员（请填手机或 Email）',
     'coupon_points_insufficient'   => '会员点数不足，无法使用此优惠券',
-    'guest_register_points_prompt' => '是否要使用此手机号注册会员，并累积本次点数？',
+    'guest_register_points_prompt' => '此手机号尚未注册会员，是否建立账号并累积本次点数？首次登录密码为 0000，登录后需立即修改密码。',
 ];

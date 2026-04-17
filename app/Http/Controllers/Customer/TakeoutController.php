@@ -103,7 +103,7 @@ class TakeoutController extends Controller
         $cart = session()->get($cartKey, []);
         $total = collect($cart)->sum('subtotal');
 
-        return view('customer.takeout.cart', compact('store', 'cart', 'total'));
+        return view('customer.cart', compact('store', 'cart', 'total'));
     }
 
     public function checkout(Request $request, Store $store)

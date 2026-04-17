@@ -77,6 +77,7 @@ class User extends Authenticatable
         'phone',
         'email',
         'password',
+        'must_change_password',
         'role',
         'merchant_region',
         'subscription_ends_at',
@@ -104,6 +105,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'must_change_password' => 'boolean',
             'subscription_ends_at' => 'datetime',
             'trial_started_at' => 'datetime',
             'trial_ends_at' => 'datetime',

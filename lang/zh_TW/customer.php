@@ -15,6 +15,7 @@ return [
     'select_instruction'          => '請直接點選餐點加入購物車，送出後店家就會收到您的訂單。',
     'ready_go_to_cart'            => '準備好了就前往購物車',
     'view_selected_items'         => '查看已選餐點與送出訂單',
+    'menu_section'                => '菜單分類',
     'no_products_in_category'     => '目前這個分類尚未上架商品',
     'items'                       => '項',
     'items_in_menu'               => '項餐點',
@@ -55,6 +56,7 @@ return [
     'continue_ordering'           => '您可以返回菜單繼續加點，或等待店家出餐。',
     'total_label'                 => '總計',
     // Takeout
+    'dine_in'                     => '內用',
     'takeout'                     => '外帶點餐',
     'takeout_short'               => '外帶',
     'back_home'                   => '回首頁',
@@ -128,5 +130,5 @@ return [
     'coupon_min_order_not_met'     => '未達優惠券最低消費門檻',
     'coupon_member_required'       => '此優惠券需登入會員（請填手機或 Email）',
     'coupon_points_insufficient'   => '會員點數不足，無法使用此優惠券',
-    'guest_register_points_prompt' => '是否要使用此手機號碼註冊會員，並累積本次點數？',
+    'guest_register_points_prompt' => '此手機尚未註冊會員，是否建立帳號並累積本次點數？首次登入密碼為 0000，登入後需立即修改密碼。',
 ];

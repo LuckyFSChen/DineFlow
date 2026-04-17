@@ -28,6 +28,7 @@ return [
     // Password form
     'password_settings'      => '密碼設定',
     'password_settings_desc' => '建議使用長度足夠且不重複的密碼，以保障帳號安全。',
+    'first_login_password_change_required' => '你正在使用系統建立的初始密碼，請先將密碼改為你自己的密碼。',
     'current_password'       => '目前密碼',
     'new_password'           => '新密碼',
     'confirm_password'       => '確認新密碼',

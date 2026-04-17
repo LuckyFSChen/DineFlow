@@ -2,6 +2,12 @@
 <?php
 
 return [
+    'plan_tier_basic' => '基礎',
+    'plan_tier_growth' => '加強版',
+    'plan_tier_pro' => '專業版',
+    'plan_cycle_monthly' => '月繳',
+    'plan_cycle_quarterly' => '季繳',
+    'plan_cycle_yearly' => '年繳',
     'start_date' => '開始日期',
     'end_date' => '結束日期',
     'subscription_title' => '商家訂閱方案',

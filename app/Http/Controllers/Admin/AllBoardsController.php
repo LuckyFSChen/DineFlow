@@ -19,7 +19,7 @@ class AllBoardsController extends Controller
 
     public function index(Request $request, Store $store)
     {
-        $this->authorizeStore($request, $store);
+        $this->authorize('viewBoards', $store);
 
         $availableStores = $this->resolveAccessibleStores($request);
         $ordersData = $this->buildOrdersPayload($store);
@@ -42,26 +42,9 @@ class AllBoardsController extends Controller
 
     public function orders(Request $request, Store $store): JsonResponse
     {
-        $this->authorizeStore($request, $store);
+        $this->authorize('viewBoards', $store);
 
         return response()->json($this->buildOrdersPayload($store)->values());
-    }
-
-    private function authorizeStore(Request $request, Store $store): void
-    {
-        $user = $request->user();
-
-        if ($user->isAdmin()) {
-            return;
-        }
-
-        if ($user->isMerchant() && (int) $store->user_id !== (int) $user->id) {
-            abort(403);
-        }
-
-        if (($user->isChef() || $user->isCashier()) && (int) $user->store_id !== (int) $store->id) {
-            abort(403);
-        }
     }
 
     private function fetchCashierOrders(Store $store): Collection

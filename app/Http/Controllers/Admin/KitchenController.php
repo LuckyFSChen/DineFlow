@@ -16,7 +16,7 @@ class KitchenController extends Controller
 
     public function index(Request $request, Store $store)
     {
-        $this->authorizeStore($request, $store);
+        $this->authorize('viewKitchen', $store);
 
         $orders = $this->fetchActiveOrders($store);
         $availableStores = $this->resolveAccessibleStores($request);
@@ -28,7 +28,7 @@ class KitchenController extends Controller
 
     public function orders(Request $request, Store $store): JsonResponse
     {
-        $this->authorizeStore($request, $store);
+        $this->authorize('viewKitchen', $store);
 
         $orders = $this->fetchActiveOrders($store);
 
@@ -61,7 +61,7 @@ class KitchenController extends Controller
 
     public function complete(Request $request, Store $store, Order $order): JsonResponse
     {
-        $this->authorizeStore($request, $store);
+        $this->authorize('viewKitchen', $store);
 
         abort_if($order->store_id !== $store->id, 403);
 
@@ -72,7 +72,7 @@ class KitchenController extends Controller
 
     public function updateStatus(Request $request, Store $store, Order $order): JsonResponse
     {
-        $this->authorizeStore($request, $store);
+        $this->authorize('viewKitchen', $store);
 
         abort_if($order->store_id !== $store->id, 403);
 
@@ -109,7 +109,7 @@ class KitchenController extends Controller
 
     public function updateItemStatus(Request $request, Store $store, Order $order, OrderItem $item): JsonResponse
     {
-        $this->authorizeStore($request, $store);
+        $this->authorize('viewKitchen', $store);
 
         abort_if($order->store_id !== $store->id, 403);
         abort_if($item->order_id !== $order->id, 403);
@@ -161,23 +161,6 @@ class KitchenController extends Controller
             'status' => $order->status,
             'payment_status' => $order->payment_status,
         ]);
-    }
-
-    private function authorizeStore(Request $request, Store $store): void
-    {
-        $user = $request->user();
-
-        if ($user->isAdmin()) {
-            return;
-        }
-
-        if ($user->isMerchant() && (int) $store->user_id !== (int) $user->id) {
-            abort(403);
-        }
-
-        if ($user->isChef() && (int) $user->store_id !== (int) $store->id) {
-            abort(403);
-        }
     }
 
     private function fetchActiveOrders(Store $store): \Illuminate\Database\Eloquent\Collection

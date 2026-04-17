@@ -5,10 +5,22 @@ namespace App\Services;
 use App\Models\User;
 use App\Support\PhoneFormatter;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class CustomerAccountService
 {
+    public const DEFAULT_FIRST_LOGIN_PASSWORD = '0000';
+
+    public function isPhoneRegistered(?string $phone): bool
+    {
+        $normalizedPhone = PhoneFormatter::digitsOnly($phone, 32);
+
+        if ($normalizedPhone === null) {
+            return false;
+        }
+
+        return User::query()->where('phone', $normalizedPhone)->exists();
+    }
+
     public function registerOrUpdateFromOrder(?string $phone, ?string $name, ?string $email): ?User
     {
         $normalizedPhone = PhoneFormatter::digitsOnly($phone, 32);
@@ -24,12 +36,13 @@ class CustomerAccountService
             $payload = [
                 'name' => $normalizedName ?? $normalizedPhone,
                 'phone' => $normalizedPhone,
-                'password' => Hash::make(Str::password(32)),
+                'password' => Hash::make(self::DEFAULT_FIRST_LOGIN_PASSWORD),
+                'must_change_password' => true,
                 'role' => 'customer',
                 'merchant_region' => null,
             ];
 
-            if ($normalizedEmail !== null && ! User::query()->where('email', $normalizedEmail)->exists()) {
+            if ($normalizedEmail !== null) {
                 $payload['email'] = $normalizedEmail;
             }
 
@@ -47,7 +60,7 @@ class CustomerAccountService
             $dirty = true;
         }
 
-        if ($user->email === null && $normalizedEmail !== null && ! User::query()->where('email', $normalizedEmail)->whereKeyNot($user->id)->exists()) {
+        if ($user->email === null && $normalizedEmail !== null) {
             $user->email = $normalizedEmail;
             $dirty = true;
         }

@@ -22,6 +22,8 @@ return [
     'Log Out'                    => 'Đăng Xuất',
     'customer_type'              => 'Khách Hàng',
     'customer_desc'              => 'Tài khoản khách hàng, dùng cho hồ sơ cá nhân và trải nghiệm đặt món.',
+    'first_login_password_hint'  => 'Nếu tài khoản được tạo tự động từ đơn hàng và chưa đổi mật khẩu, mật khẩu đăng nhập lần đầu là 0000.',
+    'force_password_change_notice' => 'Tài khoản của bạn vẫn đang dùng mật khẩu khởi tạo. Vui lòng đổi mật khẩu trước khi tiếp tục.',
     'merchant_type'              => 'Thương Nhân',
     'merchant_desc'              => 'Tài khoản thương nhân, cần đăng ký gói để quản lý cửa hàng.',
     'customer_email_optional_hint' => 'Khách hàng có thể bỏ trống email và đăng ký/đăng nhập bằng số điện thoại.',

@@ -58,7 +58,7 @@ class SubscriptionController extends Controller
                 ];
             })
             ->groupBy(function (SubscriptionPlan $plan): string {
-                return ucfirst(strtok($plan->slug, '-'));
+                return (string) strtok($plan->slug, '-');
             });
 
         return view('merchant.subscription.index', [

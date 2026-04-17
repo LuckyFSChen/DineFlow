@@ -3,9 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ __('customer.menu') }} - {{ $store->name }}</title>
+    @php
+        $isDineIn = ($mode ?? 'takeout') === 'dine_in';
+        $menuCanonical = $isDineIn
+            ? route('customer.dinein.menu', ['store' => $store, 'table' => $table])
+            : route('customer.takeout.menu', ['store' => $store]);
+        $menuMetaTitle = ($isDineIn ? __('customer.dine_in') : __('customer.takeout')) . ' - ' . $store->name . ' | ' . config('app.name', 'DineFlow');
+        $menuMetaDescription = $store->description ?: ($isDineIn ? __('customer.select_instruction_short') : __('customer.welcome_takeout_desc'));
+        $menuMetaImage = $store->banner_image
+            ? asset('storage/' . $store->banner_image)
+            : asset('images/logo-256.png');
+    @endphp
+    <title>{{ $menuMetaTitle }}</title>
+    <meta name="description" content="{{ \Illuminate\Support\Str::limit($menuMetaDescription, 160) }}">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+    <link rel="canonical" href="{{ $menuCanonical }}">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ $menuMetaTitle }}">
+    <meta property="og:description" content="{{ \Illuminate\Support\Str::limit($menuMetaDescription, 160) }}">
+    <meta property="og:url" content="{{ $menuCanonical }}">
+    <meta property="og:image" content="{{ $menuMetaImage }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $menuMetaTitle }}">
+    <meta name="twitter:description" content="{{ \Illuminate\Support\Str::limit($menuMetaDescription, 160) }}">
+    <meta name="twitter:image" content="{{ $menuMetaImage }}">
     @include('partials.favicon')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script type="application/ld+json">
+    {!! json_encode([
+        '@context' => 'https://schema.org',
+        '@type' => 'Restaurant',
+        'name' => $store->name,
+        'description' => \Illuminate\Support\Str::limit($menuMetaDescription, 160),
+        'url' => $menuCanonical,
+        'image' => $menuMetaImage,
+        'telephone' => $store->phone,
+        'address' => $store->address,
+        'hasMenu' => $menuCanonical,
+        'inLanguage' => str_replace('_', '-', app()->getLocale()),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
+    </script>
     <style>
         .cart-fly-clone {
             position: fixed;
@@ -82,7 +119,6 @@
     </style>
 </head>
 @php
-    $isDineIn = ($mode ?? 'takeout') === 'dine_in';
     $currencyCode = strtolower((string) ($store->currency ?? 'twd'));
     $currencySymbol = match ($currencyCode) {
         'vnd' => 'VND',

@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Set locale after session is started by the web middleware group.
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
+            \App\Http\Middleware\EnforcePasswordChange::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

@@ -20,7 +20,7 @@ class CashierController extends Controller
 
     public function index(Request $request, Store $store)
     {
-        $this->authorizeStore($request, $store);
+        $this->authorize('viewCashier', $store);
 
         $orders = $this->fetchCashierOrders($store);
         $availableStores = $this->resolveAccessibleStores($request);
@@ -32,7 +32,7 @@ class CashierController extends Controller
 
     public function orders(Request $request, Store $store): JsonResponse
     {
-        $this->authorizeStore($request, $store);
+        $this->authorize('viewCashier', $store);
 
         $orders = $this->fetchCashierOrders($store);
 
@@ -62,7 +62,7 @@ class CashierController extends Controller
 
     public function updateStatus(Request $request, Store $store, Order $order): JsonResponse
     {
-        $this->authorizeStore($request, $store);
+        $this->authorize('viewCashier', $store);
 
         abort_if($order->store_id !== $store->id, 403);
 
@@ -134,23 +134,6 @@ class CashierController extends Controller
             'status'         => $order->status,
             'payment_status' => $order->payment_status,
         ]);
-    }
-
-    private function authorizeStore(Request $request, Store $store): void
-    {
-        $user = $request->user();
-
-        if ($user->isAdmin()) {
-            return;
-        }
-
-        if ($user->isMerchant() && (int) $store->user_id !== (int) $user->id) {
-            abort(403);
-        }
-
-        if ($user->isCashier() && (int) $user->store_id !== (int) $store->id) {
-            abort(403);
-        }
     }
 
     private function fetchCashierOrders(Store $store): \Illuminate\Database\Eloquent\Collection

@@ -164,21 +164,37 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('super-admin')->na
 Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::view('/product-intro', 'product-intro')->name('product.intro');
+Route::view('/privacy-policy', 'privacy-policy')->name('privacy.policy');
 Route::get('/stores', [HomeController::class, 'stores'])->name('stores.list');
 Route::get('/stores/{store:slug}', [StoreController::class, 'enter'])->name('stores.enter');
 Route::get('/sitemap.xml', function () {
+    $latestStoreUpdateAt = \App\Models\Store::query()->max('updated_at');
+    $siteLastmod = optional($latestStoreUpdateAt)->toAtomString() ?? now()->toAtomString();
+
     $urls = collect([
         [
             'loc' => route('home'),
             'priority' => '1.0',
             'changefreq' => 'daily',
-            'lastmod' => now()->toAtomString(),
+            'lastmod' => $siteLastmod,
         ],
         [
             'loc' => route('product.intro'),
             'priority' => '0.8',
             'changefreq' => 'weekly',
-            'lastmod' => now()->toAtomString(),
+            'lastmod' => $siteLastmod,
+        ],
+        [
+            'loc' => route('stores.list'),
+            'priority' => '0.9',
+            'changefreq' => 'daily',
+            'lastmod' => $siteLastmod,
+        ],
+        [
+            'loc' => route('privacy.policy'),
+            'priority' => '0.5',
+            'changefreq' => 'monthly',
+            'lastmod' => $siteLastmod,
         ],
     ]);
 
@@ -196,8 +212,21 @@ Route::get('/sitemap.xml', function () {
             ];
         });
 
+    $storeLandingUrls = \App\Models\Store::query()
+        ->where('is_active', true)
+        ->select(['slug', 'updated_at'])
+        ->get()
+        ->map(function ($store) {
+            return [
+                'loc' => route('stores.enter', ['store' => $store->slug]),
+                'priority' => '0.8',
+                'changefreq' => 'weekly',
+                'lastmod' => optional($store->updated_at)->toAtomString() ?? now()->toAtomString(),
+            ];
+        });
+
     $xml = view('sitemap', [
-        'urls' => $urls->concat($takeoutUrls),
+        'urls' => $urls->concat($storeLandingUrls)->concat($takeoutUrls),
     ]);
 
     return response($xml, 200)->header('Content-Type', 'application/xml');
@@ -213,6 +242,7 @@ Route::prefix('s/{store:slug}/t/{table:qr_token}')
     ->as('customer.dinein.')
     ->group(function () {
         Route::get('/menu', [DineInMenuController::class, 'index'])->name('menu');
+        Route::get('/phone/registered', [DineInOrderController::class, 'checkPhoneRegistered'])->name('phone.registered');
         Route::post('/cart/items', [DineInOrderController::class, 'addToCart'])->name('cart.items.store');
         Route::patch('/cart/items/{lineKey}', [DineInOrderController::class, 'updateCartItem'])->name('cart.items.update');
         Route::delete('/cart/items/{lineKey}', [DineInOrderController::class, 'removeCartItem'])->name('cart.items.destroy');
@@ -231,6 +261,7 @@ Route::prefix('s/{store:slug}/takeout')
     ->as('customer.takeout.')
     ->group(function () {
         Route::get('/menu', [TakeoutOrderingController::class, 'menu'])->name('menu');
+        Route::get('/phone/registered', [TakeoutOrderingController::class, 'checkPhoneRegistered'])->name('phone.registered');
         Route::post('/cart/items', [TakeoutOrderingController::class, 'addToCart'])->name('cart.items.store');
         Route::patch('/cart/items/{lineKey}', [TakeoutOrderingController::class, 'updateCartItem'])->name('cart.items.update');
         Route::delete('/cart/items/{lineKey}', [TakeoutOrderingController::class, 'removeCartItem'])->name('cart.items.destroy');

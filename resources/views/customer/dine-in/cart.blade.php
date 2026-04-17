@@ -155,7 +155,7 @@
                             </p>
                         </div>
 
-                        <form method="POST" action="{{ route('customer.dinein.cart.checkout', ['store' => $store, 'table' => $table]) }}" class="space-y-5" data-customer-checkout-form>
+                        <form method="POST" action="{{ route('customer.dinein.cart.checkout', ['store' => $store, 'table' => $table]) }}" class="space-y-5" data-customer-checkout-form data-phone-check-url="{{ route('customer.dinein.phone.registered', ['store' => $store, 'table' => $table]) }}">
                             @csrf
                             <input type="hidden" name="create_account_with_phone" value="0" data-create-account-with-phone>
 
@@ -305,14 +305,51 @@
 
         const promptMessage = @json(__('customer.guest_register_points_prompt'));
 
-        checkoutForm.addEventListener('submit', () => {
-            const digits = String(input.value || '').replace(/\D/g, '');
-            if (!digits) {
-                createAccountInput.value = '0';
+        const phoneCheckUrl = checkoutForm.dataset.phoneCheckUrl || '';
+
+        checkoutForm.addEventListener('submit', async (event) => {
+            if (checkoutForm.dataset.submitting === '1') {
                 return;
             }
 
-            createAccountInput.value = window.confirm(promptMessage) ? '1' : '0';
+            event.preventDefault();
+
+            const digits = String(input.value || '').replace(/\D/g, '');
+            if (!digits) {
+                createAccountInput.value = '0';
+                checkoutForm.dataset.submitting = '1';
+                checkoutForm.submit();
+                return;
+            }
+
+            let isRegistered = false;
+
+            if (phoneCheckUrl) {
+                try {
+                    const checkEndpoint = new URL(phoneCheckUrl, window.location.origin);
+                    checkEndpoint.searchParams.set('customer_phone', input.value);
+
+                    const response = await window.fetch(checkEndpoint.toString(), {
+                        method: 'GET',
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        credentials: 'same-origin',
+                    });
+
+                    if (response.ok) {
+                        const payload = await response.json();
+                        isRegistered = Boolean(payload?.registered);
+                    }
+                } catch (_error) {
+                    isRegistered = false;
+                }
+            }
+
+            createAccountInput.value = isRegistered ? '0' : (window.confirm(promptMessage) ? '1' : '0');
+            checkoutForm.dataset.submitting = '1';
+            checkoutForm.submit();
         });
     })();
     </script>

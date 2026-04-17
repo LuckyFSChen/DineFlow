@@ -1,5 +1,52 @@
 @extends('layouts.app')
 
+@php
+    $storesPageTitle = $keyword !== ''
+        ? __('home.search') . ': ' . $keyword . ' | ' . __('home.orderable_stores') . ' | ' . config('app.name', 'DineFlow')
+        : __('home.orderable_stores') . ' | ' . config('app.name', 'DineFlow');
+    $storesPageDescription = $keyword !== ''
+        ? '搜尋「' . $keyword . '」相關的 DineFlow 可點餐店家，快速查看地址、營業時間與外帶點餐入口。'
+        : __('home.choose_store_desc');
+@endphp
+
+@section('title', $storesPageTitle)
+@section('meta_description', $storesPageDescription)
+@section('canonical', request()->fullUrl())
+@section('meta_image', asset('images/logo-256.png'))
+
+@push('head')
+@if ($stores->previousPageUrl())
+    <link rel="prev" href="{{ $stores->previousPageUrl() }}">
+@endif
+@if ($stores->nextPageUrl())
+    <link rel="next" href="{{ $stores->nextPageUrl() }}">
+@endif
+@endpush
+
+@push('structured-data')
+<script type="application/ld+json">
+{!! json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'CollectionPage',
+    'name' => $storesPageTitle,
+    'description' => $storesPageDescription,
+    'url' => request()->fullUrl(),
+    'inLanguage' => str_replace('_', '-', app()->getLocale()),
+    'mainEntity' => [
+        '@type' => 'ItemList',
+        'numberOfItems' => $stores->count(),
+        'itemListOrder' => 'https://schema.org/ItemListOrderAscending',
+        'itemListElement' => $stores->values()->map(fn ($store, $index) => [
+            '@type' => 'ListItem',
+            'position' => (($stores->currentPage() - 1) * $stores->perPage()) + $index + 1,
+            'url' => route('customer.takeout.menu', ['store' => $store]),
+            'name' => $store->name,
+        ])->all(),
+    ],
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
+</script>
+@endpush
+
 @section('content')
 <div class="min-h-screen bg-brand-soft/20 text-brand-dark">
     <section class="border-b border-brand-soft/50 bg-white py-10 sm:py-14">

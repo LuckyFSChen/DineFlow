@@ -19,7 +19,7 @@ class ProductManagementController extends Controller
 {
     public function index(Request $request, Store $store): View
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
 
         $categories = Category::query()
             ->where('store_id', $store->id)
@@ -61,7 +61,7 @@ class ProductManagementController extends Controller
 
     public function create(Request $request, Store $store): View
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
 
         $product = new Product([
             'is_active' => true,
@@ -81,7 +81,7 @@ class ProductManagementController extends Controller
 
     public function store(Request $request, Store $store)
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
 
         $data = $this->validatedData($request, $store, null);
 
@@ -109,7 +109,7 @@ class ProductManagementController extends Controller
 
     public function edit(Request $request, Store $store, Product $product)
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
         $this->ensureProductBelongsToStore($store, $product);
 
         $categories = Category::query()
@@ -134,7 +134,7 @@ class ProductManagementController extends Controller
 
     public function update(Request $request, Store $store, Product $product)
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
         $this->ensureProductBelongsToStore($store, $product);
 
         $data = $this->validatedData($request, $store, $product);
@@ -155,7 +155,7 @@ class ProductManagementController extends Controller
 
     public function destroy(Request $request, Store $store, Product $product)
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
         $this->ensureProductBelongsToStore($store, $product);
 
         $product->delete();
@@ -174,7 +174,7 @@ class ProductManagementController extends Controller
 
     public function storeCategory(Request $request, Store $store): JsonResponse
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -199,7 +199,7 @@ class ProductManagementController extends Controller
 
     public function editCategory(Request $request, Store $store, Category $category): JsonResponse
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
         $this->ensureCategoryBelongsToStore($store, $category);
 
         return response()->json([
@@ -210,7 +210,7 @@ class ProductManagementController extends Controller
 
     public function updateCategory(Request $request, Store $store, Category $category): JsonResponse
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
         $this->ensureCategoryBelongsToStore($store, $category);
 
         $data = $request->validate([
@@ -232,7 +232,7 @@ class ProductManagementController extends Controller
 
     public function destroyCategory(Request $request, Store $store, Category $category): JsonResponse
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
         $this->ensureCategoryBelongsToStore($store, $category);
 
         $hasProducts = Product::query()
@@ -256,7 +256,7 @@ class ProductManagementController extends Controller
 
     public function disableCategory(Request $request, Store $store, Category $category): JsonResponse
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
         $this->ensureCategoryBelongsToStore($store, $category);
 
         if (! $category->is_active) {
@@ -278,7 +278,7 @@ class ProductManagementController extends Controller
 
     public function enableCategory(Request $request, Store $store, Category $category): JsonResponse
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
         $this->ensureCategoryBelongsToStore($store, $category);
 
         if ($category->is_active) {
@@ -300,7 +300,7 @@ class ProductManagementController extends Controller
 
     public function reorder(Request $request, Store $store): JsonResponse
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
 
         $data = $request->validate([
             'category_id' => ['required', 'integer', 'exists:categories,id'],
@@ -350,7 +350,7 @@ class ProductManagementController extends Controller
 
     public function move(Request $request, Store $store): JsonResponse
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
 
         $data = $request->validate([
             'moved_product_id' => ['required', 'integer', 'exists:products,id'],
@@ -527,24 +527,6 @@ class ProductManagementController extends Controller
         }
 
         return $decoded;
-    }
-
-    protected function authorizeStoreAccess(Request $request, Store $store): void
-    {
-        $user = $request->user();
-        if (! $user) {
-            abort(403, __('admin.error_login_required'));
-        }
-
-        if ($user->isAdmin()) {
-            return;
-        }
-
-        if ($user->isMerchant() && (int) $store->user_id === (int) $user->id) {
-            return;
-        }
-
-        abort(403, __('admin.error_cannot_manage_store'));
     }
 
     protected function ensureProductBelongsToStore(Store $store, Product $product): void

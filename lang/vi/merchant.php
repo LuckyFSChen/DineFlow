@@ -2,6 +2,12 @@
 <?php
 
 return [
+    'plan_tier_basic' => 'Co ban',
+    'plan_tier_growth' => 'Nang cao',
+    'plan_tier_pro' => 'Chuyen nghiep',
+    'plan_cycle_monthly' => 'Hang thang',
+    'plan_cycle_quarterly' => 'Hang quy',
+    'plan_cycle_yearly' => 'Hang nam',
     'start_date' => 'Ngày bắt đầu',
     'end_date' => 'Ngày kết thúc',
     'subscription_title' => 'Gói Đăng Ký Thương Nhân',

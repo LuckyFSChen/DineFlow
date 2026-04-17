@@ -1,6 +1,12 @@
 <?php
 
 return [
+    'plan_tier_basic' => '基础',
+    'plan_tier_growth' => '加强版',
+    'plan_tier_pro' => '专业版',
+    'plan_cycle_monthly' => '月付',
+    'plan_cycle_quarterly' => '季付',
+    'plan_cycle_yearly' => '年付',
     'start_date' => '开始日期',
     'end_date' => '结束日期',
     'subscription_title' => '商家訂閱方案',

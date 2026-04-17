@@ -17,6 +17,8 @@ class StoreManagementController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Store::class);
+
         $keyword = $request->get('keyword');
         $countryCode = strtolower((string) $request->query('country_code', ''));
         $countryOptions = $this->countryOptions();
@@ -91,6 +93,8 @@ class StoreManagementController extends Controller
 
     public function create(Request $request)
     {
+        $this->authorize('create', Store::class);
+
         $user = $request->user();
         if ($user && $user->isMerchant() && ! $this->canCreateStore($user)) {
             return redirect()
@@ -105,6 +109,8 @@ class StoreManagementController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('create', Store::class);
+
         $user = $request->user();
         if ($user && $user->isMerchant() && ! $this->canCreateStore($user)) {
             if ($request->expectsJson()) {
@@ -183,7 +189,7 @@ class StoreManagementController extends Controller
 
     public function edit(Request $request, Store $store)
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -197,7 +203,7 @@ class StoreManagementController extends Controller
 
     public function update(Request $request, Store $store)
     {
-        $this->authorizeStoreAccess($request, $store);
+        $this->authorize('update', $store);
 
         $updateData = $this->validatedData($request, $store->id);
         $updateData = $this->fillCoordinatesFromAddress($updateData, $store);
@@ -255,7 +261,7 @@ class StoreManagementController extends Controller
 
     public function destroy(Store $store)
     {
-        $this->authorizeStoreAccess(request(), $store);
+        $this->authorize('delete', $store);
 
         $store->delete();
 
@@ -448,24 +454,6 @@ class StoreManagementController extends Controller
         $data['longitude'] = $geocoded['longitude'];
 
         return $data;
-    }
-
-    protected function authorizeStoreAccess(Request $request, Store $store): void
-    {
-        $user = $request->user();
-        if (! $user) {
-            abort(403, __('admin.error_login_required'));
-        }
-
-        if ($user->isAdmin()) {
-            return;
-        }
-
-        if ($user->isMerchant() && (int) $store->user_id === (int) $user->id) {
-            return;
-        }
-
-        abort(403, __('admin.error_cannot_manage_store'));
     }
 
     protected function canCreateStore(User $user): bool

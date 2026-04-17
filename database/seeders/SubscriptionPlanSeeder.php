@@ -23,7 +23,7 @@ class SubscriptionPlanSeeder extends Seeder
         $tiers = [
             [
                 'key' => 'basic',
-                'label' => 'Basic',
+                'label' => '基礎',
                 'monthly_price' => 999,
                 'max_stores' => 1,
                 'features' => [
@@ -34,7 +34,7 @@ class SubscriptionPlanSeeder extends Seeder
             ],
             [
                 'key' => 'growth',
-                'label' => 'Growth',
+                'label' => '加強版',
                 'monthly_price' => 1999,
                 'max_stores' => 3,
                 'features' => [
@@ -45,7 +45,7 @@ class SubscriptionPlanSeeder extends Seeder
             ],
             [
                 'key' => 'pro',
-                'label' => 'Pro',
+                'label' => '專業版',
                 'monthly_price' => 2999,
                 'max_stores' => 5,
                 'features' => [

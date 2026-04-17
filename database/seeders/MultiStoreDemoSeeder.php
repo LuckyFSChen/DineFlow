@@ -53,7 +53,7 @@ class MultiStoreDemoSeeder extends Seeder
             ],
             [
                 'email' => 'merchant.basic@dineflow.local',
-                'name' => 'Merchant Basic',
+                'name' => 'Merchant 基礎',
                 'phone' => '0911000002',
                 'role' => 'merchant',
                 'merchant_region' => 'tw',
@@ -62,7 +62,7 @@ class MultiStoreDemoSeeder extends Seeder
             ],
             [
                 'email' => 'merchant.growth@dineflow.local',
-                'name' => 'Merchant Growth',
+                'name' => 'Merchant 加強版',
                 'phone' => '0911000003',
                 'role' => 'merchant',
                 'merchant_region' => 'tw',
@@ -71,7 +71,7 @@ class MultiStoreDemoSeeder extends Seeder
             ],
             [
                 'email' => 'merchant.pro@dineflow.local',
-                'name' => 'Merchant Pro',
+                'name' => 'Merchant 專業版',
                 'phone' => '0911000004',
                 'role' => 'merchant',
                 'merchant_region' => 'tw',
@@ -230,26 +230,77 @@ class MultiStoreDemoSeeder extends Seeder
 
         $productMap = [
             'Main' => [
-                ['name' => 'Grilled Chicken Rice', 'price' => 135],
-                ['name' => 'Pork Cutlet Bento', 'price' => 145],
-                ['name' => 'Braised Beef Noodle', 'price' => 165],
-                ['name' => 'Salmon Teriyaki Set', 'price' => 199],
+                ['name' => '香煎雞腿排飯', 'price' => 135, 'description' => '去骨雞腿排搭配時蔬與白飯。'],
+                ['name' => '厚切豬排便當', 'price' => 145, 'description' => '現炸豬排，外酥內嫩。'],
+                ['name' => '紅燒牛肉麵', 'price' => 165, 'description' => '牛腱肉與紅燒湯頭。'],
+                [
+                    'name' => '豪華雙人套餐',
+                    'price' => 328,
+                    'description' => '含主餐、附餐、飲品，可加價升級。',
+                    'option_groups' => [
+                        [
+                            'id' => 'combo_main',
+                            'name' => '主餐選擇',
+                            'type' => 'single',
+                            'required' => true,
+                            'choices' => [
+                                ['id' => 'combo_main_chicken', 'name' => '香煎雞腿排', 'price' => 0],
+                                ['id' => 'combo_main_pork', 'name' => '厚切豬排', 'price' => 0],
+                                ['id' => 'combo_main_beef', 'name' => '嫩肩牛排', 'price' => 40],
+                            ],
+                        ],
+                        [
+                            'id' => 'combo_side',
+                            'name' => '附餐選擇',
+                            'type' => 'single',
+                            'required' => true,
+                            'choices' => [
+                                ['id' => 'combo_side_fries', 'name' => '脆薯', 'price' => 0],
+                                ['id' => 'combo_side_salad', 'name' => '凱薩沙拉', 'price' => 0],
+                                ['id' => 'combo_side_soup', 'name' => '每日濃湯', 'price' => 0],
+                            ],
+                        ],
+                        [
+                            'id' => 'combo_drink',
+                            'name' => '飲品選擇',
+                            'type' => 'single',
+                            'required' => true,
+                            'choices' => [
+                                ['id' => 'combo_drink_black_tea', 'name' => '紅茶', 'price' => 0],
+                                ['id' => 'combo_drink_green_tea', 'name' => '綠茶', 'price' => 0],
+                                ['id' => 'combo_drink_latte', 'name' => '拿鐵', 'price' => 25],
+                            ],
+                        ],
+                        [
+                            'id' => 'combo_add_on',
+                            'name' => '升級加購',
+                            'type' => 'multiple',
+                            'required' => false,
+                            'max_select' => 2,
+                            'choices' => [
+                                ['id' => 'combo_add_on_egg', 'name' => '溏心蛋', 'price' => 20],
+                                ['id' => 'combo_add_on_cheese', 'name' => '起司片', 'price' => 15],
+                                ['id' => 'combo_add_on_fries_l', 'name' => '薯條加大', 'price' => 20],
+                            ],
+                        ],
+                    ],
+                ],
             ],
             'Snack' => [
-                ['name' => 'French Fries', 'price' => 55],
-                ['name' => 'Onion Rings', 'price' => 65],
-                ['name' => 'Chicken Nuggets', 'price' => 75],
+                ['name' => '黃金脆薯', 'price' => 55],
+                ['name' => '酥炸洋蔥圈', 'price' => 65],
+                ['name' => '雞塊拼盤', 'price' => 75],
             ],
             'Drink' => [
-                ['name' => 'Black Tea', 'price' => 35],
-                ['name' => 'Green Tea', 'price' => 35],
-                ['name' => 'Milk Tea', 'price' => 45],
-                ['name' => 'Americano', 'price' => 60],
+                ['name' => '古早味紅茶', 'price' => 35],
+                ['name' => '茉香綠茶', 'price' => 35],
+                ['name' => '珍珠奶茶', 'price' => 45],
+                ['name' => '美式咖啡', 'price' => 60],
             ],
             'Dessert' => [
-                ['name' => 'Pudding', 'price' => 50],
-                ['name' => 'Cheesecake', 'price' => 85],
-                ['name' => 'Ice Cream', 'price' => 70],
+                ['name' => '手工布丁', 'price' => 50],
+                ['name' => '巴斯克乳酪蛋糕', 'price' => 85],
+                ['name' => '雙球冰淇淋', 'price' => 70],
             ],
         ];
 
@@ -285,9 +336,10 @@ class MultiStoreDemoSeeder extends Seeder
                             'name' => $product['name'],
                         ],
                         [
-                            'description' => 'Seeded demo product',
+                            'description' => $product['description'] ?? '示範商品資料',
                             'price' => $product['price'],
                             'cost' => (int) floor($product['price'] * 0.55),
+                            'option_groups' => $product['option_groups'] ?? null,
                             'sort' => $index + 1,
                             'is_active' => true,
                             'is_sold_out' => false,

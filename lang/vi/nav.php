@@ -2,8 +2,8 @@
 
 return [
     'admin_console'      => 'Bảng Điều Khiển',
-    'admin_login'        => 'Đăng Nhập Quản Trị',
-    'login'              => 'Đăng Nhập',
+    'admin_login'        => 'Đăng Nhập Người Bán',
+    'login'              => 'Đăng Nhập Khách Hàng',
     'register'           => 'Đăng Ký',
     'subscription'       => 'Gói Đăng Ký',
     'financial_report'   => 'Báo Cáo Tài Chính',

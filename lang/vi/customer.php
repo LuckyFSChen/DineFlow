@@ -15,6 +15,7 @@ return [
     'select_instruction'          => 'Chọn món để thêm vào giỏ hàng. Cửa hàng sẽ nhận đơn sau khi bạn gửi.',
     'ready_go_to_cart'            => 'Sẵn sàng? Đến giỏ hàng',
     'view_selected_items'         => 'Xem món đã chọn và gửi đơn',
+    'menu_section'                => 'Phân mục thực đơn',
     'no_products_in_category'     => 'Chưa có sản phẩm trong danh mục này',
     'items'                       => ' món',
     'items_in_menu'               => ' món',
@@ -55,6 +56,7 @@ return [
     'continue_ordering'           => 'Bạn có thể quay lại thực đơn để thêm món hoặc chờ món ăn.',
     'total_label'                 => 'Tổng',
     // Takeout
+    'dine_in'                     => 'Tại quán',
     'takeout'                     => 'Đặt Mang Về',
     'takeout_short'               => 'Mang Về',
     'back_home'                   => 'Về Trang Chủ',
@@ -128,5 +130,5 @@ return [
     'coupon_min_order_not_met'     => 'Chưa đạt mức chi tiêu tối thiểu của mã giảm giá',
     'coupon_member_required'       => 'Mã này yêu cầu đăng nhập thành viên (vui lòng nhập số điện thoại hoặc email)',
     'coupon_points_insufficient'   => 'Điểm thành viên không đủ để dùng mã này',
-    'guest_register_points_prompt' => 'Bạn có muốn đăng ký thành viên bằng số điện thoại này để tích điểm cho đơn hàng này không?',
+    'guest_register_points_prompt' => 'Số điện thoại này chưa được đăng ký. Bạn có muốn tạo tài khoản và tích điểm cho đơn này không? Mật khẩu đăng nhập lần đầu là 0000 và bạn phải đổi mật khẩu khi đăng nhập lần đầu.',
 ];

@@ -20,10 +20,23 @@
             </div>
         @endif
 
+        @php
+            $tierLabels = [
+                'basic' => __('merchant.plan_tier_basic'),
+                'growth' => __('merchant.plan_tier_growth'),
+                'pro' => __('merchant.plan_tier_pro'),
+            ];
+            $cycleLabels = [
+                'monthly' => __('merchant.plan_cycle_monthly'),
+                'quarterly' => __('merchant.plan_cycle_quarterly'),
+                'yearly' => __('merchant.plan_cycle_yearly'),
+            ];
+        @endphp
+
         <div class="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="text-lg font-semibold text-slate-900">{{ __('merchant.current_status') }}</h2>
             <div class="mt-3 space-y-2 text-sm text-slate-700">
-                <p>{{ __('merchant.plan') }}: {{ $user->subscriptionPlan ? ucfirst(strtok($user->subscriptionPlan->slug, '-')) : __('merchant.not_activated') }}</p>
+                <p>{{ __('merchant.plan') }}: {{ $user->subscriptionPlan ? ($tierLabels[strtok($user->subscriptionPlan->slug, '-')] ?? ucfirst(strtok($user->subscriptionPlan->slug, '-'))) : __('merchant.not_activated') }}</p>
                 <p>{{ __('merchant.expires_at') }}: {{ $user->subscription_ends_at ? $user->subscription_ends_at->format('Y-m-d H:i') : __('merchant.not_activated') }}</p>
                 <p>{{ __('merchant.status') }}: {{ $user->hasActiveSubscription() ? __('merchant.active') : __('merchant.inactive') }}</p>
                 <p>試用狀態: {{ $user->trial_used_at ? '已使用' : '未使用' }}</p>
@@ -55,12 +68,13 @@
         <div class="space-y-8">
             @foreach($plansByTier as $tier => $tierPlans)
                 <section class="space-y-4">
-                    <h2 class="text-2xl font-bold tracking-tight text-slate-900">{{ $tier }}</h2>
+                    <h2 class="text-2xl font-bold tracking-tight text-slate-900">{{ $tierLabels[$tier] ?? ucfirst($tier) }}</h2>
                     <div class="grid gap-5 md:grid-cols-3">
                         @foreach($tierPlans as $plan)
                             @php($pricing = $planPricing[$plan->id] ?? ['original_price_twd' => $plan->price_twd, 'payable_amount_twd' => $plan->price_twd, 'upgrade_credit_twd' => 0, 'is_upgrade_proration_applied' => false, 'is_purchase_allowed' => true, 'blocked_reason' => null, 'show_reset_time_warning' => false])
+                            @php([$planTier, $planCycle] = array_pad(explode('-', $plan->slug, 2), 2, ''))
                             <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                                <h3 class="text-xl font-bold text-slate-900">{{ \Illuminate\Support\Str::after($plan->name, $tier . ' ') }}</h3>
+                                <h3 class="text-xl font-bold text-slate-900">{{ $cycleLabels[$planCycle] ?? ucfirst($planCycle) }}</h3>
                                 @if(($pricing['payable_amount_twd'] ?? $plan->price_twd) < ($pricing['original_price_twd'] ?? $plan->price_twd))
                                     <p class="mt-2 text-sm font-semibold text-slate-400 line-through">{{ __('merchant.original_price') }} {{ $pricing['display_symbol'] ?? 'NT$' }} {{ number_format($pricing['display_original_amount'] ?? $pricing['original_price_twd']) }}</p>
                                     <p class="mt-1 text-3xl font-extrabold text-rose-600">{{ $pricing['display_symbol'] ?? 'NT$' }} {{ number_format($pricing['display_payable_amount'] ?? $pricing['payable_amount_twd']) }}</p>
