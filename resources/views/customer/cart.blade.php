@@ -281,32 +281,34 @@
                                               class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">{{ old('note', $rememberedCustomerInfo['note'] ?? '') }}</textarea>
                                 </div>
 
-                                <div>
-                                    <label class="inline-flex items-center gap-2 text-sm text-brand-dark">
-                                        <input
-                                            type="checkbox"
-                                            name="remember_customer_info"
-                                            value="1"
-                                            @checked(old('remember_customer_info', !empty($rememberedCustomerInfo)))
-                                            class="h-4 w-4 rounded border-brand-soft text-brand-primary focus:ring-brand-highlight"
-                                        >
-                                        {{ __('customer.remember_info') }}
-                                    </label>
-
-                                    @if(!empty($rememberedCustomerInfo))
-                                        <div class="mt-2">
-                                            <button
-                                                type="submit"
-                                                formaction="{{ route('customer.takeout.customer-info.clear', $routeParams) }}"
-                                                formmethod="POST"
-                                                formnovalidate
-                                                class="inline-flex items-center rounded-xl border border-brand-soft bg-white px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30"
+                                @if($isGuest)
+                                    <div>
+                                        <label class="inline-flex items-center gap-2 text-sm text-brand-dark">
+                                            <input
+                                                type="checkbox"
+                                                name="remember_customer_info"
+                                                value="1"
+                                                @checked(old('remember_customer_info', !empty($rememberedCustomerInfo)))
+                                                class="h-4 w-4 rounded border-brand-soft text-brand-primary focus:ring-brand-highlight"
                                             >
-                                                {{ __('customer.clear_remembered_info') }}
-                                            </button>
-                                        </div>
-                                    @endif
-                                </div>
+                                            {{ __('customer.remember_info') }}
+                                        </label>
+
+                                        @if(!empty($rememberedCustomerInfo))
+                                            <div class="mt-2">
+                                                <button
+                                                    type="submit"
+                                                    formaction="{{ route('customer.takeout.customer-info.clear', $routeParams) }}"
+                                                    formmethod="POST"
+                                                    formnovalidate
+                                                    class="inline-flex items-center rounded-xl border border-brand-soft bg-white px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30"
+                                                >
+                                                    {{ __('customer.clear_remembered_info') }}
+                                                </button>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endif
                                 @else
                                 <div class="rounded-2xl border border-brand-soft/60 bg-brand-soft/20 px-4 py-3 text-sm text-brand-primary/80">
                                     {{ __('customer.submit_order_hint') }}

@@ -96,6 +96,7 @@
         position: relative;
         overflow: hidden;
         border-radius: 1rem;
+        --swipe-progress: 0;
     }
 
     .cart-preview-item-delete {
@@ -105,14 +106,26 @@
         align-items: center;
         justify-content: flex-end;
         padding-right: 0.75rem;
-        background: linear-gradient(135deg, rgba(248, 113, 113, 0.92), rgba(225, 29, 72, 0.95));
+        background: linear-gradient(135deg, rgba(251, 113, 133, 0.52), rgba(244, 114, 182, 0.62));
+        border-left: 1px solid rgba(244, 114, 182, 0.24);
         color: white;
+        opacity: clamp(0, var(--swipe-progress), 1);
+        transition: opacity 140ms ease;
+    }
+
+    .cart-preview-item-delete span {
+        opacity: clamp(0, var(--swipe-progress), 1);
+        transform: translateX(calc((1 - clamp(0, var(--swipe-progress), 1)) * 10px));
+        transition:
+            opacity 140ms ease,
+            transform 140ms ease;
     }
 
     .cart-preview-item {
         position: relative;
         z-index: 1;
         touch-action: pan-y;
+        width: 100%;
         transition:
             transform 180ms ease,
             opacity 180ms ease,
@@ -272,7 +285,7 @@
                                             <div class="relative overflow-hidden">
                                                 <img src="{{ $productImage }}" alt="{{ $product->name }}" class="h-48 w-full object-cover transition duration-500 group-hover:scale-105">
                                                 <div class="absolute inset-0 bg-gradient-to-t from-brand-dark/85 via-brand-dark/20 to-transparent"></div>
-                                                <div class="absolute left-4 top-4 inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur">{{ $category->name }}</div>
+                                                <div class="absolute left-4 top-4 inline-flex rounded-full border border-white/80 bg-white/50 px-3 py-1 text-xs font-semibold text-white backdrop-blur">{{ $category->name }}</div>
                                                 <div class="absolute bottom-4 right-4 rounded-full bg-brand-highlight px-3 py-1.5 text-sm font-bold text-brand-dark shadow-lg">{{ $currencySymbol }} {{ number_format($product->price) }}</div>
                                             </div>
 
@@ -355,8 +368,8 @@
         <div class="max-h-[52vh] space-y-3 overflow-y-auto px-4 py-4">
             @forelse($cartPreviewItems->take(6) as $item)
                 <div class="cart-preview-item-shell" data-cart-preview-shell>
-                    <div class="cart-preview-item-delete">
-                        <span class="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]">
+                    <div class="cart-preview-item-delete" data-cart-preview-delete>
+                        <span class="rounded-full border border-white/40 bg-white/22 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-50 shadow-sm">
                             {{ __('customer.remove_item') }}
                         </span>
                     </div>
@@ -375,7 +388,7 @@
                         </div>
 
                         <div class="mt-3 flex items-center justify-between gap-3">
-                            <div class="inline-flex items-center gap-2 rounded-xl border border-brand-soft/70 bg-white/80 px-2 py-1 shadow-sm">
+                            <div class="inline-flex shrink-0 items-center gap-2 rounded-xl border border-brand-soft/70 bg-white/80 px-2 py-1 shadow-sm">
                                 <form method="POST" action="{{ route('customer.takeout.cart.items.update', ['store' => $store, 'lineKey' => $item['line_key']]) }}">
                                     @csrf
                                     @method('PATCH')
@@ -394,7 +407,7 @@
                             <form method="POST" action="{{ route('customer.takeout.cart.items.destroy', ['store' => $store, 'lineKey' => $item['line_key']]) }}" data-cart-preview-remove-form>
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="inline-flex items-center rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">{{ __('customer.remove_item') }}</button>
+                                <button type="submit" class="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">{{ __('customer.remove_item') }}</button>
                             </form>
                         </div>
                     </article>
@@ -505,30 +518,47 @@
 
     const initCartPreviewSwipe = () => {
         const items = document.querySelectorAll('[data-cart-preview-item]');
-        const removeThreshold = 110;
-        const resetThreshold = 28;
 
         items.forEach((item) => {
             const removeForm = item.parentElement?.querySelector('[data-cart-preview-remove-form]');
+            const shell = item.parentElement;
             if (!removeForm) {
                 return;
             }
 
+            const getSwipeMetrics = () => {
+                const width = Math.max(1, Math.round(item.getBoundingClientRect().width));
+                const maxSwipe = Math.max(140, width - 6);
+                const removeThreshold = Math.max(110, Math.round(maxSwipe * 0.92));
+
+                return {
+                    maxSwipe,
+                    removeThreshold,
+                };
+            };
+
             const swipeState = {
                 pointerId: null,
                 startX: 0,
+                startY: 0,
                 currentX: 0,
                 offsetX: 0,
+                axis: null,
             };
 
             const applyOffset = (offset) => {
+                const metrics = getSwipeMetrics();
                 swipeState.offsetX = Math.min(0, offset);
+                swipeState.offsetX = Math.max(swipeState.offsetX, -metrics.maxSwipe);
                 item.style.transform = `translateX(${swipeState.offsetX}px)`;
+                const reveal = Math.min(1, Math.abs(swipeState.offsetX) / metrics.maxSwipe);
+                shell?.style.setProperty('--swipe-progress', reveal.toFixed(3));
             };
 
             const resetItem = () => {
                 item.classList.remove('is-swiping');
                 applyOffset(0);
+                swipeState.axis = null;
                 if (activeSwipeItem === item) {
                     activeSwipeItem = null;
                 }
@@ -536,6 +566,7 @@
 
             const submitRemove = () => {
                 item.classList.remove('is-swiping');
+                shell?.style.setProperty('--swipe-progress', '1');
                 item.classList.add('is-removing');
                 window.setTimeout(() => removeForm.submit(), 180);
             };
@@ -552,12 +583,15 @@
                 if (activeSwipeItem && activeSwipeItem !== item) {
                     activeSwipeItem.style.transform = 'translateX(0)';
                     activeSwipeItem.classList.remove('is-swiping');
+                    activeSwipeItem.parentElement?.style.setProperty('--swipe-progress', '0');
                     activeSwipeItem = null;
                 }
 
                 swipeState.pointerId = event.pointerId;
                 swipeState.startX = event.clientX;
+                swipeState.startY = event.clientY;
                 swipeState.currentX = event.clientX;
+                swipeState.axis = null;
                 item.classList.add('is-swiping');
                 item.setPointerCapture(event.pointerId);
             });
@@ -569,6 +603,25 @@
 
                 swipeState.currentX = event.clientX;
                 const deltaX = swipeState.currentX - swipeState.startX;
+                const deltaY = event.clientY - swipeState.startY;
+                const absX = Math.abs(deltaX);
+                const absY = Math.abs(deltaY);
+
+                if (swipeState.axis === null) {
+                    if (absX < 8 && absY < 8) {
+                        return;
+                    }
+
+                    swipeState.axis = absX > absY ? 'x' : 'y';
+                }
+
+                if (swipeState.axis === 'y') {
+                    resetItem();
+                    if (item.hasPointerCapture(event.pointerId)) {
+                        item.releasePointerCapture(event.pointerId);
+                    }
+                    return;
+                }
 
                 if (deltaX > 0) {
                     applyOffset(0);
@@ -576,7 +629,7 @@
                 }
 
                 activeSwipeItem = item;
-                applyOffset(Math.max(deltaX, -148));
+                applyOffset(deltaX);
             });
 
             const finishSwipe = (event) => {
@@ -589,21 +642,15 @@
                 }
 
                 const traveled = Math.abs(swipeState.offsetX);
+                const metrics = getSwipeMetrics();
                 swipeState.pointerId = null;
 
-                if (traveled >= removeThreshold) {
+                if (traveled >= metrics.removeThreshold) {
                     submitRemove();
                     return;
                 }
 
-                if (traveled <= resetThreshold) {
-                    resetItem();
-                    return;
-                }
-
-                item.classList.remove('is-swiping');
-                applyOffset(-72);
-                activeSwipeItem = item;
+                resetItem();
             };
 
             item.addEventListener('pointerup', finishSwipe);
@@ -621,6 +668,7 @@
 
             activeSwipeItem.style.transform = 'translateX(0)';
             activeSwipeItem.classList.remove('is-swiping');
+            activeSwipeItem.parentElement?.style.setProperty('--swipe-progress', '0');
             activeSwipeItem = null;
         });
     };

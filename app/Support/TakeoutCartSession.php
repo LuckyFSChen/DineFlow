@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\CustomerTakeoutCart;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -53,7 +54,11 @@ class TakeoutCartSession
 
     public static function currentCartSessionKey(Request $request, int|string $storeId): string
     {
-        return self::cartSessionKey($storeId, self::currentToken($request, $storeId));
+        $cartSessionKey = self::cartSessionKey($storeId, self::currentToken($request, $storeId));
+
+        self::restorePersistedCartIfMissing($request, $storeId, $cartSessionKey);
+
+        return $cartSessionKey;
     }
 
     public static function inheritGuestCarts(Request $request, User $user): void
@@ -88,18 +93,51 @@ class TakeoutCartSession
             $guestCartKey = self::cartSessionKey($storeId, $currentToken);
             $userCartKey = self::cartSessionKey($storeId, $userToken);
             $guestCart = $session->get($guestCartKey, []);
-            $userCart = $session->get($userCartKey, []);
+            $persistedUserCart = self::loadPersistedUserCart($user, $storeId);
+            $sessionUserCart = $session->get($userCartKey, []);
+            $userCart = self::mergeCarts(
+                is_array($persistedUserCart) ? $persistedUserCart : [],
+                is_array($sessionUserCart) ? $sessionUserCart : [],
+            );
 
             if (is_array($guestCart) || is_array($userCart)) {
-                $session->put($userCartKey, self::mergeCarts(
+                $mergedCart = self::mergeCarts(
                     is_array($userCart) ? $userCart : [],
                     is_array($guestCart) ? $guestCart : [],
-                ));
+                );
+
+                $session->put($userCartKey, $mergedCart);
+                self::persistUserCart($user, $storeId, $mergedCart);
             }
 
             $session->put($key, $userToken);
             $session->forget($guestCartKey);
         }
+
+        self::hydrateSessionFromPersistedCarts($request, $user, $userToken);
+    }
+
+    public static function persistCurrentSessionCart(Request $request, int|string $storeId, array $cart): void
+    {
+        $user = $request->user();
+        if (! $user instanceof User || ! $user->isCustomer()) {
+            return;
+        }
+
+        self::persistUserCart($user, $storeId, $cart);
+    }
+
+    public static function clearPersistedCartForCurrentUser(Request $request, int|string $storeId): void
+    {
+        $user = $request->user();
+        if (! $user instanceof User || ! $user->isCustomer()) {
+            return;
+        }
+
+        CustomerTakeoutCart::query()
+            ->where('user_id', $user->getAuthIdentifier())
+            ->where('store_id', (int) $storeId)
+            ->delete();
     }
 
     private static function mergeCarts(array $targetCart, array $guestCart): array
@@ -134,5 +172,88 @@ class TakeoutCartSession
         }
 
         return $targetCart;
+    }
+
+    private static function restorePersistedCartIfMissing(Request $request, int|string $storeId, string $cartSessionKey): void
+    {
+        $user = $request->user();
+        if (! $user instanceof User || ! $user->isCustomer()) {
+            return;
+        }
+
+        if ($request->session()->has($cartSessionKey)) {
+            return;
+        }
+
+        $persistedCart = self::loadPersistedUserCart($user, $storeId);
+        if (! is_array($persistedCart)) {
+            $persistedCart = [];
+        }
+
+        $request->session()->put($cartSessionKey, self::mergeCarts([], $persistedCart));
+    }
+
+    private static function loadPersistedUserCart(User $user, int|string $storeId): array
+    {
+        $record = CustomerTakeoutCart::query()
+            ->where('user_id', $user->getAuthIdentifier())
+            ->where('store_id', (int) $storeId)
+            ->first();
+
+        $cartItems = $record?->cart_items;
+
+        return is_array($cartItems) ? self::mergeCarts([], $cartItems) : [];
+    }
+
+    private static function persistUserCart(User $user, int|string $storeId, array $cart): void
+    {
+        $normalizedCart = self::mergeCarts([], $cart);
+
+        if ($normalizedCart === []) {
+            CustomerTakeoutCart::query()
+                ->where('user_id', $user->getAuthIdentifier())
+                ->where('store_id', (int) $storeId)
+                ->delete();
+
+            return;
+        }
+
+        CustomerTakeoutCart::query()->updateOrCreate(
+            [
+                'user_id' => $user->getAuthIdentifier(),
+                'store_id' => (int) $storeId,
+            ],
+            [
+                'cart_items' => $normalizedCart,
+            ]
+        );
+    }
+
+    private static function hydrateSessionFromPersistedCarts(Request $request, User $user, string $userToken): void
+    {
+        $session = $request->session();
+
+        $records = CustomerTakeoutCart::query()
+            ->where('user_id', $user->getAuthIdentifier())
+            ->get(['store_id', 'cart_items']);
+
+        foreach ($records as $record) {
+            $storeId = (string) $record->store_id;
+            if ($storeId === '') {
+                continue;
+            }
+
+            $tokenKey = self::tokenSessionKey($storeId);
+            $userCartKey = self::cartSessionKey($storeId, $userToken);
+
+            $session->put($tokenKey, $userToken);
+
+            if ($session->has($userCartKey)) {
+                continue;
+            }
+
+            $persistedCart = is_array($record->cart_items) ? $record->cart_items : [];
+            $session->put($userCartKey, self::mergeCarts([], $persistedCart));
+        }
     }
 }

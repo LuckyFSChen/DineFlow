@@ -134,6 +134,7 @@ class TakeoutOrderingController extends Controller
         unset($item);
 
         session()->put($cartKey, $cart);
+        TakeoutCartSession::persistCurrentSessionCart($request, $store->id, $cart);
 
         return redirect()
             ->route('customer.takeout.menu', ['store' => $store])
@@ -204,11 +205,12 @@ class TakeoutOrderingController extends Controller
         unset($item);
 
         session()->put($cartKey, $cart);
+        TakeoutCartSession::persistCurrentSessionCart($request, $store->id, $cart);
 
         return redirect()->back();
     }
 
-    public function removeCartItem(Store $store, string $lineKey)
+    public function removeCartItem(Request $request, Store $store, string $lineKey)
     {
         $this->ensureTakeoutEnabled($store);
 
@@ -218,6 +220,7 @@ class TakeoutOrderingController extends Controller
         if (isset($cart[$lineKey])) {
             unset($cart[$lineKey]);
             session()->put($cartKey, $cart);
+            TakeoutCartSession::persistCurrentSessionCart($request, $store->id, $cart);
         }
 
         return redirect()->back();
@@ -245,7 +248,7 @@ class TakeoutOrderingController extends Controller
 
         $validated['customer_phone'] = $this->normalizeCustomerPhone($validated['customer_phone'] ?? null, $store);
 
-        if ($request->boolean('remember_customer_info')) {
+        if (! $request->user() && $request->boolean('remember_customer_info')) {
             session()->put(self::CUSTOMER_PROFILE_SESSION_KEY, [
                 'customer_name' => $validated['customer_name'] ?? '',
                 'customer_email' => $validated['customer_email'] ?? '',
@@ -318,6 +321,7 @@ class TakeoutOrderingController extends Controller
 
         session()->forget($cartKey);
         session()->forget(TakeoutCartSession::tokenSessionKey($store->id));
+        TakeoutCartSession::clearPersistedCartForCurrentUser($request, $store->id);
         $this->pushTakeoutOrderToHistory($store, $order);
 
         return redirect()->route('customer.order.success', [

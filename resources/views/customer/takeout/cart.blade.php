@@ -231,32 +231,34 @@
                                                                          <p class="mt-1 text-xs text-brand-primary/70">{{ __('customer.phone_format_hint', ['digits' => $phoneDigits]) }}</p>
                                 </div>
 
-                                <div>
-                                    <label class="inline-flex items-center gap-2 text-sm text-brand-dark">
-                                        <input
-                                            type="checkbox"
-                                            name="remember_customer_info"
-                                            value="1"
-                                            @checked(old('remember_customer_info', !empty($rememberedCustomerInfo)))
-                                            class="h-4 w-4 rounded border-brand-soft text-brand-primary focus:ring-brand-highlight"
-                                        >
-                                        {{ __('customer.remember_info') }}
-                                    </label>
+                                @if($isGuest)
+                                    <div>
+                                        <label class="inline-flex items-center gap-2 text-sm text-brand-dark">
+                                            <input
+                                                type="checkbox"
+                                                name="remember_customer_info"
+                                                value="1"
+                                                @checked(old('remember_customer_info', !empty($rememberedCustomerInfo)))
+                                                class="h-4 w-4 rounded border-brand-soft text-brand-primary focus:ring-brand-highlight"
+                                            >
+                                            {{ __('customer.remember_info') }}
+                                        </label>
 
-                                    @if(!empty($rememberedCustomerInfo))
-                                            <div class="mt-2">
-                                                <button
-                                                    type="submit"
-                                                    formaction="{{ route('customer.takeout.customer-info.clear', ['store' => $store]) }}"
-                                                    formmethod="POST"
-                                                    formnovalidate
-                                                    class="inline-flex items-center rounded-xl border border-brand-soft bg-white px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30"
-                                                >
-                                                    {{ __('customer.clear_remembered_info') }}
-                                                </button>
-                                            </div>
-                                    @endif
-                                </div>
+                                        @if(!empty($rememberedCustomerInfo))
+                                                <div class="mt-2">
+                                                    <button
+                                                        type="submit"
+                                                        formaction="{{ route('customer.takeout.customer-info.clear', ['store' => $store]) }}"
+                                                        formmethod="POST"
+                                                        formnovalidate
+                                                        class="inline-flex items-center rounded-xl border border-brand-soft bg-white px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30"
+                                                    >
+                                                        {{ __('customer.clear_remembered_info') }}
+                                                    </button>
+                                                </div>
+                                        @endif
+                                    </div>
+                                @endif
 
                                 <div>
                                     <label for="coupon_code" class="mb-2 block text-sm font-medium text-brand-dark">
