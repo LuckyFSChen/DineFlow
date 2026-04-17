@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PhoneFormatter;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -33,6 +34,8 @@ class Store extends Model
         'closing_time',
         'weekly_business_hours',
         'prep_time_minutes',
+        'loyalty_enabled',
+        'points_per_amount',
         'weekly_break_hours',
         'cancel_quick_reasons',
     ];
@@ -45,6 +48,8 @@ class Store extends Model
         'longitude' => 'float',
         'weekly_business_hours' => 'array',
         'prep_time_minutes' => 'integer',
+        'loyalty_enabled' => 'boolean',
+        'points_per_amount' => 'integer',
         'weekly_break_hours' => 'array',
         'cancel_quick_reasons' => 'array',
     ];
@@ -56,6 +61,16 @@ class Store extends Model
         }
 
         return null;
+    }
+
+    public function getPhoneAttribute($value): ?string
+    {
+        return PhoneFormatter::format($value);
+    }
+
+    public function setPhoneAttribute($value): void
+    {
+        $this->attributes['phone'] = PhoneFormatter::digitsOnly(is_string($value) ? $value : null);
     }
 
     protected static function booted(): void
@@ -251,6 +266,28 @@ class Store extends Model
     public function orders()
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function members()
+    {
+        return $this->hasMany(Member::class);
+    }
+
+    public function coupons()
+    {
+        return $this->hasMany(Coupon::class);
+    }
+
+    public function calculateEarnedPoints(int $paidAmount): int
+    {
+        if (! $this->loyalty_enabled) {
+            return 0;
+        }
+
+        $unitAmount = max((int) ($this->points_per_amount ?? 100), 1);
+        $paidAmount = max($paidAmount, 0);
+
+        return (int) floor($paidAmount / $unitAmount);
     }
 
     private function normalizeTime(?string $time): ?string

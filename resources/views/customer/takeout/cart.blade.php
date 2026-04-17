@@ -130,15 +130,26 @@
                         <div class="rounded-3xl border border-brand-soft/60 bg-white p-6 shadow-[0_18px_44px_rgba(90,30,14,0.1)]">
                             <h2 class="text-xl font-bold text-brand-dark">{{ __('customer.order_summary') }}</h2>
 
+                            @if(isset($member) && $member)
+                                <div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                                    會員點數：<span class="font-semibold">{{ number_format((int) $member->points_balance) }}</span> 點
+                                </div>
+                            @endif
+
                             <div class="mt-5 space-y-4 text-sm">
                                 <div class="flex items-center justify-between text-brand-primary/80">
                                     <span>{{ __('customer.subtotal') }}</span>
                                     <span>{{ $currencySymbol }} {{ number_format($total) }}</span>
                                 </div>
 
+                                <div class="flex items-center justify-between text-brand-primary/70">
+                                    <span>優惠券折扣</span>
+                                    <span>送出訂單後自動計算</span>
+                                </div>
+
                                 <div class="border-t border-brand-soft/60 pt-4">
                                     <div class="flex items-center justify-between text-lg font-bold text-brand-dark">
-                                        <span>{{ __('customer.total_amount') }}</span>
+                                        <span>預估應付</span>
                                         <span>{{ $currencySymbol }} {{ number_format($total) }}</span>
                                     </div>
                                 </div>
@@ -216,6 +227,19 @@
                                                 </button>
                                             </div>
                                     @endif
+                                </div>
+
+                                <div>
+                                    <label for="coupon_code" class="mb-2 block text-sm font-medium text-brand-dark">
+                                        優惠券代碼
+                                    </label>
+                                    <input id="coupon_code"
+                                           type="text"
+                                           name="coupon_code"
+                                           value="{{ old('coupon_code') }}"
+                                           placeholder="例如：WELCOME100"
+                                           class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm uppercase text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">
+                                    <p class="mt-1 text-xs text-brand-primary/70">若為點數券，請先填寫手機或 Email 以辨識會員。</p>
                                 </div>
 
                                 <div>

@@ -78,6 +78,9 @@ class User extends Authenticatable
         'merchant_region',
         'subscription_ends_at',
         'subscription_plan_id',
+        'trial_started_at',
+        'trial_ends_at',
+        'trial_used_at',
         'store_id',
     ];
 
@@ -102,6 +105,9 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'subscription_ends_at' => 'datetime',
+            'trial_started_at' => 'datetime',
+            'trial_ends_at' => 'datetime',
+            'trial_used_at' => 'datetime',
         ];
     }
 
@@ -139,6 +145,11 @@ class User extends Authenticatable
         return $this->isMerchant()
             && $this->subscription_ends_at !== null
             && $this->subscription_ends_at->greaterThanOrEqualTo(now()->startOfDay());
+    }
+
+    public function canStartTrial(): bool
+    {
+        return $this->isMerchant() && $this->trial_used_at === null;
     }
 
     public function subscriptionPlan()

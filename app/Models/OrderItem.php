@@ -14,7 +14,18 @@ class OrderItem extends Model
         'qty',
         'subtotal',
         'note',
+        'item_status',
+        'completed_at',
     ];
+
+    protected $casts = [
+        'completed_at' => 'datetime',
+    ];
+
+    public function isCompleted(): bool
+    {
+        return strtolower((string) $this->item_status) === 'completed';
+    }
 
     public function order() {
         return $this->belongsTo(Order::class);

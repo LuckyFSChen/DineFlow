@@ -81,6 +81,12 @@
                             <span class="text-sm text-gray-400">{{ count($cart) }} {{ __('customer.items') }}</span>
                         </div>
 
+                        @if(isset($member) && $member)
+                            <div class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                                會員點數：<span class="font-semibold">{{ number_format((int) $member->points_balance) }}</span> 點
+                            </div>
+                        @endif
+
                         <div class="space-y-4">
                             @foreach ($cart as $item)
                                 <div class="flex items-center justify-between gap-4 rounded-2xl border border-orange-50 bg-orange-50/50 px-4 py-4">
@@ -187,6 +193,16 @@
                                         </button>
                                     </div>
                                 @endif
+                            </div>
+
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-gray-700">優惠券代碼</label>
+                                <input type="text"
+                                       name="coupon_code"
+                                       value="{{ old('coupon_code') }}"
+                                       class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm uppercase focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                                       placeholder="例如：WELCOME100">
+                                <p class="mt-1 text-xs text-orange-600">若為點數券，請先填寫手機或 Email 以辨識會員。</p>
                             </div>
 
                             <div>

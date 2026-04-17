@@ -25,17 +25,22 @@ class DineInMenuController extends Controller
     {
         abort_unless($table->store_id === $store->id, 404);
 
-        $store->load([
-            'categories' => fn ($query) => $query->where('is_active', true)->orderBy('sort'),
-            'products' => fn ($query) => $query->where('is_active', true)->where('is_sold_out', false)->orderBy('sort'),
-        ]);
+        $categories = $store->categories()
+            ->where('is_active', true)
+            ->with(['products' => function ($query) use ($store) {
+                $query->where('store_id', $store->id)
+                    ->where('is_active', true)
+                    ->where('is_sold_out', false)
+                    ->orderBy('sort');
+            }])
+            ->orderBy('sort')
+            ->get();
 
-        $categories = $store->categories;
-        $products = $store->products->groupBy('category_id');
         $orderingAvailable = $store->isOrderingAvailable();
         $cart = session()->get($this->getDineInCartSessionKey($store, $table), []);
         $cartCount = collect($cart)->sum('qty');
         $cartTotal = collect($cart)->sum('subtotal');
+        $cartPreviewItems = collect($cart)->values();
         $history = session()->get($this->getDineInOrderHistorySessionKey($store, $table), []);
         $orderHistory = collect();
 
@@ -57,15 +62,17 @@ class DineInMenuController extends Controller
             }
         }
 
-        return view('customer.dine-in.menu-mobile', compact(
+        return view('customer.menu.mobile', compact(
             'store',
             'table',
             'categories',
-            'products',
             'orderingAvailable',
             'cartCount',
             'cartTotal',
+            'cartPreviewItems',
             'orderHistory'
-        ));
+        ) + [
+            'mode' => 'dine_in',
+        ]);
     }
 }

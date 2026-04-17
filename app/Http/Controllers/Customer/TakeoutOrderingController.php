@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Models\Member;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Store;
+use App\Services\LoyaltyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -55,7 +57,7 @@ class TakeoutOrderingController extends Controller
         $cartPreviewItems = collect($cart)->values();
         $orderHistory = $this->getTakeoutOrderHistory($store);
 
-        return view('customer.takeout.menu-mobile', compact(
+        return view('customer.menu.mobile', compact(
             'store',
             'categories',
             'orderingAvailable',
@@ -63,7 +65,10 @@ class TakeoutOrderingController extends Controller
             'cartTotal',
             'cartPreviewItems',
             'orderHistory'
-        ));
+        ) + [
+            'mode' => 'takeout',
+            'table' => null,
+        ]);
     }
 
     public function addToCart(Request $request, Store $store)
@@ -136,9 +141,10 @@ class TakeoutOrderingController extends Controller
         $total = collect($cart)->sum('subtotal');
         $orderingAvailable = $store->isOrderingAvailable();
         $rememberedCustomerInfo = session()->get(self::CUSTOMER_PROFILE_SESSION_KEY, []);
+        $member = $this->findMemberByCustomerInfo($store, $rememberedCustomerInfo);
         $orderHistory = $this->getTakeoutOrderHistory($store);
 
-        return view('customer.takeout.cart', compact('store', 'cart', 'total', 'orderingAvailable', 'rememberedCustomerInfo', 'orderHistory'));
+        return view('customer.takeout.cart', compact('store', 'cart', 'total', 'orderingAvailable', 'rememberedCustomerInfo', 'orderHistory', 'member'));
     }
 
     public function checkout(Request $request, Store $store)
@@ -156,6 +162,7 @@ class TakeoutOrderingController extends Controller
             'customer_email' => ['nullable', 'email', 'max:255'],
             'customer_phone' => $this->customerPhoneValidationRules($store),
             'note' => ['nullable', 'string'],
+            'coupon_code' => ['nullable', 'string', 'max:64'],
             'remember_customer_info' => ['nullable', 'boolean'],
         ]);
 
@@ -183,9 +190,39 @@ class TakeoutOrderingController extends Controller
         $total = collect($cart)->sum('subtotal');
         $cartToken = $this->getTakeoutCartToken($store);
 
-        $order = DB::transaction(function () use ($store, $validated, $cart, $total, $cartToken) {
+        $loyaltyService = app(LoyaltyService::class);
+
+        $order = DB::transaction(function () use ($store, $validated, $cart, $total, $cartToken, $loyaltyService) {
+            $member = $loyaltyService->resolveMember(
+                $store,
+                $validated['customer_name'] ?? null,
+                $validated['customer_email'] ?? null,
+                $validated['customer_phone'] ?? null
+            );
+
+            $couponResult = $loyaltyService->resolveCoupon(
+                $store,
+                $validated['coupon_code'] ?? null,
+                (int) $total,
+                $member
+            );
+
+            if ($couponResult['error'] !== null) {
+                throw ValidationException::withMessages([
+                    'coupon_code' => (string) $couponResult['error'],
+                ]);
+            }
+
+            $coupon = $couponResult['coupon'];
+            $couponDiscount = (int) $couponResult['discount'];
+            $pointsUsed = (int) $couponResult['points_cost'];
+            $finalTotal = max((int) $total - $couponDiscount, 0);
+            $pointsEarned = $store->calculateEarnedPoints($finalTotal);
+
             $order = Order::create([
                 'store_id' => $store->id,
+                'member_id' => $member?->id,
+                'coupon_id' => $coupon?->id,
                 'dining_table_id' => null,
                 'order_type' => 'takeout',
                 'cart_token' => $cartToken,
@@ -196,8 +233,12 @@ class TakeoutOrderingController extends Controller
                 'customer_email' => $validated['customer_email'] ?? null,
                 'customer_phone' => $validated['customer_phone'] ?? null,
                 'note' => $validated['note'] ?? null,
+                'coupon_code' => $coupon?->code,
+                'coupon_discount' => $couponDiscount,
+                'points_used' => $pointsUsed,
+                'points_earned' => $pointsEarned,
                 'subtotal' => $total,
-                'total' => $total,
+                'total' => $finalTotal,
             ]);
 
             foreach ($cart as $item) {
@@ -208,8 +249,21 @@ class TakeoutOrderingController extends Controller
                     'qty' => $item['qty'],
                     'subtotal' => $item['subtotal'],
                     'note' => $this->composeOrderItemNote($item['option_label'] ?? null, $item['item_note'] ?? null),
+                    'item_status' => 'preparing',
                 ]);
             }
+
+            if ($coupon) {
+                $coupon->increment('used_count');
+            }
+
+            $loyaltyService->finalizeOrderLoyalty(
+                $order,
+                $member,
+                $coupon,
+                $pointsUsed,
+                $pointsEarned
+            );
 
             return $order;
         });
@@ -507,5 +561,28 @@ class TakeoutOrderingController extends Controller
             ->map(fn ($uuid) => $orderMap->get($uuid))
             ->filter()
             ->values();
+    }
+
+    private function findMemberByCustomerInfo(Store $store, array $customerInfo): ?Member
+    {
+        $email = trim((string) ($customerInfo['customer_email'] ?? ''));
+        $phone = trim((string) ($customerInfo['customer_phone'] ?? ''));
+
+        if ($email === '' && $phone === '') {
+            return null;
+        }
+
+        return Member::query()
+            ->where('store_id', $store->id)
+            ->where(function ($query) use ($email, $phone) {
+                if ($email !== '') {
+                    $query->orWhere('email', $email);
+                }
+
+                if ($phone !== '') {
+                    $query->orWhere('phone', $phone);
+                }
+            })
+            ->first();
     }
 }

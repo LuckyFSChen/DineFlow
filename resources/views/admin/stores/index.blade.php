@@ -290,7 +290,7 @@
 
                 <div>
                     <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.phone') }}</label>
-                    <input type="text" name="phone" id="store-modal-phone" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="{{ __('admin.phone_placeholder', ['digits' => 10]) }}" maxlength="10" inputmode="numeric" pattern="[0-9]*">
+                    <input type="text" name="phone" id="store-modal-phone" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="{{ __('admin.phone_placeholder', ['digits' => 10]) }}" maxlength="12" data-phone-digits="10" inputmode="numeric" pattern="[0-9-]*">
                     <p id="store-modal-phone-hint" class="mt-1 text-xs text-slate-500">{{ __('admin.phone_format_hint', ['digits' => 10]) }}</p>
                 </div>
 
@@ -648,6 +648,32 @@
         return String(value || '').replace(/\D+/g, '').slice(0, maxDigits);
     };
 
+    const formatPhoneForInput = (value, countryCode) => {
+        const digits = normalizePhoneDigits(value, countryCode);
+
+        if (digits.length <= 4) {
+            return digits;
+        }
+
+        if (digits.length === 11) {
+            return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+        }
+
+        if (digits.length === 10) {
+            if (digits.startsWith('09')) {
+                return `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
+            }
+
+            return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+        }
+
+        if (digits.length <= 7) {
+            return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+        }
+
+        return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+    };
+
     const applyPhoneInputRules = () => {
         if (!phoneInput) {
             return;
@@ -655,10 +681,11 @@
 
         const countryCode = modalCountrySelect ? modalCountrySelect.value : 'tw';
         const digits = expectedPhoneDigitsByCountry(countryCode);
-        phoneInput.value = normalizePhoneDigits(phoneInput.value, countryCode);
-        phoneInput.setAttribute('maxlength', String(digits));
+        phoneInput.value = formatPhoneForInput(phoneInput.value, countryCode);
+        phoneInput.setAttribute('maxlength', String(digits + 2));
+        phoneInput.setAttribute('data-phone-digits', String(digits));
         phoneInput.setAttribute('inputmode', 'numeric');
-        phoneInput.setAttribute('pattern', '[0-9]*');
+        phoneInput.setAttribute('pattern', '[0-9-]*');
         phoneInput.placeholder = i18n.phonePlaceholder.replace('__digits__', String(digits));
         if (phoneHint) {
             phoneHint.textContent = i18n.phoneFormatHint.replace('__digits__', String(digits));
@@ -1071,7 +1098,7 @@
     });
 
     phoneInput?.addEventListener('input', (event) => {
-        event.target.value = normalizePhoneDigits(event.target.value, modalCountrySelect?.value || 'tw');
+        event.target.value = formatPhoneForInput(event.target.value, modalCountrySelect?.value || 'tw');
     });
     modalCountrySelect?.addEventListener('change', applyPhoneInputRules);
 

@@ -163,6 +163,60 @@ class SubscriptionController extends Controller
         ]);
     }
 
+    public function startTrial(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        if (! $user || ! $user->isMerchant()) {
+            abort(403, 'Only merchant accounts can start trial.');
+        }
+
+        if (! $user->canStartTrial()) {
+            return redirect()
+                ->route('merchant.subscription.index')
+                ->with('error', '此帳號已使用過試用資格。');
+        }
+
+        if ($user->hasActiveSubscription()) {
+            return redirect()
+                ->route('merchant.subscription.index')
+                ->with('error', '目前方案仍有效，不可啟用試用。');
+        }
+
+        $basicPlan = SubscriptionPlan::query()
+            ->where('is_active', true)
+            ->where('slug', 'basic-monthly')
+            ->first();
+
+        if (! $basicPlan) {
+            $basicPlan = SubscriptionPlan::query()
+                ->where('is_active', true)
+                ->orderBy('price_twd')
+                ->orderBy('id')
+                ->first();
+        }
+
+        if (! $basicPlan) {
+            return redirect()
+                ->route('merchant.subscription.index')
+                ->with('error', '目前沒有可用方案，無法啟用試用。');
+        }
+
+        $trialStart = now();
+        $trialEnd = $trialStart->copy()->addDays(30);
+
+        $user->forceFill([
+            'subscription_plan_id' => $basicPlan->id,
+            'subscription_ends_at' => $trialEnd,
+            'trial_started_at' => $trialStart,
+            'trial_ends_at' => $trialEnd,
+            'trial_used_at' => $trialStart,
+        ])->save();
+
+        return redirect()
+            ->route('merchant.subscription.index')
+            ->with('success', '已啟用 30 天試用。');
+    }
+
     public function success(Request $request): RedirectResponse
     {
         return redirect()

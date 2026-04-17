@@ -56,23 +56,49 @@
     <script>
     (() => {
         const phoneSelectors = [
-            'input[name="phone"]',
-            'input[name="customer_phone"]',
-            'input[id="customer_phone"]',
+            'input[type="tel"]',
+            'input[name*="phone"]',
+            'input[id*="phone"]',
         ];
 
-        const formatTaiwanMobile = (raw) => {
-            const digits = String(raw || '').replace(/\D/g, '').slice(0, 10);
+        const detectDigitsLimit = (input) => {
+            const explicit = Number(input.dataset.phoneDigits || 0);
+            if (explicit > 0) {
+                return explicit;
+            }
+
+            const rawMaxLength = Number(input.getAttribute('maxlength') || 0);
+            if (rawMaxLength > 0) {
+                return rawMaxLength > 11 ? rawMaxLength - 2 : rawMaxLength;
+            }
+
+            return 11;
+        };
+
+        const formatPhone = (raw, digitsLimit) => {
+            const digits = String(raw || '').replace(/\D/g, '').slice(0, digitsLimit);
 
             if (digits.length <= 4) {
                 return digits;
+            }
+
+            if (digits.length === 11) {
+                return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+            }
+
+            if (digits.length === 10) {
+                if (digits.startsWith('09')) {
+                    return `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
+                }
+
+                return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
             }
 
             if (digits.length <= 7) {
                 return `${digits.slice(0, 4)}-${digits.slice(4)}`;
             }
 
-            return `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
+            return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
         };
 
         const bindInput = (input) => {
@@ -81,19 +107,13 @@
             }
 
             input.dataset.phoneAutoHyphenBound = '1';
-            const isStrictNumeric = (input.getAttribute('pattern') || '').trim() === '[0-9]*';
+            const digitsLimit = detectDigitsLimit(input);
             input.setAttribute('inputmode', input.getAttribute('inputmode') || 'numeric');
-            if (!input.getAttribute('maxlength')) {
-                input.setAttribute('maxlength', '12');
-            }
+            input.setAttribute('pattern', '[0-9-]*');
+            input.setAttribute('maxlength', String(digitsLimit + 2));
 
             const apply = () => {
-                if (isStrictNumeric) {
-                    input.value = String(input.value || '').replace(/\D/g, '');
-                    return;
-                }
-
-                input.value = formatTaiwanMobile(input.value);
+                input.value = formatPhone(input.value, digitsLimit);
             };
 
             input.addEventListener('input', apply);

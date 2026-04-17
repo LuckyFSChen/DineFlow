@@ -1,6 +1,6 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
-@section('title', __('admin.board_kitchen_title') . ' — ' . $store->name)
+@section('title', __('admin.board_kitchen_title') . ' ??' . $store->name)
 
 @php
 function kitchenFormatOrder(\App\Models\Order $order): array {
@@ -20,7 +20,10 @@ function kitchenFormatOrder(\App\Models\Order $order): array {
             'product_name'   => $i->product_name,
             'qty'            => $i->qty,
             'note'           => $i->note,
+            'item_status'    => $i->item_status ?: 'preparing',
+            'completed_at'   => $i->completed_at?->toIso8601String(),
             'option_summary' => null,
+            '_loading'       => false,
         ])->values()->all(),
         '_loading' => false,
     ];
@@ -34,6 +37,8 @@ $kitchenI18n = [
     'locale_prefix' => __('admin.board_locale_prefix'),
     'processing' => __('admin.board_processing'),
     'mark_completed' => __('admin.board_action_mark_completed'),
+    'mark_item_completed' => 'Serve',
+    'item_completed' => 'Served',
     'error_update_failed' => __('admin.board_error_update_failed'),
     'error_missing_csrf' => __('admin.board_error_missing_csrf'),
     'error_network' => __('admin.board_error_network'),
@@ -52,10 +57,10 @@ $kitchenI18n = [
         <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div class="flex items-center gap-4">
             <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700">
-                ← {{ __('admin.board_back_to_stores') }}
+                ??{{ __('admin.board_back_to_stores') }}
             </a>
             <div>
-                <h1 class="text-lg font-bold text-white">🍳 {{ __('admin.board_kitchen_title') }}</h1>
+                <h1 class="text-lg font-bold text-white">? {{ __('admin.board_kitchen_title') }}</h1>
                 <p class="text-xs text-slate-400">{{ $store->name }}</p>
             </div>
         </div>
@@ -65,12 +70,12 @@ $kitchenI18n = [
             <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
                 <a href="{{ route('admin.stores.cashier', $store) }}"
                    class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
-                    💳 {{ __('admin.board_cashier_title') }}
+                    ? {{ __('admin.board_cashier_title') }}
                 </a>
-                <span class="px-3 py-1.5 bg-indigo-600 text-white">🍳 {{ __('admin.board_kitchen_title') }}</span>
+                <span class="px-3 py-1.5 bg-indigo-600 text-white">? {{ __('admin.board_kitchen_title') }}</span>
                 <a href="{{ route('admin.stores.boards', $store) }}"
                    class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
-                    🧩 {{ __('admin.board_all_title') }}
+                    ?妝 {{ __('admin.board_all_title') }}
                 </a>
             </div>
 
@@ -105,7 +110,7 @@ $kitchenI18n = [
             </button>
 
             <div class="flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs">
-                <span class="text-slate-400">等待色階</span>
+                <span class="text-slate-400">蝑??脤?</span>
                 <input type="number" min="0" x-model.number="waitConfig.orangeStart" @change="saveWaitConfig()"
                        class="w-11 rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-slate-100 focus:border-indigo-500 focus:outline-none">
                 <span class="text-slate-500">/</span>
@@ -185,7 +190,7 @@ $kitchenI18n = [
                         </div>
                         {{-- Customer name --}}
                         <div x-show="order.customer_name" class="mt-0.5 text-xs text-slate-400">
-                            👤 <span x-text="order.customer_name"></span>
+                            ? <span x-text="order.customer_name"></span>
                         </div>
                     </div>
 
@@ -207,21 +212,32 @@ $kitchenI18n = [
 
                 {{-- Items list --}}
                 <div class="flex-1 px-4 py-3 space-y-2">
+                    <div class="mb-1 text-[11px] font-semibold text-slate-300">
+                        出餐進度：<span x-text="completedItemCount(order)"></span>/<span x-text="order.items.length"></span>
+                    </div>
                     <template x-for="item in order.items" :key="item.id">
-                        <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-start justify-between gap-2 rounded-lg border px-2 py-2"
+                             :class="isItemCompleted(item) ? 'border-emerald-500/40 bg-emerald-900/20' : 'border-slate-700/60 bg-slate-900/20'">
                             <div class="flex items-start gap-2">
                                 <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-bold text-white"
-                                      x-text="item.qty + '×'"></span>
+                                      x-text="item.qty + 'x'"></span>
                                 <div>
                                     <span class="text-sm font-semibold text-white" x-text="item.product_name"></span>
-                                    {{-- Item note --}}
                                     <div x-show="item.note" class="mt-0.5 flex items-center gap-1 text-xs text-yellow-400">
-                                        <span>📝</span>
+                                        <span>備註</span>
                                         <span x-text="item.note"></span>
                                     </div>
-                                    {{-- Options --}}
                                     <div x-show="item.option_summary" class="mt-0.5 text-xs text-slate-400" x-text="item.option_summary"></div>
                                 </div>
+                            </div>
+                            <div class="shrink-0">
+                                <button
+                                    @click="setItemStatus(order, item, isItemCompleted(item) ? 'preparing' : 'completed')"
+                                    :disabled="item._loading"
+                                    class="rounded-lg px-2 py-1 text-[11px] font-semibold transition disabled:opacity-50"
+                                    :class="isItemCompleted(item) ? 'bg-emerald-700 text-white hover:bg-emerald-600' : 'bg-indigo-600 text-white hover:bg-indigo-500'"
+                                    x-text="item._loading ? i18n.processing : (isItemCompleted(item) ? i18n.item_completed : i18n.mark_item_completed)">
+                                </button>
                             </div>
                         </div>
                     </template>
@@ -234,15 +250,6 @@ $kitchenI18n = [
                     </div>
                 </template>
 
-                {{-- Action button: complete --}}
-                <div class="flex gap-2 border-t border-slate-700/50 px-4 py-3">
-                    <button
-                        @click="setStatus(order, 'completed')"
-                        :disabled="order._loading"
-                        class="flex-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50">
-                        <span x-text="order._loading ? i18n.processing : i18n.mark_completed"></span>
-                    </button>
-                </div>
             </div>
         </template>
     </div>
@@ -250,7 +257,7 @@ $kitchenI18n = [
     {{-- New order toast --}}
     <div x-show="newOrderAlert" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
          class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border border-emerald-500/50 bg-emerald-900 px-5 py-3 shadow-xl">
-        <span class="text-2xl">🔔</span>
+        <span class="text-2xl">??</span>
         <div>
             <p class="font-bold text-white">{{ __('admin.board_new_order_arrived') }}</p>
             <p class="text-xs text-emerald-300">{{ __('admin.board_new_order_added') }}</p>
@@ -434,13 +441,25 @@ function kitchenBoard() {
             this._errorTimer = setTimeout(() => { this.errorMessage = ''; }, 5000);
         },
 
-        async setStatus(order, status) {
-            order._loading = true;
+        isItemCompleted(item) {
+            return String(item?.item_status || '').toLowerCase() === 'completed';
+        },
+
+        completedItemCount(order) {
+            if (!Array.isArray(order?.items)) {
+                return 0;
+            }
+
+            return order.items.filter((item) => this.isItemCompleted(item)).length;
+        },
+
+        async setItemStatus(order, item, status) {
+            item._loading = true;
             try {
                 const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
                 if (!token) {
                     this.showError(this.i18n.error_missing_csrf);
-                    order._loading = false;
+                    item._loading = false;
                     return;
                 }
 
@@ -454,7 +473,11 @@ function kitchenBoard() {
                             'Accept': 'application/json',
                             'X-CSRF-TOKEN': token,
                         },
-                        body: JSON.stringify({ status }),
+                        body: JSON.stringify({
+                            status,
+                            item_status: status,
+                            item_id: item.id,
+                        }),
                     }
                 );
 
@@ -465,19 +488,23 @@ function kitchenBoard() {
                         message = data.message || message;
                     } catch {}
                     this.showError(message);
-                    order._loading = false;
+                    item._loading = false;
                     return;
                 }
 
                 if (res.ok) {
                     const data = await res.json();
-                    // Once completed, remove from kitchen board (goes to cashier board)
-                    this.orders = this.orders.filter(o => o.id !== order.id);
+                    item.item_status = data?.item?.item_status || status;
+                    item.completed_at = data?.item?.completed_at || null;
+
+                    if (String(data?.order?.status || '').toLowerCase() === 'completed') {
+                        this.orders = this.orders.filter((o) => o.id !== order.id);
+                    }
                 }
             } catch (e) {
                 this.showError(e?.message || this.i18n.error_network);
             }
-            order._loading = false;
+            item._loading = false;
         },
 
         isPreparing(order) {
@@ -589,3 +616,4 @@ function kitchenBoard() {
 </script>
 
 @endsection
+

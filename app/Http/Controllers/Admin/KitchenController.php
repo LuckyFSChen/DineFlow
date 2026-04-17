@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Store;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 class KitchenController extends Controller
 {
     private const PREPARING_STATUSES = ['preparing', 'processing', 'cooking', 'in_progress'];
+    private const COMPLETED_STATUSES = ['complete', 'completed', 'ready', 'ready_for_pickup'];
 
     public function index(Request $request, Store $store)
     {
@@ -46,7 +48,10 @@ class KitchenController extends Controller
                 'product_name' => $i->product_name,
                 'qty' => $i->qty,
                 'note' => $i->note,
+                'item_status' => $i->item_status ?: 'preparing',
+                'completed_at' => $i->completed_at?->toIso8601String(),
                 'option_summary' => null,
+                '_loading' => false,
             ])->values()->all(),
             '_loading' => false,
         ])->values();
@@ -71,6 +76,21 @@ class KitchenController extends Controller
 
         abort_if($order->store_id !== $store->id, 403);
 
+        $itemId = $request->input('item_id');
+        if ($itemId !== null && $itemId !== '') {
+            $item = $order->items()->whereKey((int) $itemId)->first();
+            if (! $item) {
+                return response()->json(['ok' => false, 'message' => 'Order item not found'], 404);
+            }
+
+            $itemStatus = strtolower((string) $request->input('item_status', $request->input('status', '')));
+            if (! in_array($itemStatus, ['preparing', 'completed'], true)) {
+                return response()->json(['ok' => false, 'message' => 'Invalid item status'], 422);
+            }
+
+            return $this->applyItemStatusUpdate($order, $item, $itemStatus);
+        }
+
         $status = (string) $request->input('status');
 
         // Kitchen board only transitions: preparing → completed
@@ -83,6 +103,56 @@ class KitchenController extends Controller
         return response()->json([
             'ok'             => true,
             'status'         => $order->status,
+            'payment_status' => $order->payment_status,
+        ]);
+    }
+
+    public function updateItemStatus(Request $request, Store $store, Order $order, OrderItem $item): JsonResponse
+    {
+        $this->authorizeStore($request, $store);
+
+        abort_if($order->store_id !== $store->id, 403);
+        abort_if($item->order_id !== $order->id, 403);
+
+        $status = strtolower((string) $request->input('status', ''));
+        if (! in_array($status, ['preparing', 'completed'], true)) {
+            return response()->json(['ok' => false, 'message' => 'Invalid item status'], 422);
+        }
+
+        return $this->applyItemStatusUpdate($order, $item, $status);
+    }
+
+    private function applyItemStatusUpdate(Order $order, OrderItem $item, string $status): JsonResponse
+    {
+        $item->item_status = $status;
+        $item->completed_at = $status === 'completed' ? now() : null;
+        $item->save();
+
+        $hasPendingItems = $order->items()
+            ->where(function ($query) {
+                $query->whereNull('item_status')
+                    ->orWhere('item_status', '!=', 'completed');
+            })
+            ->exists();
+
+        if (! $hasPendingItems && ! in_array(strtolower((string) $order->status), self::COMPLETED_STATUSES, true)) {
+            $order->status = 'completed';
+            $order->save();
+        }
+
+        return response()->json([
+            'ok' => true,
+            'item' => [
+                'id' => $item->id,
+                'item_status' => $item->item_status,
+                'completed_at' => $item->completed_at?->toIso8601String(),
+            ],
+            'order' => [
+                'id' => $order->id,
+                'status' => $order->status,
+                'payment_status' => $order->payment_status,
+            ],
+            'status' => $order->status,
             'payment_status' => $order->payment_status,
         ]);
     }

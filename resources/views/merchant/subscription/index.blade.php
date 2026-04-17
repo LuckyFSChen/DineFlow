@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('content')
 <div class="min-h-screen bg-slate-50 py-10">
@@ -23,12 +23,16 @@
         <div class="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="text-lg font-semibold text-slate-900">{{ __('merchant.current_status') }}</h2>
             <div class="mt-3 space-y-2 text-sm text-slate-700">
-                <p>{{ __('merchant.plan') }}：{{ $user->subscriptionPlan ? ucfirst(strtok($user->subscriptionPlan->slug, '-')) : __('merchant.not_activated') }}</p>
-                <p>{{ __('merchant.expires_at') }}：{{ $user->subscription_ends_at ? $user->subscription_ends_at->format('Y-m-d H:i') : __('merchant.not_activated') }}</p>
-                <p>{{ __('merchant.status') }}：{{ $user->hasActiveSubscription() ? __('merchant.active') : __('merchant.inactive') }}</p>
-                <p>{{ __('merchant.pricing_currency') }}：{{ strtoupper($currencyProfile['currency_code'] ?? 'twd') }}</p>
+                <p>{{ __('merchant.plan') }}: {{ $user->subscriptionPlan ? ucfirst(strtok($user->subscriptionPlan->slug, '-')) : __('merchant.not_activated') }}</p>
+                <p>{{ __('merchant.expires_at') }}: {{ $user->subscription_ends_at ? $user->subscription_ends_at->format('Y-m-d H:i') : __('merchant.not_activated') }}</p>
+                <p>{{ __('merchant.status') }}: {{ $user->hasActiveSubscription() ? __('merchant.active') : __('merchant.inactive') }}</p>
+                <p>試用狀態: {{ $user->trial_used_at ? '已使用' : '未使用' }}</p>
+                @if($user->trial_started_at && $user->trial_ends_at)
+                    <p>試用期間: {{ $user->trial_started_at->format('Y-m-d H:i') }} ~ {{ $user->trial_ends_at->format('Y-m-d H:i') }}</p>
+                @endif
+                <p>{{ __('merchant.pricing_currency') }}: {{ strtoupper($currencyProfile['currency_code'] ?? 'twd') }}</p>
                 <p>
-                    {{ __('merchant.store_usage') }}：{{ $user->stores()->where('is_active', true)->count() }}
+                    {{ __('merchant.store_usage') }}: {{ $user->stores()->where('is_active', true)->count() }}
                     @if($user->subscriptionPlan?->max_stores === null)
                         / {{ __('merchant.unlimited') }}
                     @elseif($user->subscriptionPlan)
@@ -36,6 +40,16 @@
                     @endif
                 </p>
             </div>
+
+            @if($user->canStartTrial())
+                <form method="POST" action="{{ route('merchant.subscription.trial') }}" class="mt-4">
+                    @csrf
+                    <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500">
+                        啟用 30 天免費試用
+                    </button>
+                    <p class="mt-2 text-xs text-slate-500">每個商家帳號僅可使用一次試用資格。</p>
+                </form>
+            @endif
         </div>
 
         <div class="space-y-8">
@@ -56,9 +70,6 @@
                                 @endif
                                 <p class="mt-1 text-sm text-slate-500">{{ __('merchant.days', ['days' => $plan->duration_days]) }}</p>
                                 <p class="mt-1 text-sm text-slate-500">{{ __('merchant.store_count_label', ['count' => $plan->max_stores === null ? __('merchant.unlimited') : __('merchant.store_count_max', ['count' => $plan->max_stores])]) }}</p>
-                                @if($pricing['show_reset_time_warning'] ?? false)
-                                    <p class="mt-2 text-sm font-bold text-rose-600">提醒：若目前是 Basic Yearly，升級到 Growth 或 Pro 會重置方案時間，改為從付款成功當下重新起算。</p>
-                                @endif
 
                                 <ul class="mt-4 space-y-2 text-sm text-slate-700">
                                     @foreach(($plan->features ?? []) as $feature)

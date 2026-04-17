@@ -1,11 +1,14 @@
-<?php
+﻿<?php
 
 return [
     'admin_console'      => 'Admin Console',
     'login'              => 'Log in',
-    'register'           => 'Register',
+    
     'subscription'        => 'Subscription',
+    
     'financial_report'    => 'Financial Report',
+    
+    'loyalty'             => 'Loyalty',
     'store_backend'       => 'Store Management',
     'stores_short'        => 'Stores',
     'kitchen'             => 'Kitchen Board',
@@ -22,8 +25,12 @@ return [
     'not_activated'       => 'Not Activated',
     'expires'             => 'Expires',
     'language'            => 'Language',
-    'lang_zh_TW'          => '繁體中文',
-    'lang_zh_CN'          => '简体中文',
+    'lang_zh_TW'          => '蝜?銝剜?',
+    'lang_zh_CN'          => '蝞雿葉??,
     'lang_en'             => 'English',
-    'lang_vi'             => 'Tiếng Việt',
+    'lang_vi'             => 'Ti廕積g Vi廙',
 ];
+
+
+
+

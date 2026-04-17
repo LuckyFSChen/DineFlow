@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Mail\CustomerOrderCompletedMail;
 use App\Mail\CustomerOrderCancelledMail;
 use App\Mail\CustomerOrderCreatedMail;
+use App\Support\PhoneFormatter;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -17,6 +18,8 @@ class Order extends Model
 
     protected $fillable = [
         'store_id',
+        'member_id',
+        'coupon_id',
         'dining_table_id',
         'order_type',
         'cart_token',
@@ -28,6 +31,10 @@ class Order extends Model
         'customer_email',
         'order_locale',
         'note',
+        'coupon_code',
+        'coupon_discount',
+        'points_used',
+        'points_earned',
         'cancel_reason_options',
         'cancel_reason_other',
         'subtotal',
@@ -36,6 +43,9 @@ class Order extends Model
 
     protected $casts = [
         'cancel_reason_options' => 'array',
+        'coupon_discount' => 'integer',
+        'points_used' => 'integer',
+        'points_earned' => 'integer',
     ];
 
     public function store() {
@@ -46,6 +56,14 @@ class Order extends Model
         return $this->belongsTo(DiningTable::class, 'dining_table_id');
     }
 
+    public function member() {
+        return $this->belongsTo(Member::class);
+    }
+
+    public function coupon() {
+        return $this->belongsTo(Coupon::class);
+    }
+
     public function items() {
         return $this->hasMany(OrderItem::class);
     }
@@ -53,6 +71,16 @@ class Order extends Model
     public function getRouteKeyName()
     {
         return 'uuid';
+    }
+
+    public function getCustomerPhoneAttribute($value): ?string
+    {
+        return PhoneFormatter::format($value);
+    }
+
+    public function setCustomerPhoneAttribute($value): void
+    {
+        $this->attributes['customer_phone'] = PhoneFormatter::digitsOnly(is_string($value) ? $value : null);
     }
 
     protected static function booted()

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use App\Http\Controllers\Admin\StoreManagementController as AdminStoreController;
 use App\Http\Controllers\Admin\UserSubscriptionController;
@@ -14,6 +14,7 @@ use App\Http\Controllers\Customer\TakeoutOrderingController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Merchant\FinancialReportController;
+use App\Http\Controllers\Merchant\LoyaltyController;
 use App\Http\Controllers\Merchant\SubscriptionController as MerchantSubscriptionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StoreController;
@@ -54,7 +55,7 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin,chef'])->prefix('adm
     Route::get('stores/{store}/kitchen', [KitchenController::class, 'index'])
         ->name('stores.kitchen')
         ->missing(function () {
-            return redirect()->route('dashboard')->with('error', '店家不存在或已刪除。');
+            return redirect()->route('dashboard')->with('error', 'Store not found.');
         });
 
     Route::get('stores/{store}/kitchen/orders', [KitchenController::class, 'orders'])
@@ -64,7 +65,7 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin,chef'])->prefix('adm
                 return response()->json(['ok' => false, 'message' => 'Store not found'], 404);
             }
 
-            return redirect()->route('dashboard')->with('error', '店家不存在或已刪除。');
+            return redirect()->route('dashboard')->with('error', 'Store not found.');
         });
 
     Route::patch('stores/{store}/kitchen/orders/{order:id}/status', [KitchenController::class, 'updateStatus'])
@@ -74,8 +75,9 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin,chef'])->prefix('adm
                 return response()->json(['ok' => false, 'message' => 'Store not found'], 404);
             }
 
-            return redirect()->route('dashboard')->with('error', '店家不存在或已刪除。');
+            return redirect()->route('dashboard')->with('error', 'Store not found.');
         });
+
 });
 
 Route::middleware(['auth', 'verified', 'role:merchant,admin,cashier'])->prefix('admin')->name('admin.')->group(function () {
@@ -83,7 +85,7 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin,cashier'])->prefix('
     Route::get('stores/{store}/cashier', [CashierController::class, 'index'])
         ->name('stores.cashier')
         ->missing(function () {
-            return redirect()->route('dashboard')->with('error', '店家不存在或已刪除。');
+            return redirect()->route('dashboard')->with('error', 'Store not found.');
         });
 
     Route::get('stores/{store}/cashier/orders', [CashierController::class, 'orders'])
@@ -93,7 +95,7 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin,cashier'])->prefix('
                 return response()->json(['ok' => false, 'message' => 'Store not found'], 404);
             }
 
-            return redirect()->route('dashboard')->with('error', '店家不存在或已刪除。');
+            return redirect()->route('dashboard')->with('error', 'Store not found.');
         });
 
     Route::patch('stores/{store}/cashier/orders/{order:id}/status', [CashierController::class, 'updateStatus'])
@@ -103,7 +105,7 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin,cashier'])->prefix('
                 return response()->json(['ok' => false, 'message' => 'Store not found'], 404);
             }
 
-            return redirect()->route('dashboard')->with('error', '店家不存在或已刪除。');
+            return redirect()->route('dashboard')->with('error', 'Store not found.');
         });
 });
 
@@ -111,16 +113,22 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin,chef,cashier'])->pre
     Route::get('stores/{store}/boards', [AllBoardsController::class, 'index'])
         ->name('stores.boards')
         ->missing(function () {
-            return redirect()->route('dashboard')->with('error', '店家不存在或已刪除。');
+            return redirect()->route('dashboard')->with('error', 'Store not found.');
         });
 });
 
 Route::middleware(['auth', 'verified', 'role:merchant'])->prefix('merchant')->name('merchant.')->group(function () {
     Route::get('/subscription', [MerchantSubscriptionController::class, 'index'])->name('subscription.index');
     Route::post('/subscription', [MerchantSubscriptionController::class, 'subscribe'])->name('subscription.subscribe');
+    Route::post('/subscription/trial', [MerchantSubscriptionController::class, 'startTrial'])->name('subscription.trial');
     Route::get('/subscription/success', [MerchantSubscriptionController::class, 'success'])->name('subscription.success');
     Route::get('/reports/financial', [FinancialReportController::class, 'index'])->name('reports.financial');
     Route::post('/reports/financial/monthly-target', [FinancialReportController::class, 'updateMonthlyTarget'])->name('reports.financial.monthly-target');
+    Route::get('/loyalty', [LoyaltyController::class, 'index'])->name('loyalty.index');
+    Route::post('/loyalty/settings', [LoyaltyController::class, 'updateSettings'])->name('loyalty.settings.update');
+    Route::post('/loyalty/coupons', [LoyaltyController::class, 'storeCoupon'])->name('loyalty.coupons.store');
+    Route::put('/loyalty/coupons/{coupon}', [LoyaltyController::class, 'updateCoupon'])->name('loyalty.coupons.update');
+    Route::patch('/loyalty/coupons/{coupon}/toggle', [LoyaltyController::class, 'toggleCoupon'])->name('loyalty.coupons.toggle');
 });
 
 Route::post('/ecpay/subscription/notify', [MerchantSubscriptionController::class, 'notify'])->name('ecpay.subscription.notify');
@@ -247,3 +255,5 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__ . '/auth.php';
+
+

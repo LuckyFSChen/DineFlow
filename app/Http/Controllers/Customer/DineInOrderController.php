@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Models\DiningTable;
+use App\Models\Member;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Store;
+use App\Services\LoyaltyService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -104,9 +106,10 @@ class DineInOrderController extends Controller
         $total = collect($cart)->sum('subtotal');
         $orderingAvailable = $store->isOrderingAvailable();
         $rememberedCustomerInfo = session()->get(self::CUSTOMER_PROFILE_SESSION_KEY, []);
+        $member = $this->findMemberByCustomerInfo($store, $rememberedCustomerInfo);
         $orderHistory = $this->getDineInOrderHistory($store, $table);
 
-        return view('customer.dine-in.cart', compact('store', 'table', 'cart', 'total', 'orderingAvailable', 'rememberedCustomerInfo', 'orderHistory'));
+        return view('customer.dine-in.cart', compact('store', 'table', 'cart', 'total', 'orderingAvailable', 'rememberedCustomerInfo', 'orderHistory', 'member'));
     }
 
     public function submit(Request $request, Store $store, DiningTable $table)
@@ -124,6 +127,7 @@ class DineInOrderController extends Controller
             'customer_email' => ['nullable', 'email', 'max:255'],
             'customer_phone' => $this->customerPhoneValidationRules($store),
             'note' => ['nullable', 'string'],
+            'coupon_code' => ['nullable', 'string', 'max:64'],
             'remember_customer_info' => ['nullable', 'boolean'],
         ]);
 
@@ -150,11 +154,39 @@ class DineInOrderController extends Controller
 
         $total = collect($cart)->sum('subtotal');
 
-        $order = DB::transaction(function () use ($store, $table, $validated, $cart, $total) {
+        $loyaltyService = app(LoyaltyService::class);
+
+        $order = DB::transaction(function () use ($store, $table, $validated, $cart, $total, $loyaltyService) {
             $customerName = $this->normalizeCustomerName($validated['customer_name'] ?? null);
             $customerEmail = $this->normalizeOptionalText($validated['customer_email'] ?? null);
             $customerPhone = $this->normalizeOptionalText($validated['customer_phone'] ?? null);
             $customerNote = $this->normalizeOptionalText($validated['note'] ?? null);
+
+            $member = $loyaltyService->resolveMember(
+                $store,
+                $customerName,
+                $customerEmail,
+                $customerPhone
+            );
+
+            $couponResult = $loyaltyService->resolveCoupon(
+                $store,
+                $validated['coupon_code'] ?? null,
+                (int) $total,
+                $member
+            );
+
+            if ($couponResult['error'] !== null) {
+                throw ValidationException::withMessages([
+                    'coupon_code' => (string) $couponResult['error'],
+                ]);
+            }
+
+            $coupon = $couponResult['coupon'];
+            $couponDiscount = (int) $couponResult['discount'];
+            $pointsUsed = (int) $couponResult['points_cost'];
+            $finalTotal = max((int) $total - $couponDiscount, 0);
+            $pointsEarned = $store->calculateEarnedPoints($finalTotal);
 
             $order = $this->findAppendableDineInOrder(
                 $store,
@@ -165,6 +197,8 @@ class DineInOrderController extends Controller
             if (! $order) {
                 $order = Order::create([
                     'store_id' => $store->id,
+                    'member_id' => $member?->id,
+                    'coupon_id' => $coupon?->id,
                     'dining_table_id' => $table->id,
                     'order_type' => 'dine_in',
                     'cart_token' => null,
@@ -175,6 +209,10 @@ class DineInOrderController extends Controller
                     'customer_email' => $customerEmail,
                     'customer_phone' => $customerPhone,
                     'note' => $customerNote,
+                    'coupon_code' => $coupon?->code,
+                    'coupon_discount' => 0,
+                    'points_used' => 0,
+                    'points_earned' => 0,
                     'subtotal' => 0,
                     'total' => 0,
                 ]);
@@ -188,11 +226,22 @@ class DineInOrderController extends Controller
                     'qty' => $item['qty'],
                     'subtotal' => $item['subtotal'],
                     'note' => $this->composeOrderItemNote($item['option_label'] ?? null, $item['item_note'] ?? null),
+                    'item_status' => 'preparing',
                 ]);
             }
 
             $order->subtotal = (int) $order->subtotal + (int) $total;
-            $order->total = (int) $order->total + (int) $total;
+            $order->total = (int) $order->total + (int) $finalTotal;
+            $order->coupon_discount = (int) $order->coupon_discount + $couponDiscount;
+            $order->points_used = (int) $order->points_used + $pointsUsed;
+            $order->points_earned = (int) $order->points_earned + $pointsEarned;
+            if ($order->member_id === null && $member) {
+                $order->member_id = $member->id;
+            }
+            if ($coupon) {
+                $order->coupon_id = $coupon->id;
+                $order->coupon_code = $coupon->code;
+            }
             if ($order->customer_name === null && $customerName !== null) {
                 $order->customer_name = $customerName;
             }
@@ -206,6 +255,18 @@ class DineInOrderController extends Controller
                 $order->note = $customerNote;
             }
             $order->save();
+
+            if ($coupon) {
+                $coupon->increment('used_count');
+            }
+
+            $loyaltyService->finalizeOrderLoyalty(
+                $order,
+                $member,
+                $coupon,
+                $pointsUsed,
+                $pointsEarned
+            );
 
             return $order;
         });
@@ -223,7 +284,7 @@ class DineInOrderController extends Controller
     {
         abort_unless($order->store_id === $store->id, 404);
 
-        $order->load('items', 'store', 'table');
+        $order->load('items', 'store', 'table', 'member');
 
         return view('customer.success', compact('order', 'store'));
     }
@@ -622,5 +683,28 @@ class DineInOrderController extends Controller
             ->map(fn ($uuid) => $orderMap->get($uuid))
             ->filter()
             ->values();
+    }
+
+    private function findMemberByCustomerInfo(Store $store, array $customerInfo): ?Member
+    {
+        $email = trim((string) ($customerInfo['customer_email'] ?? ''));
+        $phone = trim((string) ($customerInfo['customer_phone'] ?? ''));
+
+        if ($email === '' && $phone === '') {
+            return null;
+        }
+
+        return Member::query()
+            ->where('store_id', $store->id)
+            ->where(function ($query) use ($email, $phone) {
+                if ($email !== '') {
+                    $query->orWhere('email', $email);
+                }
+
+                if ($phone !== '') {
+                    $query->orWhere('phone', $phone);
+                }
+            })
+            ->first();
     }
 }

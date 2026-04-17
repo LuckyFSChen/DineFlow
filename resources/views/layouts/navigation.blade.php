@@ -94,6 +94,10 @@
                         <x-nav-link :href="route('merchant.reports.financial')" :active="request()->routeIs('merchant.reports.*')">
                             {{ __('nav.financial_report') }}
                         </x-nav-link>
+
+                        <x-nav-link :href="route('merchant.loyalty.index')" :active="request()->routeIs('merchant.loyalty.*')">
+                            {{ __('nav.loyalty') }}
+                        </x-nav-link>
                     @endif
 
                     @if(Auth::user()?->isAdmin() || Auth::user()?->hasActiveSubscription())
@@ -224,6 +228,10 @@
 
                 <x-responsive-nav-link :href="route('merchant.reports.financial')" :active="request()->routeIs('merchant.reports.*')">
                     {{ __('nav.financial_report') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('merchant.loyalty.index')" :active="request()->routeIs('merchant.loyalty.*')">
+                    {{ __('nav.loyalty') }}
                 </x-responsive-nav-link>
             @endif
 

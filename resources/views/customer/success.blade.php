@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
@@ -15,12 +15,15 @@
             'usd' => 'USD',
             default => 'NT$',
         };
-        $prepTimeMinutes = (is_numeric($store->prep_time_minutes ?? null) && (int) $store->prep_time_minutes > 0)
-            ? (int) $store->prep_time_minutes
-            : null;
+        $configuredPrepTimeMinutes = $order->store->prep_time_minutes ?? $store->prep_time_minutes ?? null;
+        $defaultPrepTimeMinutes = max(1, (int) config('dineflow.default_prep_time_minutes', 30));
+        $prepTimeMinutes = (is_numeric($configuredPrepTimeMinutes) && (int) $configuredPrepTimeMinutes > 0)
+            ? (int) $configuredPrepTimeMinutes
+            : $defaultPrepTimeMinutes;
         $estimatedReadyAt = ($prepTimeMinutes !== null && $order->created_at !== null)
             ? $order->created_at->copy()->setTimezone($store->businessTimezone())->addMinutes($prepTimeMinutes)
             : null;
+        $estimatedReadyAtUnixMs = $estimatedReadyAt?->valueOf();
     @endphp
     <div class="min-h-screen">
         <main class="mx-auto max-w-3xl px-4 py-8 sm:py-12">
@@ -29,7 +32,7 @@
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <div class="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-2xl">
-                            ✓
+                            &#10003;
                         </div>
                         <h1 class="text-2xl font-bold tracking-tight text-gray-900">
                             {{ __('customer.order_success_title') }}
@@ -82,11 +85,35 @@
                     </div>
 
                     <div class="rounded-2xl bg-orange-50 px-4 py-4">
-                        <p class="text-sm text-gray-500">{{ __('customer.estimated_ready_time') }}</p>
+                        <p class="text-sm text-gray-500">{{ __('customer.coupon_discount') }}</p>
                         <p class="mt-1 font-semibold text-gray-900">
-                            @if($estimatedReadyAt !== null && $prepTimeMinutes !== null)
-                                {{ __('customer.estimated_ready_time_with_minutes', ['time' => $estimatedReadyAt->format('H:i'), 'minutes' => $prepTimeMinutes]) }}
-                            @elseif($prepTimeMinutes !== null)
+                            @if((int) $order->coupon_discount > 0)
+                                -{{ $currencySymbol }} {{ number_format((int) $order->coupon_discount) }}
+                                @if($order->coupon_code)
+                                    <span class="text-xs text-gray-500">({{ $order->coupon_code }})</span>
+                                @endif
+                            @else
+                                --
+                            @endif
+                        </p>
+                    </div>
+
+                    <div class="rounded-2xl bg-orange-50 px-4 py-4">
+                        <p class="text-sm text-gray-500">{{ __('customer.points_change') }}</p>
+                        <p class="mt-1 font-semibold text-gray-900">
+                            -{{ number_format((int) $order->points_used) }} / +{{ number_format((int) $order->points_earned) }} {{ __('customer.points_unit') }}
+                        </p>
+                        @if($order->member)
+                            <p class="mt-1 text-xs text-gray-500">
+                                {{ __('customer.current_balance', ['balance' => number_format((int) $order->member->points_balance), 'unit' => __('customer.points_unit')]) }}
+                            </p>
+                        @endif
+                    </div>
+
+                    <div class="rounded-2xl bg-orange-50 px-4 py-4">
+                        <p class="text-sm text-gray-500">{{ __('customer.estimated_ready_time') }}</p>
+                        <p id="customer-estimated-ready-label" class="mt-1 font-semibold text-gray-900">
+                            @if($prepTimeMinutes !== null)
                                 {{ __('customer.estimated_prep_time_only', ['minutes' => $prepTimeMinutes]) }}
                             @else
                                 {{ __('customer.estimated_ready_time_unknown') }}
@@ -180,10 +207,16 @@
         const cancelReasonBox = document.getElementById('customer-cancel-reason-box');
         const cancelReasonList = document.getElementById('customer-cancel-reason-list');
         const cancelReasonEmpty = document.getElementById('customer-cancel-reason-empty');
+        const estimatedReadyLabel = document.getElementById('customer-estimated-ready-label');
         const toast = document.getElementById('order-status-toast');
         const endpoint = @json(route('customer.order.status', ['store' => $store, 'order' => $order]));
         const paidLabel = @json(__('customer.payment_status_paid'));
         const unpaidLabel = @json(__('customer.payment_status_unpaid'));
+        const estimatedReadyAtUnixMs = @json($estimatedReadyAtUnixMs);
+        const prepTimeMinutes = @json($prepTimeMinutes);
+        const estimatedPrepOnlyTemplate = @json(__('customer.estimated_prep_time_only', ['minutes' => '__minutes__']));
+        const estimatedReadyUnknown = @json(__('customer.estimated_ready_time_unknown'));
+        const estimatedReadyNow = @json('已可取餐');
 
         if (!statusLabel || !paymentLabel || !endpoint) {
             return;
@@ -194,6 +227,47 @@
         let audioContext = null;
 
         const isCancelledStatus = (status) => ['cancel', 'cancelled', 'canceled'].includes(String(status || '').toLowerCase());
+        const isFinalStatus = (status) => ['complete', 'completed', 'ready', 'ready_for_pickup', 'picked_up', 'collected', 'served', 'cancel', 'cancelled', 'canceled'].includes(String(status || '').toLowerCase());
+        const isCompletedStatus = (status) => ['complete', 'completed', 'ready', 'ready_for_pickup', 'picked_up', 'collected', 'served'].includes(String(status || '').toLowerCase());
+
+        const displayMinutesByRule = (remainingMinutes) => {
+            if (remainingMinutes > 5) {
+                return Math.ceil(remainingMinutes / 5) * 5;
+            }
+
+            return remainingMinutes;
+        };
+
+        const renderEstimatedReady = (status) => {
+            if (!estimatedReadyLabel) {
+                return;
+            }
+
+            if (isCancelledStatus(status)) {
+                estimatedReadyLabel.textContent = estimatedReadyUnknown;
+                return;
+            }
+
+            if (isCompletedStatus(status)) {
+                estimatedReadyLabel.textContent = estimatedReadyNow;
+                return;
+            }
+
+            if (!estimatedReadyAtUnixMs || !prepTimeMinutes) {
+                estimatedReadyLabel.textContent = estimatedReadyUnknown;
+                return;
+            }
+
+            const nowMs = Date.now();
+            const remainingMinutes = Math.max(0, Math.ceil((Number(estimatedReadyAtUnixMs) - nowMs) / 60000));
+            if (remainingMinutes <= 0) {
+                estimatedReadyLabel.textContent = estimatedReadyNow;
+                return;
+            }
+
+            const displayMinutes = displayMinutesByRule(remainingMinutes);
+            estimatedReadyLabel.textContent = estimatedPrepOnlyTemplate.replace('__minutes__', String(displayMinutes));
+        };
 
         const renderCancelReasons = (status, reasons) => {
             if (!cancelReasonBox || !cancelReasonList || !cancelReasonEmpty) {
@@ -230,6 +304,7 @@
         };
 
         renderCancelReasons(lastStatus, @json($cancelReasons));
+        renderEstimatedReady(lastStatus);
 
         const initAudio = () => {
             const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -312,6 +387,7 @@
                 statusLabel.textContent = data.customer_status_label || statusLabel.textContent;
                 paymentLabel.textContent = nextPaymentStatus === 'paid' ? paidLabel : unpaidLabel;
                 renderCancelReasons(nextStatus, data.cancel_reasons || []);
+                renderEstimatedReady(nextStatus);
 
                 if (changed) {
                     playSound();
@@ -324,6 +400,12 @@
         };
 
         initAudio();
+        const estimatedTimer = setInterval(() => {
+            renderEstimatedReady(lastStatus);
+            if (isFinalStatus(lastStatus)) {
+                clearInterval(estimatedTimer);
+            }
+        }, 30000);
         setInterval(poll, 10000);
     })();
     </script>

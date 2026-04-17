@@ -140,6 +140,7 @@ class TakeoutController extends Controller
                     'qty' => $item['qty'],
                     'subtotal' => $item['subtotal'],
                     'note' => null,
+                    'item_status' => 'preparing',
                 ]);
             }
 
