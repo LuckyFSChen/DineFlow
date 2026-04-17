@@ -282,10 +282,10 @@
                                                 : 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=900&q=80';
                                         @endphp
                                         <div class="group overflow-hidden rounded-[1.75rem] border border-brand-soft/60 bg-white shadow-[0_18px_44px_rgba(90,30,14,0.1)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(90,30,14,0.16)]">
-                                            <div class="relative overflow-hidden">
-                                                <img src="{{ $productImage }}" alt="{{ $product->name }}" class="h-48 w-full object-cover transition duration-500 group-hover:scale-105">
+                                            <div class="relative overflow-hidden rounded-t-[1.75rem]">
+                                                <img src="{{ $productImage }}" alt="{{ $product->name }}" class="h-48 w-full rounded-t-[1.75rem] object-cover transition duration-500 group-hover:scale-105">
                                                 <div class="absolute inset-0 bg-gradient-to-t from-brand-dark/85 via-brand-dark/20 to-transparent"></div>
-                                                <div class="absolute left-4 top-4 inline-flex rounded-full border border-white/80 bg-white/50 px-3 py-1 text-xs font-semibold text-white backdrop-blur">{{ $category->name }}</div>
+                                                <div class="absolute left-4 top-4 inline-flex rounded-full border border-black/80 bg-black/50 px-3 py-1 text-xs font-semibold text-white backdrop-blur">{{ $category->name }}</div>
                                                 <div class="absolute bottom-4 right-4 rounded-full bg-brand-highlight px-3 py-1.5 text-sm font-bold text-brand-dark shadow-lg">{{ $currencySymbol }} {{ number_format($product->price) }}</div>
                                             </div>
 

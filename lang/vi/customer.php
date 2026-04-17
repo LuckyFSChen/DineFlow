@@ -119,6 +119,7 @@ return [
     'error_cart_empty'             => 'Giỏ hàng đang trống.',
     'error_option_payload_invalid' => 'Định dạng dữ liệu tùy chọn không hợp lệ.',
     'coupon_discount'              => 'Giảm giá coupon',
+    'estimated_payable'            => 'Tổng tạm phải trả',
     'estimated_ready_time'         => 'Thời gian dự kiến sẵn sàng',
     'estimated_prep_time_only'     => 'Khoảng :minutes phút',
     'estimated_ready_time_unknown' => 'Chưa có thời gian dự kiến',

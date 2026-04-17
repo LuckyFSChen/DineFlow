@@ -172,7 +172,7 @@
 
                                 <div class="border-t border-brand-soft/60 pt-4">
                                     <div class="flex items-center justify-between text-lg font-bold text-brand-dark">
-                                        <span>預估應付</span>
+                                        <span>{{ __('customer.estimated_payable') }}</span>
                                         <span>{{ $currencySymbol }} {{ number_format($total) }}</span>
                                     </div>
                                 </div>

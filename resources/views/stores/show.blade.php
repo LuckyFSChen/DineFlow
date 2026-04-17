@@ -227,7 +227,7 @@
                                     class="h-full w-full object-cover"
                                 >
                                 @if($product->category)
-                                    <div class="absolute left-4 top-4 inline-flex rounded-full border border-white/80 bg-white/50 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
+                                    <div class="absolute left-4 top-4 inline-flex rounded-full border border-black/80 bg-black/50 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
                                         {{ $product->category->name }}
                                     </div>
                                 @endif

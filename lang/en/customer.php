@@ -119,6 +119,7 @@ return [
     'error_cart_empty'             => 'Your cart is empty.',
     'error_option_payload_invalid' => 'Invalid option data format.',
     'coupon_discount'              => 'Coupon Discount',
+    'estimated_payable'            => 'Estimated Amount Due',
     'estimated_ready_time'         => 'Estimated Ready Time',
     'estimated_prep_time_only'     => 'About :minutes minutes',
     'estimated_ready_time_unknown' => 'Estimated time not available yet',

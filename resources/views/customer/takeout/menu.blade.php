@@ -127,9 +127,9 @@
                                 @foreach($category->products as $product)
                                     <div class="group overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
                                         {{-- Image --}}
-                                        <div class="relative h-48 w-full overflow-hidden">
+                                        <div class="relative h-48 w-full overflow-hidden rounded-t-3xl">
                                             <img src="{{ $product->image ?? 'https://source.unsplash.com/400x300/?food' }}"
-                                                class="h-full w-full object-cover transition duration-500 group-hover:scale-110">
+                                                class="h-full w-full rounded-t-3xl object-cover transition duration-500 group-hover:scale-110">
 
                                             {{-- overlay --}}
                                             <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>

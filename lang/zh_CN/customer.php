@@ -119,6 +119,7 @@ return [
     'error_cart_empty'             => '购物车是空的。',
     'error_option_payload_invalid' => '选配资料格式错误。',
     'coupon_discount'              => '优惠券折抵',
+    'estimated_payable'            => '预计应付',
     'estimated_ready_time'         => '预计可取餐时间',
     'estimated_prep_time_only'     => '约 :minutes 分钟可完成',
     'estimated_ready_time_unknown' => '尚未提供预计时间',

@@ -119,6 +119,7 @@ return [
     'error_cart_empty'             => '購物車是空的。',
     'error_option_payload_invalid' => '選配資料格式錯誤。',
     'coupon_discount'              => '優惠券折抵',
+    'estimated_payable'            => '預估應付',
     'estimated_ready_time'         => '預估可取餐時間',
     'estimated_prep_time_only'     => '約 :minutes 分鐘可完成',
     'estimated_ready_time_unknown' => '尚未提供預估時間',
