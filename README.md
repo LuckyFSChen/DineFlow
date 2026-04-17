@@ -138,6 +138,22 @@ php artisan optimize:clear
 php artisan route:list
 ```
 
+## Ubuntu 一鍵部署腳本
+
+已提供腳本 [scripts/ubuntu-deploy.sh](scripts/ubuntu-deploy.sh)，會依序執行：
+
+1. `php artisan migrate`
+2. `npm run build`
+3. `php artisan optimize`
+4. `php artisan queue:restart`
+
+使用方式：
+
+```bash
+chmod +x scripts/ubuntu-deploy.sh
+./scripts/ubuntu-deploy.sh
+```
+
 ## Production：重設 storage 連結
 
 如果 production 上傳圖檔偶發讀不到，常見原因是 `public/storage` 仍指到舊版 release 路徑。可在每次部署後執行以下指令重建連結。
