@@ -112,7 +112,23 @@ class StoreManagementController extends Controller
             }
         }
 
-        $store = Store::create($data);
+        $maxAttempts = 10;
+        $attempt = 0;
+        do {
+            try {
+                $store = Store::create($data);
+                break;
+            } catch (\Illuminate\Database\QueryException $e) {
+                if (str_contains($e->getMessage(), 'store_slug_unique') && $attempt < $maxAttempts) {
+                    $baseSlug = Str::slug($data['name']) ?: 'store';
+                    $i = $attempt + 1;
+                    $data['slug'] = $baseSlug . '-' . $i;
+                    $attempt++;
+                } else {
+                    throw $e;
+                }
+            }
+        } while ($attempt < $maxAttempts);
 
         if ($request->hasFile('banner_image')) {
             $file = $request->file('banner_image');

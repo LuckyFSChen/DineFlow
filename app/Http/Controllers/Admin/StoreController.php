@@ -44,32 +44,45 @@ class StoreController extends Controller
         $data = $this->validatedData($request);
         $data = $this->fillCoordinatesFromAddress($data);
 
-        if (empty($data['slug'])) {
-            $baseSlug = Str::slug($data['name']);
-            $slug = $baseSlug;
-            $i = 1;
-            while (Store::where('slug', $slug)->exists()) {
-                $slug = $baseSlug . '-' . $i;
-                $i++;
+        $maxAttempts = 10;
+        $attempt = 0;
+        do {
+            try {
+                if (empty($data['slug'])) {
+                    $baseSlug = Str::slug($data['name']);
+                    $slug = $baseSlug;
+                    $i = 1;
+                    while (Store::where('slug', $slug)->exists()) {
+                        $slug = $baseSlug . '-' . $i;
+                        $i++;
+                    }
+                    $data['slug'] = $slug;
+                }
+                $data['is_active'] = $request->boolean('is_active');
+                $store = Store::create([
+                    'name' => $data['name'],
+                    'slug' => $data['slug'],
+                    'description' => $data['description'] ?? null,
+                    'address' => $data['address'] ?? null,
+                    'latitude' => $data['latitude'] ?? null,
+                    'longitude' => $data['longitude'] ?? null,
+                    'timezone' => $data['timezone'] ?? null,
+                    'phone' => $data['phone'] ?? null,
+                    'is_active' => $data['is_active'],
+                    'takeout_qr_enabled' => true,
+                ]);
+                break;
+            } catch (\Illuminate\Database\QueryException $e) {
+                if (str_contains($e->getMessage(), 'store_slug_unique') && $attempt < $maxAttempts) {
+                    $baseSlug = Str::slug($data['name']);
+                    $i = $attempt + 1;
+                    $data['slug'] = $baseSlug . '-' . $i;
+                    $attempt++;
+                } else {
+                    throw $e;
+                }
             }
-            $data['slug'] = $slug;
-        }
-
-        $data['is_active'] = $request->boolean('is_active');
-
-        // 先建立店家，拿到 id 後才能決定圖片路徑
-        $store = Store::create([
-            'name' => $data['name'],
-            'slug' => $data['slug'],
-            'description' => $data['description'] ?? null,
-            'address' => $data['address'] ?? null,
-            'latitude' => $data['latitude'] ?? null,
-            'longitude' => $data['longitude'] ?? null,
-            'timezone' => $data['timezone'] ?? null,
-            'phone' => $data['phone'] ?? null,
-            'is_active' => $data['is_active'],
-            'takeout_qr_enabled' => true,
-        ]);
+        } while ($attempt < $maxAttempts);
 
         if ($request->hasFile('banner_image')) {
             $file = $request->file('banner_image');
