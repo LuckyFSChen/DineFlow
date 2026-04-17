@@ -180,7 +180,10 @@ class SubscriptionController extends Controller
         }
 
         $normalized = $this->normalizeEcpayCallbackPayload($request);
-        if ($normalized['is_check_mac_required'] && ! EcpayService::verifyCheckMacValue($normalized['payload'], $hashKey, $hashIv)) {
+        if (
+            ! $normalized['is_check_mac_required']
+            || ! EcpayService::verifyCheckMacValue($normalized['payload'], $hashKey, $hashIv)
+        ) {
             return response('0|CHECKMAC_INVALID', 400);
         }
 
@@ -205,7 +208,18 @@ class SubscriptionController extends Controller
     public function result(Request $request): View
     {
         $normalized = $this->normalizeEcpayCallbackPayload($request);
-        $isPaid = $this->applyPaymentResult($normalized['payload']);
+        $hashKey = (string) config('services.ecpay.hash_key');
+        $hashIv = (string) config('services.ecpay.hash_iv');
+
+        $isPaid = false;
+        if (
+            $hashKey !== ''
+            && $hashIv !== ''
+            && $normalized['is_check_mac_required']
+            && EcpayService::verifyCheckMacValue($normalized['payload'], $hashKey, $hashIv)
+        ) {
+            $isPaid = $this->applyPaymentResult($normalized['payload']);
+        }
 
         return view('merchant.subscription.result', [
             'isPaid' => $isPaid,
@@ -247,14 +261,29 @@ class SubscriptionController extends Controller
             ->where('ecpay_merchant_trade_no', $merchantTradeNo)
             ->first();
 
+        if (! $existingPayment) {
+            return false;
+        }
+
         $customField = Arr::get($data, 'CustomField');
         $customFieldData = is_string($customField) ? json_decode($customField, true) : [];
         if (! is_array($customFieldData)) {
             $customFieldData = [];
         }
 
-        $userId = (int) (Arr::get($data, 'CustomField1') ?: Arr::get($customFieldData, 'user_id') ?: $existingPayment?->user_id ?: 0);
-        $planId = (int) (Arr::get($data, 'CustomField2') ?: Arr::get($customFieldData, 'plan_id') ?: $existingPayment?->subscription_plan_id ?: 0);
+        $callbackUserId = (int) (Arr::get($data, 'CustomField1') ?: Arr::get($customFieldData, 'user_id') ?: 0);
+        $callbackPlanId = (int) (Arr::get($data, 'CustomField2') ?: Arr::get($customFieldData, 'plan_id') ?: 0);
+
+        if ($callbackUserId !== 0 && $callbackUserId !== (int) $existingPayment->user_id) {
+            return false;
+        }
+
+        if ($callbackPlanId !== 0 && $callbackPlanId !== (int) $existingPayment->subscription_plan_id) {
+            return false;
+        }
+
+        $userId = (int) $existingPayment->user_id;
+        $planId = (int) $existingPayment->subscription_plan_id;
 
         $user = User::query()->find($userId);
         $plan = SubscriptionPlan::query()->find($planId);

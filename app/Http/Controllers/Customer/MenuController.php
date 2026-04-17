@@ -13,13 +13,30 @@ class MenuController extends Controller
     {
         abort_unless($table->store_id === $store->id, 404);
 
-        $table->load([
-            'store.categories' => fn ($query) => $query->where('is_active', true)->orderBy('sort'),
-            'store.products' => fn ($query) => $query->where('is_active', true)->where('is_sold_out', false),
-        ]);
+        $categories = $store->categories()
+            ->select(['id', 'store_id', 'name', 'sort'])
+            ->where('is_active', true)
+            ->orderBy('sort')
+            ->get();
 
-        $categories = $store->categories;
-        $products = $store->products->groupBy('category_id');
+        $products = $store->products()
+            ->select([
+                'id',
+                'store_id',
+                'category_id',
+                'name',
+                'description',
+                'price',
+                'image',
+                'option_groups',
+                'allow_item_note',
+                'sort',
+            ])
+            ->where('is_active', true)
+            ->where('is_sold_out', false)
+            ->orderBy('sort')
+            ->get()
+            ->groupBy('category_id');
 
         return view('customer.menu', compact('store', 'table', 'categories', 'products'));
     }

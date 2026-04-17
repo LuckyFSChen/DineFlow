@@ -40,6 +40,20 @@ class StoreManagementController extends Controller
         }
 
         $stores = Store::query()
+            ->select([
+                'id',
+                'user_id',
+                'name',
+                'slug',
+                'description',
+                'address',
+                'phone',
+                'currency',
+                'country_code',
+                'is_active',
+                'banner_image',
+                'created_at',
+            ])
             ->with(['owner:id,name,email'])
             ->when($user && $user->isMerchant(), function ($query) use ($user) {
                 $query->where('user_id', $user->id);
@@ -397,10 +411,23 @@ class StoreManagementController extends Controller
 
     protected function fillCoordinatesFromAddress(array $data, ?Store $existingStore = null): array
     {
+        $hasManualCoordinates = ($data['latitude'] ?? null) !== null && ($data['longitude'] ?? null) !== null;
+        if ($hasManualCoordinates) {
+            return $data;
+        }
+
         $address = trim((string) ($data['address'] ?? ''));
         if ($address === '') {
             $data['latitude'] = null;
             $data['longitude'] = null;
+
+            return $data;
+        }
+
+        if ($existingStore && trim((string) $existingStore->address) === $address) {
+            $data['latitude'] = $existingStore->latitude;
+            $data['longitude'] = $existingStore->longitude;
+
             return $data;
         }
 
@@ -410,6 +437,7 @@ class StoreManagementController extends Controller
                 $data['latitude'] = $existingStore->latitude;
                 $data['longitude'] = $existingStore->longitude;
             }
+
             return $data;
         }
 

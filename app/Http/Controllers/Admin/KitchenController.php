@@ -128,15 +128,21 @@ class KitchenController extends Controller
         $item->completed_at = $status === 'completed' ? now() : null;
         $item->save();
 
-        $hasPendingItems = $order->items()
-            ->where(function ($query) {
-                $query->whereNull('item_status')
-                    ->orWhere('item_status', '!=', 'completed');
-            })
-            ->exists();
+        if ($status === 'completed') {
+            $hasOtherPendingItems = $order->items()
+                ->whereKeyNot($item->id)
+                ->where(function ($query) {
+                    $query->whereNull('item_status')
+                        ->orWhere('item_status', '!=', 'completed');
+                })
+                ->exists();
 
-        if (! $hasPendingItems && ! in_array(strtolower((string) $order->status), self::COMPLETED_STATUSES, true)) {
-            $order->status = 'completed';
+            if (! $hasOtherPendingItems && ! in_array(strtolower((string) $order->status), self::COMPLETED_STATUSES, true)) {
+                $order->status = 'completed';
+                $order->save();
+            }
+        } elseif (in_array(strtolower((string) $order->status), self::COMPLETED_STATUSES, true)) {
+            $order->status = 'preparing';
             $order->save();
         }
 
@@ -177,7 +183,24 @@ class KitchenController extends Controller
     private function fetchActiveOrders(Store $store): \Illuminate\Database\Eloquent\Collection
     {
         // Kitchen board only shows orders currently being prepared
-        return Order::with(['items', 'table'])
+        return Order::query()
+            ->select([
+                'id',
+                'store_id',
+                'dining_table_id',
+                'order_no',
+                'order_locale',
+                'status',
+                'payment_status',
+                'order_type',
+                'note',
+                'customer_name',
+                'created_at',
+            ])
+            ->with([
+                'items:id,order_id,product_name,qty,note,item_status,completed_at',
+                'table:id,table_no',
+            ])
             ->where('store_id', $store->id)
             ->whereIn('status', self::PREPARING_STATUSES)
             ->orderBy('created_at', 'asc')

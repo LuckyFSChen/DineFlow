@@ -6,7 +6,7 @@
 
 <div class="backend-hero mb-8 overflow-hidden rounded-3xl border border-slate-700/60 bg-slate-900 shadow-2xl">
     <div class="relative">
-        <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_360px_at_0%_-10%,rgba(34,211,238,0.26),transparent_60%),radial-gradient(800px_320px_at_100%_0%,rgba(99,102,241,0.24),transparent_58%),linear-gradient(150deg,rgba(8,22,28,0.96),rgba(11,47,58,0.96))]"></div>
+        <div class="pointer-events-none absolute inset-0 bg-[linear-gradient(150deg,rgba(8,22,28,0.96),rgba(17,24,39,0.96))]"></div>
 
         <div class="relative px-5 py-5 md:px-7 md:py-6">
             <div class="flex flex-col gap-4 md:flex-row {{ $align === 'center' ? 'md:items-center' : 'md:items-start' }} md:justify-between">

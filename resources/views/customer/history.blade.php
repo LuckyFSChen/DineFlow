@@ -53,6 +53,12 @@
                         @endforeach
                     </div>
                 @endif
+
+                @if ($requiresBothIdentifiers ?? false)
+                    <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        {{ __('customer.order_history_requires_email_and_phone') }}
+                    </div>
+                @endif
             </section>
 
             <section class="mt-6 rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">

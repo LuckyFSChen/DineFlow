@@ -11,6 +11,14 @@ class Store extends Model
 {
     use SoftDeletes;
 
+    private static ?array $validTimezoneIdentifiers = null;
+
+    private ?string $resolvedBusinessTimezoneCache = null;
+
+    private ?array $normalizedWeeklyBusinessHoursCache = null;
+
+    private ?array $normalizedWeeklyBreakHoursCache = null;
+
     protected $fillable = [
         'user_id',
         'name',
@@ -143,12 +151,16 @@ class Store extends Model
 
     public function businessTimezone(): string
     {
-        $storeTimezone = (string) ($this->timezone ?? '');
-        if ($storeTimezone !== '' && in_array($storeTimezone, timezone_identifiers_list(), true)) {
-            return $storeTimezone;
+        if ($this->resolvedBusinessTimezoneCache !== null) {
+            return $this->resolvedBusinessTimezoneCache;
         }
 
-        return match (strtolower((string) $this->country_code)) {
+        $storeTimezone = (string) ($this->timezone ?? '');
+        if ($storeTimezone !== '' && isset(self::validTimezoneIdentifierMap()[$storeTimezone])) {
+            return $this->resolvedBusinessTimezoneCache = $storeTimezone;
+        }
+
+        return $this->resolvedBusinessTimezoneCache = match (strtolower((string) $this->country_code)) {
             'vn' => 'Asia/Ho_Chi_Minh',
             'cn' => 'Asia/Shanghai',
             'us' => 'America/New_York',
@@ -159,7 +171,15 @@ class Store extends Model
 
     public function isOrderingAvailable(?Carbon $dateTime = null): bool
     {
-        return $this->is_active && $this->isWithinBusinessHours($dateTime);
+        if (! $this->is_active) {
+            return false;
+        }
+
+        if ($this->owner && $this->owner->isMerchant() && ! $this->owner->hasActiveSubscription()) {
+            return false;
+        }
+
+        return $this->isWithinBusinessHours($dateTime);
     }
 
     public function businessHoursLabel(): string
@@ -204,6 +224,10 @@ class Store extends Model
             return __('home.status_closed');
         }
 
+        if ($this->owner && $this->owner->isMerchant() && ! $this->owner->hasActiveSubscription()) {
+            return __('home.status_closed');
+        }
+
         if (! $this->isWithinBusinessHours($dateTime)) {
             return __('home.status_closed');
         }
@@ -214,6 +238,10 @@ class Store extends Model
     public function orderingClosedMessage(?Carbon $dateTime = null): string
     {
         if (! $this->is_active) {
+            return __('customer.ordering_closed');
+        }
+
+        if ($this->owner && $this->owner->isMerchant() && ! $this->owner->hasActiveSubscription()) {
             return __('customer.ordering_closed');
         }
 
@@ -391,8 +419,12 @@ class Store extends Model
 
     private function normalizedWeeklyBusinessHours(): array
     {
+        if ($this->normalizedWeeklyBusinessHoursCache !== null) {
+            return $this->normalizedWeeklyBusinessHoursCache;
+        }
+
         if (! is_array($this->weekly_business_hours)) {
-            return [];
+            return $this->normalizedWeeklyBusinessHoursCache = [];
         }
 
         $allowedWeekdays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -417,13 +449,17 @@ class Store extends Model
             ];
         }
 
-        return $normalized;
+        return $this->normalizedWeeklyBusinessHoursCache = $normalized;
     }
 
     private function normalizedWeeklyBreakHours(): array
     {
+        if ($this->normalizedWeeklyBreakHoursCache !== null) {
+            return $this->normalizedWeeklyBreakHoursCache;
+        }
+
         if (! is_array($this->weekly_break_hours)) {
-            return [];
+            return $this->normalizedWeeklyBreakHoursCache = [];
         }
 
         $allowedWeekdays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -448,7 +484,7 @@ class Store extends Model
             ];
         }
 
-        return $normalized;
+        return $this->normalizedWeeklyBreakHoursCache = $normalized;
     }
 
     private function businessHoursSlotForDate(Carbon $date, ?array $weeklyBusinessHours = null): ?array
@@ -475,5 +511,14 @@ class Store extends Model
             6 => 'sat',
             default => 'sun',
         };
+    }
+
+    private static function validTimezoneIdentifierMap(): array
+    {
+        if (self::$validTimezoneIdentifiers === null) {
+            self::$validTimezoneIdentifiers = array_fill_keys(timezone_identifiers_list(), true);
+        }
+
+        return self::$validTimezoneIdentifiers;
     }
 }

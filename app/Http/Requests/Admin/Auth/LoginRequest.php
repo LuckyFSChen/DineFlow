@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Http\Requests\Auth;
+namespace App\Http\Requests\Admin\Auth;
 
-use App\Support\PhoneFormatter;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -29,7 +28,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'phone' => ['required', 'string', 'max:32'],
+            'email' => ['required', 'string', 'email', 'max:255'],
             'password' => ['required', 'string'],
         ];
     }
@@ -43,17 +42,26 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $normalizedPhone = PhoneFormatter::digitsOnly((string) $this->input('phone'), 32);
+        $email = Str::lower((string) $this->input('email'));
 
-        if ($normalizedPhone === null || ! Auth::attempt([
-            'phone' => $normalizedPhone,
-            'role' => 'customer',
+        if (! Auth::attempt([
+            'email' => $email,
             'password' => (string) $this->input('password'),
         ], $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'phone' => trans('auth.failed'),
+                'email' => trans('auth.failed'),
+            ]);
+        }
+
+        $user = Auth::user();
+        if (! $user || ! in_array((string) $user->role, ['merchant', 'admin', 'chef', 'cashier'], true)) {
+            Auth::logout();
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => trans('auth.failed'),
             ]);
         }
 
@@ -76,7 +84,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'phone' => trans('auth.throttle', [
+            'email' => trans('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),
@@ -88,8 +96,6 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        $normalizedPhone = PhoneFormatter::digitsOnly((string) $this->input('phone'), 32) ?? (string) $this->input('phone');
-
-        return Str::transliterate(Str::lower($normalizedPhone).'|'.$this->ip());
+        return Str::transliterate(Str::lower((string) $this->input('email')).'|'.$this->ip());
     }
 }

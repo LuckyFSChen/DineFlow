@@ -10,12 +10,18 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Store;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class LoyaltyController extends Controller
 {
+    private const CACHE_TTL_SECONDS = 120;
+
     public function index(Request $request): View|RedirectResponse
     {
         if ($redirect = $this->ensureHasOwnedStore($request)) {
@@ -39,17 +45,23 @@ class LoyaltyController extends Controller
         $end = Carbon::parse($endDate)->endOfDay();
         $keyword = trim((string) $request->input('keyword', ''));
 
-        $membersQuery = Member::query()
-            ->where('store_id', $selectedStore->id)
-            ->when($keyword !== '', function ($query) use ($keyword) {
-                $query->where(function ($inner) use ($keyword) {
-                    $inner->where('name', 'like', "%{$keyword}%")
-                        ->orWhere('email', 'like', "%{$keyword}%")
-                        ->orWhere('phone', 'like', "%{$keyword}%");
-                });
-            });
+        $membersQuery = $this->applyMemberKeywordFilter(
+            Member::query()->where('store_id', $selectedStore->id),
+            $keyword
+        );
 
         $members = (clone $membersQuery)
+            ->select([
+                'id',
+                'store_id',
+                'name',
+                'email',
+                'phone',
+                'points_balance',
+                'total_spent',
+                'total_orders',
+                'last_order_at',
+            ])
             ->orderByDesc('last_order_at')
             ->orderByDesc('id')
             ->paginate(20)
@@ -60,61 +72,8 @@ class LoyaltyController extends Controller
             ->map(fn ($id) => (int) $id)
             ->values();
 
-        $favoriteItemsByMember = collect();
-        $recentOrdersByMember = collect();
-
-        if ($memberIds->isNotEmpty()) {
-            $favoriteItemsByMember = OrderItem::query()
-                ->selectRaw('orders.member_id as member_id, order_items.product_name as product_name, SUM(order_items.qty) as total_qty, SUM(order_items.subtotal) as total_spent, COUNT(DISTINCT order_items.order_id) as order_count')
-                ->join('orders', 'orders.id', '=', 'order_items.order_id')
-                ->where('orders.store_id', $selectedStore->id)
-                ->whereIn('orders.member_id', $memberIds)
-                ->groupBy('orders.member_id', 'order_items.product_name')
-                ->orderByDesc('total_qty')
-                ->orderByDesc('order_count')
-                ->orderByDesc('total_spent')
-                ->get()
-                ->groupBy(fn ($row) => (int) $row->member_id)
-                ->map(fn ($items) => $items->take(3)->values());
-
-            $recentOrdersByMember = Order::query()
-                ->where('store_id', $selectedStore->id)
-                ->whereIn('member_id', $memberIds)
-                ->select(['id', 'member_id', 'order_no', 'status', 'payment_status', 'total', 'created_at'])
-                ->orderByDesc('created_at')
-                ->orderByDesc('id')
-                ->get()
-                ->groupBy(fn (Order $order) => (int) $order->member_id)
-                ->map(fn ($orders) => $orders->take(5)->values());
-        }
-
-        $totalMembers = (clone $membersQuery)->count();
-        $newMembers = (clone $membersQuery)->whereBetween('created_at', [$start, $end])->count();
-        $repeatMembers = (clone $membersQuery)->where('total_orders', '>=', 2)->count();
-        $avgSpentPerMember = (int) round((clone $membersQuery)->avg('total_spent') ?: 0);
-
-        $topMembers = Member::query()
-            ->where('store_id', $selectedStore->id)
-            ->orderByDesc('total_spent')
-            ->limit(10)
-            ->get();
-
-        $pointsIssued = (int) MemberPointLedger::query()
-            ->where('store_id', $selectedStore->id)
-            ->where('points_change', '>', 0)
-            ->whereBetween('created_at', [$start, $end])
-            ->sum('points_change');
-        $pointsRedeemed = (int) abs((int) MemberPointLedger::query()
-            ->where('store_id', $selectedStore->id)
-            ->where('points_change', '<', 0)
-            ->whereBetween('created_at', [$start, $end])
-            ->sum('points_change'));
-
-        $couponOrders = Order::query()
-            ->where('store_id', $selectedStore->id)
-            ->whereNotNull('coupon_id')
-            ->whereBetween('created_at', [$start, $end])
-            ->count();
+        $memberDetailData = $this->cachedMemberDetailData($selectedStore->id, $memberIds);
+        $summaryData = $this->cachedSummaryData($selectedStore->id, $start, $end, $keyword);
 
         $coupons = Coupon::query()
             ->where('store_id', $selectedStore->id)
@@ -129,16 +88,16 @@ class LoyaltyController extends Controller
             'endDate' => $end->toDateString(),
             'keyword' => $keyword,
             'members' => $members,
-            'totalMembers' => $totalMembers,
-            'newMembers' => $newMembers,
-            'repeatMembers' => $repeatMembers,
-            'avgSpentPerMember' => $avgSpentPerMember,
-            'topMembers' => $topMembers,
-            'favoriteItemsByMember' => $favoriteItemsByMember,
-            'recentOrdersByMember' => $recentOrdersByMember,
-            'pointsIssued' => $pointsIssued,
-            'pointsRedeemed' => $pointsRedeemed,
-            'couponOrders' => $couponOrders,
+            'totalMembers' => $summaryData['totalMembers'],
+            'newMembers' => $summaryData['newMembers'],
+            'repeatMembers' => $summaryData['repeatMembers'],
+            'avgSpentPerMember' => $summaryData['avgSpentPerMember'],
+            'topMembers' => $summaryData['topMembers'],
+            'favoriteItemsByMember' => $memberDetailData['favoriteItemsByMember'],
+            'recentOrdersByMember' => $memberDetailData['recentOrdersByMember'],
+            'pointsIssued' => $summaryData['pointsIssued'],
+            'pointsRedeemed' => $summaryData['pointsRedeemed'],
+            'couponOrders' => $summaryData['couponOrders'],
             'coupons' => $coupons,
         ]);
     }
@@ -293,5 +252,142 @@ class LoyaltyController extends Controller
         $message = __('merchant.error_store_required_for_loyalty');
 
         return redirect()->route('admin.stores.index')->with('error', $message);
+    }
+
+    private function cachedMemberDetailData(int $storeId, Collection $memberIds): array
+    {
+        if ($memberIds->isEmpty()) {
+            return [
+                'favoriteItemsByMember' => collect(),
+                'recentOrdersByMember' => collect(),
+            ];
+        }
+
+        $cacheKey = 'loyalty:member-details:' . md5(json_encode([
+            'store_id' => $storeId,
+            'member_ids' => $memberIds->values()->all(),
+        ], JSON_UNESCAPED_SLASHES));
+
+        return Cache::remember($cacheKey, now()->addSeconds(self::CACHE_TTL_SECONDS), function () use ($storeId, $memberIds): array {
+            $favoriteItemsBaseQuery = OrderItem::query()
+                ->selectRaw('orders.member_id as member_id, order_items.product_name as product_name, SUM(order_items.qty) as total_qty, SUM(order_items.subtotal) as total_spent, COUNT(DISTINCT order_items.order_id) as order_count')
+                ->join('orders', 'orders.id', '=', 'order_items.order_id')
+                ->where('orders.store_id', $storeId)
+                ->whereIn('orders.member_id', $memberIds)
+                ->groupBy('orders.member_id', 'order_items.product_name')
+                ->whereNotNull('orders.member_id');
+
+            $rankedFavoriteItems = DB::query()
+                ->fromSub($favoriteItemsBaseQuery, 'favorite_items')
+                ->selectRaw('favorite_items.member_id, favorite_items.product_name, favorite_items.total_qty, favorite_items.total_spent, favorite_items.order_count')
+                ->selectRaw('ROW_NUMBER() OVER (PARTITION BY favorite_items.member_id ORDER BY favorite_items.total_qty DESC, favorite_items.order_count DESC, favorite_items.total_spent DESC, favorite_items.product_name ASC) as item_rank');
+
+            $favoriteItemsByMember = DB::query()
+                ->fromSub($rankedFavoriteItems, 'ranked_favorite_items')
+                ->select(['member_id', 'product_name', 'total_qty', 'total_spent', 'order_count'])
+                ->where('item_rank', '<=', 3)
+                ->orderBy('member_id')
+                ->orderBy('item_rank')
+                ->get()
+                ->groupBy(fn ($row) => (int) $row->member_id)
+                ->map(fn ($items) => $items->values());
+
+            $recentOrdersBaseQuery = Order::query()
+                ->where('store_id', $storeId)
+                ->whereIn('member_id', $memberIds)
+                ->whereNotNull('member_id')
+                ->select(['id', 'member_id', 'order_no', 'status', 'payment_status', 'total', 'created_at']);
+
+            $rankedRecentOrders = DB::query()
+                ->fromSub($recentOrdersBaseQuery, 'recent_orders')
+                ->selectRaw('recent_orders.id, recent_orders.member_id, recent_orders.order_no, recent_orders.status, recent_orders.payment_status, recent_orders.total, recent_orders.created_at')
+                ->selectRaw('ROW_NUMBER() OVER (PARTITION BY recent_orders.member_id ORDER BY recent_orders.created_at DESC, recent_orders.id DESC) as order_rank');
+
+            $recentOrdersByMember = DB::query()
+                ->fromSub($rankedRecentOrders, 'ranked_recent_orders')
+                ->select(['id', 'member_id', 'order_no', 'status', 'payment_status', 'total', 'created_at'])
+                ->where('order_rank', '<=', 5)
+                ->orderBy('member_id')
+                ->orderBy('order_rank')
+                ->get()
+                ->map(function ($order) {
+                    $order->created_at = $order->created_at !== null ? Carbon::parse($order->created_at) : null;
+
+                    return $order;
+                })
+                ->groupBy(fn ($order) => (int) $order->member_id)
+                ->map(fn ($orders) => $orders->values());
+
+            return [
+                'favoriteItemsByMember' => $favoriteItemsByMember,
+                'recentOrdersByMember' => $recentOrdersByMember,
+            ];
+        });
+    }
+
+    private function cachedSummaryData(int $storeId, Carbon $start, Carbon $end, string $keyword): array
+    {
+        $cacheKey = 'loyalty:summary:' . md5(json_encode([
+            'store_id' => $storeId,
+            'start' => $start->toIso8601String(),
+            'end' => $end->toIso8601String(),
+            'keyword' => $keyword,
+        ], JSON_UNESCAPED_SLASHES));
+
+        return Cache::remember($cacheKey, now()->addSeconds(self::CACHE_TTL_SECONDS), function () use ($storeId, $start, $end, $keyword): array {
+            $memberSummary = $this->applyMemberKeywordFilter(
+                Member::query()->where('store_id', $storeId),
+                $keyword
+            )
+                ->selectRaw('COUNT(*) as total_members')
+                ->selectRaw('SUM(CASE WHEN created_at BETWEEN ? AND ? THEN 1 ELSE 0 END) as new_members', [$start, $end])
+                ->selectRaw('SUM(CASE WHEN total_orders >= 2 THEN 1 ELSE 0 END) as repeat_members')
+                ->selectRaw('COALESCE(AVG(total_spent), 0) as avg_spent_per_member')
+                ->first();
+
+            $topMembers = Member::query()
+                ->where('store_id', $storeId)
+                ->select(['id', 'name', 'email', 'phone', 'points_balance', 'total_spent', 'total_orders'])
+                ->orderByDesc('total_spent')
+                ->limit(10)
+                ->get();
+
+            $pointsSummary = MemberPointLedger::query()
+                ->where('store_id', $storeId)
+                ->whereBetween('created_at', [$start, $end])
+                ->selectRaw('COALESCE(SUM(CASE WHEN points_change > 0 THEN points_change ELSE 0 END), 0) as points_issued')
+                ->selectRaw('COALESCE(ABS(SUM(CASE WHEN points_change < 0 THEN points_change ELSE 0 END)), 0) as points_redeemed')
+                ->first();
+
+            $couponOrders = (int) Order::query()
+                ->where('store_id', $storeId)
+                ->whereNotNull('coupon_id')
+                ->whereBetween('created_at', [$start, $end])
+                ->count();
+
+            return [
+                'totalMembers' => (int) ($memberSummary->total_members ?? 0),
+                'newMembers' => (int) ($memberSummary->new_members ?? 0),
+                'repeatMembers' => (int) ($memberSummary->repeat_members ?? 0),
+                'avgSpentPerMember' => (int) round((float) ($memberSummary->avg_spent_per_member ?? 0)),
+                'topMembers' => $topMembers,
+                'pointsIssued' => (int) ($pointsSummary->points_issued ?? 0),
+                'pointsRedeemed' => (int) ($pointsSummary->points_redeemed ?? 0),
+                'couponOrders' => $couponOrders,
+            ];
+        });
+    }
+
+    private function applyMemberKeywordFilter(Builder $query, string $keyword): Builder
+    {
+        if ($keyword === '') {
+            return $query;
+        }
+
+        return $query->where(function (Builder $inner) use ($keyword): void {
+            $inner->where('name', 'like', "%{$keyword}%")
+                ->orWhere('email', 'like', "%{$keyword}%")
+                ->orWhere('phone', 'like', "%{$keyword}%");
+        });
     }
 }

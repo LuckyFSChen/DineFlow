@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Store;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -20,15 +21,8 @@ class AllBoardsController extends Controller
     {
         $this->authorizeStore($request, $store);
 
-        $cashierOrders = $this->fetchCashierOrders($store);
-        $kitchenOrders = $this->fetchKitchenOrders($store);
         $availableStores = $this->resolveAccessibleStores($request);
-
-        $ordersData = $cashierOrders
-            ->map(fn (Order $order) => $this->formatOrder($order, 'cashier'))
-            ->merge($kitchenOrders->map(fn (Order $order) => $this->formatOrder($order, 'kitchen')))
-            ->sortBy('created_at')
-            ->values();
+        $ordersData = $this->buildOrdersPayload($store);
 
         $checkoutTiming = $store->checkout_timing ?? 'postpay';
         $user = $request->user();
@@ -44,6 +38,13 @@ class AllBoardsController extends Controller
             'canCashierActions' => $canCashierActions,
             'canKitchenActions' => $canKitchenActions,
         ]);
+    }
+
+    public function orders(Request $request, Store $store): JsonResponse
+    {
+        $this->authorizeStore($request, $store);
+
+        return response()->json($this->buildOrdersPayload($store)->values());
     }
 
     private function authorizeStore(Request $request, Store $store): void
@@ -65,7 +66,24 @@ class AllBoardsController extends Controller
 
     private function fetchCashierOrders(Store $store): Collection
     {
-        return Order::with(['items', 'table'])
+        return Order::query()
+            ->select([
+                'id',
+                'store_id',
+                'dining_table_id',
+                'order_no',
+                'order_locale',
+                'status',
+                'payment_status',
+                'order_type',
+                'note',
+                'customer_name',
+                'created_at',
+            ])
+            ->with([
+                'items:id,order_id,product_name,qty,note,item_status,completed_at',
+                'table:id,table_no',
+            ])
             ->where('store_id', $store->id)
             ->where(function ($query) {
                 $query->whereIn('status', self::CASHIER_PENDING_STATUSES)
@@ -83,11 +101,40 @@ class AllBoardsController extends Controller
 
     private function fetchKitchenOrders(Store $store): Collection
     {
-        return Order::with(['items', 'table'])
+        return Order::query()
+            ->select([
+                'id',
+                'store_id',
+                'dining_table_id',
+                'order_no',
+                'order_locale',
+                'status',
+                'payment_status',
+                'order_type',
+                'note',
+                'customer_name',
+                'created_at',
+            ])
+            ->with([
+                'items:id,order_id,product_name,qty,note,item_status,completed_at',
+                'table:id,table_no',
+            ])
             ->where('store_id', $store->id)
             ->whereIn('status', self::KITCHEN_PREPARING_STATUSES)
             ->orderBy('created_at', 'asc')
             ->get();
+    }
+
+    private function buildOrdersPayload(Store $store): Collection
+    {
+        $cashierOrders = $this->fetchCashierOrders($store);
+        $kitchenOrders = $this->fetchKitchenOrders($store);
+
+        return $cashierOrders
+            ->map(fn (Order $order) => $this->formatOrder($order, 'cashier'))
+            ->merge($kitchenOrders->map(fn (Order $order) => $this->formatOrder($order, 'kitchen')))
+            ->sortBy('created_at')
+            ->values();
     }
 
     private function formatOrder(Order $order, string $board): array

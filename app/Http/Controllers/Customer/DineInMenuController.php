@@ -26,9 +26,22 @@ class DineInMenuController extends Controller
         abort_unless($table->store_id === $store->id, 404);
 
         $categories = $store->categories()
+            ->select(['id', 'store_id', 'name', 'sort'])
             ->where('is_active', true)
             ->with(['products' => function ($query) use ($store) {
-                $query->where('store_id', $store->id)
+                $query->select([
+                    'id',
+                    'store_id',
+                    'category_id',
+                    'name',
+                    'description',
+                    'price',
+                    'image',
+                    'option_groups',
+                    'allow_item_note',
+                    'sort',
+                ])
+                    ->where('store_id', $store->id)
                     ->where('is_active', true)
                     ->where('is_sold_out', false)
                     ->orderBy('sort');
@@ -48,6 +61,15 @@ class DineInMenuController extends Controller
             $uuids = array_values(array_filter(array_map('strval', $history), fn ($v) => $v !== ''));
             if (! empty($uuids)) {
                 $orders = Order::query()
+                    ->select([
+                        'id',
+                        'uuid',
+                        'store_id',
+                        'dining_table_id',
+                        'status',
+                        'payment_status',
+                        'created_at',
+                    ])
                     ->where('store_id', $store->id)
                     ->where('dining_table_id', $table->id)
                     ->whereIn('uuid', $uuids)

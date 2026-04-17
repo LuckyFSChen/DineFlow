@@ -277,24 +277,14 @@ class DineInOrderController extends Controller
 
         $phone = $this->normalizeCustomerPhone($phoneRaw, $store);
         $hasFilters = $email !== '' || $phone !== null;
+        $hasStrongLookup = $email !== '' && $phone !== null;
 
         $orders = collect();
-        if ($hasFilters) {
+        if ($hasStrongLookup) {
             $orders = Order::query()
                 ->where('store_id', $store->id)
-                ->where(function ($query) use ($email, $phone) {
-                    if ($email !== '') {
-                        $query->where('customer_email', $email);
-                    }
-
-                    if ($phone !== null) {
-                        if ($email !== '') {
-                            $query->orWhere('customer_phone', $phone);
-                        } else {
-                            $query->where('customer_phone', $phone);
-                        }
-                    }
-                })
+                ->where('customer_email', $email)
+                ->where('customer_phone', $phone)
                 ->with('table')
                 ->orderByDesc('created_at')
                 ->limit(50)
@@ -313,6 +303,7 @@ class DineInOrderController extends Controller
             'customerEmail' => $email,
             'customerPhone' => $phoneRaw,
             'hasFilters' => $hasFilters,
+            'requiresBothIdentifiers' => $hasFilters && ! $hasStrongLookup,
         ]);
     }
 
@@ -624,10 +615,19 @@ class DineInOrderController extends Controller
             return collect();
         }
 
-        $orders = Order::query()
-            ->where('store_id', $store->id)
-            ->where('dining_table_id', $table->id)
-            ->whereIn('uuid', $uuids)
+            $orders = Order::query()
+                ->select([
+                    'id',
+                    'uuid',
+                    'store_id',
+                    'dining_table_id',
+                    'status',
+                    'payment_status',
+                    'created_at',
+                ])
+                ->where('store_id', $store->id)
+                ->where('dining_table_id', $table->id)
+                ->whereIn('uuid', $uuids)
             ->orderByDesc('created_at')
             ->get();
 

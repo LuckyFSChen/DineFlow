@@ -16,76 +16,148 @@ use Illuminate\Support\Str;
 
 class MultiStoreDemoSeeder extends Seeder
 {
-    private const TARGET_MERCHANT_COUNT = 20;
+    private const TARGET_STORE_COUNT = 10;
 
     public function run(): void
     {
-        $merchants = $this->ensureMerchants();
-        if ($merchants->isEmpty()) {
+        $backendUsers = $this->ensureBackendUsers();
+        if ($backendUsers->isEmpty()) {
             return;
         }
 
-        $stores = $this->ensureStores($merchants);
+        $this->ensureCustomers();
+
+        $stores = $this->ensureStores($backendUsers);
         $this->seedCatalogAndTables($stores);
     }
 
-    private function ensureMerchants(): Collection
+    private function ensureBackendUsers(): Collection
     {
-        $growthPlanId = SubscriptionPlan::query()
-            ->where('slug', 'growth-monthly')
-            ->value('id');
+        $planIds = [
+            'basic-monthly' => SubscriptionPlan::query()->where('slug', 'basic-monthly')->value('id'),
+            'growth-quarterly' => SubscriptionPlan::query()->where('slug', 'growth-quarterly')->value('id'),
+            'pro-yearly' => SubscriptionPlan::query()->where('slug', 'pro-yearly')->value('id'),
+            'growth-monthly' => SubscriptionPlan::query()->where('slug', 'growth-monthly')->value('id'),
+        ];
 
-        $emails = ['merchant@dineflow.local'];
-        for ($i = 2; $i <= self::TARGET_MERCHANT_COUNT; $i++) {
-            $emails[] = sprintf('merchant%02d@dineflow.local', $i);
-        }
+        $seededAt = now();
 
-        $merchants = collect();
+        $backendProfiles = [
+            [
+                'email' => 'admin@dineflow.local',
+                'name' => 'System Admin',
+                'phone' => '0911000001',
+                'role' => 'admin',
+                'subscription_plan_id' => null,
+                'subscription_ends_at' => $seededAt->copy()->addYears(10),
+            ],
+            [
+                'email' => 'merchant.basic@dineflow.local',
+                'name' => 'Merchant Basic',
+                'phone' => '0911000002',
+                'role' => 'merchant',
+                'merchant_region' => 'tw',
+                'subscription_plan_id' => $planIds['basic-monthly'],
+                'subscription_ends_at' => $seededAt->copy()->addDays(30),
+            ],
+            [
+                'email' => 'merchant.growth@dineflow.local',
+                'name' => 'Merchant Growth',
+                'phone' => '0911000003',
+                'role' => 'merchant',
+                'merchant_region' => 'tw',
+                'subscription_plan_id' => $planIds['growth-quarterly'],
+                'subscription_ends_at' => $seededAt->copy()->addDays(90),
+            ],
+            [
+                'email' => 'merchant.pro@dineflow.local',
+                'name' => 'Merchant Pro',
+                'phone' => '0911000004',
+                'role' => 'merchant',
+                'merchant_region' => 'tw',
+                'subscription_plan_id' => $planIds['pro-yearly'],
+                'subscription_ends_at' => $seededAt->copy()->addDays(365),
+            ],
+            [
+                'email' => 'merchant.plus@dineflow.local',
+                'name' => 'Merchant Plus',
+                'phone' => '0911000005',
+                'role' => 'merchant',
+                'merchant_region' => 'tw',
+                'subscription_plan_id' => $planIds['growth-monthly'],
+                'subscription_ends_at' => $seededAt->copy()->addDays(30),
+            ],
+        ];
 
-        foreach ($emails as $index => $email) {
-            $displayIndex = $index + 1;
+        $users = collect();
 
-            $merchant = User::query()->updateOrCreate(
-                ['email' => $email],
+        foreach ($backendProfiles as $profile) {
+            $user = User::query()->updateOrCreate(
+                ['email' => $profile['email']],
                 [
-                    'name' => sprintf('Merchant %02d', $displayIndex),
+                    'name' => $profile['name'],
+                    'phone' => $profile['phone'],
                     'password' => Hash::make('password'),
-                    'email_verified_at' => now(),
-                    'role' => 'merchant',
-                    'subscription_ends_at' => now()->addMonths(2),
-                    'subscription_plan_id' => $growthPlanId,
-                    'merchant_region' => 'tw',
+                    'email_verified_at' => $seededAt,
+                    'role' => $profile['role'],
+                    'merchant_region' => $profile['merchant_region'] ?? null,
+                    'subscription_ends_at' => $profile['subscription_ends_at'],
+                    'subscription_plan_id' => $profile['subscription_plan_id'],
                 ]
             );
 
-            $merchants->push($merchant);
+            $users->put($profile['email'], $user);
         }
 
-        return $merchants->values();
+        return $users;
     }
 
-    private function ensureStores(Collection $merchants): Collection
+    private function ensureCustomers(): void
+    {
+        $seededAt = now();
+
+        for ($i = 1; $i <= 24; $i++) {
+            $email = sprintf('customer%02d@dineflow.local', $i);
+
+            User::query()->updateOrCreate(
+                ['email' => $email],
+                [
+                    'name' => sprintf('Customer %02d', $i),
+                    'phone' => sprintf('0922%06d', $i),
+                    'password' => Hash::make('password'),
+                    'email_verified_at' => $seededAt,
+                    'role' => 'customer',
+                    'subscription_ends_at' => null,
+                    'subscription_plan_id' => null,
+                    'merchant_region' => null,
+                    'store_id' => null,
+                ]
+            );
+        }
+    }
+
+    private function ensureStores(Collection $backendUsers): Collection
     {
         $storeColumns = array_flip(Schema::getColumnListing('stores'));
 
         $storeProfiles = [
-            ['name' => 'Test Store', 'slug' => 'test-store', 'description' => 'Seeded test store'],
-            ['name' => 'Lucky Cafe', 'slug' => 'lucky-cafe', 'description' => 'Seeded lucky cafe'],
+            ['name' => 'Seed Store 01', 'slug' => 'seed-store-01', 'description' => 'Seeded store #01', 'owner_email' => 'merchant.basic@dineflow.local'],
+            ['name' => 'Seed Store 02', 'slug' => 'seed-store-02', 'description' => 'Seeded store #02', 'owner_email' => 'merchant.growth@dineflow.local'],
+            ['name' => 'Seed Store 03', 'slug' => 'seed-store-03', 'description' => 'Seeded store #03', 'owner_email' => 'merchant.growth@dineflow.local'],
+            ['name' => 'Seed Store 04', 'slug' => 'seed-store-04', 'description' => 'Seeded store #04', 'owner_email' => 'merchant.growth@dineflow.local'],
+            ['name' => 'Seed Store 05', 'slug' => 'seed-store-05', 'description' => 'Seeded store #05', 'owner_email' => 'merchant.pro@dineflow.local'],
+            ['name' => 'Seed Store 06', 'slug' => 'seed-store-06', 'description' => 'Seeded store #06', 'owner_email' => 'merchant.pro@dineflow.local'],
+            ['name' => 'Seed Store 07', 'slug' => 'seed-store-07', 'description' => 'Seeded store #07', 'owner_email' => 'merchant.pro@dineflow.local'],
+            ['name' => 'Seed Store 08', 'slug' => 'seed-store-08', 'description' => 'Seeded store #08', 'owner_email' => 'merchant.pro@dineflow.local'],
+            ['name' => 'Seed Store 09', 'slug' => 'seed-store-09', 'description' => 'Seeded store #09', 'owner_email' => 'merchant.pro@dineflow.local'],
+            ['name' => 'Seed Store 10', 'slug' => 'seed-store-10', 'description' => 'Seeded store #10', 'owner_email' => 'admin@dineflow.local'],
         ];
-
-        for ($i = 3; $i <= self::TARGET_MERCHANT_COUNT; $i++) {
-            $storeProfiles[] = [
-                'name' => sprintf('Demo Store %02d', $i),
-                'slug' => sprintf('demo-store-%02d', $i),
-                'description' => 'Seeded demo store for local development.',
-            ];
-        }
 
         $stores = collect();
 
         foreach ($storeProfiles as $index => $profile) {
-            $merchant = $merchants[$index] ?? null;
-            if (! $merchant) {
+            $owner = $backendUsers->get($profile['owner_email']);
+            if (! $owner) {
                 continue;
             }
 
@@ -94,19 +166,19 @@ class MultiStoreDemoSeeder extends Seeder
                 ->first();
 
             $payload = [
-                'user_id' => $merchant->id,
+                'user_id' => $owner->id,
                 'name' => $profile['name'],
                 'slug' => $profile['slug'],
                 'description' => $profile['description'],
-                'phone' => '09' . random_int(10000000, 99999999),
+                'phone' => sprintf('0933%06d', $index + 1),
                 'address' => 'Demo Address #' . ($index + 1),
                 'is_active' => true,
                 'takeout_qr_enabled' => true,
-                'checkout_timing' => random_int(0, 1) === 1 ? 'postpay' : 'prepay',
+                'checkout_timing' => ($index % 2 === 0) ? 'postpay' : 'prepay',
                 'currency' => 'twd',
                 'country_code' => 'tw',
                 'timezone' => 'Asia/Taipei',
-                'monthly_revenue_target' => random_int(150000, 500000),
+                'monthly_revenue_target' => 180000 + (($index + 1) * 20000),
             ];
             $payload = array_intersect_key($payload, $storeColumns);
 
@@ -124,14 +196,25 @@ class MultiStoreDemoSeeder extends Seeder
             $stores->push($store->fresh());
         }
 
-        $allowedSlugs = collect($storeProfiles)->pluck('slug')->all();
-        Store::query()
-            ->whereIn('user_id', $merchants->pluck('id'))
-            ->whereNotIn('slug', $allowedSlugs)
-            ->get()
-            ->each(function (Store $store): void {
-                $store->delete();
-            });
+        if ($stores->count() > self::TARGET_STORE_COUNT) {
+            $stores = $stores->take(self::TARGET_STORE_COUNT);
+        }
+
+        $allowedSlugs = $stores->pluck('slug')->all();
+        Store::query()->whereNotIn('slug', $allowedSlugs)->where('slug', 'like', 'seed-store-%')->delete();
+
+        User::query()
+            ->whereIn('role', ['merchant', 'admin'])
+            ->whereNotNull('store_id')
+            ->update(['store_id' => null]);
+
+        $firstGrowthStore = $stores->firstWhere('user_id', optional($backendUsers->get('merchant.growth@dineflow.local'))->id);
+        if ($firstGrowthStore) {
+            $growthOwner = $backendUsers->get('merchant.growth@dineflow.local');
+            if ($growthOwner) {
+                $growthOwner->forceFill(['store_id' => $firstGrowthStore->id])->saveQuietly();
+            }
+        }
 
         return $stores->values();
     }

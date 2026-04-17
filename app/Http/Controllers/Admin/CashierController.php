@@ -155,7 +155,24 @@ class CashierController extends Controller
 
     private function fetchCashierOrders(Store $store): \Illuminate\Database\Eloquent\Collection
     {
-        return Order::with(['items', 'table'])
+        return Order::query()
+            ->select([
+                'id',
+                'store_id',
+                'dining_table_id',
+                'order_no',
+                'order_locale',
+                'status',
+                'payment_status',
+                'order_type',
+                'note',
+                'customer_name',
+                'created_at',
+            ])
+            ->with([
+                'items:id,order_id,product_name,qty,note',
+                'table:id,table_no',
+            ])
             ->where('store_id', $store->id)
             ->where(function ($query) {
                 // Pending orders waiting to be accepted

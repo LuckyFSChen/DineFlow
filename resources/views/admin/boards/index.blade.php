@@ -362,8 +362,7 @@ function allBoards() {
         checkoutTiming: @json($checkoutTiming ?? 'postpay'),
         canCashierActions: @json($canCashierActions),
         canKitchenActions: @json($canKitchenActions),
-        cashierOrdersUrl: @json(route('admin.stores.cashier.orders', ['store' => $storeRoute])),
-        kitchenOrdersUrl: @json(route('admin.stores.kitchen.orders', ['store' => $storeRoute])),
+        ordersUrl: @json(route('admin.stores.boards.orders', ['store' => $storeRoute])),
         cashierStatusUrlTemplate: @json(route('admin.stores.cashier.orders.status', ['store' => $storeRoute, 'order' => '__ORDER__'])),
         kitchenStatusUrlTemplate: @json(route('admin.stores.kitchen.orders.status', ['store' => $storeRoute, 'order' => '__ORDER__'])),
         i18n: @json($allBoardsI18n),
@@ -484,18 +483,15 @@ function allBoards() {
 
         async poll() {
             try {
-                const [cashierRes, kitchenRes] = await Promise.all([
-                    fetch(this.cashierOrdersUrl, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } }),
-                    fetch(this.kitchenOrdersUrl, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } }),
-                ]);
+                const res = await fetch(this.ordersUrl, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
 
-                if (!cashierRes.ok || !kitchenRes.ok) {
+                if (!res.ok) {
                     return;
                 }
 
-                const cashierOrders = (await cashierRes.json()).map((o) => ({ ...o, board: 'cashier', _loading: false }));
-                const kitchenOrders = (await kitchenRes.json()).map((o) => ({ ...o, board: 'kitchen', _loading: false }));
-                const merged = this.mergeOrders(cashierOrders, kitchenOrders);
+                const merged = await res.json();
 
                 const oldIds = new Set(this.orders.map((o) => `${o.board}-${o.id}`));
                 const hasNew = merged.some((o) => !oldIds.has(`${o.board}-${o.id}`));
@@ -507,15 +503,6 @@ function allBoards() {
                     this.showAlert();
                 }
             } catch {}
-        },
-
-        mergeOrders(cashierOrders, kitchenOrders) {
-            const map = new Map();
-            [...cashierOrders, ...kitchenOrders].forEach((order) => {
-                map.set(`${order.board}-${order.id}`, order);
-            });
-
-            return [...map.values()].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
         },
 
         async updateOrder(order, status, payload = {}) {

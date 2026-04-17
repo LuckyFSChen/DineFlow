@@ -49,6 +49,8 @@ body.is-admin-area .admin-stage::before {
 }
 
 body.is-admin-area .admin-nav {
+	background-color: #ffffff;
+	backdrop-filter: none;
 	box-shadow: 0 10px 30px rgba(13, 76, 93, 0.1);
 }
 

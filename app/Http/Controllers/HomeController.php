@@ -9,6 +9,29 @@ class HomeController extends Controller
 {
     private const MAX_DISTANCE_KM = 30;
 
+    private const STORE_CARD_COLUMNS = [
+        'id',
+        'user_id',
+        'name',
+        'slug',
+        'description',
+        'address',
+        'phone',
+        'banner_image',
+        'latitude',
+        'longitude',
+        'is_active',
+        'takeout_qr_enabled',
+        'country_code',
+        'timezone',
+        'opening_time',
+        'closing_time',
+        'weekly_business_hours',
+        'weekly_break_hours',
+        'prep_time_minutes',
+        'updated_at',
+    ];
+
     public function index(Request $request)
     {
         $userLatitude = $this->parseLatitude($request->query('lat'));
@@ -16,6 +39,8 @@ class HomeController extends Controller
         $hasUserLocation = $userLatitude !== null && $userLongitude !== null;
 
         $featuredStoresQuery = Store::query()
+            ->select(self::STORE_CARD_COLUMNS)
+            ->with(['owner:id,role,subscription_ends_at'])
             ->where('is_active', 1)
             ->where('takeout_qr_enabled', 1);
 
@@ -51,6 +76,8 @@ class HomeController extends Controller
         $hasUserLocation = $userLatitude !== null && $userLongitude !== null;
 
         $query = Store::query()
+            ->select(self::STORE_CARD_COLUMNS)
+            ->with(['owner:id,role,subscription_ends_at'])
             ->where('is_active', 1)
             ->where('takeout_qr_enabled', 1);
 

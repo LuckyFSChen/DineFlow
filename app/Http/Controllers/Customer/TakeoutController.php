@@ -33,9 +33,20 @@ class TakeoutController extends Controller
     public function menu(Store $store)
     {
         $categories = $store->categories()
+            ->select(['id', 'store_id', 'name', 'sort'])
             ->where('is_active', true)
             ->with(['products' => function ($query) use ($store) {
-                $query->where('store_id', $store->id)
+                $query->select([
+                    'id',
+                    'store_id',
+                    'category_id',
+                    'name',
+                    'description',
+                    'price',
+                    'image',
+                    'sort',
+                ])
+                    ->where('store_id', $store->id)
                     ->where('is_active', true)
                     ->where('is_sold_out', false)
                     ->orderBy('sort');

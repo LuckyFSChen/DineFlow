@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\DiningTableManagementController;
 use App\Http\Controllers\Admin\KitchenController;
 use App\Http\Controllers\Admin\CashierController;
 use App\Http\Controllers\Admin\AllBoardsController;
+use App\Http\Controllers\Admin\Auth\AuthenticatedSessionController as AdminAuthenticatedSessionController;
 use App\Http\Controllers\Admin\ChefManagementController;
 use App\Http\Controllers\Customer\DineInMenuController;
 use App\Http\Controllers\Customer\DineInOrderController;
@@ -26,6 +27,11 @@ use Illuminate\Support\Facades\Route;
 | Admin Store
 |--------------------------------------------------------------------------
 */
+
+Route::middleware('guest')->prefix('admin')->name('admin.')->group(function () {
+    Route::get('login', [AdminAuthenticatedSessionController::class, 'create'])->name('login');
+    Route::post('login', [AdminAuthenticatedSessionController::class, 'store'])->name('login.store');
+});
 
 Route::middleware(['auth', 'verified', 'role:merchant,admin', 'merchant.subscription'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('stores', AdminStoreController::class)->except(['show']);
@@ -113,6 +119,16 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin,chef,cashier'])->pre
     Route::get('stores/{store}/boards', [AllBoardsController::class, 'index'])
         ->name('stores.boards')
         ->missing(function () {
+            return redirect()->route('dashboard')->with('error', 'Store not found.');
+        });
+
+    Route::get('stores/{store}/boards/orders', [AllBoardsController::class, 'orders'])
+        ->name('stores.boards.orders')
+        ->missing(function (Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['ok' => false, 'message' => 'Store not found'], 404);
+            }
+
             return redirect()->route('dashboard')->with('error', 'Store not found.');
         });
 });
@@ -226,6 +242,7 @@ Route::prefix('s/{store:slug}/takeout')
 Route::get('/s/{store:slug}/orders/{order}', [DineInOrderController::class, 'success'])
     ->name('customer.order.success');
 Route::get('/s/{store:slug}/orders', [DineInOrderController::class, 'history'])
+    ->middleware('throttle:10,1')
     ->name('customer.order.history');
 Route::get('/s/{store:slug}/orders/{order}/status', [DineInOrderController::class, 'orderStatus'])
     ->name('customer.order.status');
@@ -234,7 +251,7 @@ Route::get('/admin', function (Request $request) {
     $user = $request->user();
 
     if ($user === null) {
-        return redirect()->route('login');
+        return redirect()->route('admin.login');
     }
 
     if ($user->isMerchant()) {
@@ -259,5 +276,3 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__ . '/auth.php';
-
-

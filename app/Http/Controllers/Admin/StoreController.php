@@ -17,6 +17,19 @@ class StoreController extends Controller
         $keyword = $request->get('keyword');
 
         $stores = Store::query()
+            ->select([
+                'id',
+                'name',
+                'slug',
+                'description',
+                'address',
+                'phone',
+                'currency',
+                'country_code',
+                'is_active',
+                'banner_image',
+                'created_at',
+            ])
             ->when($keyword, function ($query) use ($keyword) {
                 $query->where(function ($q) use ($keyword) {
                     $q->where('name', 'like', "%{$keyword}%")
@@ -285,10 +298,23 @@ class StoreController extends Controller
 
     protected function fillCoordinatesFromAddress(array $data, ?Store $existingStore = null): array
     {
+        $hasManualCoordinates = ($data['latitude'] ?? null) !== null && ($data['longitude'] ?? null) !== null;
+        if ($hasManualCoordinates) {
+            return $data;
+        }
+
         $address = trim((string) ($data['address'] ?? ''));
         if ($address === '') {
             $data['latitude'] = null;
             $data['longitude'] = null;
+
+            return $data;
+        }
+
+        if ($existingStore && trim((string) $existingStore->address) === $address) {
+            $data['latitude'] = $existingStore->latitude;
+            $data['longitude'] = $existingStore->longitude;
+
             return $data;
         }
 
@@ -298,6 +324,7 @@ class StoreController extends Controller
                 $data['latitude'] = $existingStore->latitude;
                 $data['longitude'] = $existingStore->longitude;
             }
+
             return $data;
         }
 
