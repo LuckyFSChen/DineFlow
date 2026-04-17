@@ -8,6 +8,7 @@ use App\Support\GooglePlaceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Helpers\SlugHelper;
 
 class StoreController extends Controller
 {
@@ -44,22 +45,11 @@ class StoreController extends Controller
         $data = $this->validatedData($request);
         $data = $this->fillCoordinatesFromAddress($data);
 
-        $maxAttempts = 10;
-        $attempt = 0;
-        do {
-            try {
-                if (empty($data['slug'])) {
-                    $baseSlug = Str::slug($data['name']);
-                    $slug = $baseSlug;
-                    $i = 1;
-                    while (Store::where('slug', $slug)->exists()) {
-                        $slug = $baseSlug . '-' . $i;
-                        $i++;
-                    }
-                    $data['slug'] = $slug;
-                }
-                $data['is_active'] = $request->boolean('is_active');
-                $store = Store::create([
+        $data['is_active'] = $request->boolean('is_active');
+        $store = SlugHelper::createWithUniqueSlug(
+            function ($slug) use ($data) {
+                $data['slug'] = $slug;
+                return Store::create([
                     'name' => $data['name'],
                     'slug' => $data['slug'],
                     'description' => $data['description'] ?? null,
@@ -71,18 +61,10 @@ class StoreController extends Controller
                     'is_active' => $data['is_active'],
                     'takeout_qr_enabled' => true,
                 ]);
-                break;
-            } catch (\Illuminate\Database\QueryException $e) {
-                if (str_contains($e->getMessage(), 'store_slug_unique') && $attempt < $maxAttempts) {
-                    $baseSlug = Str::slug($data['name']);
-                    $i = $attempt + 1;
-                    $data['slug'] = $baseSlug . '-' . $i;
-                    $attempt++;
-                } else {
-                    throw $e;
-                }
-            }
-        } while ($attempt < $maxAttempts);
+            },
+            $data['name'],
+            function ($slug) { return Store::where('slug', $slug)->exists(); }
+        );
 
         if ($request->hasFile('banner_image')) {
             $file = $request->file('banner_image');

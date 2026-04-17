@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Helpers\SlugHelper;
 
 class StoreManagementController extends Controller
 {
@@ -112,23 +113,14 @@ class StoreManagementController extends Controller
             }
         }
 
-        $maxAttempts = 10;
-        $attempt = 0;
-        do {
-            try {
-                $store = Store::create($data);
-                break;
-            } catch (\Illuminate\Database\QueryException $e) {
-                if (str_contains($e->getMessage(), 'store_slug_unique') && $attempt < $maxAttempts) {
-                    $baseSlug = Str::slug($data['name']) ?: 'store';
-                    $i = $attempt + 1;
-                    $data['slug'] = $baseSlug . '-' . $i;
-                    $attempt++;
-                } else {
-                    throw $e;
-                }
-            }
-        } while ($attempt < $maxAttempts);
+        $store = SlugHelper::createWithUniqueSlug(
+            function ($slug) use (&$data) {
+                $data['slug'] = $slug;
+                return Store::create($data);
+            },
+            $data['name'],
+            function ($slug) { return Store::where('slug', $slug)->exists(); }
+        );
 
         if ($request->hasFile('banner_image')) {
             $file = $request->file('banner_image');
