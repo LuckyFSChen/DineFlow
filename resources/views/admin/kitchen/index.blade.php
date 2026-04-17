@@ -48,10 +48,12 @@ $kitchenI18n = [
     'not_updated_yet' => __('admin.board_not_updated_yet'),
     'waiting_prefix' => __('admin.board_waiting_prefix'),
     'locale_prefix' => __('admin.board_locale_prefix'),
+    'item_progress' => __('admin.board_item_progress'),
+    'item_note_label' => __('admin.board_item_note_label'),
     'processing' => __('admin.board_processing'),
     'mark_completed' => __('admin.board_action_mark_completed'),
-    'mark_item_completed' => 'Serve',
-    'item_completed' => 'Served',
+    'mark_item_completed' => __('admin.board_action_mark_item_completed'),
+    'item_completed' => __('admin.board_item_status_completed'),
     'error_update_failed' => __('admin.board_error_update_failed'),
     'error_missing_csrf' => __('admin.board_error_missing_csrf'),
     'error_network' => __('admin.board_error_network'),
@@ -94,14 +96,9 @@ $kitchenI18n = [
         <div class="flex flex-wrap items-center gap-2 xl:justify-end">
             {{-- Board switch --}}
             <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
-                <a href="{{ route('admin.stores.cashier', ['store' => $storeRoute]) }}"
-                   class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
-                    {{ __('admin.board_cashier_title') }}
-                </a>
-                <span class="px-3 py-1.5 bg-indigo-600 text-white">{{ __('admin.board_kitchen_title') }}</span>
                 <a href="{{ route('admin.stores.boards', ['store' => $storeRoute]) }}"
-                   class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
-                    {{ __('admin.board_all_title') }}
+                   class="px-3 py-1.5 bg-indigo-600 text-white transition hover:bg-indigo-500">
+                    {{ $store->name }}
                 </a>
             </div>
 
@@ -135,19 +132,6 @@ $kitchenI18n = [
                 {{ __('admin.board_refresh_now') }}
             </button>
 
-            <div class="flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs">
-                <span class="text-slate-400">等待門檻</span>
-                <input type="number" min="0" x-model.number="waitConfig.orangeStart" @change="saveWaitConfig()"
-                       class="w-11 rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-slate-100 focus:border-indigo-500 focus:outline-none">
-                <span class="text-slate-500">/</span>
-                <input type="number" min="1" x-model.number="waitConfig.orangeEnd" @change="saveWaitConfig()"
-                       class="w-11 rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-slate-100 focus:border-indigo-500 focus:outline-none">
-                <span class="text-slate-500">/</span>
-                <input type="number" min="2" x-model.number="waitConfig.redEnd" @change="saveWaitConfig()"
-                       class="w-11 rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-slate-100 focus:border-indigo-500 focus:outline-none">
-                <span class="text-slate-500">m</span>
-            </div>
-
             {{-- Live indicator --}}
             <div class="flex items-center gap-1.5 rounded-full border border-emerald-700 bg-emerald-900/50 px-3 py-1 text-xs text-emerald-400">
                 <span class="relative flex h-2 w-2">
@@ -159,7 +143,6 @@ $kitchenI18n = [
 
             {{-- Count badge --}}
             <span class="rounded-full bg-indigo-600 px-3 py-0.5 text-xs font-bold" x-text="filteredOrders.length + ' / ' + orders.length + ' ' + i18n.order_unit"></span>
-            <span class="rounded-full border border-slate-700 bg-slate-800 px-3 py-0.5 text-xs text-slate-300" x-text="i18n.next_refresh + nextRefreshIn + 's'"></span>
         </div>
         </div>
 
@@ -174,7 +157,7 @@ $kitchenI18n = [
             </div>
             <div class="rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2">
                 <p class="text-[11px] text-slate-400">{{ __('admin.board_last_updated') }}</p>
-                <p class="text-sm font-semibold text-slate-100" x-text="lastUpdatedText"></p>
+                <p class="text-sm font-semibold text-slate-100" x-text="lastUpdatedText + ' · ' + i18n.next_refresh + nextRefreshIn + 's'"></p>
             </div>
         </div>
     </div>
@@ -239,31 +222,46 @@ $kitchenI18n = [
                 {{-- Items list --}}
                 <div class="flex-1 px-4 py-3 space-y-2">
                     <div class="mb-1 text-[11px] font-semibold text-slate-300">
-                        出餐進度：<span x-text="completedItemCount(order)"></span>/<span x-text="order.items.length"></span>
+                        <span x-text="i18n.item_progress"></span>：<span x-text="completedItemCount(order)"></span>/<span x-text="order.items.length"></span>
                     </div>
                     <template x-for="item in order.items" :key="item.id">
-                        <div class="flex items-start justify-between gap-2 rounded-lg border px-2 py-2"
-                             :class="isItemCompleted(item) ? 'border-emerald-500/40 bg-emerald-900/20' : 'border-slate-700/60 bg-slate-900/20'">
+                        <div class="flex items-start justify-between gap-2 rounded-lg border px-2 py-2 transition-colors duration-150"
+                             role="button"
+                             tabindex="0"
+                             @click="toggleItemStatus(order, item)"
+                             @keydown.enter.prevent="toggleItemStatus(order, item)"
+                             @keydown.space.prevent="toggleItemStatus(order, item)"
+                             :class="isItemCompleted(item)
+                                ? 'border-emerald-500/40 bg-emerald-900/20 cursor-pointer hover:bg-emerald-900/30'
+                                : 'border-slate-700/60 bg-slate-900/20 cursor-pointer hover:border-indigo-400/70 hover:bg-slate-900/40'">
                             <div class="flex items-start gap-2">
-                                <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-bold text-white"
-                                      x-text="item.qty + 'x'"></span>
+                                <button
+                                    @click.stop="toggleItemStatus(order, item)"
+                                    :disabled="item._loading"
+                                    type="button"
+                                    class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition disabled:cursor-not-allowed disabled:opacity-50"
+                                    :class="isItemCompleted(item)
+                                        ? 'border-emerald-300 bg-emerald-500 text-white hover:bg-emerald-400'
+                                        : 'border-slate-500 bg-slate-800 text-slate-300 hover:border-indigo-400 hover:text-indigo-300'">
+                                    <span x-show="item._loading" class="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+                                    <svg x-show="!item._loading && isItemCompleted(item)" class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                        <path d="M5 10.5 8.2 13.7 15 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    <svg x-show="!item._loading && !isItemCompleted(item)" class="h-4 w-4 opacity-60" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                        <rect x="4" y="4" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/>
+                                    </svg>
+                                </button>
                                 <div>
-                                    <span class="text-sm font-semibold text-white" x-text="item.product_name"></span>
-                                    <div x-show="item.note" class="mt-0.5 flex items-center gap-1 text-xs text-yellow-400">
-                                        <span>備註</span>
-                                        <span x-text="item.note"></span>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="text-sm font-semibold" :class="isItemCompleted(item) ? 'text-emerald-200 line-through' : 'text-white'" x-text="item.product_name"></span>
+                                        <span class="text-xs font-semibold" :class="isItemCompleted(item) ? 'text-emerald-300' : 'text-slate-300'" x-text="'x ' + item.qty"></span>
+                                    </div>
+                                    <div x-show="item.note" class="mt-1 rounded-md border border-yellow-700/40 bg-yellow-900/20 px-2 py-1 text-xs text-yellow-300">
+                                        <div class="font-semibold" x-text="i18n.item_note_label"></div>
+                                        <div class="mt-0.5 break-words" x-text="item.note"></div>
                                     </div>
                                     <div x-show="item.option_summary" class="mt-0.5 text-xs text-slate-400" x-text="item.option_summary"></div>
                                 </div>
-                            </div>
-                            <div class="shrink-0">
-                                <button
-                                    @click="setItemStatus(order, item, isItemCompleted(item) ? 'preparing' : 'completed')"
-                                    :disabled="item._loading"
-                                    class="rounded-lg px-2 py-1 text-[11px] font-semibold transition disabled:opacity-50"
-                                    :class="isItemCompleted(item) ? 'bg-emerald-700 text-white hover:bg-emerald-600' : 'bg-indigo-600 text-white hover:bg-indigo-500'"
-                                    x-text="item._loading ? i18n.processing : (isItemCompleted(item) ? i18n.item_completed : i18n.mark_item_completed)">
-                                </button>
                             </div>
                         </div>
                     </template>
@@ -281,7 +279,7 @@ $kitchenI18n = [
     </div>
 
     {{-- New order toast --}}
-    <div x-show="newOrderAlert" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+    <div x-show="newOrderAlert" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
          class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border border-emerald-500/50 bg-emerald-900 px-5 py-3 shadow-xl">
         <span class="text-2xl">!</span>
         <div>
@@ -290,7 +288,7 @@ $kitchenI18n = [
         </div>
     </div>
 
-    <div x-show="errorMessage" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+    <div x-show="errorMessage" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
          class="fixed bottom-6 left-6 z-50 max-w-md rounded-2xl border border-rose-500/50 bg-rose-900 px-5 py-3 text-sm text-rose-100 shadow-xl">
         <p class="font-semibold">{{ __('admin.board_operation_failed') }}</p>
         <p class="mt-1" x-text="errorMessage"></p>
@@ -477,6 +475,14 @@ function kitchenBoard() {
             }
 
             return order.items.filter((item) => this.isItemCompleted(item)).length;
+        },
+
+        toggleItemStatus(order, item) {
+            if (item?._loading) {
+                return;
+            }
+
+            this.setItemStatus(order, item, this.isItemCompleted(item) ? 'preparing' : 'completed');
         },
 
         async setItemStatus(order, item, status) {

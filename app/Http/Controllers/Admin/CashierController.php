@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Store;
+use App\Services\LoyaltyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use JsonException;
 
 class CashierController extends Controller
@@ -87,11 +89,17 @@ class CashierController extends Controller
                 return response()->json(['ok' => false, 'message' => 'Please provide at least one cancellation reason'], 422);
             }
 
-            $order->update([
-                'status' => 'cancelled',
-                'cancel_reason_options' => $cancelReasonOptions->isNotEmpty() ? $cancelReasonOptions->values()->all() : null,
-                'cancel_reason_other' => $cancelReasonOther !== '' ? $cancelReasonOther : null,
-            ]);
+            DB::transaction(function () use ($order, $cancelReasonOptions, $cancelReasonOther): void {
+                $order->update([
+                    'status' => 'cancelled',
+                    'cancel_reason_options' => $cancelReasonOptions->isNotEmpty() ? $cancelReasonOptions->values()->all() : null,
+                    'cancel_reason_other' => $cancelReasonOther !== '' ? $cancelReasonOther : null,
+                ]);
+
+                app(LoyaltyService::class)->reverseOrderLoyaltyOnCancellation($order);
+            });
+
+            $order->refresh();
 
             return response()->json([
                 'ok'             => true,

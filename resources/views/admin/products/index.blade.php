@@ -21,7 +21,7 @@
                 <div class="flex flex-wrap gap-2">
                     <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center justify-center rounded-2xl border border-slate-900 bg-slate-800 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700">{{ __('admin.products_back_to_stores') }}</a>
                     @if($store->is_active)
-                        <a href="{{ route('admin.stores.kitchen', $store) }}" class="inline-flex items-center justify-center rounded-2xl border border-orange-300 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">🍳 {{ __('admin.kitchen') }}</a>
+                        <a href="{{ route('admin.stores.boards', $store) }}" class="inline-flex items-center justify-center rounded-2xl border border-orange-300 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">{{ __('admin.board_all_title') }}</a>
                     @endif
                     <button type="button" id="create-category-btn" class="inline-flex items-center justify-center rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">{{ __('admin.products_btn_add_category') }}</button>
                     <button type="button" id="create-product-btn" class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500">{{ __('admin.products_btn_add_product') }}</button>

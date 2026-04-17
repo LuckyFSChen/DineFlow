@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', __('admin.board_all_title') . ' — ' . $store->name)
+@section('title', $store->name)
 
 @php
 $storeRouteValue = static function ($value) {
@@ -28,6 +28,8 @@ $storeCancelQuickReasons = collect(is_array($store->cancel_quick_reasons) ? $sto
 
 $allBoardsI18n = [
     'order_unit' => __('admin.board_order_unit'),
+    'next_refresh' => __('admin.board_next_refresh'),
+    'not_updated_yet' => __('admin.board_not_updated_yet'),
     'waiting_prefix' => __('admin.board_waiting_prefix'),
     'locale_prefix' => __('admin.board_locale_prefix'),
     'accept_prepay' => __('admin.board_action_accept_prepay'),
@@ -47,6 +49,9 @@ $allBoardsI18n = [
     'cancel_quick_reasons' => $storeCancelQuickReasons !== [] ? $storeCancelQuickReasons : $defaultCancelQuickReasons,
     'label_kitchen' => __('admin.board_label_kitchen'),
     'label_cashier' => __('admin.board_label_cashier'),
+    'item_progress' => __('admin.board_item_progress'),
+    'item_note_label' => __('admin.board_item_note_label'),
+    'processing' => __('admin.board_processing'),
     'status_preparing' => __('admin.board_status_preparing'),
     'status_unpaid_collect' => __('admin.board_status_unpaid_collect'),
     'status_pending' => __('admin.board_status_pending'),
@@ -66,25 +71,17 @@ $allBoardsI18n = [
         <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div class="flex items-center gap-4">
             <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700">
-                ← {{ __('admin.board_back_to_stores') }}
+                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path d="M8 5 3 10l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M4 10h13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+                {{ __('admin.board_back_to_stores') }}
             </a>
-            <div>
-                <h1 class="text-lg font-bold text-white">🧩 {{ __('admin.board_all_title') }}</h1>
-                <p class="text-xs text-slate-400">{{ $store->name }}</p>
-            </div>
         </div>
 
         <div class="flex flex-wrap items-center gap-2 xl:justify-end">
             <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
-                @if($store->is_active)
-                    <a href="{{ route('admin.stores.cashier', ['store' => $storeRoute]) }}" class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
-                        💳 {{ __('admin.board_cashier_title') }}
-                    </a>
-                    <a href="{{ route('admin.stores.kitchen', ['store' => $storeRoute]) }}" class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
-                        🍳 {{ __('admin.board_kitchen_title') }}
-                    </a>
-                @endif
-                <span class="px-3 py-1.5 bg-indigo-600 text-white">🧩 {{ __('admin.board_all_title') }}</span>
+                <span class="px-3 py-1.5 bg-indigo-600 text-white">{{ $store->name }}</span>
             </div>
 
             @if(($availableStores ?? collect())->count() > 1)
@@ -108,19 +105,6 @@ $allBoardsI18n = [
                 <button @click="boardFilter = 'kitchen'" :class="boardFilter === 'kitchen' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">{{ __('admin.board_label_kitchen') }}</button>
             </div>
 
-            <div class="flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs">
-                <span class="text-slate-400">等待色階</span>
-                <input type="number" min="0" x-model.number="waitConfig.orangeStart" @change="saveWaitConfig()"
-                       class="w-11 rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-slate-100 focus:border-indigo-500 focus:outline-none">
-                <span class="text-slate-500">/</span>
-                <input type="number" min="1" x-model.number="waitConfig.orangeEnd" @change="saveWaitConfig()"
-                       class="w-11 rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-slate-100 focus:border-indigo-500 focus:outline-none">
-                <span class="text-slate-500">/</span>
-                <input type="number" min="2" x-model.number="waitConfig.redEnd" @change="saveWaitConfig()"
-                       class="w-11 rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-slate-100 focus:border-indigo-500 focus:outline-none">
-                <span class="text-slate-500">m</span>
-            </div>
-
             <div class="flex items-center gap-1.5 rounded-full border border-emerald-700 bg-emerald-900/50 px-3 py-1 text-xs text-emerald-400">
                 <span class="relative flex h-2 w-2">
                     <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
@@ -130,6 +114,7 @@ $allBoardsI18n = [
             </div>
 
             <span class="rounded-full bg-indigo-600 px-3 py-0.5 text-xs font-bold" x-text="filteredOrders.length + ' ' + i18n.order_unit"></span>
+            <span class="rounded-full border border-slate-700 bg-slate-800 px-3 py-0.5 text-xs text-slate-300" x-text="'{{ __('admin.board_last_updated') }}: ' + lastUpdatedText + ' · ' + i18n.next_refresh + nextRefreshIn + 's'"></span>
         </div>
         </div>
     </div>
@@ -165,7 +150,7 @@ $allBoardsI18n = [
                                     x-text="i18n.locale_prefix + localeLabel(order.order_locale)"></span>
                         </div>
                         <div x-show="order.customer_name" class="mt-0.5 text-xs text-slate-400">
-                            👤 <span x-text="order.customer_name"></span>
+                            <span x-text="order.customer_name"></span>
                         </div>
                     </div>
 
@@ -182,14 +167,47 @@ $allBoardsI18n = [
                 </div>
 
                 <div class="flex-1 px-4 py-3 space-y-2">
+                    <div x-show="order.board === 'kitchen'" class="mb-1 text-[11px] font-semibold text-slate-300">
+                        <span x-text="i18n.item_progress"></span>：<span x-text="completedItemCount(order)"></span>/<span x-text="order.items.length"></span>
+                    </div>
                     <template x-for="item in order.items" :key="item.id">
-                        <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-start justify-between gap-2 rounded-lg border px-2 py-2 transition-colors duration-150"
+                             :role="order.board === 'kitchen' ? 'button' : null"
+                             :tabindex="order.board === 'kitchen' ? 0 : -1"
+                             @click="order.board === 'kitchen' && toggleItemStatus(order, item)"
+                             @keydown.enter.prevent="order.board === 'kitchen' && toggleItemStatus(order, item)"
+                             @keydown.space.prevent="order.board === 'kitchen' && toggleItemStatus(order, item)"
+                             :class="order.board === 'kitchen'
+                                ? (isItemCompleted(item)
+                                    ? 'border-emerald-500/40 bg-emerald-900/20 cursor-pointer hover:bg-emerald-900/30'
+                                    : 'border-slate-700/60 bg-slate-900/20 cursor-pointer hover:border-indigo-400/70 hover:bg-slate-900/40')
+                                : 'border-slate-700/60 bg-slate-900/20'">
                             <div class="flex items-start gap-2">
-                                <span class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-bold text-white" x-text="item.qty + '×'"></span>
+                                <button
+                                    x-show="order.board === 'kitchen'"
+                                    @click.stop="toggleItemStatus(order, item)"
+                                    :disabled="item._loading || !canKitchenActions"
+                                    type="button"
+                                    class="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition disabled:cursor-not-allowed disabled:opacity-50"
+                                    :class="isItemCompleted(item)
+                                        ? 'border-emerald-300 bg-emerald-500 text-white hover:bg-emerald-400'
+                                        : 'border-slate-500 bg-slate-800 text-slate-300 hover:border-indigo-400 hover:text-indigo-300'">
+                                    <span x-show="item._loading" class="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+                                    <svg x-show="!item._loading && isItemCompleted(item)" class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                        <path d="M5 10.5 8.2 13.7 15 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    <svg x-show="!item._loading && !isItemCompleted(item)" class="h-4 w-4 opacity-60" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                        <rect x="4" y="4" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/>
+                                    </svg>
+                                </button>
                                 <div>
-                                    <span class="text-sm font-semibold text-white" x-text="item.product_name"></span>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="text-sm font-semibold" :class="order.board === 'kitchen' && isItemCompleted(item) ? 'text-emerald-200 line-through' : 'text-white'" x-text="item.product_name"></span>
+                                        <span class="text-xs font-semibold" :class="order.board === 'kitchen' && isItemCompleted(item) ? 'text-emerald-300' : 'text-slate-300'" x-text="'x ' + item.qty"></span>
+                                    </div>
                                     <div x-show="item.note" class="mt-0.5 flex items-center gap-1 text-xs text-yellow-400">
-                                        <span>📝</span>
+                                        <span x-show="order.board === 'kitchen'" x-text="i18n.item_note_label"></span>
+                                        <span x-show="order.board !== 'kitchen'">📝</span>
                                         <span x-text="item.note"></span>
                                     </div>
                                     <div x-show="item.option_summary" class="mt-0.5 text-xs text-slate-400" x-text="item.option_summary"></div>
@@ -247,6 +265,7 @@ $allBoardsI18n = [
 
     <div
         x-show="cancelModalOpen"
+        x-cloak
         x-transition.opacity
         class="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4"
         @keydown.escape.window="closeCancelDialog()">
@@ -304,7 +323,8 @@ $allBoardsI18n = [
         </div>
     </div>
 
-    <div x-show="newOrderAlert"
+        <div x-show="newOrderAlert"
+            x-cloak
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0 translate-y-4"
          x-transition:enter-end="opacity-100 translate-y-0"
@@ -312,14 +332,15 @@ $allBoardsI18n = [
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
          class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border border-emerald-500/50 bg-emerald-900 px-5 py-3 shadow-xl">
-        <span class="text-2xl">🔔</span>
+        <span class="text-2xl">!</span>
         <div>
             <p class="font-bold text-white">{{ __('admin.board_new_order_arrived') }}</p>
             <p class="text-xs text-emerald-300">{{ __('admin.board_new_order_added_all') }}</p>
         </div>
     </div>
 
-    <div x-show="errorMessage"
+        <div x-show="errorMessage"
+            x-cloak
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0 translate-y-4"
          x-transition:enter-end="opacity-100 translate-y-0"
@@ -348,7 +369,11 @@ function allBoards() {
         loading: false,
         newOrderAlert: false,
         errorMessage: '',
+        lastUpdatedAt: null,
+        pollSeconds: 10,
+        nextRefreshIn: 10,
         _pollTimer: null,
+        _countdownTimer: null,
         _alertTimer: null,
         _errorTimer: null,
         cancelModalOpen: false,
@@ -369,12 +394,34 @@ function allBoards() {
             return this.orders;
         },
 
+        get lastUpdatedText() {
+            if (!this.lastUpdatedAt) {
+                return this.i18n.not_updated_yet;
+            }
+
+            return new Date(this.lastUpdatedAt).toLocaleTimeString();
+        },
+
         init() {
+            clearInterval(this._pollTimer);
+            clearInterval(this._countdownTimer);
             this.cancelQuickReasons = Array.isArray(this.i18n.cancel_quick_reasons)
                 ? this.i18n.cancel_quick_reasons
                 : [];
             this.loadWaitConfig();
-            this._pollTimer = setInterval(() => this.poll(), 10000);
+            this.lastUpdatedAt = Date.now();
+            this.nextRefreshIn = this.pollSeconds;
+            this._pollTimer = setInterval(() => this.poll(), this.pollSeconds * 1000);
+            this._countdownTimer = setInterval(() => this.tickCountdown(), 1000);
+        },
+
+        tickCountdown() {
+            if (this.nextRefreshIn <= 1) {
+                this.nextRefreshIn = this.pollSeconds;
+                return;
+            }
+
+            this.nextRefreshIn -= 1;
         },
 
         openCancelDialog(order) {
@@ -449,6 +496,7 @@ function allBoards() {
                 const hasNew = merged.some((o) => !oldIds.has(`${o.board}-${o.id}`));
 
                 this.orders = merged;
+                this.lastUpdatedAt = Date.now();
 
                 if (hasNew) {
                     this.showAlert();
@@ -505,6 +553,82 @@ function allBoards() {
                 this.showError(e?.message || this.i18n.error_network);
             }
             order._loading = false;
+        },
+
+        isItemCompleted(item) {
+            return String(item?.item_status || '').toLowerCase() === 'completed';
+        },
+
+        completedItemCount(order) {
+            if (!Array.isArray(order?.items)) {
+                return 0;
+            }
+
+            return order.items.filter((item) => this.isItemCompleted(item)).length;
+        },
+
+        toggleItemStatus(order, item) {
+            if (item?._loading) {
+                return;
+            }
+
+            this.setItemStatus(order, item, this.isItemCompleted(item) ? 'preparing' : 'completed');
+        },
+
+        async setItemStatus(order, item, status) {
+            if (!this.canKitchenActions || order?.board !== 'kitchen') {
+                return;
+            }
+
+            item._loading = true;
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                if (!token) {
+                    this.showError(this.i18n.error_missing_csrf);
+                    item._loading = false;
+                    return;
+                }
+
+                const statusUrl = this.kitchenStatusUrlTemplate.replace('__ORDER__', String(order.id));
+                const res = await fetch(
+                    statusUrl,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': token,
+                        },
+                        body: JSON.stringify({
+                            status,
+                            item_status: status,
+                            item_id: item.id,
+                        }),
+                    }
+                );
+
+                if (!res.ok) {
+                    let message = `HTTP ${res.status}`;
+                    try {
+                        const data = await res.json();
+                        message = data.message || message;
+                    } catch {}
+                    this.showError(message);
+                    item._loading = false;
+                    return;
+                }
+
+                const data = await res.json();
+                item.item_status = data?.item?.item_status || status;
+                item.completed_at = data?.item?.completed_at || null;
+
+                if (String(data?.order?.status || '').toLowerCase() === 'completed') {
+                    this.orders = this.orders.filter((o) => !(o.board === 'kitchen' && o.id === order.id));
+                }
+            } catch (e) {
+                this.showError(e?.message || this.i18n.error_network);
+            }
+            item._loading = false;
         },
 
         canAccept(order) {

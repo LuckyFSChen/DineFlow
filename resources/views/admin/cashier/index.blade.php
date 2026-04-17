@@ -102,16 +102,9 @@ $cashierI18n = [
         <div class="flex flex-wrap items-center gap-2 xl:justify-end">
             {{-- Board switch --}}
             <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
-                <span class="px-3 py-1.5 bg-indigo-600 text-white">💳 {{ __('admin.board_cashier_title') }}</span>
-                @if($store->is_active)
-                    <a href="{{ route('admin.stores.kitchen', ['store' => $storeRoute]) }}"
-                       class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
-                        🍳 {{ __('admin.board_kitchen_title') }}
-                    </a>
-                @endif
                 <a href="{{ route('admin.stores.boards', ['store' => $storeRoute]) }}"
-                   class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
-                    🧩 {{ __('admin.board_all_title') }}
+                   class="px-3 py-1.5 bg-indigo-600 text-white transition hover:bg-indigo-500">
+                    {{ $store->name }}
                 </a>
             </div>
 
@@ -145,19 +138,6 @@ $cashierI18n = [
                 {{ __('admin.board_refresh_now') }}
             </button>
 
-            <div class="flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs">
-                <span class="text-slate-400">等待色階</span>
-                <input type="number" min="0" x-model.number="waitConfig.orangeStart" @change="saveWaitConfig()"
-                       class="w-11 rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-slate-100 focus:border-indigo-500 focus:outline-none">
-                <span class="text-slate-500">/</span>
-                <input type="number" min="1" x-model.number="waitConfig.orangeEnd" @change="saveWaitConfig()"
-                       class="w-11 rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-slate-100 focus:border-indigo-500 focus:outline-none">
-                <span class="text-slate-500">/</span>
-                <input type="number" min="2" x-model.number="waitConfig.redEnd" @change="saveWaitConfig()"
-                       class="w-11 rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-slate-100 focus:border-indigo-500 focus:outline-none">
-                <span class="text-slate-500">m</span>
-            </div>
-
             {{-- Status filter --}}
             <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
                 <button @click="filter = 'all'" :class="filter === 'all' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-700'" class="px-3 py-1.5 transition">{{ __('admin.board_filter_all') }}</button>
@@ -176,7 +156,6 @@ $cashierI18n = [
 
             {{-- Count badge --}}
             <span class="rounded-full bg-indigo-600 px-3 py-0.5 text-xs font-bold" x-text="filteredOrders.length + ' / ' + orders.length + ' ' + i18n.order_unit"></span>
-            <span class="rounded-full border border-slate-700 bg-slate-800 px-3 py-0.5 text-xs text-slate-300" x-text="i18n.next_refresh + nextRefreshIn + 's'"></span>
         </div>
         </div>
 
@@ -191,7 +170,7 @@ $cashierI18n = [
             </div>
             <div class="rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2">
                 <p class="text-[11px] text-slate-400">{{ __('admin.board_last_updated') }}</p>
-                <p class="text-sm font-semibold text-slate-100" x-text="lastUpdatedText"></p>
+                <p class="text-sm font-semibold text-slate-100" x-text="lastUpdatedText + ' · ' + i18n.next_refresh + nextRefreshIn + 's'"></p>
             </div>
         </div>
     </div>
@@ -331,6 +310,7 @@ $cashierI18n = [
     {{-- Cancel reason modal --}}
     <div
         x-show="cancelModalOpen"
+        x-cloak
         x-transition.opacity
         class="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4"
         @keydown.escape.window="closeCancelDialog()">
@@ -389,7 +369,8 @@ $cashierI18n = [
     </div>
 
     {{-- New order toast --}}
-    <div x-show="newOrderAlert"
+        <div x-show="newOrderAlert"
+            x-cloak
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0 translate-y-4"
          x-transition:enter-end="opacity-100 translate-y-0"
@@ -404,7 +385,8 @@ $cashierI18n = [
         </div>
     </div>
 
-    <div x-show="errorMessage"
+        <div x-show="errorMessage"
+            x-cloak
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0 translate-y-4"
          x-transition:enter-end="opacity-100 translate-y-0"

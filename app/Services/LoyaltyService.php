@@ -147,6 +147,66 @@ class LoyaltyService
         $member->save();
     }
 
+    public function reverseOrderLoyaltyOnCancellation(Order $order): void
+    {
+        $memberId = (int) $order->member_id;
+        if ($memberId <= 0) {
+            return;
+        }
+
+        $pointsUsed = max((int) $order->points_used, 0);
+        $pointsEarned = max((int) $order->points_earned, 0);
+        if ($pointsUsed === 0 && $pointsEarned === 0) {
+            return;
+        }
+
+        $member = Member::query()->lockForUpdate()->find($memberId);
+        if (! $member) {
+            return;
+        }
+
+        $alreadyReversed = MemberPointLedger::query()
+            ->where('order_id', $order->id)
+            ->where('member_id', $member->id)
+            ->whereIn('type', ['coupon_redeem_refund', 'order_reward_reversal'])
+            ->exists();
+
+        if ($alreadyReversed) {
+            return;
+        }
+
+        $balance = (int) $member->points_balance;
+
+        if ($pointsEarned > 0) {
+            $balance = max($balance - $pointsEarned, 0);
+            MemberPointLedger::query()->create([
+                'store_id' => $member->store_id,
+                'member_id' => $member->id,
+                'order_id' => $order->id,
+                'points_change' => -$pointsEarned,
+                'balance_after' => $balance,
+                'type' => 'order_reward_reversal',
+                'note' => '訂單取消，回收回饋點數',
+            ]);
+        }
+
+        if ($pointsUsed > 0) {
+            $balance += $pointsUsed;
+            MemberPointLedger::query()->create([
+                'store_id' => $member->store_id,
+                'member_id' => $member->id,
+                'order_id' => $order->id,
+                'points_change' => $pointsUsed,
+                'balance_after' => $balance,
+                'type' => 'coupon_redeem_refund',
+                'note' => '訂單取消，退還折抵點數',
+            ]);
+        }
+
+        $member->points_balance = $balance;
+        $member->save();
+    }
+
     private function normalizeText(?string $value): ?string
     {
         if ($value === null) {

@@ -4,6 +4,10 @@
 @tailwind components;
 @tailwind utilities;
 
+[x-cloak] {
+	display: none !important;
+}
+
 :root {
 	--admin-ink: #11343a;
 	--admin-soft-ink: #3d5f66;

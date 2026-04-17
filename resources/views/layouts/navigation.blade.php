@@ -51,36 +51,24 @@
         ? $navUser->store
         : null;
 
-    $kitchenNavStore = null;
-    if ($navUser?->isAdmin() || $navUser?->hasActiveSubscription() || $navUser?->isChef()) {
-        if ($navUser?->isMerchant()) {
-            $kitchenNavStore = $merchantOpenStore;
-        } elseif ($navUser?->isChef()) {
-            $kitchenNavStore = $chefOpenStore;
-        } else {
-            $kitchenNavStore = $resolvedRouteStore ?: $firstOpenStore();
-        }
+    $boardNavStore = null;
+    if ($navUser?->isMerchant()) {
+        $boardNavStore = $merchantOpenStore;
+    } elseif ($navUser?->isChef()) {
+        $boardNavStore = $chefOpenStore;
+    } elseif ($navUser?->isCashier()) {
+        $boardNavStore = $cashierOpenStore;
+    } elseif ($navUser?->isAdmin() || $navUser?->hasActiveSubscription()) {
+        $boardNavStore = $resolvedRouteStore ?: $firstOpenStore();
     }
 
-    $cashierNavStore = null;
-    if ($navUser?->isAdmin() || $navUser?->hasActiveSubscription() || $navUser?->isCashier()) {
-        if ($navUser?->isMerchant()) {
-            $cashierNavStore = $merchantOpenStore;
-        } elseif ($navUser?->isCashier()) {
-            $cashierNavStore = $cashierOpenStore;
-        } else {
-            $cashierNavStore = $resolvedRouteStore ?: $firstOpenStore();
-        }
-    }
+    $showBoardNav = $boardNavStore
+        && ($navUser?->isAdmin()
+            || $navUser?->hasActiveSubscription()
+            || $navUser?->isChef()
+            || $navUser?->isCashier());
 
-    $showKitchenNav = $kitchenNavStore
-        && ($navUser?->isAdmin() || $navUser?->hasActiveSubscription() || $navUser?->isChef());
-
-    $showCashierNav = $cashierNavStore
-        && ($navUser?->isAdmin() || $navUser?->hasActiveSubscription() || $navUser?->isCashier());
-
-    $kitchenNavStoreRoute = $storeRouteValue($kitchenNavStore);
-    $cashierNavStoreRoute = $storeRouteValue($cashierNavStore);
+    $boardNavStoreRoute = $storeRouteValue($boardNavStore);
 
     $merchantHasStores = $navUser?->isMerchant()
         ? $navUser->stores()->exists()
@@ -130,20 +118,14 @@
                     @endif
 
                     @if(Auth::user()?->isAdmin() || Auth::user()?->hasActiveSubscription())
-                        <x-nav-link :href="route('admin.stores.index')" :active="request()->routeIs('admin.stores.*') && !request()->routeIs('admin.stores.kitchen*')">
+                        <x-nav-link :href="route('admin.stores.index')" :active="request()->routeIs('admin.stores.*') && !request()->routeIs('admin.stores.kitchen*') && !request()->routeIs('admin.stores.cashier*') && !request()->routeIs('admin.stores.boards*')">
                             {{ __('nav.store_backend') }}
                         </x-nav-link>
                     @endif
 
-                    @if($showKitchenNav && $kitchenNavStoreRoute)
-                        <x-nav-link :href="route('admin.stores.kitchen', ['store' => $kitchenNavStoreRoute])" :active="request()->routeIs('admin.stores.kitchen*')">
-                            🍳 {{ __('nav.kitchen') }}
-                        </x-nav-link>
-                    @endif
-
-                    @if($showCashierNav && $cashierNavStoreRoute)
-                        <x-nav-link :href="route('admin.stores.cashier', ['store' => $cashierNavStoreRoute])" :active="request()->routeIs('admin.stores.cashier*')">
-                            💳 {{ __('nav.cashier') }}
+                    @if($showBoardNav && $boardNavStoreRoute)
+                        <x-nav-link :href="route('admin.stores.boards', ['store' => $boardNavStoreRoute])" :active="$isBoardPage">
+                            {{ __('admin.board_all_title') }}
                         </x-nav-link>
                     @endif
 
@@ -271,20 +253,14 @@
             @endif
 
             @if(Auth::user()?->isAdmin() || Auth::user()?->hasActiveSubscription())
-                <x-responsive-nav-link :href="route('admin.stores.index')" :active="request()->routeIs('admin.stores.*')">
+                <x-responsive-nav-link :href="route('admin.stores.index')" :active="request()->routeIs('admin.stores.*') && !request()->routeIs('admin.stores.kitchen*') && !request()->routeIs('admin.stores.cashier*') && !request()->routeIs('admin.stores.boards*')">
                     {{ __('nav.store_backend') }}
                 </x-responsive-nav-link>
             @endif
 
-            @if($showKitchenNav && $kitchenNavStoreRoute)
-                <x-responsive-nav-link :href="route('admin.stores.kitchen', ['store' => $kitchenNavStoreRoute])" :active="request()->routeIs('admin.stores.kitchen*')">
-                    🍳 {{ __('nav.kitchen') }}
-                </x-responsive-nav-link>
-            @endif
-
-            @if($showCashierNav && $cashierNavStoreRoute)
-                <x-responsive-nav-link :href="route('admin.stores.cashier', ['store' => $cashierNavStoreRoute])" :active="request()->routeIs('admin.stores.cashier*')">
-                    💳 {{ __('nav.cashier') }}
+            @if($showBoardNav && $boardNavStoreRoute)
+                <x-responsive-nav-link :href="route('admin.stores.boards', ['store' => $boardNavStoreRoute])" :active="$isBoardPage">
+                    {{ __('admin.board_all_title') }}
                 </x-responsive-nav-link>
             @endif
 
@@ -351,12 +327,8 @@
         <div class="mobile-admin-dock">
             <a href="{{ route('admin.stores.index') }}" class="{{ request()->routeIs('admin.stores.index') ? 'active' : '' }}">{{ __('nav.stores_short') }}</a>
 
-            @if($showKitchenNav && $kitchenNavStoreRoute)
-                <a href="{{ route('admin.stores.kitchen', ['store' => $kitchenNavStoreRoute]) }}" class="{{ request()->routeIs('admin.stores.kitchen*') ? 'active' : '' }}">{{ __('nav.kitchen_short') }}</a>
-            @endif
-
-            @if($showCashierNav && $cashierNavStoreRoute)
-                <a href="{{ route('admin.stores.cashier', ['store' => $cashierNavStoreRoute]) }}" class="{{ request()->routeIs('admin.stores.cashier*') ? 'active' : '' }}">{{ __('nav.cashier_short') }}</a>
+            @if($showBoardNav && $boardNavStoreRoute)
+                <a href="{{ route('admin.stores.boards', ['store' => $boardNavStoreRoute]) }}" class="{{ $isBoardPage ? 'active' : '' }}">{{ __('admin.board_all_title') }}</a>
             @endif
 
             @if(Auth::user()?->isMerchant())
