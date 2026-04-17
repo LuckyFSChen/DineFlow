@@ -2,6 +2,7 @@
 
 return [
     'Email'                      => 'Email',
+    'Phone'                      => '手机号',
     'Password'                   => '密碼',
     'Remember me'                => '記住我',
     'Forgot your password?'      => '忘記密碼？',
@@ -23,6 +24,7 @@ return [
     'customer_desc'              => '顧客帳號，可用於個人資料與訂單體驗。',
     'merchant_type'              => '商家',
     'merchant_desc'              => '商家帳號，需啟用訂閱後才能新增與管理商家。',
+    'customer_email_optional_hint' => '顾客可不填 Email，使用手机号注册与登录即可。',
     'secure_area_confirm_password' => '這是系統的安全區域，請先確認密碼後再繼續。',
     'Confirm'                    => '确认',
     'Reset Password'             => '重置密码',

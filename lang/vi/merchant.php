@@ -125,4 +125,9 @@ return [
     'chart_revenue_label' => 'Doanh thu (:currency)',
     'chart_orders_label' => 'Đơn hàng',
     'payment_redirect_hint' => 'Bạn sẽ được chuyển đến ECPay. Trạng thái đăng ký sẽ tự đồng bộ sau khi thanh toán.',
+    'error_only_merchant_can_subscribe' => 'Chỉ tài khoản thương nhân mới có thể đăng ký gói.',
+    'error_ecpay_not_configured' => 'ECPay chưa được cấu hình, vui lòng thiết lập tham số ECPAY trước.',
+    'error_plan_downgrade_blocked' => 'Gói hiện tại chưa hết hạn nên chưa thể hạ cấp trực tiếp. Vui lòng hạ cấp sau khi gói hiện tại hết hạn.',
+    'error_plan_upgrade_cycle_blocked' => 'Khi nâng cấp lên gói cao hơn, chu kỳ thanh toán không được rút ngắn. Vui lòng chọn cùng chu kỳ hoặc dài hơn.',
+    'error_store_required_for_loyalty' => 'Vui lòng tạo ít nhất một cửa hàng trước khi vào Thành viên & Ưu đãi.',
 ];

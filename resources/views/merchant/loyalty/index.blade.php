@@ -195,6 +195,8 @@
                             <th class="px-3 py-2 text-left">姓名</th>
                             <th class="px-3 py-2 text-left">Email</th>
                             <th class="px-3 py-2 text-left">手機</th>
+                            <th class="px-3 py-2 text-left">常點品項</th>
+                            <th class="px-3 py-2 text-left">最近歷史訂單</th>
                             <th class="px-3 py-2 text-right">點數</th>
                             <th class="px-3 py-2 text-right">消費總額</th>
                             <th class="px-3 py-2 text-right">訂單數</th>
@@ -206,13 +208,45 @@
                                 <td class="px-3 py-2">{{ $member->name ?: '-' }}</td>
                                 <td class="px-3 py-2">{{ $member->email ?: '-' }}</td>
                                 <td class="px-3 py-2">{{ $member->phone ?: '-' }}</td>
+                                <td class="px-3 py-2 align-top">
+                                    @php
+                                        $favoriteItems = $favoriteItemsByMember->get((int) $member->id, collect());
+                                    @endphp
+                                    @if($favoriteItems->isNotEmpty())
+                                        <div class="space-y-1 text-xs text-slate-700">
+                                            @foreach($favoriteItems as $item)
+                                                <div>{{ $item->product_name }} <span class="text-slate-500">x{{ number_format((int) $item->total_qty) }}</span></div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="text-xs text-slate-400">尚無點餐紀錄</span>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-2 align-top">
+                                    @php
+                                        $recentOrders = $recentOrdersByMember->get((int) $member->id, collect());
+                                    @endphp
+                                    @if($recentOrders->isNotEmpty())
+                                        <div class="space-y-2 text-xs text-slate-700">
+                                            @foreach($recentOrders as $order)
+                                                <div class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
+                                                    <div class="font-semibold text-slate-800">#{{ $order->order_no }}</div>
+                                                    <div class="text-slate-500">{{ optional($order->created_at)->format('Y-m-d H:i') }}｜{{ \App\Models\Order::customerStatusLabel($order->status, $order->payment_status) }}</div>
+                                                    <div class="text-slate-600">{{ $currencySymbol }} {{ number_format((int) $order->total) }}</div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="text-xs text-slate-400">尚無歷史訂單</span>
+                                    @endif
+                                </td>
                                 <td class="px-3 py-2 text-right">{{ number_format((int) $member->points_balance) }}</td>
                                 <td class="px-3 py-2 text-right">{{ $currencySymbol }} {{ number_format((int) $member->total_spent) }}</td>
                                 <td class="px-3 py-2 text-right">{{ number_format((int) $member->total_orders) }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-3 py-6 text-center text-slate-500">沒有符合條件的會員</td>
+                                <td colspan="8" class="px-3 py-6 text-center text-slate-500">沒有符合條件的會員</td>
                             </tr>
                         @endforelse
                     </tbody>

@@ -14,7 +14,7 @@ class EnsureActiveMerchantSubscription
         $user = $request->user();
 
         if ($user === null) {
-            abort(403, '請先登入。');
+            abort(403, __('admin.error_login_required'));
         }
 
         if ($user->isAdmin()) {
@@ -29,7 +29,7 @@ class EnsureActiveMerchantSubscription
 
             return redirect()
                 ->route('dashboard')
-                ->with('error', '商家帳號需先啟用有效訂閱，才能使用商家後台。');
+                ->with('error', __('admin.need_subscription'));
         }
 
         return $next($request);

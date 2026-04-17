@@ -9,10 +9,18 @@
             <x-input-error :messages="$errors->get('name')" class="mt-2" />
         </div>
 
+        <!-- Phone -->
+        <div class="mt-4">
+            <x-input-label for="phone" :value="__('auth.Phone')" />
+            <x-text-input id="phone" class="block mt-1 w-full" type="tel" name="phone" :value="old('phone')" autocomplete="tel" />
+            <x-input-error :messages="$errors->get('phone')" class="mt-2" />
+        </div>
+
         <!-- Email Address -->
         <div class="mt-4">
             <x-input-label for="email" :value="__('auth.Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autocomplete="username" />
+            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" autocomplete="username" />
+            <p class="mt-1 text-xs text-slate-500">{{ __('auth.customer_email_optional_hint') }}</p>
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
@@ -89,8 +97,10 @@
         const accountTypeInputs = Array.from(document.querySelectorAll('input[name="account_type"]'));
         const regionWrap = document.getElementById('merchant-region-wrap');
         const regionSelect = document.getElementById('merchant_region');
+        const phoneInput = document.getElementById('phone');
+        const emailInput = document.getElementById('email');
 
-        if (!regionWrap || !regionSelect || accountTypeInputs.length === 0) {
+        if (!regionWrap || !regionSelect || !phoneInput || !emailInput || accountTypeInputs.length === 0) {
             return;
         }
 
@@ -100,6 +110,8 @@
 
             regionWrap.classList.toggle('hidden', !isMerchant);
             regionSelect.required = isMerchant;
+            emailInput.required = isMerchant;
+            phoneInput.required = !isMerchant;
 
             if (!isMerchant) {
                 regionSelect.value = '';

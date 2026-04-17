@@ -114,7 +114,8 @@ $allBoardsI18n = [
             </div>
 
             <span class="rounded-full bg-indigo-600 px-3 py-0.5 text-xs font-bold" x-text="filteredOrders.length + ' ' + i18n.order_unit"></span>
-            <span class="rounded-full border border-slate-700 bg-slate-800 px-3 py-0.5 text-xs text-slate-300" x-text="'{{ __('admin.board_last_updated') }}: ' + lastUpdatedText + ' · ' + i18n.next_refresh + nextRefreshIn + 's'"></span>
+            <span class="board-last-updated-text rounded-full border border-slate-700 bg-slate-800 px-3 py-0.5 text-xs text-slate-300" x-text="'{{ __('admin.board_last_updated') }}: ' + lastUpdatedText"></span>
+            <span class="board-next-refresh-block rounded-full border border-indigo-600/60 bg-indigo-950/40 px-3 py-0.5 text-xs font-semibold text-indigo-200 tabular-nums" x-text="i18n.next_refresh + nextRefreshIn + 's'"></span>
         </div>
         </div>
     </div>
@@ -399,7 +400,11 @@ function allBoards() {
                 return this.i18n.not_updated_yet;
             }
 
-            return new Date(this.lastUpdatedAt).toLocaleTimeString();
+            const d = new Date(this.lastUpdatedAt);
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            const ss = String(d.getSeconds()).padStart(2, '0');
+            return `${hh}:${mm}:${ss}`;
         },
 
         init() {

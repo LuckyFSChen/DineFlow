@@ -13,6 +13,7 @@
         'cn' => 11,
         default => 10,
     };
+    $isGuest = ! auth()->check();
 @endphp
 <div class="min-h-screen bg-brand-soft/20">
     <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -111,12 +112,34 @@
                                         @endif
                                         <div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-brand-primary/75">
                                             <span>{{ __('customer.unit_price') }} {{ $currencySymbol }} {{ number_format($item['price']) }}</span>
-                                            <span>{{ __('customer.qty') }} × {{ $item['qty'] }}</span>
+                                            <span>{{ __('customer.qty') }}</span>
+                                            <div class="inline-flex items-center gap-2 rounded-xl border border-brand-soft/70 bg-brand-soft/20 px-2 py-1">
+                                                <form method="POST" action="{{ route('customer.takeout.cart.items.update', ['store' => $store, 'lineKey' => $item['line_key']]) }}">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="hidden" name="action" value="decrease">
+                                                    <button type="submit" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-brand-soft bg-white text-sm font-bold text-brand-primary transition hover:bg-brand-soft/30" aria-label="{{ __('customer.decrease_qty') }}">−</button>
+                                                </form>
+                                                <span class="min-w-6 text-center text-sm font-semibold text-brand-dark">{{ $item['qty'] }}</span>
+                                                <form method="POST" action="{{ route('customer.takeout.cart.items.update', ['store' => $store, 'lineKey' => $item['line_key']]) }}">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="hidden" name="action" value="increase">
+                                                    <button type="submit" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-brand-soft bg-white text-sm font-bold text-brand-primary transition hover:bg-brand-soft/30" aria-label="{{ __('customer.increase_qty') }}">+</button>
+                                                </form>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div class="text-lg font-bold text-brand-dark">
-                                        {{ $currencySymbol }} {{ number_format($item['subtotal']) }}
+                                    <div class="flex items-center gap-3 sm:flex-col sm:items-end">
+                                        <div class="text-lg font-bold text-brand-dark">
+                                            {{ $currencySymbol }} {{ number_format($item['subtotal']) }}
+                                        </div>
+                                        <form method="POST" action="{{ route('customer.takeout.cart.items.destroy', ['store' => $store, 'lineKey' => $item['line_key']]) }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="inline-flex items-center rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">{{ __('customer.remove_item') }}</button>
+                                        </form>
                                     </div>
                                 </div>
                             @endforeach
@@ -161,8 +184,10 @@
 
                             <form method="POST"
                                   action="{{ route('customer.takeout.cart.checkout', ['store' => $store]) }}"
-                                  class="mt-6 space-y-5">
+                                                                    class="mt-6 space-y-5"
+                                                                    data-customer-checkout-form>
                                 @csrf
+                                                                <input type="hidden" name="create_account_with_phone" value="0" data-create-account-with-phone>
 
                                 <div>
                                     <label for="customer_name" class="mb-2 block text-sm font-medium text-brand-dark">
@@ -285,4 +310,59 @@
         @endif
     </div>
 </div>
+
+<script>
+(() => {
+    const input = document.querySelector('input[name="customer_phone"]');
+    const maxDigits = @json($phoneDigits);
+    if (!input) {
+        return;
+    }
+
+    const normalizePhoneInput = (raw) => {
+        const digits = String(raw || '').replace(/\D/g, '').slice(0, Number(maxDigits || 10));
+
+        if (digits.length <= 4) {
+            return digits;
+        }
+
+        if (digits.length <= 7) {
+            return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+        }
+
+        return `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
+    };
+
+    const apply = () => {
+        input.value = normalizePhoneInput(input.value);
+    };
+
+    input.setAttribute('maxlength', String((maxDigits || 10) + 2));
+    input.setAttribute('inputmode', 'numeric');
+    input.setAttribute('pattern', '[0-9-]*');
+    input.addEventListener('input', apply);
+    input.addEventListener('blur', apply);
+    apply();
+
+    const checkoutForm = document.querySelector('[data-customer-checkout-form]');
+    const createAccountInput = checkoutForm?.querySelector('[data-create-account-with-phone]');
+    const isGuest = @json($isGuest);
+
+    if (!checkoutForm || !createAccountInput || !isGuest) {
+        return;
+    }
+
+    const promptMessage = @json(__('customer.guest_register_points_prompt'));
+
+    checkoutForm.addEventListener('submit', () => {
+        const digits = String(input.value || '').replace(/\D/g, '');
+        if (!digits) {
+            createAccountInput.value = '0';
+            return;
+        }
+
+        createAccountInput.value = window.confirm(promptMessage) ? '1' : '0';
+    });
+})();
+</script>
 @endsection

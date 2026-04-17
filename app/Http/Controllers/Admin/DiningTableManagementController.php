@@ -133,15 +133,15 @@ class DiningTableManagementController extends Controller
                 'max:50',
                 function (string $attribute, mixed $value, \Closure $fail): void {
                     if ($this->isReservedTableNo((string) $value)) {
-                        $fail('桌號不可使用「外帶」，請輸入內用桌號。');
+                        $fail(__('admin.error_table_no_reserved'));
                     }
                 },
                 Rule::unique('dining_tables', 'table_no')
                     ->where(fn ($query) => $query->where('store_id', $store->id)->whereNull('deleted_at')),
             ],
         ], [
-            'table_no.required' => '請輸入桌號。',
-            'table_no.unique' => '此桌號已存在，請使用其他桌號。',
+            'table_no.required' => __('admin.error_table_no_required'),
+            'table_no.unique' => __('admin.error_table_no_unique'),
         ]);
 
         DiningTable::query()->create([
@@ -199,7 +199,7 @@ class DiningTableManagementController extends Controller
     {
         $user = $request->user();
         if (! $user) {
-            abort(403, '請先登入。');
+            abort(403, __('admin.error_login_required'));
         }
 
         if ($user->isAdmin()) {
@@ -210,7 +210,7 @@ class DiningTableManagementController extends Controller
             return;
         }
 
-        abort(403, '你無法管理此店家。');
+        abort(403, __('admin.error_cannot_manage_store'));
     }
 
     private function generateUniqueQrToken(): string

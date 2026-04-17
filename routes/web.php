@@ -198,6 +198,8 @@ Route::prefix('s/{store:slug}/t/{table:qr_token}')
     ->group(function () {
         Route::get('/menu', [DineInMenuController::class, 'index'])->name('menu');
         Route::post('/cart/items', [DineInOrderController::class, 'addToCart'])->name('cart.items.store');
+        Route::patch('/cart/items/{lineKey}', [DineInOrderController::class, 'updateCartItem'])->name('cart.items.update');
+        Route::delete('/cart/items/{lineKey}', [DineInOrderController::class, 'removeCartItem'])->name('cart.items.destroy');
         Route::get('/cart', [DineInOrderController::class, 'cart'])->name('cart.show');
         Route::post('/checkout', [DineInOrderController::class, 'submit'])->name('cart.checkout');
         Route::post('/customer-info/clear', [DineInOrderController::class, 'clearRememberedCustomerInfo'])->name('customer-info.clear');
@@ -214,6 +216,8 @@ Route::prefix('s/{store:slug}/takeout')
     ->group(function () {
         Route::get('/menu', [TakeoutOrderingController::class, 'menu'])->name('menu');
         Route::post('/cart/items', [TakeoutOrderingController::class, 'addToCart'])->name('cart.items.store');
+        Route::patch('/cart/items/{lineKey}', [TakeoutOrderingController::class, 'updateCartItem'])->name('cart.items.update');
+        Route::delete('/cart/items/{lineKey}', [TakeoutOrderingController::class, 'removeCartItem'])->name('cart.items.destroy');
         Route::get('/cart', [TakeoutOrderingController::class, 'cart'])->name('cart.show');
         Route::post('/checkout', [TakeoutOrderingController::class, 'checkout'])->name('cart.checkout');
         Route::post('/customer-info/clear', [TakeoutOrderingController::class, 'clearRememberedCustomerInfo'])->name('customer-info.clear');

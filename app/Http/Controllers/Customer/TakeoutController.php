@@ -110,7 +110,7 @@ class TakeoutController extends Controller
         if (empty($cart)) {
             return redirect()
                 ->route('customer.takeout.cart.show', ['store' => $store])
-                ->with('error', '購物車為空');
+                ->with('error', __('customer.error_cart_empty'));
         }
 
         $total = collect($cart)->sum('subtotal');
@@ -140,7 +140,6 @@ class TakeoutController extends Controller
                     'qty' => $item['qty'],
                     'subtotal' => $item['subtotal'],
                     'note' => null,
-                    'item_status' => 'preparing',
                 ]);
             }
 

@@ -80,12 +80,12 @@ class KitchenController extends Controller
         if ($itemId !== null && $itemId !== '') {
             $item = $order->items()->whereKey((int) $itemId)->first();
             if (! $item) {
-                return response()->json(['ok' => false, 'message' => 'Order item not found'], 404);
+                return response()->json(['ok' => false, 'message' => __('admin.error_order_item_not_found')], 404);
             }
 
             $itemStatus = strtolower((string) $request->input('item_status', $request->input('status', '')));
             if (! in_array($itemStatus, ['preparing', 'completed'], true)) {
-                return response()->json(['ok' => false, 'message' => 'Invalid item status'], 422);
+                return response()->json(['ok' => false, 'message' => __('admin.error_invalid_item_status')], 422);
             }
 
             return $this->applyItemStatusUpdate($order, $item, $itemStatus);
@@ -95,7 +95,7 @@ class KitchenController extends Controller
 
         // Kitchen board only transitions: preparing → completed
         if ($status !== 'completed') {
-            return response()->json(['ok' => false, 'message' => 'Invalid status'], 422);
+            return response()->json(['ok' => false, 'message' => __('admin.error_invalid_status')], 422);
         }
 
         $order->update(['status' => 'completed']);
@@ -116,7 +116,7 @@ class KitchenController extends Controller
 
         $status = strtolower((string) $request->input('status', ''));
         if (! in_array($status, ['preparing', 'completed'], true)) {
-            return response()->json(['ok' => false, 'message' => 'Invalid item status'], 422);
+            return response()->json(['ok' => false, 'message' => __('admin.error_invalid_item_status')], 422);
         }
 
         return $this->applyItemStatusUpdate($order, $item, $status);

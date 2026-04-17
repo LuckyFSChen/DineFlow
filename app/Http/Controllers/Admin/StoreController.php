@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Store;
 use App\Support\GooglePlaceService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -45,19 +46,15 @@ class StoreController extends Controller
         $data = $this->fillCoordinatesFromAddress($data);
 
         $maxAttempts = 10;
-        $attempt = 0;
-        do {
+        $baseSlug = Str::slug((string) ($data['slug'] ?? $data['name'])) ?: 'store';
+        $store = null;
+
+        if (empty($data['slug'])) {
+            $data['slug'] = $this->nextAvailableStoreSlug($baseSlug);
+        }
+
+        for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
             try {
-                if (empty($data['slug'])) {
-                    $baseSlug = Str::slug($data['name']);
-                    $slug = $baseSlug;
-                    $i = 1;
-                    while (Store::where('slug', $slug)->exists()) {
-                        $slug = $baseSlug . '-' . $i;
-                        $i++;
-                    }
-                    $data['slug'] = $slug;
-                }
                 $data['is_active'] = $request->boolean('is_active');
                 $store = Store::create([
                     'name' => $data['name'],
@@ -72,17 +69,19 @@ class StoreController extends Controller
                     'takeout_qr_enabled' => true,
                 ]);
                 break;
-            } catch (\Illuminate\Database\QueryException $e) {
-                if (str_contains($e->getMessage(), 'store_slug_unique') && $attempt < $maxAttempts) {
-                    $baseSlug = Str::slug($data['name']);
-                    $i = $attempt + 1;
-                    $data['slug'] = $baseSlug . '-' . $i;
-                    $attempt++;
-                } else {
-                    throw $e;
+            } catch (QueryException $e) {
+                if ($this->isStoreSlugUniqueViolation($e) && $attempt < $maxAttempts - 1) {
+                    $data['slug'] = $this->nextAvailableStoreSlug($baseSlug);
+                    continue;
                 }
+
+                throw $e;
             }
-        } while ($attempt < $maxAttempts);
+        }
+
+        if (! $store) {
+            throw new \RuntimeException(__('admin.error_store_slug_collision_repeated'));
+        }
 
         if ($request->hasFile('banner_image')) {
             $file = $request->file('banner_image');
@@ -115,7 +114,8 @@ class StoreController extends Controller
         $data = $this->fillCoordinatesFromAddress($data, $store);
 
         if (empty($data['slug'])) {
-            $data['slug'] = Str::slug($data['name']);
+            $baseSlug = Str::slug($data['name']) ?: 'store';
+            $data['slug'] = $this->nextAvailableStoreSlug($baseSlug, $store->id);
         }
 
         $data['is_active'] = $request->boolean('is_active');
@@ -209,6 +209,50 @@ class StoreController extends Controller
         $data['timezone'] = trim((string) ($data['timezone'] ?? '')) ?: null;
 
         return $data;
+    }
+
+    protected function isStoreSlugUniqueViolation(QueryException $e): bool
+    {
+        $sqlState = (string) ($e->errorInfo[0] ?? '');
+        $message = $e->getMessage();
+
+        if ($sqlState === '23505' && str_contains($message, 'stores_slug_unique')) {
+            return true;
+        }
+
+        return str_contains($message, 'stores_slug_unique')
+            || str_contains($message, 'store_slug_unique');
+    }
+
+    protected function nextAvailableStoreSlug(string $baseSlug, ?int $excludeStoreId = null): string
+    {
+        $baseSlug = Str::slug($baseSlug) ?: 'store';
+
+        $existingSlugs = Store::query()
+            ->select('slug')
+            ->when($excludeStoreId !== null, function ($query) use ($excludeStoreId) {
+                $query->where('id', '!=', $excludeStoreId);
+            })
+            ->where(function ($query) use ($baseSlug) {
+                $query->where('slug', $baseSlug)
+                    ->orWhere('slug', 'like', $baseSlug . '-%');
+            })
+            ->pluck('slug');
+
+        if (! $existingSlugs->contains($baseSlug)) {
+            return $baseSlug;
+        }
+
+        $maxSuffix = 0;
+        $pattern = '/^' . preg_quote($baseSlug, '/') . '-(\d+)$/';
+
+        foreach ($existingSlugs as $slug) {
+            if (preg_match($pattern, (string) $slug, $matches) === 1) {
+                $maxSuffix = max($maxSuffix, (int) $matches[1]);
+            }
+        }
+
+        return $baseSlug . '-' . ($maxSuffix + 1);
     }
 
     protected function expectedPhoneLengthByCountry(string $countryCode): int

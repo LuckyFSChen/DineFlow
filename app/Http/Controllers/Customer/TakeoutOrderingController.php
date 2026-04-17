@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
-use App\Models\Member;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Store;
-use App\Services\LoyaltyService;
+use App\Services\CustomerAccountService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -18,6 +17,10 @@ class TakeoutOrderingController extends Controller
     private const CUSTOMER_PROFILE_SESSION_KEY = 'customer_order_profile';
     private const ORDER_HISTORY_SESSION_PREFIX = 'takeout_order_history_';
     private const ORDER_HISTORY_LIMIT = 8;
+
+    public function __construct(private readonly CustomerAccountService $customerAccountService)
+    {
+    }
 
     protected function getTakeoutCartToken(Store $store): string
     {
@@ -57,7 +60,7 @@ class TakeoutOrderingController extends Controller
         $cartPreviewItems = collect($cart)->values();
         $orderHistory = $this->getTakeoutOrderHistory($store);
 
-        return view('customer.menu.mobile', compact(
+        return view('customer.takeout.menu-mobile', compact(
             'store',
             'categories',
             'orderingAvailable',
@@ -65,10 +68,7 @@ class TakeoutOrderingController extends Controller
             'cartTotal',
             'cartPreviewItems',
             'orderHistory'
-        ) + [
-            'mode' => 'takeout',
-            'table' => null,
-        ]);
+        ));
     }
 
     public function addToCart(Request $request, Store $store)
@@ -141,10 +141,9 @@ class TakeoutOrderingController extends Controller
         $total = collect($cart)->sum('subtotal');
         $orderingAvailable = $store->isOrderingAvailable();
         $rememberedCustomerInfo = session()->get(self::CUSTOMER_PROFILE_SESSION_KEY, []);
-        $member = $this->findMemberByCustomerInfo($store, $rememberedCustomerInfo);
         $orderHistory = $this->getTakeoutOrderHistory($store);
 
-        return view('customer.takeout.cart', compact('store', 'cart', 'total', 'orderingAvailable', 'rememberedCustomerInfo', 'orderHistory', 'member'));
+        return view('customer.takeout.cart', compact('store', 'cart', 'total', 'orderingAvailable', 'rememberedCustomerInfo', 'orderHistory'));
     }
 
     public function checkout(Request $request, Store $store)
@@ -158,12 +157,12 @@ class TakeoutOrderingController extends Controller
         }
 
         $validated = $request->validate([
-            'customer_name' => ['required', 'string', 'max:255'],
-            'customer_email' => ['required', 'email', 'max:255'],
-            'customer_phone' => array_merge(['required'], $this->customerPhoneValidationRules($store)),
+            'customer_name' => ['nullable', 'string', 'max:255'],
+            'customer_email' => ['nullable', 'email', 'max:255'],
+            'customer_phone' => $this->customerPhoneValidationRules($store),
             'note' => ['nullable', 'string'],
-            'coupon_code' => ['nullable', 'string', 'max:64'],
             'remember_customer_info' => ['nullable', 'boolean'],
+            'create_account_with_phone' => ['nullable', 'boolean'],
         ]);
 
         $validated['customer_phone'] = $this->normalizeCustomerPhone($validated['customer_phone'] ?? null, $store);
@@ -184,61 +183,40 @@ class TakeoutOrderingController extends Controller
         if (empty($cart)) {
             return redirect()
                 ->route('customer.takeout.cart.show', ['store' => $store])
-                ->with('error', '購物車是空的。');
+                ->with('error', __('customer.error_cart_empty'));
         }
 
         $total = collect($cart)->sum('subtotal');
         $cartToken = $this->getTakeoutCartToken($store);
+        $shouldCreateAccount = ! $request->user() && $request->boolean('create_account_with_phone');
 
-        $loyaltyService = app(LoyaltyService::class);
+        $order = DB::transaction(function () use ($store, $validated, $cart, $total, $cartToken, $shouldCreateAccount) {
+            $customerName = $this->normalizeOptionalText($validated['customer_name'] ?? null);
+            $customerEmail = $this->normalizeOptionalText($validated['customer_email'] ?? null);
+            $customerPhone = $this->normalizeOptionalText($validated['customer_phone'] ?? null);
 
-        $order = DB::transaction(function () use ($store, $validated, $cart, $total, $cartToken, $loyaltyService) {
-            $member = $loyaltyService->resolveMember(
-                $store,
-                $validated['customer_name'] ?? null,
-                $validated['customer_email'] ?? null,
-                $validated['customer_phone'] ?? null
-            );
-
-            $couponResult = $loyaltyService->resolveCoupon(
-                $store,
-                $validated['coupon_code'] ?? null,
-                (int) $total,
-                $member
-            );
-
-            if ($couponResult['error'] !== null) {
-                throw ValidationException::withMessages([
-                    'coupon_code' => (string) $couponResult['error'],
-                ]);
+            if ($shouldCreateAccount) {
+                $this->customerAccountService->registerOrUpdateFromOrder(
+                    $customerPhone,
+                    $customerName,
+                    $customerEmail
+                );
             }
-
-            $coupon = $couponResult['coupon'];
-            $couponDiscount = (int) $couponResult['discount'];
-            $pointsUsed = (int) $couponResult['points_cost'];
-            $finalTotal = max((int) $total - $couponDiscount, 0);
-            $pointsEarned = $store->calculateEarnedPoints($finalTotal);
 
             $order = Order::create([
                 'store_id' => $store->id,
-                'member_id' => $member?->id,
-                'coupon_id' => $coupon?->id,
                 'dining_table_id' => null,
                 'order_type' => 'takeout',
                 'cart_token' => $cartToken,
                 'order_no' => $this->generateOrderNo($store),
                 'status' => 'pending',
                 'payment_status' => 'unpaid',
-                'customer_name' => $validated['customer_name'] ?? null,
-                'customer_email' => $validated['customer_email'] ?? null,
-                'customer_phone' => $validated['customer_phone'] ?? null,
+                'customer_name' => $customerName,
+                'customer_email' => $customerEmail,
+                'customer_phone' => $customerPhone,
                 'note' => $validated['note'] ?? null,
-                'coupon_code' => $coupon?->code,
-                'coupon_discount' => $couponDiscount,
-                'points_used' => $pointsUsed,
-                'points_earned' => $pointsEarned,
                 'subtotal' => $total,
-                'total' => $finalTotal,
+                'total' => $total,
             ]);
 
             foreach ($cart as $item) {
@@ -249,21 +227,8 @@ class TakeoutOrderingController extends Controller
                     'qty' => $item['qty'],
                     'subtotal' => $item['subtotal'],
                     'note' => $this->composeOrderItemNote($item['option_label'] ?? null, $item['item_note'] ?? null),
-                    'item_status' => 'preparing',
                 ]);
             }
-
-            if ($coupon) {
-                $coupon->increment('used_count');
-            }
-
-            $loyaltyService->finalizeOrderLoyalty(
-                $order,
-                $member,
-                $coupon,
-                $pointsUsed,
-                $pointsEarned
-            );
 
             return $order;
         });
@@ -366,7 +331,7 @@ class TakeoutOrderingController extends Controller
         if ($optionPayload !== null && trim($optionPayload) !== '') {
             $decoded = json_decode($optionPayload, true);
             if (! is_array($decoded)) {
-                throw ValidationException::withMessages(['option_payload' => '選配資料格式錯誤。']);
+                throw ValidationException::withMessages(['option_payload' => __('customer.error_option_payload_invalid')]);
             }
             $payload = $decoded;
         }
@@ -402,11 +367,11 @@ class TakeoutOrderingController extends Controller
             }
 
             if ($required && empty($rawSelection)) {
-                throw ValidationException::withMessages(['option_payload' => "{$groupName} 為必選。"]);
+                throw ValidationException::withMessages(['option_payload' => __('customer.option_required_error', ['group' => $groupName])]);
             }
 
             if ($type === 'multiple' && count($rawSelection) > $maxSelect) {
-                throw ValidationException::withMessages(['option_payload' => "{$groupName} 最多可選 {$maxSelect} 項。"]);
+                throw ValidationException::withMessages(['option_payload' => __('customer.option_max_select_error', ['group' => $groupName, 'max' => $maxSelect])]);
             }
 
             $choiceMap = [];
@@ -446,7 +411,7 @@ class TakeoutOrderingController extends Controller
             }
 
             if ($required && empty($groupSelected)) {
-                throw ValidationException::withMessages(['option_payload' => "{$groupName} 為必選。"]);
+                throw ValidationException::withMessages(['option_payload' => __('customer.option_required_error', ['group' => $groupName])]);
             }
 
             if (! empty($groupSelected)) {
@@ -517,6 +482,17 @@ class TakeoutOrderingController extends Controller
         return $digits;
     }
 
+    private function normalizeOptionalText(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = trim($value);
+
+        return $normalized === '' ? null : $normalized;
+    }
+
     private function getTakeoutOrderHistorySessionKey(Store $store): string
     {
         return self::ORDER_HISTORY_SESSION_PREFIX . $store->id;
@@ -561,28 +537,5 @@ class TakeoutOrderingController extends Controller
             ->map(fn ($uuid) => $orderMap->get($uuid))
             ->filter()
             ->values();
-    }
-
-    private function findMemberByCustomerInfo(Store $store, array $customerInfo): ?Member
-    {
-        $email = trim((string) ($customerInfo['customer_email'] ?? ''));
-        $phone = trim((string) ($customerInfo['customer_phone'] ?? ''));
-
-        if ($email === '' && $phone === '') {
-            return null;
-        }
-
-        return Member::query()
-            ->where('store_id', $store->id)
-            ->where(function ($query) use ($email, $phone) {
-                if ($email !== '') {
-                    $query->orWhere('email', $email);
-                }
-
-                if ($phone !== '') {
-                    $query->orWhere('phone', $phone);
-                }
-            })
-            ->first();
     }
 }

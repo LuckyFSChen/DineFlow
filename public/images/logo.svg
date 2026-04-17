@@ -1,30 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 110" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 120" role="img" aria-labelledby="title desc">
   <title id="title">DineFlow</title>
-  <desc id="desc">Food-themed DineFlow logo with bowl, steam and chopsticks</desc>
+  <desc id="desc">DineFlow logo with a modern dining plate and workflow-inspired monogram</desc>
   <defs>
-    <linearGradient id="badge" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#fb923c"/>
-      <stop offset="100%" stop-color="#ea580c"/>
+    <linearGradient id="df-bg" x1="10" y1="10" x2="98" y2="98" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5A1E0E"/>
+      <stop offset="55%" stop-color="#EC9057"/>
+      <stop offset="100%" stop-color="#F6AE2D"/>
     </linearGradient>
-    <linearGradient id="bowl" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#fff7ed"/>
-      <stop offset="100%" stop-color="#fed7aa"/>
+    <linearGradient id="df-ring" x1="28" y1="24" x2="84" y2="82" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF3E0"/>
+      <stop offset="100%" stop-color="#FFD670"/>
     </linearGradient>
   </defs>
 
-  <rect x="10" y="10" width="90" height="90" rx="24" fill="url(#badge)"/>
+  <rect x="10" y="10" width="92" height="92" rx="26" fill="url(#df-bg)"/>
 
-  <path d="M35 56c0 14 12 25 30 25s30-11 30-25z" fill="url(#bowl)"/>
-  <path d="M35 56h60" stroke="#7c2d12" stroke-width="4" stroke-linecap="round"/>
-  <path d="M43 63h44" stroke="#f97316" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="56" cy="56" r="28" fill="none" stroke="url(#df-ring)" stroke-width="8"/>
+  <path d="M42 38h13c12.5 0 20 7 20 18s-7.5 18-20 18H42z" fill="none" stroke="#FFF3E0" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M49 47h7.5c7.5 0 11.5 3.2 11.5 9s-4 9-11.5 9H49z" fill="#FFF3E0"/>
+  <path d="M34 56h10" fill="none" stroke="#FFD670" stroke-width="5" stroke-linecap="round"/>
+  <path d="M69 73h14" fill="none" stroke="#FFD670" stroke-width="5" stroke-linecap="round"/>
+  <path d="M75 67l8 6-8 6" fill="none" stroke="#FFD670" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="34" cy="34" r="4" fill="#FFF3E0" opacity="0.92"/>
+  <circle cx="78" cy="34" r="3" fill="#FFD670" opacity="0.95"/>
 
-  <path d="M50 32c-5 6-5 12 0 18" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
-  <path d="M64 28c-5 7-5 13 0 20" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
-  <path d="M78 32c-5 6-5 12 0 18" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
-
-  <path d="M82 24l18 8" stroke="#fde68a" stroke-width="5" stroke-linecap="round"/>
-  <path d="M80 29l18 8" stroke="#fde68a" stroke-width="5" stroke-linecap="round"/>
-
-  <text x="118" y="64" font-family="'Trebuchet MS', 'Segoe UI', Arial, sans-serif" font-size="44" font-weight="800" fill="#1f2937" letter-spacing="0.5">DineFlow</text>
-  <text x="120" y="86" font-family="'Trebuchet MS', 'Segoe UI', Arial, sans-serif" font-size="14" font-weight="700" fill="#9a3412" letter-spacing="3">QR ORDERING</text>
+  <text x="122" y="69" font-family="'Trebuchet MS', 'Segoe UI', Arial, sans-serif" font-size="50" font-weight="800" letter-spacing="0.15" fill="#5A1E0E">DineFlow</text>
 </svg>

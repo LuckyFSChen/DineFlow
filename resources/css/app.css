@@ -337,6 +337,42 @@ body.is-admin-area .mobile-admin-dock a.active {
 	}
 }
 
+body.is-admin-area .board-last-updated-text {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 10.5rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
+}
+
+body.is-admin-area .board-next-refresh-block {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 8.5rem;
+	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 420px) {
+	body.is-admin-area .board-last-updated-text {
+		display: block;
+		width: 100%;
+		max-width: 100%;
+		text-align: center;
+	}
+
+	body.is-admin-area .board-next-refresh-block {
+		display: block;
+		width: 100%;
+		max-width: 100%;
+		text-align: center;
+	}
+}
+
 body.is-admin-area .bg-slate-900.text-white {
 	background:
 		radial-gradient(1100px 520px at 6% -8%, rgba(34, 197, 235, 0.18), transparent 56%),

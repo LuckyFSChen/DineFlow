@@ -265,6 +265,7 @@
 
         <form id="store-modal-form" class="max-h-[78vh] overflow-y-auto px-6 py-5" enctype="multipart/form-data">
             <input type="hidden" name="_method" id="store-modal-method" value="POST">
+            <input type="hidden" name="slug" value="">
             @php
                 $businessWeekdays = [
                     'monday' => 'mon',
@@ -281,11 +282,6 @@
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.store_name') }}</label>
                     <input type="text" name="name" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" required>
-                </div>
-
-                <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">Slug</label>
-                    <input type="text" name="slug" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" placeholder="{{ __('admin.slug_placeholder') }}">
                 </div>
 
                 <div>
@@ -503,6 +499,8 @@
     const i18n = {
         imageOnly: @json(__('admin.error_image_only')),
         imageTooLarge: @json(__('admin.error_image_too_large')),
+        imageReadFailed: @json(__('admin.error_image_read_failed')),
+        imageConvertFailed: @json(__('admin.error_image_convert_failed')),
         createTitle: @json(__('admin.add_store_modal_title')),
         createSubmit: @json(__('admin.create_store')),
         editTitle: @json(__('admin.edit_store_modal_title')),
@@ -712,7 +710,7 @@
 
         image.onerror = () => {
             URL.revokeObjectURL(url);
-            reject(new Error('圖片讀取失敗'));
+            reject(new Error(i18n.imageReadFailed));
         };
 
         image.src = url;
@@ -796,7 +794,7 @@
                 return;
             }
 
-            reject(new Error('圖片轉換失敗'));
+            reject(new Error(i18n.imageConvertFailed));
         }, mimeType, quality);
     });
 
@@ -914,7 +912,7 @@
             renderBannerPreview();
         };
         image.onerror = () => {
-            showFlash('圖片讀取失敗，請重新選擇。', 'error');
+            showFlash(i18n.imageReadFailed, 'error');
         };
         image.src = url;
     };
@@ -938,11 +936,16 @@
         applyPhoneInputRules();
 
         if (!store) {
+            if (modalForm.elements['slug']) {
+                modalForm.elements['slug'].value = '';
+            }
             return;
         }
 
         modalForm.elements['name'].value = store.name || '';
-        modalForm.elements['slug'].value = store.slug || '';
+        if (modalForm.elements['slug']) {
+            modalForm.elements['slug'].value = store.slug || '';
+        }
         modalForm.elements['phone'].value = store.phone || '';
         modalForm.elements['address'].value = store.address || '';
         modalForm.elements['description'].value = store.description || '';

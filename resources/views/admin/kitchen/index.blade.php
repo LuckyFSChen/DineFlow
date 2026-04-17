@@ -157,7 +157,8 @@ $kitchenI18n = [
             </div>
             <div class="rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2">
                 <p class="text-[11px] text-slate-400">{{ __('admin.board_last_updated') }}</p>
-                <p class="text-sm font-semibold text-slate-100" x-text="lastUpdatedText + ' · ' + i18n.next_refresh + nextRefreshIn + 's'"></p>
+                <p class="board-last-updated-text text-xs text-slate-300 tabular-nums" x-text="lastUpdatedText"></p>
+                <p class="board-next-refresh-block mt-1 text-sm font-semibold text-indigo-200 tabular-nums" x-text="i18n.next_refresh + nextRefreshIn + 's'"></p>
             </div>
         </div>
     </div>
@@ -251,10 +252,10 @@ $kitchenI18n = [
                                         <rect x="4" y="4" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/>
                                     </svg>
                                 </button>
-                                <div>
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <span class="text-sm font-semibold" :class="isItemCompleted(item) ? 'text-emerald-200 line-through' : 'text-white'" x-text="item.product_name"></span>
-                                        <span class="text-xs font-semibold" :class="isItemCompleted(item) ? 'text-emerald-300' : 'text-slate-300'" x-text="'x ' + item.qty"></span>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-start gap-2">
+                                        <span class="min-w-0 flex-1 break-words text-sm font-semibold" :class="isItemCompleted(item) ? 'text-emerald-200 line-through' : 'text-white'" x-text="item.product_name"></span>
+                                        <span class="ml-auto shrink-0 text-right text-xs font-semibold" :class="isItemCompleted(item) ? 'text-emerald-300' : 'text-slate-300'" x-text="'x ' + item.qty"></span>
                                     </div>
                                     <div x-show="item.note" class="mt-1 rounded-md border border-yellow-700/40 bg-yellow-900/20 px-2 py-1 text-xs text-yellow-300">
                                         <div class="font-semibold" x-text="i18n.item_note_label"></div>
@@ -360,7 +361,10 @@ function kitchenBoard() {
             }
 
             const d = new Date(this.lastUpdatedAt);
-            return d.toLocaleTimeString();
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            const ss = String(d.getSeconds()).padStart(2, '0');
+            return `${hh}:${mm}:${ss}`;
         },
 
         init() {

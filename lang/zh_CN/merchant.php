@@ -124,4 +124,9 @@ return [
     'chart_revenue_label' => '營收 (:currency)',
     'chart_orders_label' => '訂單數',
     'payment_redirect_hint' => '付款將導向綠界金流頁面，完成付款後系統會自動同步訂閱狀態。',
+    'error_only_merchant_can_subscribe' => '仅商家账号可订阅方案。',
+    'error_ecpay_not_configured' => '绿界金流尚未设定，请先设定 ECPAY 参数。',
+    'error_plan_downgrade_blocked' => '目前方案尚未到期，无法直接降级。请待目前方案到期后再改为较低方案。',
+    'error_plan_upgrade_cycle_blocked' => '升级为更高方案时，计费周期不可缩短。请选择同周期或更长周期的升级方案。',
+    'error_store_required_for_loyalty' => '请先建立至少一间商店，才能进入会员与优惠。',
 ];

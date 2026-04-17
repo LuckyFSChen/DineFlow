@@ -77,7 +77,7 @@ class SubscriptionController extends Controller
 
         $user = $request->user();
         if (! $user || ! $user->isMerchant()) {
-            abort(403, '僅商家帳號可訂閱方案。');
+            abort(403, __('merchant.error_only_merchant_can_subscribe'));
         }
 
         $plan = SubscriptionPlan::query()
@@ -105,7 +105,7 @@ class SubscriptionController extends Controller
         if ($merchantId === '' || $hashKey === '' || $hashIv === '' || $checkoutAction === '') {
             return redirect()
                 ->route('merchant.subscription.index')
-                ->with('error', '綠界金流尚未設定，請先設定 ECPAY 參數。');
+                ->with('error', __('merchant.error_ecpay_not_configured'));
         }
 
         $merchantTradeNo = $this->generateMerchantTradeNo();
@@ -161,60 +161,6 @@ class SubscriptionController extends Controller
             'checkoutAction' => $checkoutAction,
             'payload' => $payload,
         ]);
-    }
-
-    public function startTrial(Request $request): RedirectResponse
-    {
-        $user = $request->user();
-        if (! $user || ! $user->isMerchant()) {
-            abort(403, 'Only merchant accounts can start trial.');
-        }
-
-        if (! $user->canStartTrial()) {
-            return redirect()
-                ->route('merchant.subscription.index')
-                ->with('error', '此帳號已使用過試用資格。');
-        }
-
-        if ($user->hasActiveSubscription()) {
-            return redirect()
-                ->route('merchant.subscription.index')
-                ->with('error', '目前方案仍有效，不可啟用試用。');
-        }
-
-        $basicPlan = SubscriptionPlan::query()
-            ->where('is_active', true)
-            ->where('slug', 'basic-monthly')
-            ->first();
-
-        if (! $basicPlan) {
-            $basicPlan = SubscriptionPlan::query()
-                ->where('is_active', true)
-                ->orderBy('price_twd')
-                ->orderBy('id')
-                ->first();
-        }
-
-        if (! $basicPlan) {
-            return redirect()
-                ->route('merchant.subscription.index')
-                ->with('error', '目前沒有可用方案，無法啟用試用。');
-        }
-
-        $trialStart = now();
-        $trialEnd = $trialStart->copy()->addDays(30);
-
-        $user->forceFill([
-            'subscription_plan_id' => $basicPlan->id,
-            'subscription_ends_at' => $trialEnd,
-            'trial_started_at' => $trialStart,
-            'trial_ends_at' => $trialEnd,
-            'trial_used_at' => $trialStart,
-        ])->save();
-
-        return redirect()
-            ->route('merchant.subscription.index')
-            ->with('success', '已啟用 30 天試用。');
     }
 
     public function success(Request $request): RedirectResponse
@@ -405,14 +351,14 @@ class SubscriptionController extends Controller
 
         if ($targetTierRank < $currentTierRank) {
             $preview['is_purchase_allowed'] = false;
-            $preview['blocked_reason'] = '目前方案尚未到期，無法直接降級。請待目前方案到期後再改為較低方案。';
+            $preview['blocked_reason'] = __('merchant.error_plan_downgrade_blocked');
 
             return $preview;
         }
 
         if ($targetTierRank > $currentTierRank && (int) $targetPlan->duration_days < (int) $currentPlan->duration_days) {
             $preview['is_purchase_allowed'] = false;
-            $preview['blocked_reason'] = '升級為更高方案時，計費週期不可縮短。請選擇同週期或更長週期的升級方案。';
+            $preview['blocked_reason'] = __('merchant.error_plan_upgrade_cycle_blocked');
 
             return $preview;
         }

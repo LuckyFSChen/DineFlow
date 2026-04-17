@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Carbon\Carbon;
+use App\Support\PhoneFormatter;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -72,15 +73,13 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'phone',
         'email',
         'password',
         'role',
         'merchant_region',
         'subscription_ends_at',
         'subscription_plan_id',
-        'trial_started_at',
-        'trial_ends_at',
-        'trial_used_at',
         'store_id',
     ];
 
@@ -105,10 +104,17 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'subscription_ends_at' => 'datetime',
-            'trial_started_at' => 'datetime',
-            'trial_ends_at' => 'datetime',
-            'trial_used_at' => 'datetime',
         ];
+    }
+
+    public function getPhoneAttribute($value): ?string
+    {
+        return PhoneFormatter::format($value);
+    }
+
+    public function setPhoneAttribute($value): void
+    {
+        $this->attributes['phone'] = PhoneFormatter::digitsOnly(is_string($value) ? $value : null, 32);
     }
 
     public function isAdmin(): bool
@@ -145,11 +151,6 @@ class User extends Authenticatable
         return $this->isMerchant()
             && $this->subscription_ends_at !== null
             && $this->subscription_ends_at->greaterThanOrEqualTo(now()->startOfDay());
-    }
-
-    public function canStartTrial(): bool
-    {
-        return $this->isMerchant() && $this->trial_used_at === null;
     }
 
     public function subscriptionPlan()

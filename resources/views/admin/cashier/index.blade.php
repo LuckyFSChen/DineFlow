@@ -170,7 +170,8 @@ $cashierI18n = [
             </div>
             <div class="rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2">
                 <p class="text-[11px] text-slate-400">{{ __('admin.board_last_updated') }}</p>
-                <p class="text-sm font-semibold text-slate-100" x-text="lastUpdatedText + ' · ' + i18n.next_refresh + nextRefreshIn + 's'"></p>
+                <p class="board-last-updated-text text-xs text-slate-300 tabular-nums" x-text="lastUpdatedText"></p>
+                <p class="board-next-refresh-block mt-1 text-sm font-semibold text-indigo-200 tabular-nums" x-text="i18n.next_refresh + nextRefreshIn + 's'"></p>
             </div>
         </div>
     </div>
@@ -472,7 +473,10 @@ function cashierBoard() {
             }
 
             const d = new Date(this.lastUpdatedAt);
-            return d.toLocaleTimeString();
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            const ss = String(d.getSeconds()).padStart(2, '0');
+            return `${hh}:${mm}:${ss}`;
         },
 
         init() {

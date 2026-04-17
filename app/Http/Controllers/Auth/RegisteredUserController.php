@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\PhoneFormatter;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,19 +31,35 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        $accountType = $request->string('account_type')->toString();
+
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'phone' => [
+                $accountType === 'customer' ? 'required' : 'nullable',
+                'string',
+                'max:32',
+                'unique:'.User::class,
+            ],
+            'email' => [
+                $accountType === 'merchant' ? 'required' : 'nullable',
+                'string',
+                'lowercase',
+                'email',
+                'max:255',
+                'unique:'.User::class,
+            ],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'account_type' => ['required', 'in:customer,merchant'],
             'merchant_region' => ['nullable', 'in:tw,cn,vn', 'required_if:account_type,merchant'],
         ]);
 
-        $accountType = $request->string('account_type')->toString();
+        $normalizedPhone = PhoneFormatter::digitsOnly($request->input('phone'), 32);
 
         $user = User::create([
             'name' => $request->name,
-            'email' => $request->email,
+            'phone' => $normalizedPhone,
+            'email' => $request->input('email') ?: null,
             'password' => Hash::make($request->password),
             'role' => $accountType,
             'merchant_region' => $accountType === 'merchant'

@@ -1,15 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="DineFlow favicon">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#fb923c"/>
-      <stop offset="100%" stop-color="#ea580c"/>
+    <linearGradient id="df-fav-bg" x1="6" y1="6" x2="58" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5A1E0E"/>
+      <stop offset="55%" stop-color="#EC9057"/>
+      <stop offset="100%" stop-color="#F6AE2D"/>
+    </linearGradient>
+    <linearGradient id="df-fav-ring" x1="17" y1="16" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF3E0"/>
+      <stop offset="100%" stop-color="#FFD670"/>
     </linearGradient>
   </defs>
-  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#bg)"/>
-  <path d="M16 34c0 9 7 16 16 16s16-7 16-16z" fill="#fff7ed"/>
-  <path d="M16 34h32" stroke="#7c2d12" stroke-width="3" stroke-linecap="round"/>
-  <path d="M20 38h24" stroke="#f97316" stroke-width="3" stroke-linecap="round"/>
-  <path d="M24 18c-3 4-3 7 0 11" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-  <path d="M32 15c-3 5-3 8 0 13" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-  <path d="M40 18c-3 4-3 7 0 11" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+
+  <rect x="7" y="7" width="50" height="50" rx="15" fill="url(#df-fav-bg)"/>
+  <circle cx="32" cy="32" r="14" fill="none" stroke="url(#df-fav-ring)" stroke-width="4.4"/>
+  <path d="M25 23h5.8c6.6 0 10.8 3.7 10.8 9s-4.2 9-10.8 9H25z" fill="none" stroke="#FFF3E0" stroke-width="3.8" stroke-linejoin="round"/>
+  <path d="M28.5 27.5h2.3c4.2 0 6.3 1.55 6.3 4.5s-2.1 4.5-6.3 4.5h-2.3z" fill="#FFF3E0"/>
+  <path d="M20.5 32h4.8" fill="none" stroke="#FFD670" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M40 40.5h6.5" fill="none" stroke="#FFD670" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M43.2 37.2l4.1 3.3-4.1 3.3" fill="none" stroke="#FFD670" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

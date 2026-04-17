@@ -18,6 +18,7 @@
         'cn' => 11,
         default => 10,
     };
+    $isGuest = ! auth()->check();
 @endphp
 <body class="bg-orange-50 text-gray-900">
     <div class="min-h-screen pb-32">
@@ -106,7 +107,26 @@
                                     </div>
 
                                     <div class="text-right">
-                                        <p class="text-sm text-gray-500">x {{ $item['qty'] }}</p>
+                                        <div class="flex items-center justify-end gap-2">
+                                            <form method="POST" action="{{ route('customer.dinein.cart.items.update', ['store' => $store, 'table' => $table, 'lineKey' => $item['line_key']]) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <input type="hidden" name="action" value="decrease">
+                                                <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-orange-200 bg-white text-sm font-bold text-orange-600 transition hover:bg-orange-100" aria-label="{{ __('customer.decrease_qty') }}">−</button>
+                                            </form>
+                                            <p class="min-w-8 text-sm font-semibold text-gray-600">{{ $item['qty'] }}</p>
+                                            <form method="POST" action="{{ route('customer.dinein.cart.items.update', ['store' => $store, 'table' => $table, 'lineKey' => $item['line_key']]) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <input type="hidden" name="action" value="increase">
+                                                <button type="submit" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-orange-200 bg-white text-sm font-bold text-orange-600 transition hover:bg-orange-100" aria-label="{{ __('customer.increase_qty') }}">+</button>
+                                            </form>
+                                            <form method="POST" action="{{ route('customer.dinein.cart.items.destroy', ['store' => $store, 'table' => $table, 'lineKey' => $item['line_key']]) }}">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="ml-1 inline-flex items-center rounded-lg border border-rose-200 bg-white px-2 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">{{ __('customer.remove_item') }}</button>
+                                            </form>
+                                        </div>
                                         <p class="mt-1 text-base font-bold text-orange-600">
                                             {{ $currencySymbol }} {{ number_format($item['subtotal']) }}
                                         </p>
@@ -134,8 +154,9 @@
                             </p>
                         </div>
 
-                        <form method="POST" action="{{ route('customer.dinein.cart.checkout', ['store' => $store, 'table' => $table]) }}" class="space-y-5">
+                        <form method="POST" action="{{ route('customer.dinein.cart.checkout', ['store' => $store, 'table' => $table]) }}" class="space-y-5" data-customer-checkout-form>
                             @csrf
+                            <input type="hidden" name="create_account_with_phone" value="0" data-create-account-with-phone>
 
                             <div>
                                 <label class="mb-2 block text-sm font-medium text-gray-700">{{ __('customer.name') }}</label>
@@ -272,6 +293,26 @@
         input.addEventListener('input', apply);
         input.addEventListener('blur', apply);
         apply();
+
+        const checkoutForm = document.querySelector('[data-customer-checkout-form]');
+        const createAccountInput = checkoutForm?.querySelector('[data-create-account-with-phone]');
+        const isGuest = @json($isGuest);
+
+        if (!checkoutForm || !createAccountInput || !isGuest) {
+            return;
+        }
+
+        const promptMessage = @json(__('customer.guest_register_points_prompt'));
+
+        checkoutForm.addEventListener('submit', () => {
+            const digits = String(input.value || '').replace(/\D/g, '');
+            if (!digits) {
+                createAccountInput.value = '0';
+                return;
+            }
+
+            createAccountInput.value = window.confirm(promptMessage) ? '1' : '0';
+        });
     })();
     </script>
 </body>

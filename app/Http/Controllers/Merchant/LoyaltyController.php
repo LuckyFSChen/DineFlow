@@ -7,6 +7,7 @@ use App\Models\Coupon;
 use App\Models\Member;
 use App\Models\MemberPointLedger;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Store;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -54,6 +55,39 @@ class LoyaltyController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        $memberIds = $members->getCollection()
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values();
+
+        $favoriteItemsByMember = collect();
+        $recentOrdersByMember = collect();
+
+        if ($memberIds->isNotEmpty()) {
+            $favoriteItemsByMember = OrderItem::query()
+                ->selectRaw('orders.member_id as member_id, order_items.product_name as product_name, SUM(order_items.qty) as total_qty, SUM(order_items.subtotal) as total_spent, COUNT(DISTINCT order_items.order_id) as order_count')
+                ->join('orders', 'orders.id', '=', 'order_items.order_id')
+                ->where('orders.store_id', $selectedStore->id)
+                ->whereIn('orders.member_id', $memberIds)
+                ->groupBy('orders.member_id', 'order_items.product_name')
+                ->orderByDesc('total_qty')
+                ->orderByDesc('order_count')
+                ->orderByDesc('total_spent')
+                ->get()
+                ->groupBy(fn ($row) => (int) $row->member_id)
+                ->map(fn ($items) => $items->take(3)->values());
+
+            $recentOrdersByMember = Order::query()
+                ->where('store_id', $selectedStore->id)
+                ->whereIn('member_id', $memberIds)
+                ->select(['id', 'member_id', 'order_no', 'status', 'payment_status', 'total', 'created_at'])
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->get()
+                ->groupBy(fn (Order $order) => (int) $order->member_id)
+                ->map(fn ($orders) => $orders->take(5)->values());
+        }
+
         $totalMembers = (clone $membersQuery)->count();
         $newMembers = (clone $membersQuery)->whereBetween('created_at', [$start, $end])->count();
         $repeatMembers = (clone $membersQuery)->where('total_orders', '>=', 2)->count();
@@ -100,6 +134,8 @@ class LoyaltyController extends Controller
             'repeatMembers' => $repeatMembers,
             'avgSpentPerMember' => $avgSpentPerMember,
             'topMembers' => $topMembers,
+            'favoriteItemsByMember' => $favoriteItemsByMember,
+            'recentOrdersByMember' => $recentOrdersByMember,
             'pointsIssued' => $pointsIssued,
             'pointsRedeemed' => $pointsRedeemed,
             'couponOrders' => $couponOrders,
@@ -254,11 +290,7 @@ class LoyaltyController extends Controller
             return null;
         }
 
-        $message = match (app()->getLocale()) {
-            'en' => 'Please create at least one store before entering Members & Coupons.',
-            'vi' => 'Vui long tao it nhat mot cua hang truoc khi vao Thanh vien & Uu dai.',
-            default => '請先建立至少一間商店，才能進入會員與優惠。',
-        };
+        $message = __('merchant.error_store_required_for_loyalty');
 
         return redirect()->route('admin.stores.index')->with('error', $message);
     }

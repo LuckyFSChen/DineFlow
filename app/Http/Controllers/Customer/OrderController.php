@@ -78,9 +78,9 @@ class OrderController extends Controller
         abort_unless($table->store_id === $store->id, 404);
 
         $validated = $request->validate([
-            'customer_name' => ['required', 'string', 'max:255'],
-            'customer_email' => ['required', 'email', 'max:255'],
-            'customer_phone' => ['required', 'string', 'max:50'],
+            'customer_name' => ['nullable', 'string', 'max:255'],
+            'customer_email' => ['nullable', 'email', 'max:255'],
+            'customer_phone' => ['nullable', 'string', 'max:50'],
             'note' => ['nullable', 'string'],
         ]);
 
@@ -93,7 +93,7 @@ class OrderController extends Controller
                     'store' => $store,
                     'table' => $table,
                 ])
-                ->with('error', '購物車為空');
+                ->with('error', __('customer.error_cart_empty'));
         }
 
         $total = collect($cart)->sum('subtotal');
@@ -122,7 +122,6 @@ class OrderController extends Controller
                     'qty' => $item['qty'],
                     'subtotal' => $item['subtotal'],
                     'note' => null,
-                    'item_status' => 'preparing',
                 ]);
             }
 

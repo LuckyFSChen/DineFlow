@@ -234,7 +234,7 @@ class ProductManagementController extends Controller
 
         if ($hasProducts) {
             throw ValidationException::withMessages([
-                'category' => '此分類下還有商品，請先移動或刪除商品。',
+                'category' => __('admin.error_category_has_products'),
             ]);
         }
 
@@ -307,7 +307,7 @@ class ProductManagementController extends Controller
 
         if (! $categoryBelongsStore) {
             throw ValidationException::withMessages([
-                'category_id' => '分類不屬於此店家。',
+                'category_id' => __('admin.error_category_not_belong_store'),
             ]);
         }
 
@@ -320,7 +320,7 @@ class ProductManagementController extends Controller
 
         if ($products->count() !== count($data['product_ids'])) {
             throw ValidationException::withMessages([
-                'product_ids' => '排序資料包含無效商品。',
+                'product_ids' => __('admin.error_sort_contains_invalid_products'),
             ]);
         }
 
@@ -362,7 +362,7 @@ class ProductManagementController extends Controller
 
         if ($validCategoriesCount !== count(array_unique($categoryIds))) {
             throw ValidationException::withMessages([
-                'target_category_id' => '分類不屬於此店家。',
+                'target_category_id' => __('admin.error_category_not_belong_store'),
             ]);
         }
 
@@ -373,13 +373,13 @@ class ProductManagementController extends Controller
 
         if (! $movedProduct) {
             throw ValidationException::withMessages([
-                'moved_product_id' => '商品不屬於此店家。',
+                'moved_product_id' => __('admin.error_product_not_belong_store'),
             ]);
         }
 
         if (! in_array((int) $movedProduct->id, array_map('intval', $data['target_product_ids']), true)) {
             throw ValidationException::withMessages([
-                'target_product_ids' => '目標分類排序未包含拖曳商品。',
+                'target_product_ids' => __('admin.error_target_sort_missing_dragged_product'),
             ]);
         }
 
@@ -423,7 +423,7 @@ class ProductManagementController extends Controller
 
         if ($products->count() !== count($productIds)) {
             throw ValidationException::withMessages([
-                'product_ids' => '排序資料包含無效商品。',
+                'product_ids' => __('admin.error_sort_contains_invalid_products'),
             ]);
         }
 
@@ -460,7 +460,7 @@ class ProductManagementController extends Controller
 
         if (! $categoryBelongsStore) {
             throw ValidationException::withMessages([
-                'category_id' => '分類不屬於此店家。',
+                'category_id' => __('admin.error_category_not_belong_store'),
             ]);
         }
 
@@ -530,7 +530,7 @@ class ProductManagementController extends Controller
         $decoded = json_decode($raw, true);
         if (! is_array($decoded)) {
             throw ValidationException::withMessages([
-                'option_groups_json' => '選配 JSON 格式不正確。',
+                'option_groups_json' => __('admin.error_option_groups_json_invalid'),
             ]);
         }
 
@@ -541,7 +541,7 @@ class ProductManagementController extends Controller
     {
         $user = $request->user();
         if (! $user) {
-            abort(403, '請先登入。');
+            abort(403, __('admin.error_login_required'));
         }
 
         if ($user->isAdmin()) {
@@ -552,7 +552,7 @@ class ProductManagementController extends Controller
             return;
         }
 
-        abort(403, '你無法管理此店家。');
+        abort(403, __('admin.error_cannot_manage_store'));
     }
 
     protected function ensureProductBelongsToStore(Store $store, Product $product): void

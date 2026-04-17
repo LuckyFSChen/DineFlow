@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Store;
 use App\Models\User;
 use App\Support\GooglePlaceService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -77,7 +78,7 @@ class StoreManagementController extends Controller
         if ($user && $user->isMerchant() && ! $this->canCreateStore($user)) {
             return redirect()
                 ->route('admin.stores.index')
-                ->with('error', '你目前方案可建立的店家數已達上限，請升級方案。');
+                ->with('error', __('admin.error_store_quota_reached'));
         }
 
         $store = new Store();
@@ -92,13 +93,13 @@ class StoreManagementController extends Controller
             if ($request->expectsJson()) {
                 return response()->json([
                     'ok' => false,
-                    'message' => '你目前方案可建立的店家數已達上限，請升級方案。',
+                    'message' => __('admin.error_store_quota_reached'),
                 ], 422);
             }
 
             return redirect()
                 ->route('admin.stores.index')
-                ->with('error', '你目前方案可建立的店家數已達上限，請升級方案。');
+                ->with('error', __('admin.error_store_quota_reached'));
         }
 
         $data = $this->validatedData($request);
@@ -113,22 +114,27 @@ class StoreManagementController extends Controller
         }
 
         $maxAttempts = 10;
-        $attempt = 0;
-        do {
+        $baseSlug = Str::slug((string) $data['name']) ?: 'store';
+        $data['slug'] = $this->nextAvailableStoreSlug($baseSlug);
+        $store = null;
+
+        for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
             try {
                 $store = Store::create($data);
                 break;
-            } catch (\Illuminate\Database\QueryException $e) {
-                if (str_contains($e->getMessage(), 'store_slug_unique') && $attempt < $maxAttempts) {
-                    $baseSlug = Str::slug($data['name']) ?: 'store';
-                    $i = $attempt + 1;
-                    $data['slug'] = $baseSlug . '-' . $i;
-                    $attempt++;
-                } else {
-                    throw $e;
+            } catch (QueryException $e) {
+                if ($this->isStoreSlugUniqueViolation($e) && $attempt < $maxAttempts - 1) {
+                    $data['slug'] = $this->nextAvailableStoreSlug($baseSlug);
+                    continue;
                 }
+
+                throw $e;
             }
-        } while ($attempt < $maxAttempts);
+        }
+
+        if (! $store) {
+            throw new \RuntimeException(__('admin.error_store_slug_collision_repeated'));
+        }
 
         if ($request->hasFile('banner_image')) {
             $file = $request->file('banner_image');
@@ -294,13 +300,7 @@ class StoreManagementController extends Controller
         $data['longitude'] = $this->normalizeCoordinate($data['longitude'] ?? null);
         if (empty($data['slug'])) {
             $baseSlug = Str::slug($data['name']) ?: 'store';
-            $slug = $baseSlug;
-            $i = 1;
-            while (Store::where('slug', $slug)->when($storeId, function($q) use ($storeId) { return $q->where('id', '!=', $storeId); })->exists()) {
-                $slug = $baseSlug . '-' . $i;
-                $i++;
-            }
-            $data['slug'] = $slug;
+            $data['slug'] = $this->nextAvailableStoreSlug($baseSlug, $storeId);
         }
         $data['is_active'] = $request->boolean('is_active');
         $data['currency'] = strtolower($data['currency'] ?? 'twd');
@@ -316,6 +316,50 @@ class StoreManagementController extends Controller
         unset($data['break_hours']);
 
         return $data;
+    }
+
+    protected function isStoreSlugUniqueViolation(QueryException $e): bool
+    {
+        $sqlState = (string) ($e->errorInfo[0] ?? '');
+        $message = $e->getMessage();
+
+        if ($sqlState === '23505' && str_contains($message, 'stores_slug_unique')) {
+            return true;
+        }
+
+        return str_contains($message, 'stores_slug_unique')
+            || str_contains($message, 'store_slug_unique');
+    }
+
+    protected function nextAvailableStoreSlug(string $baseSlug, ?int $excludeStoreId = null): string
+    {
+        $baseSlug = Str::slug($baseSlug) ?: 'store';
+
+        $existingSlugs = Store::query()
+            ->select('slug')
+            ->when($excludeStoreId !== null, function ($query) use ($excludeStoreId) {
+                $query->where('id', '!=', $excludeStoreId);
+            })
+            ->where(function ($query) use ($baseSlug) {
+                $query->where('slug', $baseSlug)
+                    ->orWhere('slug', 'like', $baseSlug . '-%');
+            })
+            ->pluck('slug');
+
+        if (! $existingSlugs->contains($baseSlug)) {
+            return $baseSlug;
+        }
+
+        $maxSuffix = 0;
+        $pattern = '/^' . preg_quote($baseSlug, '/') . '-(\d+)$/';
+
+        foreach ($existingSlugs as $slug) {
+            if (preg_match($pattern, (string) $slug, $matches) === 1) {
+                $maxSuffix = max($maxSuffix, (int) $matches[1]);
+            }
+        }
+
+        return $baseSlug . '-' . ($maxSuffix + 1);
     }
 
     protected function expectedPhoneLengthByCountry(string $countryCode): int
@@ -384,7 +428,7 @@ class StoreManagementController extends Controller
     {
         $user = $request->user();
         if (! $user) {
-            abort(403, '請先登入。');
+            abort(403, __('admin.error_login_required'));
         }
 
         if ($user->isAdmin()) {
@@ -395,7 +439,7 @@ class StoreManagementController extends Controller
             return;
         }
 
-        abort(403, '你無法管理此店家。');
+        abort(403, __('admin.error_cannot_manage_store'));
     }
 
     protected function canCreateStore(User $user): bool
@@ -464,10 +508,10 @@ class StoreManagementController extends Controller
     protected function activationBlockedMessage(User $user): string
     {
         if (! $user->hasActiveSubscription()) {
-            return '訂閱已到期，店家無法開啟。請先續訂方案。';
+            return __('admin.error_store_activation_subscription_expired');
         }
 
-        return '目前已達可開啟店家上限。請先關閉其他店家，再開啟此店家。';
+        return __('admin.error_store_activation_limit_reached');
     }
 
     protected function storePayload(Store $store): array

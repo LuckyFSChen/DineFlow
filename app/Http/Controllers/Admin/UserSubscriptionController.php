@@ -42,7 +42,7 @@ class UserSubscriptionController extends Controller
     public function update(Request $request, User $user): RedirectResponse
     {
         if (! $user->isMerchant()) {
-            abort(422, '只能更新商家帳號。');
+            abort(422, __('admin.error_only_merchant_account_updatable'));
         }
 
         $validated = $request->validate([

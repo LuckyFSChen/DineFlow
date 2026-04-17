@@ -13,7 +13,7 @@ class EnsureUserRole
         $user = $request->user();
 
         if ($user === null || !in_array($user->role, $roles, true)) {
-            abort(403, '你沒有此頁面權限。');
+            abort(403, __('admin.error_no_page_permission'));
         }
 
         return $next($request);

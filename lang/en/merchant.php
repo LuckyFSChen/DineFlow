@@ -124,4 +124,9 @@ return [
     'chart_revenue_label' => 'Revenue (:currency)',
     'chart_orders_label' => 'Orders',
     'payment_redirect_hint' => 'You will be redirected to ECPay. Subscription status will sync automatically after payment.',
+    'error_only_merchant_can_subscribe' => 'Only merchant accounts can subscribe to plans.',
+    'error_ecpay_not_configured' => 'ECPay is not configured yet. Please set ECPAY parameters first.',
+    'error_plan_downgrade_blocked' => 'Your current plan has not expired yet and cannot be downgraded directly. Please downgrade after it expires.',
+    'error_plan_upgrade_cycle_blocked' => 'When upgrading to a higher plan, billing cycle cannot be shortened. Please choose the same or longer cycle.',
+    'error_store_required_for_loyalty' => 'Please create at least one store before entering Members & Coupons.',
 ];

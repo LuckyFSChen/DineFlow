@@ -2,6 +2,7 @@
 
 return [
     'Email'                      => 'Email',
+    'Phone'                      => 'Số điện thoại',
     'Password'                   => 'Mật Khẩu',
     'Remember me'                => 'Ghi Nhớ',
     'Forgot your password?'      => 'Quên Mật Khẩu?',
@@ -23,6 +24,7 @@ return [
     'customer_desc'              => 'Tài khoản khách hàng, dùng cho hồ sơ cá nhân và trải nghiệm đặt món.',
     'merchant_type'              => 'Thương Nhân',
     'merchant_desc'              => 'Tài khoản thương nhân, cần đăng ký gói để quản lý cửa hàng.',
+    'customer_email_optional_hint' => 'Khách hàng có thể bỏ trống email và đăng ký/đăng nhập bằng số điện thoại.',
     'secure_area_confirm_password' => 'Đây là khu vực bảo mật của hệ thống. Vui lòng xác nhận mật khẩu trước khi tiếp tục.',
     'Confirm'                    => 'Xác Nhận',
     'Reset Password'             => 'Đặt Lại Mật Khẩu',

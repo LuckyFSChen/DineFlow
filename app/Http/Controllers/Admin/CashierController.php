@@ -70,12 +70,12 @@ class CashierController extends Controller
         $allowed = ['preparing', 'paid', 'cancelled'];
 
         if (! in_array($status, $allowed, true)) {
-            return response()->json(['ok' => false, 'message' => 'Invalid status'], 422);
+            return response()->json(['ok' => false, 'message' => __('admin.error_invalid_status')], 422);
         }
 
         if ($status === 'cancelled') {
             if (! in_array((string) $order->status, self::PENDING_STATUSES, true)) {
-                return response()->json(['ok' => false, 'message' => 'Only pending orders can be cancelled'], 422);
+                return response()->json(['ok' => false, 'message' => __('admin.error_only_pending_can_cancel')], 422);
             }
 
             $cancelReasonOptions = $this->normalizeCancelReasonOptions(
@@ -86,7 +86,7 @@ class CashierController extends Controller
             );
 
             if ($cancelReasonOptions->isEmpty() && $cancelReasonOther === '') {
-                return response()->json(['ok' => false, 'message' => 'Please provide at least one cancellation reason'], 422);
+                return response()->json(['ok' => false, 'message' => __('admin.error_cancel_reason_required')], 422);
             }
 
             DB::transaction(function () use ($order, $cancelReasonOptions, $cancelReasonOther): void {

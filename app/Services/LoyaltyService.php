@@ -75,25 +75,25 @@ class LoyaltyService
             ->first();
 
         if (! $coupon) {
-            return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'error' => '找不到這張優惠券'];
+            return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'error' => __('customer.coupon_not_found')];
         }
 
         if (! $coupon->isCurrentlyValid()) {
-            return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'error' => '此優惠券目前不可用'];
+            return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'error' => __('customer.coupon_unavailable')];
         }
 
         if ($subtotal < (int) $coupon->min_order_amount) {
-            return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'error' => '未達優惠券最低消費門檻'];
+            return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'error' => __('customer.coupon_min_order_not_met')];
         }
 
         $pointsCost = max((int) $coupon->points_cost, 0);
         if ($pointsCost > 0) {
             if (! $member) {
-                return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'error' => '此優惠券需登入會員（請填手機或 Email）'];
+                return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'error' => __('customer.coupon_member_required')];
             }
 
             if ((int) $member->points_balance < $pointsCost) {
-                return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'error' => '會員點數不足，無法使用此優惠券'];
+                return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'error' => __('customer.coupon_points_insufficient')];
             }
         }
 

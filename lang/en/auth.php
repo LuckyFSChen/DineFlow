@@ -2,6 +2,7 @@
 
 return [
     'Email'                      => 'Email',
+    'Phone'                      => 'Phone',
     'Password'                   => 'Password',
     'Remember me'                => 'Remember me',
     'Forgot your password?'      => 'Forgot your password?',
@@ -23,6 +24,7 @@ return [
     'customer_desc'              => 'Customer account for personal profile and ordering experience.',
     'merchant_type'              => 'Merchant',
     'merchant_desc'              => 'Merchant account. Requires an active subscription to manage stores.',
+    'customer_email_optional_hint' => 'Email is optional for customers. You can sign up and log in with phone.',
     'secure_area_confirm_password' => 'This is a secure area of the application. Please confirm your password before continuing.',
     'Confirm'                    => 'Confirm',
     'Reset Password'             => 'Reset Password',
