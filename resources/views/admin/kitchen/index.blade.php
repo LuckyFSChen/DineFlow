@@ -1,6 +1,6 @@
 ﻿@extends('layouts.app')
 
-@section('title', __('admin.board_kitchen_title') . ' ??' . $store->name)
+@section('title', __('admin.board_kitchen_title') . ' - ' . $store->name)
 
 @php
 function kitchenFormatOrder(\App\Models\Order $order): array {
@@ -57,10 +57,10 @@ $kitchenI18n = [
         <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div class="flex items-center gap-4">
             <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700">
-                ??{{ __('admin.board_back_to_stores') }}
+                &larr; {{ __('admin.board_back_to_stores') }}
             </a>
             <div>
-                <h1 class="text-lg font-bold text-white">? {{ __('admin.board_kitchen_title') }}</h1>
+                <h1 class="text-lg font-bold text-white">{{ __('admin.board_kitchen_title') }}</h1>
                 <p class="text-xs text-slate-400">{{ $store->name }}</p>
             </div>
         </div>
@@ -70,12 +70,12 @@ $kitchenI18n = [
             <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
                 <a href="{{ route('admin.stores.cashier', $store) }}"
                    class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
-                    ? {{ __('admin.board_cashier_title') }}
+                    {{ __('admin.board_cashier_title') }}
                 </a>
-                <span class="px-3 py-1.5 bg-indigo-600 text-white">? {{ __('admin.board_kitchen_title') }}</span>
+                <span class="px-3 py-1.5 bg-indigo-600 text-white">{{ __('admin.board_kitchen_title') }}</span>
                 <a href="{{ route('admin.stores.boards', $store) }}"
                    class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
-                    ?妝 {{ __('admin.board_all_title') }}
+                    {{ __('admin.board_all_title') }}
                 </a>
             </div>
 
@@ -110,7 +110,7 @@ $kitchenI18n = [
             </button>
 
             <div class="flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs">
-                <span class="text-slate-400">蝑??脤?</span>
+                <span class="text-slate-400">等待門檻</span>
                 <input type="number" min="0" x-model.number="waitConfig.orangeStart" @change="saveWaitConfig()"
                        class="w-11 rounded border border-slate-600 bg-slate-900 px-1 py-0.5 text-slate-100 focus:border-indigo-500 focus:outline-none">
                 <span class="text-slate-500">/</span>
@@ -190,7 +190,7 @@ $kitchenI18n = [
                         </div>
                         {{-- Customer name --}}
                         <div x-show="order.customer_name" class="mt-0.5 text-xs text-slate-400">
-                            ? <span x-text="order.customer_name"></span>
+                            <span x-text="order.customer_name"></span>
                         </div>
                     </div>
 
@@ -257,7 +257,7 @@ $kitchenI18n = [
     {{-- New order toast --}}
     <div x-show="newOrderAlert" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
          class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border border-emerald-500/50 bg-emerald-900 px-5 py-3 shadow-xl">
-        <span class="text-2xl">??</span>
+        <span class="text-2xl">!</span>
         <div>
             <p class="font-bold text-white">{{ __('admin.board_new_order_arrived') }}</p>
             <p class="text-xs text-emerald-300">{{ __('admin.board_new_order_added') }}</p>
