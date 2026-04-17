@@ -7,6 +7,7 @@ return [
     'view_cart'                   => '查看購物車',
     'back_to_menu'                => '返回菜單',
     'add_to_cart'                 => '加入購物車',
+    'remove_item'                 => '移除',
     'item_added_to_cart'          => '商品已加入購物車。',
     'qty'                         => '數量',
     'sold_out'                    => '已售完',

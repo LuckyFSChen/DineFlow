@@ -29,8 +29,7 @@
     <meta name="twitter:description" content="{{ $seoDescription }}">
     <meta name="twitter:image" content="{{ $seoImage }}">
 
-    <link rel="icon" type="image/svg+xml" href="{{ asset('images/favicon.svg') }}">
-    <link rel="alternate icon" href="{{ asset('favicon.ico') }}">
+    @include('partials.favicon')
     @stack('structured-data')
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])

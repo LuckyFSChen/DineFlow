@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ __('admin.table_print_page_title', ['store' => $store->name]) }}</title>
+    @include('partials.favicon')
     <style>
         body {
             font-family: Arial, sans-serif;

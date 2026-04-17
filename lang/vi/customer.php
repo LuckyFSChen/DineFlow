@@ -7,6 +7,7 @@ return [
     'view_cart'                   => 'Xem Giỏ Hàng',
     'back_to_menu'                => 'Quay Lại Thực Đơn',
     'add_to_cart'                 => 'Thêm Vào Giỏ',
+    'remove_item'                 => 'Xóa',
     'item_added_to_cart'          => 'Sản phẩm đã được thêm vào giỏ hàng.',
     'qty'                         => 'Số Lượng',
     'sold_out'                    => 'Hết Hàng',

@@ -7,6 +7,7 @@ return [
     'view_cart'                   => 'View Cart',
     'back_to_menu'                => 'Back to Menu',
     'add_to_cart'                 => 'Add to Cart',
+    'remove_item'                 => 'Remove',
     'item_added_to_cart'          => 'Item added to cart.',
     'qty'                         => 'Qty',
     'sold_out'                    => 'Sold Out',
