@@ -131,6 +131,9 @@ ECPAY_CHECKOUT_ACTION=https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5
 # 執行測試
 php artisan test
 
+# 驗證本地寄信（預設寄到 MAIL_FROM_ADDRESS，可自行指定收件者）
+php artisan mail:verify-local your-email@example.com
+
 # 清除快取
 php artisan optimize:clear
 
