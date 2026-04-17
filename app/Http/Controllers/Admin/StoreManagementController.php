@@ -335,7 +335,7 @@ class StoreManagementController extends Controller
     {
         $baseSlug = Str::slug($baseSlug) ?: 'store';
 
-        $existingSlugs = Store::query()
+        $existingSlugs = Store::withTrashed()
             ->select('slug')
             ->when($excludeStoreId !== null, function ($query) use ($excludeStoreId) {
                 $query->where('id', '!=', $excludeStoreId);

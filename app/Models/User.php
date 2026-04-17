@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 class User extends Authenticatable
 {
@@ -104,6 +105,9 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'subscription_ends_at' => 'datetime',
+            'trial_started_at' => 'datetime',
+            'trial_ends_at' => 'datetime',
+            'trial_used_at' => 'datetime',
         ];
     }
 
@@ -151,6 +155,27 @@ class User extends Authenticatable
         return $this->isMerchant()
             && $this->subscription_ends_at !== null
             && $this->subscription_ends_at->greaterThanOrEqualTo(now()->startOfDay());
+    }
+
+    public function canStartTrial(): bool
+    {
+        if (! $this->isMerchant()) {
+            return false;
+        }
+
+        if (! Route::has('merchant.subscription.trial')) {
+            return false;
+        }
+
+        if ($this->trial_used_at !== null) {
+            return false;
+        }
+
+        if ($this->hasActiveSubscription()) {
+            return false;
+        }
+
+        return ! ($this->trial_ends_at !== null && $this->trial_ends_at->greaterThanOrEqualTo(now()));
     }
 
     public function subscriptionPlan()
