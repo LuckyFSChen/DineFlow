@@ -46,12 +46,9 @@ class StoreController extends Controller
         $data = $this->fillCoordinatesFromAddress($data);
 
         $maxAttempts = 10;
-        $baseSlug = Str::slug((string) ($data['slug'] ?? $data['name'])) ?: 'store';
+        $baseSlug = Str::slug((string) $data['name']) ?: 'store';
         $store = null;
-
-        if (empty($data['slug'])) {
-            $data['slug'] = $this->nextAvailableStoreSlug($baseSlug);
-        }
+        $data['slug'] = $this->nextAvailableStoreSlug($baseSlug);
 
         for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
             try {
@@ -113,16 +110,10 @@ class StoreController extends Controller
         $data = $this->validatedData($request, $store->id);
         $data = $this->fillCoordinatesFromAddress($data, $store);
 
-        if (empty($data['slug'])) {
-            $baseSlug = Str::slug($data['name']) ?: 'store';
-            $data['slug'] = $this->nextAvailableStoreSlug($baseSlug, $store->id);
-        }
-
         $data['is_active'] = $request->boolean('is_active');
 
         $updateData = [
             'name' => $data['name'],
-            'slug' => $data['slug'],
             'description' => $data['description'] ?? null,
             'address' => $data['address'] ?? null,
             'latitude' => $data['latitude'] ?? null,
@@ -173,7 +164,6 @@ class StoreController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'unique:stores,slug,' . $storeId],
             'description' => ['nullable', 'string'],
             'address' => ['nullable', 'string', 'max:255'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],

@@ -251,7 +251,6 @@ class StoreManagementController extends Controller
     {
         $rules = [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'unique:stores,slug,' . $storeId],
             'description' => ['nullable', 'string'],
             'address' => ['nullable', 'string', 'max:255'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
@@ -298,10 +297,6 @@ class StoreManagementController extends Controller
         $data['phone'] = $this->normalizePhoneByCountry($data['phone'] ?? null, $countryCode);
         $data['latitude'] = $this->normalizeCoordinate($data['latitude'] ?? null);
         $data['longitude'] = $this->normalizeCoordinate($data['longitude'] ?? null);
-        if (empty($data['slug'])) {
-            $baseSlug = Str::slug($data['name']) ?: 'store';
-            $data['slug'] = $this->nextAvailableStoreSlug($baseSlug, $storeId);
-        }
         $data['is_active'] = $request->boolean('is_active');
         $data['currency'] = strtolower($data['currency'] ?? 'twd');
         $data['country_code'] = $countryCode !== '' ? $countryCode : strtolower($this->inferCountryCodeFromCurrency($data['currency']));
