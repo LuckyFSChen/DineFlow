@@ -45,7 +45,14 @@ class StoreController extends Controller
         $data = $this->fillCoordinatesFromAddress($data);
 
         if (empty($data['slug'])) {
-            $data['slug'] = Str::slug($data['name']);
+            $baseSlug = Str::slug($data['name']);
+            $slug = $baseSlug;
+            $i = 1;
+            while (Store::where('slug', $slug)->exists()) {
+                $slug = $baseSlug . '-' . $i;
+                $i++;
+            }
+            $data['slug'] = $slug;
         }
 
         $data['is_active'] = $request->boolean('is_active');

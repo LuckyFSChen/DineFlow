@@ -158,9 +158,9 @@ class TakeoutOrderingController extends Controller
         }
 
         $validated = $request->validate([
-            'customer_name' => ['nullable', 'string', 'max:255'],
-            'customer_email' => ['nullable', 'email', 'max:255'],
-            'customer_phone' => $this->customerPhoneValidationRules($store),
+            'customer_name' => ['required', 'string', 'max:255'],
+            'customer_email' => ['required', 'email', 'max:255'],
+            'customer_phone' => array_merge(['required'], $this->customerPhoneValidationRules($store)),
             'note' => ['nullable', 'string'],
             'coupon_code' => ['nullable', 'string', 'max:64'],
             'remember_customer_info' => ['nullable', 'boolean'],

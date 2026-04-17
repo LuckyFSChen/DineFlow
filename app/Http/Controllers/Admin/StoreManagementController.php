@@ -276,7 +276,16 @@ class StoreManagementController extends Controller
         $data['phone'] = $this->normalizePhoneByCountry($data['phone'] ?? null, $countryCode);
         $data['latitude'] = $this->normalizeCoordinate($data['latitude'] ?? null);
         $data['longitude'] = $this->normalizeCoordinate($data['longitude'] ?? null);
-        $data['slug'] = $data['slug'] ?: (Str::slug($data['name']) ?: 'store');
+        if (empty($data['slug'])) {
+            $baseSlug = Str::slug($data['name']) ?: 'store';
+            $slug = $baseSlug;
+            $i = 1;
+            while (Store::where('slug', $slug)->when($storeId, function($q) use ($storeId) { return $q->where('id', '!=', $storeId); })->exists()) {
+                $slug = $baseSlug . '-' . $i;
+                $i++;
+            }
+            $data['slug'] = $slug;
+        }
         $data['is_active'] = $request->boolean('is_active');
         $data['currency'] = strtolower($data['currency'] ?? 'twd');
         $data['country_code'] = $countryCode !== '' ? $countryCode : strtolower($this->inferCountryCodeFromCurrency($data['currency']));

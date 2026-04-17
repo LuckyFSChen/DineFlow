@@ -78,9 +78,9 @@ class OrderController extends Controller
         abort_unless($table->store_id === $store->id, 404);
 
         $validated = $request->validate([
-            'customer_name' => ['nullable', 'string', 'max:255'],
-            'customer_email' => ['nullable', 'email', 'max:255'],
-            'customer_phone' => ['nullable', 'string', 'max:50'],
+            'customer_name' => ['required', 'string', 'max:255'],
+            'customer_email' => ['required', 'email', 'max:255'],
+            'customer_phone' => ['required', 'string', 'max:50'],
             'note' => ['nullable', 'string'],
         ]);
 

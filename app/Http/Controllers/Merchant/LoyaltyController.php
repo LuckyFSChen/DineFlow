@@ -9,13 +9,18 @@ use App\Models\MemberPointLedger;
 use App\Models\Order;
 use App\Models\Store;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class LoyaltyController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
+        if ($redirect = $this->ensureHasOwnedStore($request)) {
+            return $redirect;
+        }
+
         $user = $request->user();
         $stores = Store::query()
             ->where('user_id', $user->id)
@@ -104,6 +109,10 @@ class LoyaltyController extends Controller
 
     public function updateSettings(Request $request)
     {
+        if ($redirect = $this->ensureHasOwnedStore($request)) {
+            return $redirect;
+        }
+
         $user = $request->user();
         $validated = $request->validate([
             'store_id' => ['required', 'integer'],
@@ -133,6 +142,10 @@ class LoyaltyController extends Controller
 
     public function storeCoupon(Request $request)
     {
+        if ($redirect = $this->ensureHasOwnedStore($request)) {
+            return $redirect;
+        }
+
         $user = $request->user();
         $validated = $request->validate([
             'store_id' => ['required', 'integer'],
@@ -172,6 +185,10 @@ class LoyaltyController extends Controller
 
     public function updateCoupon(Request $request, Coupon $coupon)
     {
+        if ($redirect = $this->ensureHasOwnedStore($request)) {
+            return $redirect;
+        }
+
         $this->authorizeCoupon($request, $coupon);
 
         $validated = $request->validate([
@@ -203,6 +220,10 @@ class LoyaltyController extends Controller
 
     public function toggleCoupon(Request $request, Coupon $coupon)
     {
+        if ($redirect = $this->ensureHasOwnedStore($request)) {
+            return $redirect;
+        }
+
         $this->authorizeCoupon($request, $coupon);
 
         $coupon->is_active = ! $coupon->is_active;
@@ -221,5 +242,24 @@ class LoyaltyController extends Controller
 
         abort_unless($store !== null, 403);
     }
-}
 
+    private function ensureHasOwnedStore(Request $request): ?RedirectResponse
+    {
+        $user = $request->user();
+        if (! $user || ! $user->isMerchant()) {
+            return null;
+        }
+
+        if ($user->stores()->exists()) {
+            return null;
+        }
+
+        $message = match (app()->getLocale()) {
+            'en' => 'Please create at least one store before entering Members & Coupons.',
+            'vi' => 'Vui long tao it nhat mot cua hang truoc khi vao Thanh vien & Uu dai.',
+            default => '請先建立至少一間商店，才能進入會員與優惠。',
+        };
+
+        return redirect()->route('admin.stores.index')->with('error', $message);
+    }
+}

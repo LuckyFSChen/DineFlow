@@ -167,38 +167,41 @@
                                 <div>
                                     <label for="customer_name" class="mb-2 block text-sm font-medium text-brand-dark">
                                         {{ __('customer.name') }}
+                                        <span class="text-red-600 font-bold">*</span>
                                     </label>
                                     <input id="customer_name"
-                                           type="text"
-                                           name="customer_name"
-                                         value="{{ old('customer_name', $rememberedCustomerInfo['customer_name'] ?? '') }}"
-                                           class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">
+                                                                                     type="text"
+                                                                                     name="customer_name"
+                                                                                     value="{{ old('customer_name', $rememberedCustomerInfo['customer_name'] ?? '') }}"
+                                                                                     class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft" required>
                                 </div>
 
                                 <div>
                                     <label for="customer_email" class="mb-2 block text-sm font-medium text-brand-dark">
                                         {{ __('auth.Email') }}
+                                        <span class="text-red-600 font-bold">*</span>
                                     </label>
                                     <input id="customer_email"
-                                           type="email"
-                                           name="customer_email"
-                                         value="{{ old('customer_email', $rememberedCustomerInfo['customer_email'] ?? '') }}"
-                                           class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">
+                                                                                     type="email"
+                                                                                     name="customer_email"
+                                                                                     value="{{ old('customer_email', $rememberedCustomerInfo['customer_email'] ?? '') }}"
+                                                                                     class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft" required>
                                 </div>
 
                                 <div>
                                     <label for="customer_phone" class="mb-2 block text-sm font-medium text-brand-dark">
                                         {{ __('customer.phone') }}
+                                        <span class="text-red-600 font-bold">*</span>
                                     </label>
                                     <input id="customer_phone"
-                                           type="text"
-                                           name="customer_phone"
-                                           value="{{ old('customer_phone', $rememberedCustomerInfo['customer_phone'] ?? '') }}"
-                                           inputmode="numeric"
-                                                                                                                                                                         maxlength="{{ $phoneDigits + 2 }}"
-                                                                                                                                                                         pattern="[0-9-]*"
-                                         placeholder="{{ __('customer.phone_placeholder') }}"
-                                           class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">
+                                                                                     type="text"
+                                                                                     name="customer_phone"
+                                                                                     value="{{ old('customer_phone', $rememberedCustomerInfo['customer_phone'] ?? '') }}"
+                                                                                     inputmode="numeric"
+                                                                                     maxlength="{{ $phoneDigits + 2 }}"
+                                                                                     pattern="[0-9-]*"
+                                                                                     placeholder="{{ __('customer.phone_placeholder') }}"
+                                                                                     class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft" required>
                                                                          <p class="mt-1 text-xs text-brand-primary/70">{{ __('customer.phone_format_hint', ['digits' => $phoneDigits]) }}</p>
                                 </div>
 

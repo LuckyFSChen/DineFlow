@@ -139,32 +139,44 @@
 
                             <div>
                                 <label class="mb-2 block text-sm font-medium text-gray-700">{{ __('customer.name') }}</label>
+                                <label class="mb-2 block text-sm font-medium text-gray-700">
+                                    {{ __('customer.name') }}
+                                    <span class="text-red-600 font-bold">*</span>
+                                </label>
                                 <input type="text"
-                                       name="customer_name"
-                                        value="{{ old('customer_name', $rememberedCustomerInfo['customer_name'] ?? '') }}"
-                                       class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                                    placeholder="{{ __('customer.name_placeholder') }}">
+                                                    name="customer_name"
+                                                    value="{{ old('customer_name', $rememberedCustomerInfo['customer_name'] ?? '') }}"
+                                                    class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                                                    placeholder="{{ __('customer.name_placeholder') }}" required>
                             </div>
 
                             <div>
                                 <label class="mb-2 block text-sm font-medium text-gray-700">{{ __('auth.Email') }}</label>
+                                <label class="mb-2 block text-sm font-medium text-gray-700">
+                                    {{ __('auth.Email') }}
+                                    <span class="text-red-600 font-bold">*</span>
+                                </label>
                                 <input type="email"
-                                       name="customer_email"
-                                        value="{{ old('customer_email', $rememberedCustomerInfo['customer_email'] ?? '') }}"
-                                       class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                                    placeholder="{{ __('customer.email_placeholder') }}">
+                                                    name="customer_email"
+                                                    value="{{ old('customer_email', $rememberedCustomerInfo['customer_email'] ?? '') }}"
+                                                    class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                                                    placeholder="{{ __('customer.email_placeholder') }}" required>
                             </div>
 
                             <div>
                                 <label class="mb-2 block text-sm font-medium text-gray-700">{{ __('customer.phone') }}</label>
+                                <label class="mb-2 block text-sm font-medium text-gray-700">
+                                    {{ __('customer.phone') }}
+                                    <span class="text-red-600 font-bold">*</span>
+                                </label>
                                 <input type="text"
                                        name="customer_phone"
                                        value="{{ old('customer_phone', $rememberedCustomerInfo['customer_phone'] ?? '') }}"
                                        inputmode="numeric"
-                                        maxlength="{{ $phoneDigits + 2 }}"
-                                        pattern="[0-9-]*"
+                                       maxlength="{{ $phoneDigits + 2 }}"
+                                       pattern="[0-9-]*"
                                        class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                                        placeholder="{{ __('customer.phone_placeholder') }}">
+                                       placeholder="{{ __('customer.phone_placeholder') }}" required>
                                     <p class="mt-1 text-xs text-orange-600">{{ __('customer.phone_format_hint', ['digits' => $phoneDigits]) }}</p>
                             </div>
 

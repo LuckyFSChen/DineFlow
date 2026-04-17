@@ -62,6 +62,10 @@
 
     $showCashierNav = $cashierNavStore
         && ($navUser?->isAdmin() || $navUser?->hasActiveSubscription() || $navUser?->isCashier());
+
+    $merchantHasStores = $navUser?->isMerchant()
+        ? $navUser->stores()->exists()
+        : true;
 @endphp
 
 <nav x-data="{ open: false }" class="{{ $isAdminArea ? 'admin-nav sticky top-0 z-40 border-b border-white/40 bg-white/70 backdrop-blur-xl' : 'bg-white border-b border-gray-100' }}">
@@ -95,9 +99,15 @@
                             {{ __('nav.financial_report') }}
                         </x-nav-link>
 
-                        <x-nav-link :href="route('merchant.loyalty.index')" :active="request()->routeIs('merchant.loyalty.*')">
-                            {{ __('nav.loyalty') }}
-                        </x-nav-link>
+                        @if($merchantHasStores)
+                            <x-nav-link :href="route('merchant.loyalty.index')" :active="request()->routeIs('merchant.loyalty.*')">
+                                {{ __('nav.loyalty') }}
+                            </x-nav-link>
+                        @else
+                            <span class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-400 cursor-not-allowed" title="請先建立商店">
+                                {{ __('nav.loyalty') }}
+                            </span>
+                        @endif
                     @endif
 
                     @if(Auth::user()?->isAdmin() || Auth::user()?->hasActiveSubscription())
@@ -230,9 +240,15 @@
                     {{ __('nav.financial_report') }}
                 </x-responsive-nav-link>
 
-                <x-responsive-nav-link :href="route('merchant.loyalty.index')" :active="request()->routeIs('merchant.loyalty.*')">
-                    {{ __('nav.loyalty') }}
-                </x-responsive-nav-link>
+                @if($merchantHasStores)
+                    <x-responsive-nav-link :href="route('merchant.loyalty.index')" :active="request()->routeIs('merchant.loyalty.*')">
+                        {{ __('nav.loyalty') }}
+                    </x-responsive-nav-link>
+                @else
+                    <span class="block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-medium text-gray-400 cursor-not-allowed">
+                        {{ __('nav.loyalty') }}
+                    </span>
+                @endif
             @endif
 
             @if(Auth::user()?->isAdmin() || Auth::user()?->hasActiveSubscription())
