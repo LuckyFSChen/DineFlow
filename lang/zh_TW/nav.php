@@ -2,6 +2,7 @@
 
 return [
     'admin_console'      => '管理後台',
+    'admin_login'        => '後台登入',
     'login'              => '登入',
     'register'           => '註冊',
     'subscription'       => '訂閱方案',

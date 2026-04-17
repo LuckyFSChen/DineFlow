@@ -206,6 +206,9 @@
                         </x-slot>
                     </x-dropdown>
                 @else
+                    <a href="{{ route('admin.login') }}" class="inline-flex items-center rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-semibold text-cyan-700 shadow-sm hover:bg-cyan-100">
+                        {{ __('nav.admin_login') }}
+                    </a>
                     <a href="{{ route('login') }}" class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">
                         {{ __('nav.login') }}
                     </a>
@@ -298,6 +301,9 @@
                 </div>
             @else
                 <div class="mt-2 space-y-1 px-2">
+                    <x-responsive-nav-link :href="route('admin.login')">
+                        {{ __('nav.admin_login') }}
+                    </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('login')">
                         {{ __('nav.login') }}
                     </x-responsive-nav-link>

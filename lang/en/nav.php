@@ -2,6 +2,7 @@
 
 return [
     'admin_console'      => 'Admin Console',
+    'admin_login'        => 'Admin Login',
     'login'              => 'Log in',
     'register'           => 'Register',
     'subscription'       => 'Subscription',
