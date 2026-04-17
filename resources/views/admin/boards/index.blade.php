@@ -3,6 +3,19 @@
 @section('title', __('admin.board_all_title') . ' — ' . $store->name)
 
 @php
+$storeRouteValue = static function ($value) {
+    if ($value instanceof \App\Models\Store) {
+        return $value->getRouteKey();
+    }
+
+    if (is_array($value)) {
+        return $value['slug'] ?? $value['id'] ?? null;
+    }
+
+    return is_string($value) || is_int($value) ? $value : null;
+};
+
+$storeRoute = $storeRouteValue($store);
 $defaultCancelQuickReasons = __('admin.board_cancel_quick_reasons');
 if (! is_array($defaultCancelQuickReasons)) {
     $defaultCancelQuickReasons = [];
@@ -64,10 +77,10 @@ $allBoardsI18n = [
         <div class="flex flex-wrap items-center gap-2 xl:justify-end">
             <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
                 @if($store->is_active)
-                    <a href="{{ route('admin.stores.cashier', $store) }}" class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
+                    <a href="{{ route('admin.stores.cashier', ['store' => $storeRoute]) }}" class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
                         💳 {{ __('admin.board_cashier_title') }}
                     </a>
-                    <a href="{{ route('admin.stores.kitchen', $store) }}" class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
+                    <a href="{{ route('admin.stores.kitchen', ['store' => $storeRoute]) }}" class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
                         🍳 {{ __('admin.board_kitchen_title') }}
                     </a>
                 @endif
@@ -81,7 +94,7 @@ $allBoardsI18n = [
                         class="board-store-select rounded border border-slate-600 bg-slate-900 px-2 py-1 text-xs text-slate-100 focus:border-indigo-500 focus:outline-none"
                         onchange="if (this.value) window.location.href = this.value;">
                         @foreach($availableStores as $availableStore)
-                            <option value="{{ route('admin.stores.boards', $availableStore) }}" @selected((int) $availableStore->id === (int) $store->id)>
+                            <option value="{{ route('admin.stores.boards', ['store' => $storeRouteValue($availableStore)]) }}" @selected((int) $availableStore->id === (int) $store->id)>
                                 {{ $availableStore->name }}
                             </option>
                         @endforeach
@@ -327,10 +340,10 @@ function allBoards() {
         checkoutTiming: @json($checkoutTiming ?? 'postpay'),
         canCashierActions: @json($canCashierActions),
         canKitchenActions: @json($canKitchenActions),
-        cashierOrdersUrl: @json(route('admin.stores.cashier.orders', $store)),
-        kitchenOrdersUrl: @json(route('admin.stores.kitchen.orders', $store)),
-        cashierStatusUrlTemplate: @json(route('admin.stores.cashier.orders.status', ['store' => $store, 'order' => '__ORDER__'])),
-        kitchenStatusUrlTemplate: @json(route('admin.stores.kitchen.orders.status', ['store' => $store, 'order' => '__ORDER__'])),
+        cashierOrdersUrl: @json(route('admin.stores.cashier.orders', ['store' => $storeRoute])),
+        kitchenOrdersUrl: @json(route('admin.stores.kitchen.orders', ['store' => $storeRoute])),
+        cashierStatusUrlTemplate: @json(route('admin.stores.cashier.orders.status', ['store' => $storeRoute, 'order' => '__ORDER__'])),
+        kitchenStatusUrlTemplate: @json(route('admin.stores.kitchen.orders.status', ['store' => $storeRoute, 'order' => '__ORDER__'])),
         i18n: @json($allBoardsI18n),
         loading: false,
         newOrderAlert: false,

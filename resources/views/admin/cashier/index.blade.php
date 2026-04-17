@@ -3,6 +3,19 @@
 @section('title', __('admin.board_cashier_title') . ' — ' . $store->name)
 
 @php
+$storeRouteValue = static function ($value) {
+    if ($value instanceof \App\Models\Store) {
+        return $value->getRouteKey();
+    }
+
+    if (is_array($value)) {
+        return $value['slug'] ?? $value['id'] ?? null;
+    }
+
+    return is_string($value) || is_int($value) ? $value : null;
+};
+
+$storeRoute = $storeRouteValue($store);
 function cashierFormatOrder(\App\Models\Order $order): array {
     return [
         'id'             => $order->id,
@@ -91,12 +104,12 @@ $cashierI18n = [
             <div class="flex rounded-lg border border-slate-700 overflow-hidden text-xs font-semibold">
                 <span class="px-3 py-1.5 bg-indigo-600 text-white">💳 {{ __('admin.board_cashier_title') }}</span>
                 @if($store->is_active)
-                    <a href="{{ route('admin.stores.kitchen', $store) }}"
+                    <a href="{{ route('admin.stores.kitchen', ['store' => $storeRoute]) }}"
                        class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
                         🍳 {{ __('admin.board_kitchen_title') }}
                     </a>
                 @endif
-                <a href="{{ route('admin.stores.boards', $store) }}"
+                <a href="{{ route('admin.stores.boards', ['store' => $storeRoute]) }}"
                    class="px-3 py-1.5 text-slate-300 transition hover:bg-slate-700">
                     🧩 {{ __('admin.board_all_title') }}
                 </a>
@@ -109,7 +122,7 @@ $cashierI18n = [
                         class="board-store-select rounded border border-slate-600 bg-slate-900 px-2 py-1 text-xs text-slate-100 focus:border-indigo-500 focus:outline-none"
                         onchange="if (this.value) window.location.href = this.value;">
                         @foreach($availableStores as $availableStore)
-                            <option value="{{ route('admin.stores.cashier', $availableStore) }}" @selected((int) $availableStore->id === (int) $store->id)>
+                            <option value="{{ route('admin.stores.cashier', ['store' => $storeRouteValue($availableStore)]) }}" @selected((int) $availableStore->id === (int) $store->id)>
                                 {{ $availableStore->name }}
                             </option>
                         @endforeach
@@ -408,7 +421,7 @@ $cashierI18n = [
 function cashierBoard() {
     return {
         orders: @json($ordersData),
-        statusUrlTemplate: @json(route('admin.stores.cashier.orders.status', ['store' => $store, 'order' => '__ORDER__'])),
+        statusUrlTemplate: @json(route('admin.stores.cashier.orders.status', ['store' => $storeRoute, 'order' => '__ORDER__'])),
         checkoutTiming: @json($checkoutTiming ?? 'postpay'),
         i18n: @json($cashierI18n),
         filter: 'all',
@@ -525,7 +538,7 @@ function cashierBoard() {
 
         async poll() {
             try {
-                const res = await fetch('{{ route('admin.stores.cashier.orders', $store) }}', {
+                const res = await fetch('{{ route('admin.stores.cashier.orders', ['store' => $storeRoute]) }}', {
                     headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                 });
                 if (!res.ok) return;
