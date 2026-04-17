@@ -125,6 +125,37 @@ ECPAY_CHECKOUT_ACTION=https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5
 
 - `POST /ecpay/subscription/notify`
 
+## Mail（Microsoft Graph OAuth2）
+
+若不使用 SMTP 基本驗證（避免被 Security Defaults 阻擋），可改用 Microsoft Graph：
+
+```env
+MAIL_MAILER=graph
+MS_GRAPH_MAIL_ENABLED=true
+MS_GRAPH_AUTH_MODE=app-only
+MS_GRAPH_TENANT_ID=
+MS_GRAPH_CLIENT_ID=
+MS_GRAPH_CLIENT_SECRET=
+MS_GRAPH_SENDER=admin@dineflow.shop
+GRAPH_USER_SCOPES=User.Read Mail.Send offline_access
+MS_GRAPH_BASE_URL=https://graph.microsoft.com
+```
+
+說明：
+
+- 全系統改走 Graph：將 `MAIL_MAILER=graph`。
+- 長期運作請使用 App-Only：`MS_GRAPH_AUTH_MODE=app-only`，並設定 `MS_GRAPH_CLIENT_SECRET` + `MS_GRAPH_SENDER`；Azure App 需 `Mail.Send` Application permission + admin consent。
+- Device Code（適合本機測試）：可用 `MS_GRAPH_TENANT_ID` + `MS_GRAPH_CLIENT_ID` + `GRAPH_USER_SCOPES`；首次會出現登入提示。
+
+測試 Graph 寄信：
+
+```bash
+php artisan optimize:clear
+php artisan mail:test your-email@example.com --graph
+```
+
+注意：Azure App 需具備 `Mail.Send` Application permission，並完成 admin consent。
+
 ## 常用指令
 
 ```bash

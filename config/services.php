@@ -53,4 +53,15 @@ return [
         'timeout' => (int) env('GOOGLE_PLACES_TIMEOUT', 8),
     ],
 
+    'microsoft_graph' => [
+        'enabled' => (bool) env('MS_GRAPH_MAIL_ENABLED', false),
+        'auth_mode' => env('MS_GRAPH_AUTH_MODE', 'auto'),
+        'tenant_id' => env('MS_GRAPH_TENANT_ID', env('TENANT_ID')),
+        'client_id' => env('MS_GRAPH_CLIENT_ID', env('CLIENT_ID')),
+        'client_secret' => env('MS_GRAPH_CLIENT_SECRET'),
+        'sender' => env('MS_GRAPH_SENDER'),
+        'user_scopes' => env('GRAPH_USER_SCOPES', 'User.Read Mail.Send offline_access'),
+        'base_url' => env('MS_GRAPH_BASE_URL', 'https://graph.microsoft.com'),
+    ],
+
 ];
