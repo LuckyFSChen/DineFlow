@@ -8,7 +8,6 @@
     $storeMetaImage = $store->banner_image
         ? asset('storage/' . $store->banner_image)
         : asset('images/logo-256.png');
-    $mapsUrl = null;
     $currencyCode = strtolower((string) ($store->currency ?? 'twd'));
     $currencySymbol = match ($currencyCode) {
         'vnd' => 'VND',
@@ -16,12 +15,9 @@
         'usd' => 'USD',
         default => 'NT$',
     };
-
-    if ($store->latitude !== null && $store->longitude !== null) {
-        $mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' . urlencode($store->latitude . ',' . $store->longitude);
-    } elseif (!empty($store->address)) {
-        $mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' . urlencode($store->address);
-    }
+    $mapsUrl = !empty($store->address)
+        ? 'https://www.google.com/maps/search/?api=1&query=' . urlencode($store->address)
+        : null;
 @endphp
 
 @section('title', $storeMetaTitle)
@@ -53,7 +49,7 @@
 @endpush
 
 @section('content')
-<div class="min-h-screen bg-brand-soft/20 text-brand-dark">
+<div class="min-h-screen bg-brand-soft/20 pb-24 text-brand-dark md:pb-0">
     <section class="relative isolate overflow-hidden border-b border-brand-soft/60 bg-brand-dark text-white">
         <div class="absolute inset-0">
             <img
@@ -90,10 +86,19 @@
                         {{ $store->description ?: __('home.default_store_desc') }}
                     </p>
 
+                    @if($store->address)
+                        <div class="mt-4 inline-flex max-w-3xl items-start gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm text-white/85 backdrop-blur">
+                            <svg class="mt-0.5 h-4 w-4 shrink-0 text-brand-highlight" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M10 2a6 6 0 00-6 6c0 4.03 4.86 8.84 5.07 9.04a1.3 1.3 0 001.86 0c.2-.2 5.07-5.01 5.07-9.04a6 6 0 00-6-6zm0 8a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>{{ __('home.address') }} {{ $store->address }}</span>
+                        </div>
+                    @endif
+
                     <div class="mt-8 flex flex-wrap gap-4">
                         @if($takeoutUrl)
                             <a href="{{ $takeoutUrl }}" class="inline-flex items-center justify-center rounded-2xl bg-brand-highlight px-5 py-3 text-base font-semibold text-brand-dark shadow-lg shadow-brand-highlight/30 transition hover:-translate-y-0.5 hover:bg-brand-soft">
-                                {{ __('home.enter_store') }}
+                                {{ __('home.order_now') }}
                             </a>
                         @endif
                         @if($mapsUrl)
@@ -101,40 +106,73 @@
                                 {{ __('stores.open_map') }}
                             </a>
                         @endif
+                        @if($store->phone)
+                            <a href="tel:{{ preg_replace('/\D+/', '', (string) $store->phone) }}" class="inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-base font-semibold text-white transition hover:bg-white/15">
+                                {{ __('home.phone') }}
+                            </a>
+                        @endif
                     </div>
                 </div>
 
                 <div class="rounded-[2rem] border border-white/10 bg-white/10 p-6 shadow-[0_24px_60px_rgba(0,0,0,0.22)] backdrop-blur">
-                    <h2 class="text-lg font-bold text-white">{{ $store->name }}</h2>
-                    <div class="mt-5 space-y-3 text-sm text-white/80">
-                        @if($store->address)
-                            <div>{{ __('home.address') }} {{ $store->address }}</div>
-                        @endif
-                        @if($store->phone)
-                            <div>{{ __('home.phone') }} {{ $store->phone }}</div>
-                        @endif
-                        <div>{{ __('home.business_hours') }} {{ $store->businessHoursLabel() }}</div>
-                        <div>{{ __('home.view_all_stores') }} {{ number_format((int) $store->active_categories_count) }} {{ __('customer.menu_section') }}</div>
-                        <div>{{ __('customer.items_in_menu') }} {{ number_format((int) $store->active_products_count) }}</div>
+                    <div class="flex items-center justify-between gap-3">
+                        <h2 class="text-lg font-bold text-white">{{ $store->name }}</h2>
+                        <span class="inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90">
+                            {{ $orderingAvailable ? __('home.status_orderable') : __('home.status_closed') }}
+                        </span>
+                    </div>
+
+                    <div class="mt-5 space-y-4 text-sm text-white/85">
+                        <div class="flex items-start gap-3">
+                            <svg class="mt-0.5 h-4 w-4 shrink-0 text-brand-highlight" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M10 2a6 6 0 00-6 6c0 4.03 4.86 8.84 5.07 9.04a1.3 1.3 0 001.86 0c.2-.2 5.07-5.01 5.07-9.04a6 6 0 00-6-6zm0 8a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                            </svg>
+                            <div>{{ __('home.address') }} {{ $store->address ?: '-' }}</div>
+                        </div>
+
+                        <div class="flex items-start gap-3">
+                            <svg class="mt-0.5 h-4 w-4 shrink-0 text-brand-highlight" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path d="M2.4 2.9a1 1 0 011.1-.3l2.2.7a1 1 0 01.7 1v2a1 1 0 01-.3.7l-1 1a12.5 12.5 0 005 5l1-1a1 1 0 01.7-.3h2a1 1 0 011 .7l.7 2.2a1 1 0 01-.3 1.1l-1.4 1.1a2 2 0 01-1.8.3A16.3 16.3 0 012.9 7.1a2 2 0 01.3-1.8L4.3 3.9z"/>
+                            </svg>
+                            <div>{{ __('home.phone') }} {{ $store->phone ?: '-' }}</div>
+                        </div>
+
+                        <div class="flex items-start gap-3">
+                            <svg class="mt-0.5 h-4 w-4 shrink-0 text-brand-highlight" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm.75 4.25a.75.75 0 00-1.5 0v3c0 .2.08.39.22.53l1.75 1.75a.75.75 0 101.06-1.06l-1.53-1.53V6.25z" clip-rule="evenodd"/>
+                            </svg>
+                            <div>{{ __('home.business_hours') }} {{ $store->businessHoursLabel() }}</div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 pt-1 text-white">
+                            <div class="rounded-xl border border-white/15 bg-white/10 px-3 py-2">
+                                <div class="text-xs text-white/70">{{ __('customer.menu_section') }}</div>
+                                <div class="mt-1 text-base font-bold">{{ number_format((int) $store->active_categories_count) }}</div>
+                            </div>
+                            <div class="rounded-xl border border-white/15 bg-white/10 px-3 py-2">
+                                <div class="text-xs text-white/70">{{ __('customer.items_in_menu') }}</div>
+                                <div class="mt-1 text-base font-bold">{{ number_format((int) $store->active_products_count) }}</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="border-b border-brand-soft/50 bg-white py-14">
+    <section id="store-overview" class="border-b border-brand-soft/50 bg-white py-14">
         <div class="mx-auto grid max-w-7xl gap-6 px-6 md:grid-cols-3 lg:px-8">
-            <div class="rounded-[1.6rem] border border-brand-soft/60 bg-brand-soft/18 p-6">
+            <div class="rounded-[1.6rem] border border-brand-soft/60 bg-brand-soft/18 p-6 transition hover:-translate-y-0.5 hover:shadow-sm">
                 <div class="text-sm font-semibold uppercase tracking-[0.18em] text-brand-primary/70">01</div>
                 <h2 class="mt-3 text-xl font-bold text-brand-dark">{{ __('customer.business_hours') }}</h2>
                 <p class="mt-2 text-base leading-7 text-brand-primary/75">{{ $store->businessHoursLabel() }}</p>
             </div>
-            <div class="rounded-[1.6rem] border border-brand-soft/60 bg-brand-soft/18 p-6">
+            <div class="rounded-[1.6rem] border border-brand-soft/60 bg-brand-soft/18 p-6 transition hover:-translate-y-0.5 hover:shadow-sm">
                 <div class="text-sm font-semibold uppercase tracking-[0.18em] text-brand-primary/70">02</div>
                 <h2 class="mt-3 text-xl font-bold text-brand-dark">{{ __('customer.items_in_menu') }}</h2>
                 <p class="mt-2 text-base leading-7 text-brand-primary/75">{{ number_format((int) $store->active_products_count) }} {{ __('customer.items_in_menu') }}</p>
             </div>
-            <div class="rounded-[1.6rem] border border-brand-soft/60 bg-brand-soft/18 p-6">
+            <div class="rounded-[1.6rem] border border-brand-soft/60 bg-brand-soft/18 p-6 transition hover:-translate-y-0.5 hover:shadow-sm">
                 <div class="text-sm font-semibold uppercase tracking-[0.18em] text-brand-primary/70">03</div>
                 <h2 class="mt-3 text-xl font-bold text-brand-dark">{{ __('customer.takeout') }}</h2>
                 <p class="mt-2 text-base leading-7 text-brand-primary/75">
@@ -145,7 +183,7 @@
     </section>
 
     @if($categories->isNotEmpty())
-        <section class="border-b border-brand-soft/60 bg-white py-16">
+        <section id="menu-categories" class="border-b border-brand-soft/60 bg-white py-16">
             <div class="mx-auto max-w-7xl px-6 lg:px-8">
                 <div class="mb-8 flex items-end justify-between gap-4">
                     <div>
@@ -154,14 +192,14 @@
                     </div>
                     @if($takeoutUrl)
                         <a href="{{ $takeoutUrl }}" class="inline-flex items-center rounded-2xl border border-brand-soft/70 bg-brand-soft/20 px-4 py-3 text-sm font-semibold text-brand-primary transition hover:bg-brand-soft/40">
-                            {{ __('home.enter_store') }}
+                            {{ __('home.order_now') }}
                         </a>
                     @endif
                 </div>
 
                 <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     @foreach($categories as $category)
-                        <div class="rounded-[1.6rem] border border-brand-soft/60 bg-brand-soft/18 p-6 shadow-sm">
+                        <div class="rounded-[1.6rem] border border-brand-soft/60 bg-brand-soft/18 p-6 shadow-sm transition hover:-translate-y-0.5 hover:bg-brand-soft/30">
                             <h3 class="text-xl font-bold text-brand-dark">{{ $category->name }}</h3>
                             <p class="mt-2 text-base text-brand-primary/75">{{ number_format((int) $category->products_count) }} {{ __('customer.items_in_menu') }}</p>
                         </div>
@@ -172,7 +210,7 @@
     @endif
 
     @if($featuredProducts->isNotEmpty())
-        <section class="bg-white py-16">
+        <section id="featured-products" class="bg-white py-16">
             <div class="mx-auto max-w-7xl px-6 lg:px-8">
                 <div class="mb-8">
                     <h2 class="text-3xl font-bold tracking-tight text-brand-dark">{{ $store->name }} 精選餐點</h2>
@@ -181,7 +219,7 @@
 
                 <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                     @foreach($featuredProducts as $product)
-                        <article class="overflow-hidden rounded-[1.75rem] border border-brand-soft/60 bg-white shadow-[0_18px_44px_rgba(90,30,14,0.1)]">
+                        <article class="overflow-hidden rounded-[1.75rem] border border-brand-soft/60 bg-white shadow-[0_18px_44px_rgba(90,30,14,0.1)] transition hover:-translate-y-1 hover:shadow-[0_24px_56px_rgba(90,30,14,0.14)]">
                             <div class="relative h-48 overflow-hidden bg-brand-soft/30">
                                 <img
                                     src="{{ $product->seo_image_url ?: 'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=900&q=80' }}"
@@ -212,6 +250,28 @@
                 </div>
             </div>
         </section>
+    @endif
+
+    @if($takeoutUrl || $mapsUrl || $store->phone)
+        <div class="fixed inset-x-0 bottom-0 z-30 border-t border-brand-soft/60 bg-white/95 p-3 shadow-[0_-8px_24px_rgba(90,30,14,0.12)] backdrop-blur md:hidden">
+            <div class="mx-auto flex max-w-7xl items-center gap-2">
+                @if($takeoutUrl)
+                    <a href="{{ $takeoutUrl }}" class="inline-flex flex-1 items-center justify-center rounded-xl bg-brand-primary px-3 py-3 text-sm font-semibold text-white">
+                        {{ __('home.order_now') }}
+                    </a>
+                @endif
+                @if($mapsUrl)
+                    <a href="{{ $mapsUrl }}" target="_blank" rel="noopener noreferrer" class="inline-flex flex-1 items-center justify-center rounded-xl border border-brand-soft/70 bg-brand-soft/20 px-3 py-3 text-sm font-semibold text-brand-primary">
+                        {{ __('stores.open_map') }}
+                    </a>
+                @endif
+                @if($store->phone)
+                    <a href="tel:{{ preg_replace('/\D+/', '', (string) $store->phone) }}" class="inline-flex flex-1 items-center justify-center rounded-xl border border-brand-soft/70 bg-white px-3 py-3 text-sm font-semibold text-brand-primary">
+                        {{ __('home.phone') }}
+                    </a>
+                @endif
+            </div>
+        </div>
     @endif
 </div>
 @endsection

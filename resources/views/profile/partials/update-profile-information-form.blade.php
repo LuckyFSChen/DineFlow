@@ -19,7 +19,7 @@
 
         <div>
             <x-input-label for="role" :value="__('profile.role_label')" />
-            <x-text-input id="role" type="text" class="mt-1 block w-full bg-slate-50" :value="strtoupper((string) $user->role)" readonly />
+            <x-text-input id="role" type="text" class="mt-1 block w-full bg-slate-50" :value="$user->localizedRoleLabel()" readonly />
         </div>
 
         @if($user->isMerchant())

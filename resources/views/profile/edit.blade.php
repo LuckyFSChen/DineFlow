@@ -21,7 +21,7 @@
 
             <div class="p-4 sm:p-6 bg-white shadow sm:rounded-lg border border-slate-200">
                 <h3 class="text-lg font-semibold text-slate-900">{{ __('profile.role_settings_title') }}</h3>
-                <p class="mt-1 text-sm text-slate-600">{{ __('profile.current_role') }}：<span class="font-semibold text-slate-800">{{ strtoupper((string) $user->role) }}</span></p>
+                <p class="mt-1 text-sm text-slate-600">{{ __('profile.current_role') }}：<span class="font-semibold text-slate-800">{{ $user->localizedRoleLabel() }}</span></p>
 
                 <div class="mt-3 text-sm text-slate-700 space-y-1">
                     @if($user->isMerchant())

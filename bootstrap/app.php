@@ -55,4 +55,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 'message' => __('errors.server_error'),
             ], 500);
         });
+
+        $exceptions->respond(function ($response, Throwable $e, Request $request) {
+            if ($request->expectsJson()) {
+                return $response;
+            }
+
+            if (in_array($response->getStatusCode(), [419, 500], true)) {
+                return redirect()->route('home');
+            }
+
+            return $response;
+        });
     })->create();

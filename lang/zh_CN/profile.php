@@ -16,6 +16,13 @@ return [
     'basic_info'             => '基本資料',
     'basic_info_desc'        => '更新你的帳號姓名與 Email。',
     'role_label'             => '帳號角色',
+    'roles'                  => [
+        'admin' => '管理员',
+        'merchant' => '商家',
+        'customer' => '顾客',
+        'chef' => '厨房人员',
+        'cashier' => '收银人员',
+    ],
     'subscription_end'       => '訂閱到期日',
     'not_activated'          => '尚未啟用',
     'name_label'             => '姓名',

@@ -16,6 +16,13 @@ return [
     'basic_info'             => 'Thông Tin Cơ Bản',
     'basic_info_desc'        => 'Cập nhật tên và email tài khoản.',
     'role_label'             => 'Vai Trò Tài Khoản',
+    'roles'                  => [
+        'admin' => 'Quản Trị Viên',
+        'merchant' => 'Thương Nhân',
+        'customer' => 'Khách Hàng',
+        'chef' => 'Đầu Bếp',
+        'cashier' => 'Thu Ngân',
+    ],
     'subscription_end'       => 'Hết Hạn Đăng Ký',
     'not_activated'          => 'Chưa Kích Hoạt',
     'name_label'             => 'Họ Tên',

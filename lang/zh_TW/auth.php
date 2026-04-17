@@ -36,6 +36,10 @@ return [
     'Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.' =>
         '忘記密碼了嗎？沒關係，請輸入您的 Email，系統將發送重設密碼連結到您的信箱。',
     'Email Password Reset Link'  => '發送重設密碼連結',
+    'captcha_label'              => '驗證碼',
+    'captcha_placeholder'        => '請輸入算式答案',
+    'captcha_fallback_question'  => '請重新整理頁面後完成驗證碼。',
+    'captcha_invalid'            => '驗證碼錯誤，請再試一次。',
     'failed'                     => '帳號或密碼不正確。',
     'password'                   => '密碼錯誤。',
     'throttle'                   => '登入嘗試次數過多，請 :seconds 秒後再試。',

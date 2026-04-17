@@ -7,6 +7,7 @@ use App\Models\DiningTable;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Store;
+use App\Models\User;
 use App\Services\CustomerAccountService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -108,10 +109,27 @@ class DineInOrderController extends Controller
         $cart = session()->get($cartKey, []);
         $total = collect($cart)->sum('subtotal');
         $orderingAvailable = $store->isOrderingAvailable();
-        $rememberedCustomerInfo = session()->get(self::CUSTOMER_PROFILE_SESSION_KEY, []);
+        $rememberedCustomerInfo = $this->resolvePrefilledCustomerInfo();
         $orderHistory = $this->getDineInOrderHistory($store, $table);
 
         return view('customer.cart', compact('store', 'table', 'cart', 'total', 'orderingAvailable', 'rememberedCustomerInfo', 'orderHistory'));
+    }
+
+    private function resolvePrefilledCustomerInfo(): array
+    {
+        $rememberedCustomerInfo = session()->get(self::CUSTOMER_PROFILE_SESSION_KEY, []);
+        $user = request()->user();
+
+        if (! $user instanceof User || ! $user->isCustomer()) {
+            return $rememberedCustomerInfo;
+        }
+
+        return [
+            'customer_name' => $rememberedCustomerInfo['customer_name'] ?? (string) ($user->name ?? ''),
+            'customer_email' => $rememberedCustomerInfo['customer_email'] ?? (string) ($user->email ?? ''),
+            'customer_phone' => $rememberedCustomerInfo['customer_phone'] ?? (string) ($user->phone ?? ''),
+            'note' => $rememberedCustomerInfo['note'] ?? '',
+        ];
     }
 
     public function updateCartItem(Request $request, Store $store, DiningTable $table, string $lineKey)
@@ -177,25 +195,8 @@ class DineInOrderController extends Controller
         }
 
         $validated = $request->validate([
-            'customer_name' => ['nullable', 'string', 'max:255'],
-            'customer_email' => ['nullable', 'email', 'max:255'],
-            'customer_phone' => $this->customerPhoneValidationRules($store),
             'note' => ['nullable', 'string'],
-            'remember_customer_info' => ['nullable', 'boolean'],
-            'create_account_with_phone' => ['nullable', 'boolean'],
         ]);
-
-        $validated['customer_phone'] = $this->normalizeCustomerPhone($validated['customer_phone'] ?? null, $store);
-
-        if ($request->boolean('remember_customer_info')) {
-            session()->put(self::CUSTOMER_PROFILE_SESSION_KEY, [
-                'customer_name' => $validated['customer_name'] ?? '',
-                'customer_email' => $validated['customer_email'] ?? '',
-                'customer_phone' => $validated['customer_phone'] ?? '',
-            ]);
-        } else {
-            session()->forget(self::CUSTOMER_PROFILE_SESSION_KEY);
-        }
 
         $cartKey = $this->getDineInCartSessionKey($store, $table);
         $cart = session()->get($cartKey, []);
@@ -207,30 +208,13 @@ class DineInOrderController extends Controller
         }
 
         $total = collect($cart)->sum('subtotal');
-        $customerPhone = $this->normalizeOptionalText($validated['customer_phone'] ?? null);
-        $phoneAlreadyRegistered = $this->customerAccountService->isPhoneRegistered($customerPhone);
-        $shouldCreateAccount = ! $request->user()
-            && $request->boolean('create_account_with_phone')
-            && ! $phoneAlreadyRegistered;
 
-        $order = DB::transaction(function () use ($store, $table, $validated, $cart, $total, $shouldCreateAccount) {
-            $customerName = $this->normalizeCustomerName($validated['customer_name'] ?? null);
-            $customerEmail = $this->normalizeOptionalText($validated['customer_email'] ?? null);
-            $customerPhone = $this->normalizeOptionalText($validated['customer_phone'] ?? null);
+        $order = DB::transaction(function () use ($store, $table, $validated, $cart, $total) {
             $customerNote = $this->normalizeOptionalText($validated['note'] ?? null);
-
-            if ($shouldCreateAccount) {
-                $this->customerAccountService->registerOrUpdateFromOrder(
-                    $customerPhone,
-                    $customerName,
-                    $customerEmail
-                );
-            }
 
             $order = $this->findAppendableDineInOrder(
                 $store,
                 $table,
-                $customerName
             );
 
             if (! $order) {
@@ -242,9 +226,9 @@ class DineInOrderController extends Controller
                     'order_no' => $this->generateOrderNo($store),
                     'status' => 'pending',
                     'payment_status' => 'unpaid',
-                    'customer_name' => $customerName,
-                    'customer_email' => $customerEmail,
-                    'customer_phone' => $customerPhone,
+                    'customer_name' => null,
+                    'customer_email' => null,
+                    'customer_phone' => null,
                     'note' => $customerNote,
                     'subtotal' => 0,
                     'total' => 0,
@@ -264,15 +248,6 @@ class DineInOrderController extends Controller
 
             $order->subtotal = (int) $order->subtotal + (int) $total;
             $order->total = (int) $order->total + (int) $total;
-            if ($order->customer_name === null && $customerName !== null) {
-                $order->customer_name = $customerName;
-            }
-            if ($order->customer_email === null && $customerEmail !== null) {
-                $order->customer_email = $customerEmail;
-            }
-            if ($order->customer_phone === null && $customerPhone !== null) {
-                $order->customer_phone = $customerPhone;
-            }
             if ($order->note === null && $customerNote !== null) {
                 $order->note = $customerNote;
             }
@@ -635,17 +610,12 @@ class DineInOrderController extends Controller
         return $normalized === '' ? null : $normalized;
     }
 
-    private function findAppendableDineInOrder(Store $store, DiningTable $table, ?string $customerName): ?Order
+    private function findAppendableDineInOrder(Store $store, DiningTable $table): ?Order
     {
-        if ($customerName === null) {
-            return null;
-        }
-
         return Order::query()
             ->where('store_id', $store->id)
             ->where('dining_table_id', $table->id)
             ->where('order_type', 'dine_in')
-            ->where('customer_name', $customerName)
             ->whereIn('status', self::APPENDABLE_ORDER_STATUSES)
             ->where(function ($query) {
                 $query->where('payment_status', 'unpaid')

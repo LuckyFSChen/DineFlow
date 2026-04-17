@@ -6,28 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Store;
+use App\Support\TakeoutCartSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class TakeoutController extends Controller
 {
     protected function getTakeoutCartToken(Store $store): string
     {
-        $sessionKey = 'takeout_cart_token_' . $store->id;
-
-        if (!session()->has($sessionKey)) {
-            session([$sessionKey => (string) Str::uuid()]);
-        }
-
-        return session($sessionKey);
+        return TakeoutCartSession::currentToken(request(), $store->id);
     }
 
     protected function getTakeoutCartSessionKey(Store $store): string
     {
-        $token = $this->getTakeoutCartToken($store);
-
-        return 'takeout_cart.' . $store->id . '.' . $token;
+        return TakeoutCartSession::currentCartSessionKey(request(), $store->id);
     }
 
     public function menu(Store $store)
@@ -158,7 +150,7 @@ class TakeoutController extends Controller
         });
 
         session()->forget($cartKey);
-        session()->forget('takeout_cart_token_' . $store->id);
+        session()->forget(TakeoutCartSession::tokenSessionKey($store->id));
 
         return redirect()->route('customer.order.success', [
             'store' => $store->slug,

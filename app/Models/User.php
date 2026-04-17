@@ -148,6 +148,15 @@ class User extends Authenticatable
         return $this->role === 'cashier';
     }
 
+    public function localizedRoleLabel(): string
+    {
+        $role = (string) $this->role;
+        $translationKey = 'profile.roles.'.$role;
+        $translated = __($translationKey);
+
+        return $translated === $translationKey ? strtoupper($role) : $translated;
+    }
+
     public function hasActiveSubscription(): bool
     {
         if ($this->isAdmin()) {

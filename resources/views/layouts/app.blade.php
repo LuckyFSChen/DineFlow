@@ -65,10 +65,10 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="font-sans antialiased bg-light {{ $isAdminArea ? 'is-admin-area' : '' }}">
-    <div class="min-vh-100 app-shell">
+    <div class="min-h-screen flex flex-col app-shell">
         @include('layouts.navigation')
 
-        <main class="app-main {{ $isAdminArea ? 'admin-stage' : '' }}">
+        <main class="app-main flex-1 {{ $isAdminArea ? 'admin-stage' : '' }}">
             {{-- For extends/section templates --}}
             @hasSection('content')
                 @yield('content')

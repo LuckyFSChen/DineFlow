@@ -1,5 +1,6 @@
 @php
     $isAdminArea = request()->routeIs('admin.*') || request()->routeIs('super-admin.*') || request()->routeIs('merchant.*');
+    $isDineInCartPage = request()->routeIs('customer.dinein.cart.*');
     $isBoardPage = request()->routeIs('admin.stores.boards*')
         || request()->routeIs('admin.stores.kitchen*')
         || request()->routeIs('admin.stores.cashier*');
@@ -75,6 +76,21 @@
         : true;
 @endphp
 
+@if($isDineInCartPage)
+<nav class="sticky top-0 z-40 border-b border-gray-100 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex h-16 items-center justify-between">
+            <div class="shrink-0 flex items-center">
+                <a href="{{ route('customer.dinein.menu', ['store' => request()->route('store'), 'table' => request()->route('table')]) }}">
+                    <x-application-logo class="block h-11 w-auto fill-current text-gray-800" />
+                </a>
+            </div>
+
+            <x-lang-switcher />
+        </div>
+    </div>
+</nav>
+@else
 <nav x-data="{ open: false }" class="{{ $isAdminArea ? 'admin-nav sticky top-0 z-40 border-b border-slate-200 bg-white' : 'bg-white border-b border-gray-100' }}">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -169,7 +185,7 @@
                                 </span>
                                 <span class="max-w-[140px] leading-tight text-left">
                                     <span class="block truncate">{{ Auth::user()->name }}</span>
-                                    <span class="block text-[11px] font-medium text-slate-500">{{ strtoupper((string) Auth::user()->role) }}</span>
+                                    <span class="block text-[11px] font-medium text-slate-500">{{ Auth::user()->localizedRoleLabel() }}</span>
                                 </span>
                                 <div>
                                     <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -278,7 +294,7 @@
         <div class="pt-4 pb-1 border-t border-gray-200">
             @auth
                 <div class="px-4">
-                    <div class="font-medium text-sm text-gray-700">{{ strtoupper((string) Auth::user()->role) }}</div>
+                    <div class="font-medium text-sm text-gray-700">{{ Auth::user()->localizedRoleLabel() }}</div>
                     @if(Auth::user()->isMerchant())
                         <div class="font-medium text-xs text-gray-500 mt-1">
                             {{ __('nav.expires') }} {{ Auth::user()->subscription_ends_at ? Auth::user()->subscription_ends_at->format('Y-m-d H:i') : __('nav.not_activated') }}
@@ -327,6 +343,7 @@
         </div>
     </div>
 </nav>
+@endif
 
 @auth
     @if($isAdminArea)

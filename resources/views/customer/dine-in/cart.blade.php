@@ -15,11 +15,6 @@
         'usd' => 'USD',
         default => 'NT$',
     };
-    $phoneDigits = match (strtolower((string) ($store->country_code ?? 'tw'))) {
-        'cn' => 11,
-        default => 10,
-    };
-    $isGuest = ! auth()->check();
 @endphp
 <body class="bg-orange-50 text-gray-900">
     <div class="min-h-screen pb-32">
@@ -155,90 +150,8 @@
                             </p>
                         </div>
 
-                        <form method="POST" action="{{ route('customer.dinein.cart.checkout', ['store' => $store, 'table' => $table]) }}" class="space-y-5" data-customer-checkout-form data-phone-check-url="{{ route('customer.dinein.phone.registered', ['store' => $store, 'table' => $table]) }}">
+                        <form method="POST" action="{{ route('customer.dinein.cart.checkout', ['store' => $store, 'table' => $table]) }}" class="space-y-5">
                             @csrf
-                            <input type="hidden" name="create_account_with_phone" value="0" data-create-account-with-phone>
-
-                            <div>
-                                <label class="mb-2 block text-sm font-medium text-gray-700">{{ __('customer.name') }}</label>
-                                <label class="mb-2 block text-sm font-medium text-gray-700">
-                                    {{ __('customer.name') }}
-                                    <span class="text-red-600 font-bold">*</span>
-                                </label>
-                                <input type="text"
-                                                    name="customer_name"
-                                                    value="{{ old('customer_name', $rememberedCustomerInfo['customer_name'] ?? '') }}"
-                                                    class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                                                    placeholder="{{ __('customer.name_placeholder') }}" required>
-                            </div>
-
-                            <div>
-                                <label class="mb-2 block text-sm font-medium text-gray-700">{{ __('auth.Email') }}</label>
-                                <label class="mb-2 block text-sm font-medium text-gray-700">
-                                    {{ __('auth.Email') }}
-                                    <span class="text-red-600 font-bold">*</span>
-                                </label>
-                                <input type="email"
-                                                    name="customer_email"
-                                                    value="{{ old('customer_email', $rememberedCustomerInfo['customer_email'] ?? '') }}"
-                                                    class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                                                    placeholder="{{ __('customer.email_placeholder') }}" required>
-                            </div>
-
-                            <div>
-                                <label class="mb-2 block text-sm font-medium text-gray-700">{{ __('customer.phone') }}</label>
-                                <label class="mb-2 block text-sm font-medium text-gray-700">
-                                    {{ __('customer.phone') }}
-                                    <span class="text-red-600 font-bold">*</span>
-                                </label>
-                                <input type="text"
-                                       name="customer_phone"
-                                       value="{{ old('customer_phone', $rememberedCustomerInfo['customer_phone'] ?? '') }}"
-                                       inputmode="numeric"
-                                       maxlength="{{ $phoneDigits + 2 }}"
-                                       pattern="[0-9-]*"
-                                       class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                                       placeholder="{{ __('customer.phone_placeholder') }}" required>
-                                    <p class="mt-1 text-xs text-orange-600">{{ __('customer.phone_format_hint', ['digits' => $phoneDigits]) }}</p>
-                            </div>
-
-                            <div>
-                                <label class="inline-flex items-center gap-2 text-sm text-gray-700">
-                                    <input
-                                        type="checkbox"
-                                        name="remember_customer_info"
-                                        value="1"
-                                        @checked(old('remember_customer_info', !empty($rememberedCustomerInfo)))
-                                        class="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-300"
-                                    >
-                                    {{ __('customer.remember_info') }}
-                                </label>
-
-                                @if(!empty($rememberedCustomerInfo))
-                                    <div class="mt-2">
-                                        <button
-                                            type="submit"
-                                            formaction="{{ route('customer.dinein.customer-info.clear', ['store' => $store, 'table' => $table]) }}"
-                                            formmethod="POST"
-                                            formnovalidate
-                                            class="inline-flex items-center rounded-xl border border-orange-200 bg-white px-3 py-1.5 text-xs font-semibold text-orange-600 transition hover:bg-orange-50"
-                                        >
-                                            {{ __('customer.clear_remembered_info') }}
-                                        </button>
-                                    </div>
-                                @endif
-                            </div>
-
-                            <div>
-                                <label class="mb-2 block text-sm font-medium text-gray-700">優惠券代碼</label>
-                                <input type="text"
-                                       name="coupon_code"
-                                       value="{{ old('coupon_code') }}"
-                                       class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm uppercase focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                                       placeholder="例如：WELCOME100">
-                                <p class="mt-1 text-xs text-orange-600">若為點數券，請先填寫手機或 Email 以辨識會員。</p>
-                            </div>
-
                             <div>
                                 <label class="mb-2 block text-sm font-medium text-gray-700">{{ __('customer.note') }}</label>
                                 <textarea name="note"
@@ -261,97 +174,5 @@
             @endif
         </main>
     </div>
-
-    <script>
-    (() => {
-        const input = document.querySelector('input[name="customer_phone"]');
-        const maxDigits = @json($phoneDigits);
-        if (!input) {
-            return;
-        }
-
-        const normalizePhoneInput = (raw) => {
-            const digits = String(raw || '').replace(/\D/g, '').slice(0, Number(maxDigits || 10));
-
-            if (digits.length <= 4) {
-                return digits;
-            }
-
-            if (digits.length <= 7) {
-                return `${digits.slice(0, 4)}-${digits.slice(4)}`;
-            }
-
-            return `${digits.slice(0, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
-        };
-
-        const apply = () => {
-            input.value = normalizePhoneInput(input.value);
-        };
-
-        input.setAttribute('maxlength', String((maxDigits || 10) + 2));
-        input.setAttribute('inputmode', 'numeric');
-        input.setAttribute('pattern', '[0-9-]*');
-        input.addEventListener('input', apply);
-        input.addEventListener('blur', apply);
-        apply();
-
-        const checkoutForm = document.querySelector('[data-customer-checkout-form]');
-        const createAccountInput = checkoutForm?.querySelector('[data-create-account-with-phone]');
-        const isGuest = @json($isGuest);
-
-        if (!checkoutForm || !createAccountInput || !isGuest) {
-            return;
-        }
-
-        const promptMessage = @json(__('customer.guest_register_points_prompt'));
-
-        const phoneCheckUrl = checkoutForm.dataset.phoneCheckUrl || '';
-
-        checkoutForm.addEventListener('submit', async (event) => {
-            if (checkoutForm.dataset.submitting === '1') {
-                return;
-            }
-
-            event.preventDefault();
-
-            const digits = String(input.value || '').replace(/\D/g, '');
-            if (!digits) {
-                createAccountInput.value = '0';
-                checkoutForm.dataset.submitting = '1';
-                checkoutForm.submit();
-                return;
-            }
-
-            let isRegistered = false;
-
-            if (phoneCheckUrl) {
-                try {
-                    const checkEndpoint = new URL(phoneCheckUrl, window.location.origin);
-                    checkEndpoint.searchParams.set('customer_phone', input.value);
-
-                    const response = await window.fetch(checkEndpoint.toString(), {
-                        method: 'GET',
-                        headers: {
-                            Accept: 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
-                        },
-                        credentials: 'same-origin',
-                    });
-
-                    if (response.ok) {
-                        const payload = await response.json();
-                        isRegistered = Boolean(payload?.registered);
-                    }
-                } catch (_error) {
-                    isRegistered = false;
-                }
-            }
-
-            createAccountInput.value = isRegistered ? '0' : (window.confirm(promptMessage) ? '1' : '0');
-            checkoutForm.dataset.submitting = '1';
-            checkoutForm.submit();
-        });
-    })();
-    </script>
 </body>
 </html>

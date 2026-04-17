@@ -232,45 +232,28 @@
                                 </div>
 
                                 <div class="mt-auto pt-6">
-                                    @php
-                                        $canShowNavigation = $hasUserLocation && ($store->latitude !== null && $store->longitude !== null || !empty($store->address));
-                                    @endphp
                                     <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                        <a href="{{ route('stores.enter', ['store' => $store]) }}" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-primary px-4 py-3 text-base font-semibold text-white transition hover:bg-brand-accent hover:text-brand-dark">
+                                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                <path fill-rule="evenodd" d="M10.3 4.3a1 1 0 011.4 0l5 5a1 1 0 010 1.4l-5 5a1 1 0 01-1.4-1.4L13.59 11H4a1 1 0 110-2h9.59l-3.3-3.3a1 1 0 010-1.4z" clip-rule="evenodd"/>
+                                            </svg>
+                                            {{ __('home.store_intro') }}
+                                        </a>
+
                                         @if($store->isOrderingAvailable())
-                                            <a href="{{ route('stores.enter', ['store' => $store]) }}" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-primary px-4 py-3 text-base font-semibold text-white transition hover:bg-brand-accent hover:text-brand-dark {{ $canShowNavigation ? '' : 'sm:col-span-2' }}">
+                                            <a href="{{ route('customer.takeout.menu', ['store' => $store]) }}" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-brand-primary/20 bg-brand-soft/20 px-4 py-3 text-base font-semibold text-brand-primary transition hover:bg-brand-soft/40">
                                                 <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                                    <path fill-rule="evenodd" d="M10.3 4.3a1 1 0 011.4 0l5 5a1 1 0 010 1.4l-5 5a1 1 0 01-1.4-1.4L13.59 11H4a1 1 0 110-2h9.59l-3.3-3.3a1 1 0 010-1.4z" clip-rule="evenodd"/>
+                                                    <path d="M3 4.75A1.75 1.75 0 014.75 3h.74a1.75 1.75 0 011.67 1.23l.17.52h8.92a.75.75 0 01.73.91l-1.2 5A1.75 1.75 0 0114.08 12H8.1a1.75 1.75 0 01-1.68-1.23L4.78 5.75h-.03A.25.25 0 004.5 6v7.25a.75.75 0 01-1.5 0V4.75z"/>
+                                                    <path d="M8 15.5a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM13 15.5a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z"/>
                                                 </svg>
-                                                {{ __('home.enter_store') }}
+                                                {{ __('home.order_now') }}
                                             </a>
                                         @else
-                                            <button disabled class="inline-flex cursor-not-allowed items-center justify-center rounded-2xl bg-slate-200 px-4 py-3 text-base font-semibold text-slate-500 {{ $canShowNavigation ? '' : 'sm:col-span-2' }}">
+                                            <button disabled class="inline-flex cursor-not-allowed items-center justify-center rounded-2xl bg-slate-200 px-4 py-3 text-base font-semibold text-slate-500">
                                                 {{ __('home.not_open_yet') }}
                                             </button>
                                         @endif
 
-                                        @if($canShowNavigation)
-                                            @php
-                                                $destination = $store->latitude !== null && $store->longitude !== null
-                                                    ? $store->latitude . ',' . $store->longitude
-                                                    : $store->address;
-                                                $navigationUrl = 'https://www.google.com/maps/dir/?api=1'
-                                                    . '&origin=' . urlencode((string) $userLatitude . ',' . (string) $userLongitude)
-                                                    . '&destination=' . urlencode((string) $destination)
-                                                    . '&travelmode=driving';
-                                            @endphp
-                                            <a
-                                                href="{{ $navigationUrl }}"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                class="inline-flex items-center justify-center gap-2 rounded-2xl border border-brand-soft/70 bg-white px-4 py-3 text-base font-semibold text-brand-primary transition hover:bg-brand-soft/20"
-                                            >
-                                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                                    <path fill-rule="evenodd" d="M10 2a6 6 0 00-6 6c0 4.03 4.86 8.84 5.07 9.04a1.3 1.3 0 001.86 0c.2-.2 5.07-5.01 5.07-9.04a6 6 0 00-6-6zm0 8a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
-                                                </svg>
-                                                {{ __('stores.open_map') }}
-                                            </a>
-                                        @endif
                                     </div>
                                 </div>
                             </div>

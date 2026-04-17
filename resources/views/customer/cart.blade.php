@@ -29,9 +29,6 @@
     $cartUpdateRouteName = $isDineIn ? 'customer.dinein.cart.items.update' : 'customer.takeout.cart.items.update';
     $cartDestroyRouteName = $isDineIn ? 'customer.dinein.cart.items.destroy' : 'customer.takeout.cart.items.destroy';
     $checkoutRouteName = $isDineIn ? 'customer.dinein.cart.checkout' : 'customer.takeout.cart.checkout';
-    $phoneCheckRouteName = $isDineIn ? 'customer.dinein.phone.registered' : 'customer.takeout.phone.registered';
-    $clearInfoRouteName = $isDineIn ? 'customer.dinein.customer-info.clear' : 'customer.takeout.customer-info.clear';
-
     $backLabel = $isDineIn ? __('customer.back_to_menu') : __('customer.back_to_takeout_menu');
     $badgeLabel = $isDineIn ? __('customer.cart_title') : __('customer.takeout_cart_badge');
     $orderingAvailable = $orderingAvailable ?? true;
@@ -205,16 +202,21 @@
                         </div>
 
                         <div class="rounded-3xl border border-brand-soft/60 bg-white p-6 shadow-[0_18px_44px_rgba(90,30,14,0.1)]">
-                            <h2 class="text-xl font-bold text-brand-dark">{{ __('customer.fill_order_info') }}</h2>
+                            <h2 class="text-xl font-bold text-brand-dark">{{ $isDineIn ? __('customer.order_info') : __('customer.fill_order_info') }}</h2>
 
                             <form method="POST"
                                   action="{{ route($checkoutRouteName, $routeParams) }}"
                                   class="mt-6 space-y-5"
-                                    data-customer-checkout-form
-                                    data-phone-check-url="{{ route($phoneCheckRouteName, $routeParams) }}">
+                                  @unless($isDineIn)
+                                      data-customer-checkout-form
+                                      data-phone-check-url="{{ route('customer.takeout.phone.registered', $routeParams) }}"
+                                  @endunless>
                                 @csrf
-                                <input type="hidden" name="create_account_with_phone" value="0" data-create-account-with-phone>
+                                @unless($isDineIn)
+                                    <input type="hidden" name="create_account_with_phone" value="0" data-create-account-with-phone>
+                                @endunless
 
+                                @unless($isDineIn)
                                 <div>
                                     <label for="customer_name" class="mb-2 block text-sm font-medium text-brand-dark">
                                         {{ __('customer.name') }}
@@ -257,6 +259,29 @@
                                 </div>
 
                                 <div>
+                                    <label for="coupon_code" class="mb-2 block text-sm font-medium text-brand-dark">
+                                        優惠券代碼
+                                    </label>
+                                    <input id="coupon_code"
+                                           type="text"
+                                           name="coupon_code"
+                                         value="{{ old('coupon_code') }}"
+                                           placeholder="例如：WELCOME100"
+                                           class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm uppercase text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">
+                                    <p class="mt-1 text-xs text-brand-primary/70">若為點數券，請先填寫手機或 Email 以辨識會員。</p>
+                                </div>
+
+                                <div>
+                                    <label for="note" class="mb-2 block text-sm font-medium text-brand-dark">
+                                        {{ __('customer.note') }}
+                                    </label>
+                                    <textarea id="note"
+                                              name="note"
+                                              rows="4"
+                                              class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">{{ old('note', $rememberedCustomerInfo['note'] ?? '') }}</textarea>
+                                </div>
+
+                                <div>
                                     <label class="inline-flex items-center gap-2 text-sm text-brand-dark">
                                         <input
                                             type="checkbox"
@@ -272,7 +297,7 @@
                                         <div class="mt-2">
                                             <button
                                                 type="submit"
-                                                formaction="{{ route($clearInfoRouteName, $routeParams) }}"
+                                                formaction="{{ route('customer.takeout.customer-info.clear', $routeParams) }}"
                                                 formmethod="POST"
                                                 formnovalidate
                                                 class="inline-flex items-center rounded-xl border border-brand-soft bg-white px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30"
@@ -282,20 +307,10 @@
                                         </div>
                                     @endif
                                 </div>
-
-                                <div>
-                                    <label for="coupon_code" class="mb-2 block text-sm font-medium text-brand-dark">
-                                        優惠券代碼
-                                    </label>
-                                    <input id="coupon_code"
-                                           type="text"
-                                           name="coupon_code"
-                                           value="{{ old('coupon_code') }}"
-                                           placeholder="例如：WELCOME100"
-                                           class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm uppercase text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">
-                                    <p class="mt-1 text-xs text-brand-primary/70">若為點數券，請先填寫手機或 Email 以辨識會員。</p>
+                                @else
+                                <div class="rounded-2xl border border-brand-soft/60 bg-brand-soft/20 px-4 py-3 text-sm text-brand-primary/80">
+                                    {{ __('customer.submit_order_hint') }}
                                 </div>
-
                                 <div>
                                     <label for="note" class="mb-2 block text-sm font-medium text-brand-dark">
                                         {{ __('customer.note') }}
@@ -305,6 +320,7 @@
                                               rows="4"
                                               class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">{{ old('note') }}</textarea>
                                 </div>
+                                @endunless
 
                                 <button type="submit"
                                         class="inline-flex w-full items-center justify-center rounded-2xl bg-brand-primary px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:bg-brand-accent hover:text-brand-dark">
@@ -338,6 +354,11 @@
 
 <script>
 (() => {
+    const isDineIn = @json($isDineIn);
+    if (isDineIn) {
+        return;
+    }
+
     const input = document.querySelector('input[name="customer_phone"]');
     const maxDigits = @json($phoneDigits);
     if (!input) {

@@ -21,6 +21,23 @@
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
+        <div class="mt-4">
+            <x-input-label for="captcha_answer" :value="__('auth.captcha_label')" />
+            <p class="mt-1 text-sm text-gray-600">{{ session('auth_login_captcha_question', __('auth.captcha_fallback_question')) }}</p>
+            <x-text-input
+                id="captcha_answer"
+                class="block mt-1 w-full"
+                type="text"
+                name="captcha_answer"
+                :value="old('captcha_answer')"
+                required
+                autocomplete="off"
+                inputmode="numeric"
+                :placeholder="__('auth.captcha_placeholder')"
+            />
+            <x-input-error :messages="$errors->get('captcha_answer')" class="mt-2" />
+        </div>
+
         <div class="block mt-4">
             <label for="remember_me" class="inline-flex items-center">
                 <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-brand-primary shadow-sm focus:ring-brand-highlight" name="remember">

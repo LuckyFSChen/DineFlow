@@ -35,6 +35,23 @@
             <p class="mt-2 text-xs text-gray-500">{{ __('auth.first_login_password_hint') }}</p>
         </div>
 
+        <div class="mt-4">
+            <x-input-label for="captcha_answer" :value="__('auth.captcha_label')" />
+            <p class="mt-1 text-sm text-gray-600">{{ session('auth_login_captcha_question', __('auth.captcha_fallback_question')) }}</p>
+            <x-text-input
+                id="captcha_answer"
+                class="block mt-1 w-full"
+                type="text"
+                name="captcha_answer"
+                :value="old('captcha_answer')"
+                required
+                autocomplete="off"
+                inputmode="numeric"
+                :placeholder="__('auth.captcha_placeholder')"
+            />
+            <x-input-error :messages="$errors->get('captcha_answer')" class="mt-2" />
+        </div>
+
         <!-- Remember Me -->
         <div class="block mt-4">
             <label for="remember_me" class="inline-flex items-center">
@@ -44,12 +61,6 @@
         </div>
 
         <div class="flex items-center justify-end mt-4">
-            @if (Route::has('password.request'))
-                <a class="underline text-sm text-brand-primary hover:text-brand-dark rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-highlight" href="{{ route('password.request') }}">
-                    {{ __('auth.Forgot your password?') }}
-                </a>
-            @endif
-
             <x-primary-button class="ms-3">
                 {{ __('auth.Log in') }}
             </x-primary-button>

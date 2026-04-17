@@ -16,6 +16,13 @@ return [
     'basic_info'             => 'Basic Information',
     'basic_info_desc'        => 'Update your account name and email.',
     'role_label'             => 'Account Role',
+    'roles'                  => [
+        'admin' => 'Admin',
+        'merchant' => 'Merchant',
+        'customer' => 'Customer',
+        'chef' => 'Chef',
+        'cashier' => 'Cashier',
+    ],
     'subscription_end'       => 'Subscription Expires',
     'not_activated'          => 'Not Activated',
     'name_label'             => 'Name',

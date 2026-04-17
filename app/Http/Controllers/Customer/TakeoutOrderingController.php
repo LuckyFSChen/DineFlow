@@ -6,10 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Store;
+use App\Models\User;
 use App\Services\CustomerAccountService;
+use App\Support\TakeoutCartSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class TakeoutOrderingController extends Controller
@@ -24,18 +25,12 @@ class TakeoutOrderingController extends Controller
 
     protected function getTakeoutCartToken(Store $store): string
     {
-        $sessionKey = 'takeout_cart_token_' . $store->id;
-
-        if (! session()->has($sessionKey)) {
-            session([$sessionKey => (string) Str::uuid()]);
-        }
-
-        return session($sessionKey);
+        return TakeoutCartSession::currentToken(request(), $store->id);
     }
 
     protected function getTakeoutCartSessionKey(Store $store): string
     {
-        return 'takeout_cart.' . $store->id . '.' . $this->getTakeoutCartToken($store);
+        return TakeoutCartSession::currentCartSessionKey(request(), $store->id);
     }
 
     public function menu(Store $store)
@@ -153,10 +148,27 @@ class TakeoutOrderingController extends Controller
         $cart = session()->get($cartKey, []);
         $total = collect($cart)->sum('subtotal');
         $orderingAvailable = $store->isOrderingAvailable();
-        $rememberedCustomerInfo = session()->get(self::CUSTOMER_PROFILE_SESSION_KEY, []);
+        $rememberedCustomerInfo = $this->resolvePrefilledCustomerInfo();
         $orderHistory = $this->getTakeoutOrderHistory($store);
 
         return view('customer.cart', compact('store', 'cart', 'total', 'orderingAvailable', 'rememberedCustomerInfo', 'orderHistory'));
+    }
+
+    private function resolvePrefilledCustomerInfo(): array
+    {
+        $rememberedCustomerInfo = session()->get(self::CUSTOMER_PROFILE_SESSION_KEY, []);
+        $user = request()->user();
+
+        if (! $user instanceof User || ! $user->isCustomer()) {
+            return $rememberedCustomerInfo;
+        }
+
+        return [
+            'customer_name' => $rememberedCustomerInfo['customer_name'] ?? (string) ($user->name ?? ''),
+            'customer_email' => $rememberedCustomerInfo['customer_email'] ?? (string) ($user->email ?? ''),
+            'customer_phone' => $rememberedCustomerInfo['customer_phone'] ?? (string) ($user->phone ?? ''),
+            'note' => $rememberedCustomerInfo['note'] ?? '',
+        ];
     }
 
     public function updateCartItem(Request $request, Store $store, string $lineKey)
@@ -193,7 +205,7 @@ class TakeoutOrderingController extends Controller
 
         session()->put($cartKey, $cart);
 
-        return redirect()->route('customer.takeout.cart.show', ['store' => $store]);
+        return redirect()->back();
     }
 
     public function removeCartItem(Store $store, string $lineKey)
@@ -208,7 +220,7 @@ class TakeoutOrderingController extends Controller
             session()->put($cartKey, $cart);
         }
 
-        return redirect()->route('customer.takeout.cart.show', ['store' => $store]);
+        return redirect()->back();
     }
 
     public function checkout(Request $request, Store $store)
@@ -225,6 +237,7 @@ class TakeoutOrderingController extends Controller
             'customer_name' => ['nullable', 'string', 'max:255'],
             'customer_email' => ['nullable', 'email', 'max:255'],
             'customer_phone' => $this->customerPhoneValidationRules($store),
+            'coupon_code' => ['nullable', 'string', 'max:64'],
             'note' => ['nullable', 'string'],
             'remember_customer_info' => ['nullable', 'boolean'],
             'create_account_with_phone' => ['nullable', 'boolean'],
@@ -237,6 +250,7 @@ class TakeoutOrderingController extends Controller
                 'customer_name' => $validated['customer_name'] ?? '',
                 'customer_email' => $validated['customer_email'] ?? '',
                 'customer_phone' => $validated['customer_phone'] ?? '',
+                'note' => $this->normalizeOptionalText($validated['note'] ?? null) ?? '',
             ]);
         } else {
             session()->forget(self::CUSTOMER_PROFILE_SESSION_KEY);
@@ -303,7 +317,7 @@ class TakeoutOrderingController extends Controller
         });
 
         session()->forget($cartKey);
-        session()->forget('takeout_cart_token_' . $store->id);
+        session()->forget(TakeoutCartSession::tokenSessionKey($store->id));
         $this->pushTakeoutOrderToHistory($store, $order);
 
         return redirect()->route('customer.order.success', [

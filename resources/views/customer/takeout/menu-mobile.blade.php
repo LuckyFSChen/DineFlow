@@ -57,6 +57,108 @@
             left 620ms cubic-bezier(0.22, 1, 0.36, 1),
             top 620ms cubic-bezier(0.22, 1, 0.36, 1);
     }
+
+    .cart-preview-window {
+        transition:
+            left 220ms ease,
+            top 220ms ease,
+            transform 220ms ease,
+            box-shadow 220ms ease,
+            opacity 260ms ease;
+        transform: translate3d(0, 18px, 0) scale(0.96);
+        opacity: 0;
+        will-change: left, top, transform;
+    }
+
+    .cart-preview-window.is-ready {
+        transform: translate3d(0, 0, 0) scale(1);
+        opacity: 1;
+    }
+
+    .cart-preview-window.is-dragging {
+        transition: none;
+        transform: scale(1.02);
+        box-shadow: 0 28px 64px rgba(90, 30, 14, 0.24);
+        cursor: grabbing;
+        user-select: none;
+    }
+
+    .cart-preview-window.is-pulse {
+        animation: cartPreviewPulse 720ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .cart-preview-handle {
+        cursor: grab;
+        touch-action: none;
+    }
+
+    .cart-preview-item-shell {
+        position: relative;
+        overflow: hidden;
+        border-radius: 1rem;
+    }
+
+    .cart-preview-item-delete {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 0.75rem;
+        background: linear-gradient(135deg, rgba(248, 113, 113, 0.92), rgba(225, 29, 72, 0.95));
+        color: white;
+    }
+
+    .cart-preview-item {
+        position: relative;
+        z-index: 1;
+        touch-action: pan-y;
+        transition:
+            transform 180ms ease,
+            opacity 180ms ease,
+            box-shadow 180ms ease;
+        will-change: transform;
+    }
+
+    .cart-preview-item.is-swiping {
+        transition: none;
+        box-shadow: 0 20px 38px rgba(90, 30, 14, 0.12);
+    }
+
+    .cart-preview-item.is-removing {
+        opacity: 0;
+        transform: translateX(-110%);
+    }
+
+    @keyframes cartPreviewPulse {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 18px 40px rgba(90, 30, 14, 0.1);
+        }
+        35% {
+            transform: scale(1.04);
+            box-shadow: 0 24px 56px rgba(236, 144, 87, 0.28);
+        }
+        100% {
+            transform: scale(1);
+            box-shadow: 0 18px 40px rgba(90, 30, 14, 0.1);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .cart-fly-clone,
+        .cart-preview-window {
+            transition: none;
+        }
+
+        .cart-preview-window.is-pulse {
+            animation: none;
+        }
+
+        .cart-preview-item {
+            transition: none;
+        }
+    }
 </style>
 
 <div class="min-h-screen bg-brand-soft/20">
@@ -223,25 +325,80 @@
 </div>
 
 @if($categories->isNotEmpty())
-<aside class="fixed right-6 top-24 z-30 hidden w-80 xl:block">
+<aside
+    class="cart-preview-window fixed right-6 top-24 z-30 hidden w-80 xl:block"
+    data-cart-preview-window
+    data-preview-key="takeout-cart-preview:{{ $store->id }}"
+>
     <div class="overflow-hidden rounded-[1.5rem] border border-brand-soft/70 bg-white shadow-[0_18px_40px_rgba(90,30,14,0.1)]">
         <div class="border-b border-brand-soft/60 bg-brand-dark px-4 py-4 text-white">
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-highlight/80">{{ __('customer.cart') }}</p>
-            <p class="mt-1 text-sm font-semibold">{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'currency' => $currencySymbol, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-highlight/80">{{ __('customer.cart') }}</p>
+                    <p class="mt-1 text-sm font-semibold">{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'currency' => $currencySymbol, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
+                </div>
+                <button
+                    type="button"
+                    class="cart-preview-handle inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white/80 transition hover:bg-white/20 hover:text-white"
+                    data-cart-preview-handle
+                    aria-label="Move cart preview"
+                >
+                    <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                        <path d="M8 6h8"></path>
+                        <path d="M8 12h8"></path>
+                        <path d="M8 18h8"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
 
         <div class="max-h-[52vh] space-y-3 overflow-y-auto px-4 py-4">
             @forelse($cartPreviewItems->take(6) as $item)
-                <article class="rounded-2xl border border-brand-soft/70 bg-brand-soft/15 px-3 py-3">
-                    <div class="flex items-start justify-between gap-2">
-                        <p class="text-sm font-semibold text-brand-dark">{{ $item['product_name'] ?? __('customer.product_default_name') }}</p>
-                        <p class="shrink-0 text-xs font-semibold text-brand-primary">x{{ $item['qty'] ?? 1 }}</p>
+                <div class="cart-preview-item-shell" data-cart-preview-shell>
+                    <div class="cart-preview-item-delete">
+                        <span class="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]">
+                            {{ __('customer.remove_item') }}
+                        </span>
                     </div>
-                    @if(!empty($item['option_label']))
-                        <p class="mt-1 text-xs text-brand-primary/75">{{ $item['option_label'] }}</p>
-                    @endif
-                    <p class="mt-2 text-xs font-semibold text-brand-accent">{{ __('customer.subtotal') }} {{ $currencySymbol }} {{ number_format((int) ($item['subtotal'] ?? 0)) }}</p>
-                </article>
+                    <article class="cart-preview-item rounded-2xl border border-brand-soft/70 bg-brand-soft/15 px-3 py-3" data-cart-preview-item>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-brand-dark">{{ $item['product_name'] ?? __('customer.product_default_name') }}</p>
+                                @if(!empty($item['option_label']))
+                                    <p class="mt-1 text-xs text-brand-primary/75">{{ $item['option_label'] }}</p>
+                                @endif
+                                @if(!empty($item['item_note']))
+                                    <p class="mt-1 text-xs text-amber-700">{{ __('customer.item_note_prefix') }} {{ $item['item_note'] }}</p>
+                                @endif
+                            </div>
+                            <p class="shrink-0 text-xs font-semibold text-brand-accent">{{ $currencySymbol }} {{ number_format((int) ($item['subtotal'] ?? 0)) }}</p>
+                        </div>
+
+                        <div class="mt-3 flex items-center justify-between gap-3">
+                            <div class="inline-flex items-center gap-2 rounded-xl border border-brand-soft/70 bg-white/80 px-2 py-1 shadow-sm">
+                                <form method="POST" action="{{ route('customer.takeout.cart.items.update', ['store' => $store, 'lineKey' => $item['line_key']]) }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="action" value="decrease">
+                                    <button type="submit" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-brand-soft bg-white text-sm font-bold text-brand-primary transition hover:bg-brand-soft/30" aria-label="{{ __('customer.decrease_qty') }}">-</button>
+                                </form>
+                                <span class="min-w-[1.8rem] text-center text-sm font-semibold text-brand-dark">{{ $item['qty'] ?? 1 }}</span>
+                                <form method="POST" action="{{ route('customer.takeout.cart.items.update', ['store' => $store, 'lineKey' => $item['line_key']]) }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="action" value="increase">
+                                    <button type="submit" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-brand-soft bg-white text-sm font-bold text-brand-primary transition hover:bg-brand-soft/30" aria-label="{{ __('customer.increase_qty') }}">+</button>
+                                </form>
+                            </div>
+
+                            <form method="POST" action="{{ route('customer.takeout.cart.items.destroy', ['store' => $store, 'lineKey' => $item['line_key']]) }}" data-cart-preview-remove-form>
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="inline-flex items-center rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">{{ __('customer.remove_item') }}</button>
+                            </form>
+                        </div>
+                    </article>
+                </div>
             @empty
                 <div class="rounded-2xl border border-dashed border-brand-soft/80 bg-brand-soft/10 px-3 py-8 text-center text-sm text-brand-primary/75">
                     {{ __('customer.no_products_available') }}
@@ -254,7 +411,7 @@
         </div>
 
         <div class="border-t border-brand-soft/60 p-4">
-            <a href="{{ route('customer.takeout.cart.show', ['store' => $store]) }}" class="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-brand-highlight px-4 text-sm font-semibold text-brand-dark transition hover:bg-brand-soft">{{ __('customer.view_cart') }}{{ $cartCount > 0 ? ' (' . $cartCount . ')' : '' }}</a>
+            <a href="{{ route('customer.takeout.cart.show', ['store' => $store]) }}" class="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-brand-highlight px-4 text-sm font-semibold text-brand-dark transition hover:bg-brand-soft" data-cart-preview-target>{{ __('customer.view_cart') }}{{ $cartCount > 0 ? ' (' . $cartCount . ')' : '' }}</a>
         </div>
     </div>
 </aside>
@@ -295,7 +452,10 @@
 (() => {
     const forms = document.querySelectorAll('[data-add-to-cart-form]');
     const cartTarget = document.querySelector('[data-cart-target]');
+    const cartPreviewTarget = document.querySelector('[data-cart-preview-target]');
     const cartBar = document.querySelector('[data-cart-bar]');
+    const cartPreviewWindow = document.querySelector('[data-cart-preview-window]');
+    const cartPreviewHandle = document.querySelector('[data-cart-preview-handle]');
     const modal = document.getElementById('option-modal');
     const modalTitle = document.getElementById('option-modal-title');
     const modalBody = document.getElementById('option-modal-body');
@@ -316,6 +476,270 @@
 
     let activeForm = null;
     let activeGroups = [];
+    let cartPreviewPulseTimer = null;
+    let activeSwipeItem = null;
+
+    const getCartFlyTarget = () => {
+        if (cartPreviewTarget && cartPreviewWindow && cartPreviewWindow.offsetParent !== null) {
+            return cartPreviewTarget;
+        }
+
+        return cartTarget;
+    };
+
+    const pulseCartPreview = () => {
+        if (!cartPreviewWindow) {
+            return;
+        }
+
+        cartPreviewWindow.classList.remove('is-pulse');
+        window.clearTimeout(cartPreviewPulseTimer);
+
+        window.requestAnimationFrame(() => {
+            cartPreviewWindow.classList.add('is-pulse');
+            cartPreviewPulseTimer = window.setTimeout(() => {
+                cartPreviewWindow.classList.remove('is-pulse');
+            }, 720);
+        });
+    };
+
+    const initCartPreviewSwipe = () => {
+        const items = document.querySelectorAll('[data-cart-preview-item]');
+        const removeThreshold = 110;
+        const resetThreshold = 28;
+
+        items.forEach((item) => {
+            const removeForm = item.parentElement?.querySelector('[data-cart-preview-remove-form]');
+            if (!removeForm) {
+                return;
+            }
+
+            const swipeState = {
+                pointerId: null,
+                startX: 0,
+                currentX: 0,
+                offsetX: 0,
+            };
+
+            const applyOffset = (offset) => {
+                swipeState.offsetX = Math.min(0, offset);
+                item.style.transform = `translateX(${swipeState.offsetX}px)`;
+            };
+
+            const resetItem = () => {
+                item.classList.remove('is-swiping');
+                applyOffset(0);
+                if (activeSwipeItem === item) {
+                    activeSwipeItem = null;
+                }
+            };
+
+            const submitRemove = () => {
+                item.classList.remove('is-swiping');
+                item.classList.add('is-removing');
+                window.setTimeout(() => removeForm.submit(), 180);
+            };
+
+            item.addEventListener('pointerdown', (event) => {
+                if (event.button !== 0) {
+                    return;
+                }
+
+                if (event.target.closest('button, a, form, input, textarea, select, label')) {
+                    return;
+                }
+
+                if (activeSwipeItem && activeSwipeItem !== item) {
+                    activeSwipeItem.style.transform = 'translateX(0)';
+                    activeSwipeItem.classList.remove('is-swiping');
+                    activeSwipeItem = null;
+                }
+
+                swipeState.pointerId = event.pointerId;
+                swipeState.startX = event.clientX;
+                swipeState.currentX = event.clientX;
+                item.classList.add('is-swiping');
+                item.setPointerCapture(event.pointerId);
+            });
+
+            item.addEventListener('pointermove', (event) => {
+                if (swipeState.pointerId !== event.pointerId) {
+                    return;
+                }
+
+                swipeState.currentX = event.clientX;
+                const deltaX = swipeState.currentX - swipeState.startX;
+
+                if (deltaX > 0) {
+                    applyOffset(0);
+                    return;
+                }
+
+                activeSwipeItem = item;
+                applyOffset(Math.max(deltaX, -148));
+            });
+
+            const finishSwipe = (event) => {
+                if (swipeState.pointerId !== event.pointerId) {
+                    return;
+                }
+
+                if (item.hasPointerCapture(event.pointerId)) {
+                    item.releasePointerCapture(event.pointerId);
+                }
+
+                const traveled = Math.abs(swipeState.offsetX);
+                swipeState.pointerId = null;
+
+                if (traveled >= removeThreshold) {
+                    submitRemove();
+                    return;
+                }
+
+                if (traveled <= resetThreshold) {
+                    resetItem();
+                    return;
+                }
+
+                item.classList.remove('is-swiping');
+                applyOffset(-72);
+                activeSwipeItem = item;
+            };
+
+            item.addEventListener('pointerup', finishSwipe);
+            item.addEventListener('pointercancel', finishSwipe);
+        });
+
+        document.addEventListener('pointerdown', (event) => {
+            if (!activeSwipeItem) {
+                return;
+            }
+
+            if (event.target.closest('[data-cart-preview-item]')) {
+                return;
+            }
+
+            activeSwipeItem.style.transform = 'translateX(0)';
+            activeSwipeItem.classList.remove('is-swiping');
+            activeSwipeItem = null;
+        });
+    };
+
+    const initCartPreviewWindow = () => {
+        if (!cartPreviewWindow || !cartPreviewHandle || window.innerWidth < 1280) {
+            cartPreviewWindow?.classList.add('is-ready');
+            return;
+        }
+
+        const storageKey = cartPreviewWindow.dataset.previewKey || 'takeout-cart-preview';
+        const rect = cartPreviewWindow.getBoundingClientRect();
+        const state = {
+            width: rect.width,
+            height: rect.height,
+            left: Math.max(16, window.innerWidth - rect.width - 24),
+            top: Math.max(16, rect.top),
+            pointerId: null,
+            offsetX: 0,
+            offsetY: 0,
+        };
+
+        const clamp = (left, top) => {
+            const maxLeft = Math.max(16, window.innerWidth - state.width - 16);
+            const maxTop = Math.max(16, window.innerHeight - state.height - 16);
+
+            return {
+                left: Math.min(Math.max(16, left), maxLeft),
+                top: Math.min(Math.max(16, top), maxTop),
+            };
+        };
+
+        const applyPosition = (left, top) => {
+            const next = clamp(left, top);
+            state.left = next.left;
+            state.top = next.top;
+            cartPreviewWindow.style.left = `${next.left}px`;
+            cartPreviewWindow.style.top = `${next.top}px`;
+            cartPreviewWindow.style.right = 'auto';
+        };
+
+        const savePosition = () => {
+            try {
+                window.sessionStorage.setItem(storageKey, JSON.stringify({
+                    left: state.left,
+                    top: state.top,
+                }));
+            } catch (_error) {
+                // Ignore storage failures and keep drag interaction working.
+            }
+        };
+
+        const restorePosition = () => {
+            try {
+                const raw = window.sessionStorage.getItem(storageKey);
+                if (!raw) {
+                    applyPosition(state.left, state.top);
+                    return;
+                }
+
+                const saved = JSON.parse(raw);
+                applyPosition(Number(saved.left), Number(saved.top));
+            } catch (_error) {
+                applyPosition(state.left, state.top);
+            }
+        };
+
+        restorePosition();
+        window.requestAnimationFrame(() => cartPreviewWindow.classList.add('is-ready'));
+
+        cartPreviewHandle.addEventListener('pointerdown', (event) => {
+            if (event.button !== 0) {
+                return;
+            }
+
+            const currentRect = cartPreviewWindow.getBoundingClientRect();
+            state.width = currentRect.width;
+            state.height = currentRect.height;
+            state.pointerId = event.pointerId;
+            state.offsetX = event.clientX - currentRect.left;
+            state.offsetY = event.clientY - currentRect.top;
+            cartPreviewWindow.classList.add('is-dragging');
+            cartPreviewHandle.setPointerCapture(event.pointerId);
+            event.preventDefault();
+        });
+
+        cartPreviewHandle.addEventListener('pointermove', (event) => {
+            if (state.pointerId !== event.pointerId) {
+                return;
+            }
+
+            applyPosition(event.clientX - state.offsetX, event.clientY - state.offsetY);
+        });
+
+        const finishDrag = (event) => {
+            if (state.pointerId !== event.pointerId) {
+                return;
+            }
+
+            state.pointerId = null;
+            cartPreviewWindow.classList.remove('is-dragging');
+            savePosition();
+
+            if (cartPreviewHandle.hasPointerCapture(event.pointerId)) {
+                cartPreviewHandle.releasePointerCapture(event.pointerId);
+            }
+        };
+
+        cartPreviewHandle.addEventListener('pointerup', finishDrag);
+        cartPreviewHandle.addEventListener('pointercancel', finishDrag);
+
+        window.addEventListener('resize', () => {
+            const currentRect = cartPreviewWindow.getBoundingClientRect();
+            state.width = currentRect.width;
+            state.height = currentRect.height;
+            applyPosition(state.left, state.top);
+            savePosition();
+        });
+    };
 
     const closeModal = () => {
         modal?.classList.add('hidden');
@@ -497,7 +921,9 @@
         syncQty(input.value);
 
         form.addEventListener('submit', (event) => {
-            if (!cartTarget || !submitButton || form.dataset.animating === 'true') {
+            const activeCartTarget = getCartFlyTarget();
+
+            if (!activeCartTarget || !submitButton || form.dataset.animating === 'true') {
                 return;
             }
 
@@ -527,7 +953,7 @@
             form.dataset.animating = 'true';
 
             const sourceRect = submitButton.getBoundingClientRect();
-            const targetRect = cartTarget.getBoundingClientRect();
+            const targetRect = activeCartTarget.getBoundingClientRect();
             const clone = document.createElement('div');
             clone.className = 'cart-fly-clone';
             clone.style.left = `${sourceRect.left + sourceRect.width / 2 - 12}px`;
@@ -538,6 +964,7 @@
             document.body.appendChild(clone);
 
             cartBar?.classList.add('scale-[1.02]');
+            pulseCartPreview();
 
             requestAnimationFrame(() => {
                 clone.style.left = `${targetRect.left + targetRect.width / 2 - 10}px`;
@@ -555,6 +982,9 @@
             }, 620);
         });
     });
+
+    initCartPreviewWindow();
+    initCartPreviewSwipe();
 })();
 </script>
 @endsection

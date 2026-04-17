@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin\Auth;
 
 use App\Models\User;
+use App\Support\LoginCaptcha;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -32,6 +33,16 @@ class LoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email', 'max:255'],
             'password' => ['required', 'string'],
+            'captcha_answer' => [
+                'required',
+                'string',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (! LoginCaptcha::isValid($this, is_scalar($value) ? (string) $value : null)) {
+                        LoginCaptcha::refresh($this);
+                        $fail(trans('auth.captcha_invalid'));
+                    }
+                },
+            ],
         ];
     }
 
@@ -67,10 +78,12 @@ class LoginRequest extends FormRequest
 
             Auth::login($candidate, $this->boolean('remember'));
             RateLimiter::clear($this->throttleKey());
+            LoginCaptcha::clear($this);
             return;
         }
 
-        RateLimiter::hit($this->throttleKey());
+        RateLimiter::hit($this->throttleKey(), 30);
+        LoginCaptcha::refresh($this);
 
         throw ValidationException::withMessages([
             'email' => trans('auth.failed'),
@@ -84,7 +97,7 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 10)) {
             return;
         }
 

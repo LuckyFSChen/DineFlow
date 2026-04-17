@@ -36,6 +36,10 @@ return [
     'Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.' =>
         'Quên mật khẩu? Không sao. Vui lòng nhập địa chỉ email và chúng tôi sẽ gửi liên kết đặt lại mật khẩu.',
     'Email Password Reset Link'  => 'Gửi Liên Kết Đặt Lại Mật Khẩu',
+    'captcha_label'              => 'Mã xác thực',
+    'captcha_placeholder'        => 'Nhập kết quả phép tính',
+    'captcha_fallback_question'  => 'Vui lòng tải lại trang và hoàn thành mã xác thực.',
+    'captcha_invalid'            => 'Mã xác thực không đúng. Vui lòng thử lại.',
     'failed'                     => 'Thông tin đăng nhập không khớp.',
     'password'                   => 'Mật khẩu không đúng.',
     'throttle'                   => 'Đăng nhập quá nhiều lần. Vui lòng thử lại sau :seconds giây.',
