@@ -15,22 +15,12 @@
     </div>
 
     <div>
-        <label class="mb-2 block text-sm font-semibold text-slate-700">Slug</label>
-        <input type="text" name="slug" value="{{ old('slug', $store->slug) }}"
-               placeholder="{{ __('admin.slug_preview_placeholder') }}"
-               class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
-        @error('slug')
-            <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
-        @enderror
-    </div>
-
-    <div>
         <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('admin.phone') }}</label>
         <input type="text" name="phone" value="{{ old('phone', $store->phone) }}"
                placeholder="{{ __('admin.phone_placeholder', ['digits' => $phoneDigits]) }}"
                inputmode="numeric"
-               maxlength="{{ $phoneDigits + 2 }}" data-phone-digits="{{ $phoneDigits }}"
-               pattern="[0-9-]*"
+               maxlength="{{ $phoneDigits }}"
+               pattern="[0-9]*"
                class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
         <p class="mt-2 text-xs text-slate-500">{{ __('admin.phone_format_hint', ['digits' => $phoneDigits]) }}</p>
         @error('phone')
@@ -135,16 +125,16 @@
 
         <div id="banner-preview-wrapper" class="mt-4 {{ $store->banner_image ? '' : 'hidden' }}" data-existing-banner-url="{{ $store->banner_image ? asset('storage/' . $store->banner_image) : '' }}">
             <canvas id="banner-crop-preview" width="1200" height="400" class="w-full rounded-2xl border border-slate-300 bg-white"></canvas>
-            <p id="banner-helper" class="mt-2 text-xs text-slate-500">撠?豢?璈怠?</p>
+            <p id="banner-helper" class="mt-2 text-xs text-slate-500">尚未選擇橫幅</p>
             <div class="mt-3">
-                <label for="banner-zoom" class="mb-1 block text-xs font-semibold text-slate-600">蝮格</label>
+                <label for="banner-zoom" class="mb-1 block text-xs font-semibold text-slate-600">縮放</label>
                 <input id="banner-zoom" type="range" min="1" max="3" step="0.05" value="1" class="w-full">
             </div>
             <div class="mt-2 flex flex-wrap gap-2">
-                <button type="button" id="banner-reset" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">?身雿蔭</button>
+                <button type="button" id="banner-reset" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">重設位置</button>
                 <button type="button" id="banner-remove" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">{{ __('admin.remove') }}</button>
             </div>
-            <p class="mt-2 text-[11px] text-slate-500">?券?閬賢???航矽?湔帖撟??????脣???憟??/p>
+            <p class="mt-2 text-[11px] text-slate-500">在預覽區拖曳可調整橫幅裁切範圍，儲存時會套用。</p>
         </div>
 
         @error('banner_image')
@@ -231,7 +221,7 @@
                 return;
             }
 
-            reject(new Error('??頧?憭望?'));
+            reject(new Error('圖片轉換失敗'));
         }, mimeType, quality);
     });
 
@@ -281,7 +271,7 @@
             cropCtx.fillStyle = '#64748b';
             cropCtx.font = '24px sans-serif';
             cropCtx.textAlign = 'center';
-            cropCtx.fillText('撠?豢?璈怠?', cropCanvas.width / 2, cropCanvas.height / 2 + 8);
+            cropCtx.fillText('尚未選擇橫幅', cropCanvas.width / 2, cropCanvas.height / 2 + 8);
             return;
         }
 
@@ -341,7 +331,7 @@
         zoomInput.value = '1';
         wrapper.classList.add('hidden');
         if (helper) {
-            helper.textContent = '撠?豢?璈怠?';
+            helper.textContent = '尚未選擇橫幅';
         }
         renderPreview();
     };
@@ -364,7 +354,7 @@
             centerImage();
             wrapper.classList.remove('hidden');
             if (helper) {
-                helper.textContent = '?桀?璈怠?嚗?隤踵鋆?嚗?;
+                helper.textContent = '目前橫幅（可拖曳調整裁切）';
             }
             renderPreview();
         };
@@ -397,12 +387,12 @@
             centerImage();
             wrapper.classList.remove('hidden');
             if (helper) {
-                helper.textContent = `撌脤??${file.name}`;
+                helper.textContent = `已選擇：${file.name}`;
             }
             renderPreview();
         };
         image.onerror = () => {
-            alert('??霈?仃??隢??圈??);
+            alert('圖片讀取失敗，請重新選擇。');
         };
         image.src = url;
     };
@@ -543,4 +533,3 @@
     }
 })();
 </script>
-

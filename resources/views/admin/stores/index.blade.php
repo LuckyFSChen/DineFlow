@@ -265,7 +265,6 @@
 
         <form id="store-modal-form" class="max-h-[78vh] overflow-y-auto px-6 py-5" enctype="multipart/form-data">
             <input type="hidden" name="_method" id="store-modal-method" value="POST">
-            <input type="hidden" name="slug" value="">
             @php
                 $businessWeekdays = [
                     'monday' => 'mon',
@@ -936,16 +935,10 @@
         applyPhoneInputRules();
 
         if (!store) {
-            if (modalForm.elements['slug']) {
-                modalForm.elements['slug'].value = '';
-            }
             return;
         }
 
         modalForm.elements['name'].value = store.name || '';
-        if (modalForm.elements['slug']) {
-            modalForm.elements['slug'].value = store.slug || '';
-        }
         modalForm.elements['phone'].value = store.phone || '';
         modalForm.elements['address'].value = store.address || '';
         modalForm.elements['description'].value = store.description || '';
