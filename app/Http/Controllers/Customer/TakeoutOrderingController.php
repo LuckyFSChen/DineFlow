@@ -593,6 +593,7 @@ class TakeoutOrderingController extends Controller
             ->select([
                 'id',
                 'uuid',
+                'order_no',
                 'store_id',
                 'order_type',
                 'status',

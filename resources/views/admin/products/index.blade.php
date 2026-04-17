@@ -194,10 +194,6 @@
                 </div>
 
 
-                <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.products_form_sort') }}</label>
-                    <input type="number" name="sort" min="1" value="1" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100">
-                </div>
 
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-xs font-semibold text-slate-600">商品圖片</label>
@@ -1122,7 +1118,6 @@
         modalForm.elements['category_id'].value = String(product.category_id ?? '');
         modalForm.elements['price'].value = product.price ?? 0;
         modalForm.elements['cost'].value = product.cost ?? 0;
-        modalForm.elements['sort'].value = product.sort ?? 1;
         modalForm.elements['description'].value = product.description ?? '';
         setImageFromUrl(product.image_url ?? null, '目前圖片（可拖曳調整裁切）');
         optionGroups = Array.isArray(product.option_groups) ? product.option_groups : parseOptionGroups(product.option_groups_json ?? '[]');

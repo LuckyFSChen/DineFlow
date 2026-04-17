@@ -454,7 +454,6 @@ class ProductManagementController extends Controller
             'description' => ['nullable', 'string'],
             'price' => ['required', 'integer', 'min:0'],
             'cost' => ['required', 'integer', 'min:0'],
-            'sort' => ['nullable', 'integer', 'min:1'],
             'image_upload' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
             'remove_image' => ['nullable', 'boolean'],
             'option_groups_json' => ['nullable', 'string'],
@@ -472,22 +471,7 @@ class ProductManagementController extends Controller
             ]);
         }
 
-        $resolvedSort = $data['sort'] ?? null;
-        if ($resolvedSort === null) {
-            if ($currentProduct) {
-                $resolvedSort = (int) ($currentProduct->sort ?? 1);
-            } else {
-                $maxSort = Product::query()
-                    ->where('store_id', $store->id)
-                    ->where('category_id', $data['category_id'])
-                    ->max('sort');
-
-                $resolvedSort = ((int) $maxSort) + 1;
-            }
-        }
-
         $data['store_id'] = $store->id;
-        $data['sort'] = max((int) $resolvedSort, 1);
         $data['is_active'] = $request->boolean('is_active');
         $data['is_sold_out'] = $request->boolean('is_sold_out');
         $data['allow_item_note'] = $request->boolean('allow_item_note');

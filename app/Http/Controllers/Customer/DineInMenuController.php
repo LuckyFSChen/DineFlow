@@ -64,6 +64,7 @@ class DineInMenuController extends Controller
                     ->select([
                         'id',
                         'uuid',
+                        'order_no',
                         'store_id',
                         'dining_table_id',
                         'status',
