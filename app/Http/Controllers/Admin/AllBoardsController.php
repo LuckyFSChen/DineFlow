@@ -113,9 +113,16 @@ class AllBoardsController extends Controller
         $cashierOrders = $this->fetchCashierOrders($store);
         $kitchenOrders = $this->fetchKitchenOrders($store);
 
-        return $cashierOrders
-            ->map(fn (Order $order) => $this->formatOrder($order, 'cashier'))
-            ->merge($kitchenOrders->map(fn (Order $order) => $this->formatOrder($order, 'kitchen')))
+        $cashierPayload = $cashierOrders
+            ->toBase()
+            ->map(fn (Order $order) => $this->formatOrder($order, 'cashier'));
+
+        $kitchenPayload = $kitchenOrders
+            ->toBase()
+            ->map(fn (Order $order) => $this->formatOrder($order, 'kitchen'));
+
+        return $cashierPayload
+            ->merge($kitchenPayload)
             ->sortBy('created_at')
             ->values();
     }
