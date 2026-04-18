@@ -1,4 +1,4 @@
-﻿@csrf
+@csrf
 @php
     $selectedCountryCode = strtolower((string) old('country_code', $store->country_code ?? 'tw'));
     $phoneDigits = $selectedCountryCode === 'cn' ? 11 : 10;

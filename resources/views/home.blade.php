@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', __('home.hero_title') . ' | ' . config('app.name', 'DineFlow'))
 @section('meta_description', __('home.hero_desc'))
