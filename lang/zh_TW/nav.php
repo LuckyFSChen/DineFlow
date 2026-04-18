@@ -19,6 +19,7 @@ return [
     'super_admin'        => '超級管理',
     'account_center'     => '帳號中心',
     'profile'            => '個人資料',
+    'order_history'      => '訂單紀錄',
     'logout'             => '登出',
     'currently_logged_in'=> '目前登入',
     'not_activated'      => '未啟用',

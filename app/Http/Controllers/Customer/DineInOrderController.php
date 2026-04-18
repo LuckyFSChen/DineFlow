@@ -209,52 +209,60 @@ class DineInOrderController extends Controller
 
         $total = collect($cart)->sum('subtotal');
 
-        $order = DB::transaction(function () use ($store, $table, $validated, $cart, $total) {
-            $customerNote = $this->normalizeOptionalText($validated['note'] ?? null);
+        try {
+            $order = DB::transaction(function () use ($store, $table, $validated, $cart, $total) {
+                $this->assertCartItemsStillAvailable($store, $cart);
 
-            $order = $this->findAppendableDineInOrder(
-                $store,
-                $table,
-            );
+                $customerNote = $this->normalizeOptionalText($validated['note'] ?? null);
 
-            if (! $order) {
-                $order = Order::create([
-                    'store_id' => $store->id,
-                    'dining_table_id' => $table->id,
-                    'order_type' => 'dine_in',
-                    'cart_token' => null,
-                    'order_no' => $this->generateOrderNo($store),
-                    'status' => 'pending',
-                    'payment_status' => 'unpaid',
-                    'customer_name' => null,
-                    'customer_email' => null,
-                    'customer_phone' => null,
-                    'note' => $customerNote,
-                    'subtotal' => 0,
-                    'total' => 0,
-                ]);
-            }
+                $order = $this->findAppendableDineInOrder(
+                    $store,
+                    $table,
+                );
 
-            foreach ($cart as $item) {
-                $order->items()->create([
-                    'product_id' => $item['product_id'],
-                    'product_name' => $item['product_name'],
-                    'price' => $item['price'],
-                    'qty' => $item['qty'],
-                    'subtotal' => $item['subtotal'],
-                    'note' => $this->composeOrderItemNote($item['option_label'] ?? null, $item['item_note'] ?? null),
-                ]);
-            }
+                if (! $order) {
+                    $order = Order::create([
+                        'store_id' => $store->id,
+                        'dining_table_id' => $table->id,
+                        'order_type' => 'dine_in',
+                        'cart_token' => null,
+                        'order_no' => $this->generateOrderNo($store),
+                        'status' => 'pending',
+                        'payment_status' => 'unpaid',
+                        'customer_name' => null,
+                        'customer_email' => null,
+                        'customer_phone' => null,
+                        'note' => $customerNote,
+                        'subtotal' => 0,
+                        'total' => 0,
+                    ]);
+                }
 
-            $order->subtotal = (int) $order->subtotal + (int) $total;
-            $order->total = (int) $order->total + (int) $total;
-            if ($order->note === null && $customerNote !== null) {
-                $order->note = $customerNote;
-            }
-            $order->save();
+                foreach ($cart as $item) {
+                    $order->items()->create([
+                        'product_id' => $item['product_id'],
+                        'product_name' => $item['product_name'],
+                        'price' => $item['price'],
+                        'qty' => $item['qty'],
+                        'subtotal' => $item['subtotal'],
+                        'note' => $this->composeOrderItemNote($item['option_label'] ?? null, $item['item_note'] ?? null),
+                    ]);
+                }
 
-            return $order;
-        });
+                $order->subtotal = (int) $order->subtotal + (int) $total;
+                $order->total = (int) $order->total + (int) $total;
+                if ($order->note === null && $customerNote !== null) {
+                    $order->note = $customerNote;
+                }
+                $order->save();
+
+                return $order;
+            });
+        } catch (ValidationException $exception) {
+            return redirect()
+                ->route('customer.dinein.cart.show', ['store' => $store, 'table' => $table])
+                ->with('error', $exception->validator->errors()->first() ?: __('customer.item_not_available'));
+        }
 
         session()->forget($cartKey);
         $this->pushDineInOrderToHistory($store, $table, $order);
@@ -263,6 +271,48 @@ class DineInOrderController extends Controller
             'store' => $store->slug,
             'order' => $order->uuid,
         ]);
+    }
+
+    protected function assertCartItemsStillAvailable(Store $store, array $cart): void
+    {
+        $productIds = collect($cart)
+            ->pluck('product_id')
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        if ($productIds->isEmpty()) {
+            throw ValidationException::withMessages([
+                'cart' => __('customer.error_items_unavailable', ['items' => __('customer.product_default_name')]),
+            ]);
+        }
+
+        $products = Product::query()
+            ->where('store_id', $store->id)
+            ->whereIn('id', $productIds->all())
+            ->lockForUpdate()
+            ->get(['id', 'name', 'is_active', 'is_sold_out'])
+            ->keyBy('id');
+
+        $unavailableNames = [];
+
+        foreach ($cart as $item) {
+            $productId = (int) ($item['product_id'] ?? 0);
+            $product = $products->get($productId);
+
+            if (! $product || ! $product->is_active || $product->is_sold_out) {
+                $unavailableNames[] = (string) ($item['product_name'] ?? __('customer.product_default_name'));
+            }
+        }
+
+        $unavailableNames = array_values(array_unique(array_filter($unavailableNames)));
+
+        if (! empty($unavailableNames)) {
+            throw ValidationException::withMessages([
+                'cart' => __('customer.error_items_unavailable', ['items' => implode('、', $unavailableNames)]),
+            ]);
+        }
     }
 
     public function checkPhoneRegistered(Request $request, Store $store, DiningTable $table): JsonResponse

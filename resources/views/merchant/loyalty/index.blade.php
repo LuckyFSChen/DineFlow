@@ -93,9 +93,15 @@
                         <input type="checkbox" name="loyalty_enabled" value="1" @checked($selectedStore->loyalty_enabled) class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
                         啟用會員集點
                     </label>
-                    <div>
-                        <label class="mb-1 block text-xs font-semibold text-slate-600">每消費多少金額回饋 1 點</label>
-                        <input type="number" min="1" max="100000" name="points_per_amount" value="{{ old('points_per_amount', $selectedStore->points_per_amount ?? 100) }}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">每消費金額（X）</label>
+                            <input type="number" min="1" max="100000" name="points_per_amount" value="{{ old('points_per_amount', $selectedStore->points_per_amount ?? 100) }}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">回饋點數（Y）</label>
+                            <input type="number" min="1" max="1000" name="points_reward" value="{{ old('points_reward', $selectedStore->points_reward ?? 1) }}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        </div>
                     </div>
                     <button type="submit" class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">儲存規則</button>
                 </form>
@@ -119,11 +125,20 @@
                         <select name="discount_type" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                             <option value="fixed">固定金額</option>
                             <option value="percent">百分比</option>
+                            <option value="points_reward">滿額贈點</option>
                         </select>
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-slate-600">折扣值</label>
-                        <input type="number" min="1" name="discount_value" required class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        <input type="number" min="0" name="discount_value" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold text-slate-600">贈點門檻金額（X）</label>
+                        <input type="number" min="0" name="reward_per_amount" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold text-slate-600">每門檻贈點（Y）</label>
+                        <input type="number" min="0" name="reward_points" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-slate-600">最低消費</label>
@@ -257,7 +272,9 @@
             </div>
         </div>
 
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+           <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+               x-data="couponManager()"
+               data-update-url-template="{{ route('merchant.loyalty.coupons.update', ['coupon' => '__COUPON__']) }}">
             <h2 class="text-lg font-semibold text-slate-900">優惠券清單</h2>
             <div class="mt-4 overflow-x-auto">
                 <table class="min-w-full text-sm">
@@ -277,10 +294,21 @@
                             <tr class="border-t border-slate-100">
                                 <td class="px-3 py-2">{{ $coupon->name }}</td>
                                 <td class="px-3 py-2 font-semibold">{{ $coupon->code }}</td>
-                                <td class="px-3 py-2">{{ $coupon->discount_type === 'percent' ? $coupon->discount_value.'%' : $currencySymbol.' '.number_format((int) $coupon->discount_value) }}</td>
+                                <td class="px-3 py-2">
+                                    @if($coupon->discount_type === 'percent')
+                                        {{ $coupon->discount_value }}%
+                                    @elseif($coupon->discount_type === 'points_reward')
+                                        滿額贈點
+                                    @else
+                                        {{ $currencySymbol }} {{ number_format((int) $coupon->discount_value) }}
+                                    @endif
+                                </td>
                                 <td class="px-3 py-2">
                                     最低 {{ $currencySymbol }} {{ number_format((int) $coupon->min_order_amount) }}<br>
                                     點數成本 {{ number_format((int) $coupon->points_cost) }}
+                                    @if($coupon->discount_type === 'points_reward')
+                                        <br>每消費 {{ $currencySymbol }} {{ number_format((int) $coupon->reward_per_amount) }} 贈 {{ number_format((int) $coupon->reward_points) }} 點
+                                    @endif
                                 </td>
                                 <td class="px-3 py-2">
                                     {{ number_format((int) $coupon->used_count) }}
@@ -295,11 +323,37 @@
                                 </td>
                                 <td class="px-3 py-2 text-right">
                                     <div class="inline-flex gap-2">
+                                        <button type="button"
+                                                @click='openEditModal({
+                                                    id: {{ (int) $coupon->id }},
+                                                    name: @js($coupon->name),
+                                                    code: @js($coupon->code),
+                                                    discount_type: @js($coupon->discount_type),
+                                                    discount_value: {{ (int) $coupon->discount_value }},
+                                                    reward_per_amount: {{ (int) $coupon->reward_per_amount }},
+                                                    reward_points: {{ (int) $coupon->reward_points }},
+                                                    min_order_amount: {{ (int) $coupon->min_order_amount }},
+                                                    points_cost: {{ (int) $coupon->points_cost }},
+                                                    usage_limit: {{ $coupon->usage_limit !== null ? (int) $coupon->usage_limit : 'null' }},
+                                                    starts_at: @js(optional($coupon->starts_at)->format('Y-m-d\\TH:i')),
+                                                    ends_at: @js(optional($coupon->ends_at)->format('Y-m-d\\TH:i')),
+                                                    is_active: {{ $coupon->is_active ? 'true' : 'false' }}
+                                                })'
+                                                class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
+                                            修改
+                                        </button>
                                         <form method="POST" action="{{ route('merchant.loyalty.coupons.toggle', $coupon) }}">
                                             @csrf
                                             @method('PATCH')
                                             <button type="submit" class="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100">
                                                 {{ $coupon->is_active ? '停用' : '啟用' }}
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="{{ route('merchant.loyalty.coupons.destroy', $coupon) }}" onsubmit="return confirm('確定要刪除此優惠券嗎？此操作無法復原。');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100">
+                                                刪除
                                             </button>
                                         </form>
                                     </div>
@@ -316,8 +370,129 @@
             <div class="mt-4">
                 {{ $coupons->links() }}
             </div>
+
+            <div x-cloak
+                 x-show="editModalOpen"
+                 @keydown.escape.window="closeEditModal()"
+                 class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6"
+                 style="display: none;">
+                <div @click.outside="closeEditModal()" class="w-full max-w-2xl rounded-2xl bg-white p-5 shadow-2xl">
+                    <div class="mb-4 flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-slate-900">修改優惠券</h3>
+                        <button type="button" @click="closeEditModal()" class="rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100">關閉</button>
+                    </div>
+
+                    <form method="POST" :action="updateAction" class="grid gap-3 sm:grid-cols-2">
+                        @csrf
+                        @method('PUT')
+
+                        <div class="sm:col-span-2">
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">名稱</label>
+                            <input type="text" name="name" required x-model="form.name" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">代碼</label>
+                            <input type="text" name="code" required x-model="form.code" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm uppercase">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">折扣類型</label>
+                            <select name="discount_type" x-model="form.discount_type" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                                <option value="fixed">固定金額</option>
+                                <option value="percent">百分比</option>
+                                <option value="points_reward">滿額贈點</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">折扣值</label>
+                            <input type="number" min="0" name="discount_value" x-model="form.discount_value" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">贈點門檻金額（X）</label>
+                            <input type="number" min="0" name="reward_per_amount" x-model="form.reward_per_amount" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">每門檻贈點（Y）</label>
+                            <input type="number" min="0" name="reward_points" x-model="form.reward_points" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">最低消費</label>
+                            <input type="number" min="0" name="min_order_amount" x-model="form.min_order_amount" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">兌換點數成本（選填）</label>
+                            <input type="number" min="0" name="points_cost" x-model="form.points_cost" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">使用次數上限（選填）</label>
+                            <input type="number" min="1" name="usage_limit" x-model="form.usage_limit" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">開始時間（選填）</label>
+                            <input type="datetime-local" name="starts_at" x-model="form.starts_at" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">結束時間（選填）</label>
+                            <input type="datetime-local" name="ends_at" x-model="form.ends_at" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        </div>
+                        <label class="sm:col-span-2 inline-flex items-center gap-2 text-sm text-slate-700">
+                            <input type="checkbox" name="is_active" value="1" x-model="form.is_active" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                            優惠券啟用中
+                        </label>
+                        <div class="sm:col-span-2 flex items-center justify-end gap-2">
+                            <button type="button" @click="closeEditModal()" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">取消</button>
+                            <button type="submit" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">儲存修改</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+<script>
+    function couponManager() {
+        return {
+            editModalOpen: false,
+            updateAction: '',
+            form: {
+                id: null,
+                name: '',
+                code: '',
+                discount_type: 'fixed',
+                discount_value: 1,
+                reward_per_amount: 0,
+                reward_points: 0,
+                min_order_amount: 0,
+                points_cost: 0,
+                usage_limit: '',
+                starts_at: '',
+                ends_at: '',
+                is_active: true,
+            },
+            openEditModal(coupon) {
+                const template = this.$root.dataset.updateUrlTemplate || '';
+                this.updateAction = template.replace('__COUPON__', String(coupon.id));
+                this.form = {
+                    id: coupon.id,
+                    name: coupon.name || '',
+                    code: coupon.code || '',
+                    discount_type: coupon.discount_type || 'fixed',
+                    discount_value: Number(coupon.discount_value || 1),
+                    reward_per_amount: Number(coupon.reward_per_amount || 0),
+                    reward_points: Number(coupon.reward_points || 0),
+                    min_order_amount: Number(coupon.min_order_amount || 0),
+                    points_cost: Number(coupon.points_cost || 0),
+                    usage_limit: coupon.usage_limit === null ? '' : Number(coupon.usage_limit || 0),
+                    starts_at: coupon.starts_at || '',
+                    ends_at: coupon.ends_at || '',
+                    is_active: Boolean(coupon.is_active),
+                };
+                this.editModalOpen = true;
+            },
+            closeEditModal() {
+                this.editModalOpen = false;
+            },
+        };
+    }
+</script>
 @endsection
 

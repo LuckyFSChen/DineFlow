@@ -529,6 +529,10 @@ function cashierBoard() {
                 });
                 if (!res.ok) return;
                 const fresh = await res.json();
+                if (!Array.isArray(fresh)) {
+                    this.showError(this.i18n.error_update_failed);
+                    return;
+                }
                 const oldIds = new Set(this.orders.map(o => o.id));
                 const hasNew = fresh.some(o => !oldIds.has(o.id));
                 this.orders = fresh;

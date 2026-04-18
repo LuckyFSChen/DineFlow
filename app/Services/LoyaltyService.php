@@ -65,6 +65,7 @@ class LoyaltyService
                 'coupon' => null,
                 'discount' => 0,
                 'points_cost' => 0,
+                'bonus_points' => 0,
                 'error' => null,
             ];
         }
@@ -75,25 +76,25 @@ class LoyaltyService
             ->first();
 
         if (! $coupon) {
-            return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'error' => __('customer.coupon_not_found')];
+            return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'bonus_points' => 0, 'error' => __('customer.coupon_not_found')];
         }
 
         if (! $coupon->isCurrentlyValid()) {
-            return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'error' => __('customer.coupon_unavailable')];
+            return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'bonus_points' => 0, 'error' => __('customer.coupon_unavailable')];
         }
 
         if ($subtotal < (int) $coupon->min_order_amount) {
-            return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'error' => __('customer.coupon_min_order_not_met')];
+            return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'bonus_points' => 0, 'error' => __('customer.coupon_min_order_not_met')];
         }
 
         $pointsCost = max((int) $coupon->points_cost, 0);
         if ($pointsCost > 0) {
             if (! $member) {
-                return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'error' => __('customer.coupon_member_required')];
+                return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'bonus_points' => 0, 'error' => __('customer.coupon_member_required')];
             }
 
             if ((int) $member->points_balance < $pointsCost) {
-                return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'error' => __('customer.coupon_points_insufficient')];
+                return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'bonus_points' => 0, 'error' => __('customer.coupon_points_insufficient')];
             }
         }
 
@@ -101,6 +102,7 @@ class LoyaltyService
             'coupon' => $coupon,
             'discount' => $coupon->calculateDiscountAmount($subtotal),
             'points_cost' => $pointsCost,
+            'bonus_points' => $coupon->calculateBonusPoints($subtotal),
             'error' => null,
         ];
     }

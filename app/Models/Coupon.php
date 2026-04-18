@@ -14,6 +14,8 @@ class Coupon extends Model
         'discount_value',
         'min_order_amount',
         'points_cost',
+        'reward_per_amount',
+        'reward_points',
         'usage_limit',
         'used_count',
         'starts_at',
@@ -25,6 +27,8 @@ class Coupon extends Model
         'discount_value' => 'integer',
         'min_order_amount' => 'integer',
         'points_cost' => 'integer',
+        'reward_per_amount' => 'integer',
+        'reward_points' => 'integer',
         'usage_limit' => 'integer',
         'used_count' => 'integer',
         'is_active' => 'boolean',
@@ -68,12 +72,33 @@ class Coupon extends Model
     {
         $subtotal = max($subtotal, 0);
 
+        if ($this->discount_type === 'points_reward') {
+            return 0;
+        }
+
         if ($this->discount_type === 'percent') {
             $percent = max(0, min((int) $this->discount_value, 100));
             return (int) floor($subtotal * $percent / 100);
         }
 
         return min($subtotal, max((int) $this->discount_value, 0));
+    }
+
+    public function calculateBonusPoints(int $subtotal): int
+    {
+        if ($this->discount_type !== 'points_reward') {
+            return 0;
+        }
+
+        $subtotal = max($subtotal, 0);
+        $unitAmount = max((int) $this->reward_per_amount, 1);
+        $rewardPoints = max((int) $this->reward_points, 0);
+
+        if ($rewardPoints === 0) {
+            return 0;
+        }
+
+        return (int) (floor($subtotal / $unitAmount) * $rewardPoints);
     }
 }
 

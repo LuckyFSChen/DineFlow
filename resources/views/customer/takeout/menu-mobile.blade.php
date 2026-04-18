@@ -40,8 +40,62 @@
         'usd' => 'USD',
         default => 'NT$',
     };
+    $storeDescription = $store->description ?: __('customer.welcome_takeout_desc');
+    $totalProducts = $categories->sum(fn ($category) => $category->products->count());
+    $storePhone = trim((string) ($store->phone ?? ''));
+    $storePhoneHref = preg_replace('/\D+/', '', $storePhone);
 @endphp
 <style>
+    .store-overview-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: linear-gradient(155deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
+        box-shadow: 0 22px 54px rgba(40, 15, 8, 0.18);
+        backdrop-filter: blur(16px);
+    }
+
+    .store-overview-card::after {
+        content: '';
+        position: absolute;
+        inset: auto -10% -35% auto;
+        width: 9rem;
+        height: 9rem;
+        border-radius: 9999px;
+        background: radial-gradient(circle, rgba(246, 174, 45, 0.22), rgba(246, 174, 45, 0));
+        pointer-events: none;
+    }
+
+    .menu-section-panel {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .menu-section-panel > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    .menu-section-panel::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+    }
+
+    .menu-section-panel--soft::before {
+        background:
+            radial-gradient(circle at top right, rgba(246, 174, 45, 0.16), transparent 34%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(250, 245, 236, 0.92));
+    }
+
+    .menu-section-panel--accent::before {
+        background:
+            radial-gradient(circle at top right, rgba(236, 144, 87, 0.18), transparent 34%),
+            linear-gradient(180deg, rgba(255, 249, 245, 0.98), rgba(255, 255, 255, 0.94));
+    }
+
     .cart-fly-clone {
         position: fixed;
         z-index: 80;
@@ -97,6 +151,18 @@
         overflow: hidden;
         border-radius: 1rem;
         --swipe-progress: 0;
+        --shell-height: auto;
+        max-height: var(--shell-height);
+        transition:
+            max-height 220ms ease,
+            opacity 220ms ease,
+            transform 220ms ease;
+    }
+
+    .cart-preview-item-shell.is-collapsing {
+        max-height: 0;
+        opacity: 0;
+        transform: translateY(-6px);
     }
 
     .cart-preview-item-delete {
@@ -106,8 +172,8 @@
         align-items: center;
         justify-content: flex-end;
         padding-right: 0.75rem;
-        background: linear-gradient(135deg, rgba(251, 113, 133, 0.52), rgba(244, 114, 182, 0.62));
-        border-left: 1px solid rgba(244, 114, 182, 0.24);
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.58), rgba(220, 38, 38, 0.68));
+        border-left: 1px solid rgba(220, 38, 38, 0.3);
         color: white;
         opacity: clamp(0, var(--swipe-progress), 1);
         transition: opacity 140ms ease;
@@ -181,7 +247,7 @@
                 <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,214,112,0.28),_transparent_34%),linear-gradient(135deg,_rgba(90,30,14,0.96),_rgba(236,144,87,0.88))]"></div>
                 <div class="absolute -right-12 -top-10 h-36 w-36 rounded-full bg-brand-highlight/20 blur-3xl"></div>
                 <div class="absolute -bottom-14 left-10 h-32 w-32 rounded-full bg-brand-accent/20 blur-3xl"></div>
-                <div class="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                <div class="relative grid gap-6 xl:grid-cols-[minmax(0,1.25fr),minmax(18rem,22rem)] xl:items-start">
                     <div class="max-w-3xl">
                         <a href="{{ route('home') }}" class="inline-flex items-center text-sm font-medium text-white/70 transition hover:text-white">{{ __('customer.back_home_btn') }}</a>
                         <div class="mt-4 flex flex-wrap items-center gap-3">
@@ -189,19 +255,47 @@
                             <span class="inline-flex rounded-full border border-brand-soft/30 bg-white/10 px-3 py-1 text-xs font-semibold text-white/80">{{ __('customer.business_hours') }} {{ $store->businessHoursLabel() }}</span>
                         </div>
                         <h1 class="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">{{ $store->name }}</h1>
-                        <p class="mt-3 max-w-2xl text-sm leading-7 text-white/75 sm:text-base">{{ $store->description ?: __('customer.welcome_takeout_desc') }}</p>
+                        <p class="mt-3 max-w-2xl text-sm leading-7 text-white/75 sm:text-base">{{ $storeDescription }}</p>
+
+                        <div class="mt-6 grid gap-3 sm:grid-cols-2">
+                            <div class="store-overview-card px-4 py-4">
+                                <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-highlight/90">{{ __('customer.business_hours') }}</p>
+                                <p class="mt-2 text-base font-semibold text-white">{{ $store->businessHoursLabel() }}</p>
+                                <p class="mt-1 text-xs text-white/65">{{ $orderingAvailable ? __('customer.open') : __('customer.ordering_closed') }}</p>
+                            </div>
+                            <div class="store-overview-card px-4 py-4">
+                                <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-highlight/90">{{ __('customer.menu_section') }}</p>
+                                <p class="mt-2 text-2xl font-bold text-white">{{ number_format($categories->count()) }}</p>
+                                <p class="mt-1 text-xs text-white/65">{{ number_format($totalProducts) }} {{ __('customer.items_in_menu') }}</p>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="hidden md:flex">
-                        <div class="flex gap-3">
+                    <div class="space-y-3">
+                        <div class="store-overview-card px-5 py-5">
+                            <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-highlight/90">{{ __('customer.takeout') }}</p>
+                            <p class="mt-2 text-lg font-semibold text-white">{{ $orderingAvailable ? __('customer.open') : __('customer.ordering_closed') }}</p>
+                            <p class="mt-2 text-sm leading-6 text-white/70">{{ \Illuminate\Support\Str::limit($storeDescription, 96) }}</p>
+
+                            @if($storePhone !== '')
+                                <div class="mt-4 rounded-2xl border border-white/12 bg-black/10 px-4 py-3">
+                                    <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/60">{{ __('customer.phone') }}</p>
+                                    <a href="{{ $storePhoneHref !== '' ? 'tel:' . $storePhoneHref : '#' }}" class="mt-1 inline-flex text-base font-semibold text-white transition hover:text-brand-highlight">{{ $storePhone }}</a>
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="hidden md:flex">
+                            <div class="flex flex-wrap gap-3">
                             @if(isset($orderHistory) && $orderHistory->isNotEmpty())
-                                <div class="flex items-center gap-2">
+                                    <div class="flex flex-wrap items-center gap-2">
                                     @foreach($orderHistory->take(3) as $historyOrder)
                                         <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="inline-flex items-center justify-center rounded-2xl border border-white/25 bg-white/10 px-4 py-3 text-xs font-semibold text-white transition hover:-translate-y-0.5 hover:bg-white/20">{{ __('customer.status_prefix') }} {{ $historyOrder->order_no }}</a>
                                     @endforeach
                                 </div>
                             @endif
-                            <a href="{{ route('customer.takeout.cart.show', ['store' => $store]) }}" class="inline-flex items-center justify-center rounded-2xl bg-brand-highlight px-5 py-3 text-sm font-semibold text-brand-dark shadow-lg shadow-brand-highlight/30 transition hover:-translate-y-0.5 hover:bg-brand-soft">{{ __('customer.view_cart') }}</a>
+                                <a href="{{ route('customer.takeout.cart.show', ['store' => $store]) }}" class="inline-flex items-center justify-center rounded-2xl bg-brand-highlight px-5 py-3 text-sm font-semibold text-brand-dark shadow-lg shadow-brand-highlight/30 transition hover:-translate-y-0.5 hover:bg-brand-soft">{{ __('customer.view_cart') }}</a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -237,8 +331,12 @@
                 <p class="mt-3 text-brand-primary/80">{{ __('customer.no_products_try_later') }}</p>
             </div>
         @else
-            <div class="mb-8 hidden overflow-x-auto rounded-[1.75rem] border border-brand-soft/60 bg-white px-4 py-4 shadow-[0_12px_32px_rgba(90,30,14,0.08)] md:block">
-                <div class="flex min-w-max items-center gap-3">
+            <div class="mb-8 hidden overflow-x-auto rounded-[1.75rem] border border-brand-soft/60 bg-gradient-to-r from-white via-brand-soft/15 to-brand-highlight/10 px-4 py-4 shadow-[0_12px_32px_rgba(90,30,14,0.08)] md:block">
+                <div class="flex min-w-max items-center gap-4">
+                    <div class="min-w-[9.5rem] pr-2">
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-accent">{{ __('customer.menu_section') }}</p>
+                        <p class="mt-1 text-sm font-semibold text-brand-dark">{{ number_format($categories->count()) }} {{ __('customer.menu_section') }}</p>
+                    </div>
                     @foreach($categories as $category)
                         <a href="#category-{{ $category->id }}" class="inline-flex rounded-full border border-brand-soft/70 bg-brand-soft/20 px-4 py-2 text-sm font-medium text-brand-primary transition hover:-translate-y-0.5 hover:border-brand-accent hover:bg-brand-highlight/60">{{ $category->name }}</a>
                     @endforeach
@@ -248,7 +346,7 @@
             <div class="relative grid grid-cols-[5.5rem,minmax(0,1fr)] items-start gap-4 md:block">
                 <aside class="self-stretch md:hidden">
                     <div class="sticky top-5">
-                        <div class="h-[calc(100vh-2.5rem)] overflow-hidden rounded-[1.75rem] border border-brand-soft/60 bg-white shadow-[0_18px_40px_rgba(90,30,14,0.08)]">
+                        <div class="h-[calc(100vh-2.5rem)] overflow-hidden rounded-[1.75rem] border border-brand-soft/60 bg-gradient-to-b from-white to-brand-soft/20 shadow-[0_18px_40px_rgba(90,30,14,0.08)]">
                             <div class="h-full overflow-y-auto p-2">
                                 <div class="flex flex-col gap-2">
                                     @foreach($categories as $category)
@@ -264,12 +362,19 @@
 
                 <div class="min-w-0 space-y-10">
                     @foreach($categories as $category)
-                        <section id="category-{{ $category->id }}" class="scroll-mt-24 md:scroll-mt-24">
-                            <div class="mb-5 flex items-end justify-between gap-4">
+                        <section id="category-{{ $category->id }}" class="menu-section-panel {{ $loop->odd ? 'menu-section-panel--soft border-brand-soft/60' : 'menu-section-panel--accent border-brand-highlight/40' }} scroll-mt-24 rounded-[2rem] border px-5 py-6 shadow-[0_20px_52px_rgba(90,30,14,0.08)] md:scroll-mt-24 md:px-6">
+                            <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-accent via-brand-highlight to-transparent"></div>
+                            <div class="mb-6 flex flex-col gap-4 border-b border-brand-soft/60 pb-5 sm:flex-row sm:items-end sm:justify-between">
                                 <div>
-                                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brand-accent">{{ __('customer.menu_section') }}</p>
-                                    <h2 class="mt-2 text-2xl font-bold tracking-tight text-brand-dark">{{ $category->name }}</h2>
+                                    <div class="flex flex-wrap items-center gap-3">
+                                        <span class="inline-flex h-9 min-w-9 items-center justify-center rounded-full border border-brand-soft/70 bg-white/85 px-3 text-xs font-semibold tracking-[0.18em] text-brand-primary shadow-sm">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+                                        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-brand-accent">{{ __('customer.menu_section') }}</p>
+                                    </div>
+                                    <h2 class="mt-3 text-2xl font-bold tracking-tight text-brand-dark">{{ $category->name }}</h2>
                                     <p class="mt-1 text-sm text-brand-primary/70">{{ $category->products->count() }} {{ __('customer.items_in_menu') }}</p>
+                                </div>
+                                <div class="inline-flex items-center rounded-2xl border border-brand-soft/70 bg-white/85 px-4 py-3 text-sm font-semibold text-brand-dark shadow-sm">
+                                    {{ $category->products->count() }} {{ __('customer.items_in_menu') }}
                                 </div>
                             </div>
 
@@ -348,7 +453,7 @@
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-highlight/80">{{ __('customer.cart') }}</p>
-                    <p class="mt-1 text-sm font-semibold">{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'currency' => $currencySymbol, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
+                    <p class="mt-1 text-sm font-semibold" data-cart-summary-text>{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'currency' => $currencySymbol, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
                 </div>
                 <button
                     type="button"
@@ -365,9 +470,9 @@
             </div>
         </div>
 
-        <div class="max-h-[52vh] space-y-3 overflow-y-auto px-4 py-4">
+        <div class="max-h-[52vh] space-y-3 overflow-y-auto px-4 py-4" data-cart-preview-list>
             @forelse($cartPreviewItems->take(6) as $item)
-                <div class="cart-preview-item-shell" data-cart-preview-shell>
+                <div class="cart-preview-item-shell" data-cart-preview-shell data-line-key="{{ $item['line_key'] }}">
                     <div class="cart-preview-item-delete" data-cart-preview-delete>
                         <span class="rounded-full border border-white/40 bg-white/22 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-50 shadow-sm">
                             {{ __('customer.remove_item') }}
@@ -389,14 +494,14 @@
 
                         <div class="mt-3 flex items-center justify-between gap-3">
                             <div class="inline-flex shrink-0 items-center gap-2 rounded-xl border border-brand-soft/70 bg-white/80 px-2 py-1 shadow-sm">
-                                <form method="POST" action="{{ route('customer.takeout.cart.items.update', ['store' => $store, 'lineKey' => $item['line_key']]) }}">
+                                <form method="POST" action="{{ route('customer.takeout.cart.items.update', ['store' => $store, 'lineKey' => $item['line_key']]) }}" data-cart-preview-update-form>
                                     @csrf
                                     @method('PATCH')
                                     <input type="hidden" name="action" value="decrease">
                                     <button type="submit" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-brand-soft bg-white text-sm font-bold text-brand-primary transition hover:bg-brand-soft/30" aria-label="{{ __('customer.decrease_qty') }}">-</button>
                                 </form>
                                 <span class="min-w-[1.8rem] text-center text-sm font-semibold text-brand-dark">{{ $item['qty'] ?? 1 }}</span>
-                                <form method="POST" action="{{ route('customer.takeout.cart.items.update', ['store' => $store, 'lineKey' => $item['line_key']]) }}">
+                                <form method="POST" action="{{ route('customer.takeout.cart.items.update', ['store' => $store, 'lineKey' => $item['line_key']]) }}" data-cart-preview-update-form>
                                     @csrf
                                     @method('PATCH')
                                     <input type="hidden" name="action" value="increase">
@@ -419,7 +524,7 @@
             @endforelse
 
             @if($cartPreviewItems->count() > 6)
-                <p class="text-center text-xs font-semibold text-brand-primary/70">{{ __('customer.more_items_in_cart', ['count' => $cartPreviewItems->count() - 6]) }}</p>
+                <p class="text-center text-xs font-semibold text-brand-primary/70" data-cart-preview-more>{{ __('customer.more_items_in_cart', ['count' => $cartPreviewItems->count() - 6]) }}</p>
             @endif
         </div>
 
@@ -434,7 +539,7 @@
     <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-[1.75rem] bg-brand-dark px-4 py-3 text-white shadow-[0_18px_44px_rgba(90,30,14,0.24)] transition-transform duration-200" data-cart-bar>
         <div>
             <p class="text-xs uppercase tracking-[0.2em] text-brand-highlight/80">{{ $orderingAvailable ? __('customer.open') : __('customer.ordering_closed') }}</p>
-            <p class="mt-1 text-sm font-semibold">{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'currency' => $currencySymbol, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
+            <p class="mt-1 text-sm font-semibold" data-cart-summary-text>{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'currency' => $currencySymbol, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
             @if(isset($orderHistory) && $orderHistory->isNotEmpty())
                 <div class="mt-1 flex flex-wrap gap-2">
                     @foreach($orderHistory->take(2) as $historyOrder)
@@ -469,6 +574,8 @@
     const cartBar = document.querySelector('[data-cart-bar]');
     const cartPreviewWindow = document.querySelector('[data-cart-preview-window]');
     const cartPreviewHandle = document.querySelector('[data-cart-preview-handle]');
+    const cartSummaryTexts = document.querySelectorAll('[data-cart-summary-text]');
+    const cartPreviewList = document.querySelector('[data-cart-preview-list]');
     const modal = document.getElementById('option-modal');
     const modalTitle = document.getElementById('option-modal-title');
     const modalBody = document.getElementById('option-modal-body');
@@ -486,6 +593,7 @@
         itemNoteLabel: @json(__('customer.item_note_label')),
         itemNotePlaceholder: @json(__('customer.item_note_placeholder')),
     };
+    const cartPreviewEmptyClasses = 'rounded-2xl border border-dashed border-brand-soft/80 bg-brand-soft/10 px-3 py-8 text-center text-sm text-brand-primary/75';
 
     let activeForm = null;
     let activeGroups = [];
@@ -513,6 +621,155 @@
             cartPreviewPulseTimer = window.setTimeout(() => {
                 cartPreviewWindow.classList.remove('is-pulse');
             }, 720);
+        });
+    };
+
+    const sendCartRequest = async (form) => {
+        const formData = new FormData(form);
+        const csrf = form.querySelector('input[name="_token"]')?.value || '';
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Cart request failed: ${response.status}`);
+        }
+
+        return response.json();
+    };
+
+    const escapeHtml = (value) => String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+
+    const syncCartSummary = (cart) => {
+        if (!cart) {
+            return;
+        }
+
+        cartSummaryTexts.forEach((element) => {
+            element.textContent = cart.bar_text || '';
+        });
+
+        if (cartTarget) {
+            cartTarget.textContent = cart.view_cart_label || '';
+            cartTarget.href = cart.cart_url || cartTarget.href;
+        }
+
+        if (cartPreviewTarget) {
+            cartPreviewTarget.textContent = cart.view_cart_label || '';
+            cartPreviewTarget.href = cart.cart_url || cartPreviewTarget.href;
+        }
+    };
+
+    const renderPreviewItem = (item) => `
+        <div class="cart-preview-item-shell" data-cart-preview-shell data-line-key="${item.line_key}">
+            <div class="cart-preview-item-delete" data-cart-preview-delete>
+                <span class="rounded-full border border-white/40 bg-white/22 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-50 shadow-sm">
+                    {{ __('customer.remove_item') }}
+                </span>
+            </div>
+            <article class="cart-preview-item rounded-2xl border border-brand-soft/70 bg-brand-soft/15 px-3 py-3" data-cart-preview-item>
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-brand-dark">${escapeHtml(item.product_name)}</p>
+                        ${item.option_label ? `<p class="mt-1 text-xs text-brand-primary/75">${escapeHtml(item.option_label)}</p>` : ''}
+                        ${item.item_note_display ? `<p class="mt-1 text-xs text-amber-700">${escapeHtml(item.item_note_display)}</p>` : ''}
+                    </div>
+                    <p class="shrink-0 text-xs font-semibold text-brand-accent">${escapeHtml(item.subtotal_display)}</p>
+                </div>
+
+                <div class="mt-3 flex items-center justify-between gap-3">
+                    <div class="inline-flex shrink-0 items-center gap-2 rounded-xl border border-brand-soft/70 bg-white/80 px-2 py-1 shadow-sm">
+                        <form method="POST" action="${item.update_urls.decrease}" data-cart-preview-update-form>
+                            <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="_method" value="PATCH">
+                            <input type="hidden" name="action" value="decrease">
+                            <button type="submit" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-brand-soft bg-white text-sm font-bold text-brand-primary transition hover:bg-brand-soft/30" aria-label="{{ __('customer.decrease_qty') }}">-</button>
+                        </form>
+                        <span class="min-w-[1.8rem] text-center text-sm font-semibold text-brand-dark">${item.qty}</span>
+                        <form method="POST" action="${item.update_urls.increase}" data-cart-preview-update-form>
+                            <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="_method" value="PATCH">
+                            <input type="hidden" name="action" value="increase">
+                            <button type="submit" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-brand-soft bg-white text-sm font-bold text-brand-primary transition hover:bg-brand-soft/30" aria-label="{{ __('customer.increase_qty') }}">+</button>
+                        </form>
+                    </div>
+
+                    <form method="POST" action="${item.remove_url}" data-cart-preview-remove-form>
+                        <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="_method" value="DELETE">
+                        <button type="submit" class="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">{{ __('customer.remove_item') }}</button>
+                    </form>
+                </div>
+            </article>
+        </div>
+    `;
+
+    const renderCartPreview = (cart) => {
+        if (!cart || !cartPreviewList) {
+            return;
+        }
+
+        const previewItems = Array.isArray(cart.preview_items) ? cart.preview_items : [];
+        const previewHtml = previewItems.length > 0
+            ? previewItems.map(renderPreviewItem).join('')
+            : `<div class="${cartPreviewEmptyClasses}">${cart.empty_preview_text || ''}</div>`;
+        const moreHtml = cart.remaining_preview_text
+            ? `<p class="text-center text-xs font-semibold text-brand-primary/70" data-cart-preview-more>${cart.remaining_preview_text}</p>`
+            : '';
+
+        cartPreviewList.innerHTML = `${previewHtml}${moreHtml}`;
+        initCartPreviewForms();
+        initCartPreviewSwipe();
+    };
+
+    const applyCartState = (payload) => {
+        const cart = payload?.cart;
+        if (!cart) {
+            return;
+        }
+
+        syncCartSummary(cart);
+        renderCartPreview(cart);
+        pulseCartPreview();
+    };
+
+    const initCartPreviewForms = () => {
+        document.querySelectorAll('[data-cart-preview-update-form], [data-cart-preview-remove-form]').forEach((form) => {
+            if (form.dataset.bound === '1') {
+                return;
+            }
+
+            form.dataset.bound = '1';
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                if (form.dataset.submitting === '1') {
+                    return;
+                }
+
+                form.dataset.submitting = '1';
+
+                try {
+                    const payload = await sendCartRequest(form);
+                    applyCartState(payload);
+                } catch (_error) {
+                    window.location.reload();
+                } finally {
+                    form.dataset.submitting = '0';
+                }
+            });
         });
     };
 
@@ -568,7 +825,28 @@
                 item.classList.remove('is-swiping');
                 shell?.style.setProperty('--swipe-progress', '1');
                 item.classList.add('is-removing');
-                window.setTimeout(() => removeForm.submit(), 180);
+
+                if (shell) {
+                    const shellHeight = Math.max(1, Math.round(shell.getBoundingClientRect().height));
+                    shell.style.setProperty('--shell-height', `${shellHeight}px`);
+                }
+
+                const requestDelete = async () => {
+                    const payload = await sendCartRequest(removeForm);
+                    applyCartState(payload);
+                };
+
+                window.setTimeout(() => {
+                    shell?.classList.add('is-collapsing');
+
+                    window.setTimeout(() => {
+                        shell?.remove();
+
+                        requestDelete().catch(() => {
+                            window.location.reload();
+                        });
+                    }, 220);
+                }, 180);
             };
 
             item.addEventListener('pointerdown', (event) => {
@@ -657,20 +935,23 @@
             item.addEventListener('pointercancel', finishSwipe);
         });
 
-        document.addEventListener('pointerdown', (event) => {
-            if (!activeSwipeItem) {
-                return;
-            }
+        if (document.body.dataset.cartPreviewOutsideBound !== '1') {
+            document.body.dataset.cartPreviewOutsideBound = '1';
+            document.addEventListener('pointerdown', (event) => {
+                if (!activeSwipeItem) {
+                    return;
+                }
 
-            if (event.target.closest('[data-cart-preview-item]')) {
-                return;
-            }
+                if (event.target.closest('[data-cart-preview-item]')) {
+                    return;
+                }
 
-            activeSwipeItem.style.transform = 'translateX(0)';
-            activeSwipeItem.classList.remove('is-swiping');
-            activeSwipeItem.parentElement?.style.setProperty('--swipe-progress', '0');
-            activeSwipeItem = null;
-        });
+                activeSwipeItem.style.transform = 'translateX(0)';
+                activeSwipeItem.classList.remove('is-swiping');
+                activeSwipeItem.parentElement?.style.setProperty('--swipe-progress', '0');
+                activeSwipeItem = null;
+            });
+        }
     };
 
     const initCartPreviewWindow = () => {
@@ -1026,12 +1307,23 @@
             window.setTimeout(() => {
                 clone.remove();
                 cartBar?.classList.remove('scale-[1.02]');
-                form.submit();
+
+                sendCartRequest(form)
+                    .then((payload) => {
+                        applyCartState(payload);
+                    })
+                    .catch(() => {
+                        form.submit();
+                    })
+                    .finally(() => {
+                        form.dataset.animating = 'false';
+                    });
             }, 620);
         });
     });
 
     initCartPreviewWindow();
+    initCartPreviewForms();
     initCartPreviewSwipe();
 })();
 </script>

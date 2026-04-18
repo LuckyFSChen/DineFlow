@@ -74,6 +74,11 @@
     $merchantHasStores = $navUser?->isMerchant()
         ? $navUser->stores()->exists()
         : true;
+
+    $customerNavStore = $navUser?->isCustomer()
+        ? ($resolvedRouteStore ?: $firstOpenStore())
+        : null;
+    $customerOrderHistoryStoreRoute = $storeRouteValue($customerNavStore);
 @endphp
 
 @if($isDineInCartPage)
@@ -210,6 +215,12 @@
                                 {{ __('nav.profile') }}
                             </x-dropdown-link>
 
+                            @if(Auth::user()?->isCustomer() && $customerOrderHistoryStoreRoute)
+                                <x-dropdown-link :href="route('customer.order.history', ['store' => $customerOrderHistoryStoreRoute])">
+                                    {{ __('nav.order_history') }}
+                                </x-dropdown-link>
+                            @endif
+
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
 
@@ -306,6 +317,12 @@
                     <x-responsive-nav-link :href="route('profile.edit')">
                         {{ __('nav.profile') }}
                     </x-responsive-nav-link>
+
+                    @if(Auth::user()?->isCustomer() && $customerOrderHistoryStoreRoute)
+                        <x-responsive-nav-link :href="route('customer.order.history', ['store' => $customerOrderHistoryStoreRoute])">
+                            {{ __('nav.order_history') }}
+                        </x-responsive-nav-link>
+                    @endif
 
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf

@@ -445,6 +445,7 @@ return [
     'error_invalid_item_status'              => 'Invalid item status.',
     'error_order_item_not_found'             => 'Order item not found.',
     'error_only_pending_can_cancel'          => 'Only pending orders can be cancelled.',
+    'error_only_unpaid_completed_can_mark_paid' => 'Only completed unpaid orders can be marked as paid.',
     'error_cancel_reason_required'           => 'Please provide at least one cancellation reason.',
     'error_table_no_reserved'                => 'The table number cannot be "takeout". Please enter a dine-in table number.',
     'error_table_no_required'                => 'Please enter a table number.',

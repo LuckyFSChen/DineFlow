@@ -445,6 +445,7 @@ return [
     'error_invalid_item_status'              => '品項狀態參數無效。',
     'error_order_item_not_found'             => '找不到該訂單品項。',
     'error_only_pending_can_cancel'          => '僅待處理訂單可取消。',
+    'error_only_unpaid_completed_can_mark_paid' => '僅已完成且未收款的訂單可結單。',
     'error_cancel_reason_required'           => '請至少提供一個取消原因。',
     'error_table_no_reserved'                => '桌號不可使用「外帶」，請輸入內用桌號。',
     'error_table_no_required'                => '請輸入桌號。',

@@ -19,6 +19,7 @@ return [
     'super_admin'        => 'Quản Trị Cấp Cao',
     'account_center'     => 'Trung Tâm Tài Khoản',
     'profile'            => 'Hồ Sơ',
+    'order_history'      => 'Lich Su Don Hang',
     'logout'             => 'Đăng Xuất',
     'currently_logged_in'=> 'Hiện Đang Đăng Nhập',
     'not_activated'      => 'Chưa Kích Hoạt',

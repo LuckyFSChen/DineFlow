@@ -117,6 +117,7 @@ return [
     'cancel_reason_title'          => 'Lý do hủy đơn',
     'cancel_reason_empty'          => 'Quán không cung cấp lý do hủy đơn.',
     'error_cart_empty'             => 'Giỏ hàng đang trống.',
+    'error_items_unavailable'      => 'Các món sau hiện không còn bán hoặc đã hết hàng: :items. Vui lòng cập nhật giỏ hàng rồi gửi lại.',
     'error_option_payload_invalid' => 'Định dạng dữ liệu tùy chọn không hợp lệ.',
     'coupon_discount'              => 'Giảm giá coupon',
     'estimated_payable'            => 'Tổng tạm phải trả',

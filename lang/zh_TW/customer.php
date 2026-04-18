@@ -117,6 +117,7 @@ return [
     'cancel_reason_title'          => '取消原因',
     'cancel_reason_empty'          => '店家未提供取消原因。',
     'error_cart_empty'             => '購物車是空的。',
+    'error_items_unavailable'      => '以下商品目前無法點餐或已售完：:items。請更新購物車後再送出。',
     'error_option_payload_invalid' => '選配資料格式錯誤。',
     'coupon_discount'              => '優惠券折抵',
     'estimated_payable'            => '預估應付',

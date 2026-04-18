@@ -44,6 +44,7 @@ class Store extends Model
         'prep_time_minutes',
         'loyalty_enabled',
         'points_per_amount',
+        'points_reward',
         'weekly_break_hours',
         'cancel_quick_reasons',
     ];
@@ -58,6 +59,7 @@ class Store extends Model
         'prep_time_minutes' => 'integer',
         'loyalty_enabled' => 'boolean',
         'points_per_amount' => 'integer',
+        'points_reward' => 'integer',
         'weekly_break_hours' => 'array',
         'cancel_quick_reasons' => 'array',
     ];
@@ -313,9 +315,10 @@ class Store extends Model
         }
 
         $unitAmount = max((int) ($this->points_per_amount ?? 100), 1);
+        $rewardPoints = max((int) ($this->points_reward ?? 1), 1);
         $paidAmount = max($paidAmount, 0);
 
-        return (int) floor($paidAmount / $unitAmount);
+        return (int) (floor($paidAmount / $unitAmount) * $rewardPoints);
     }
 
     private function normalizeTime(?string $time): ?string

@@ -19,6 +19,7 @@ return [
     'super_admin'        => 'Super Admin',
     'account_center'     => 'Account Center',
     'profile'            => 'Profile',
+    'order_history'      => 'Order History',
     'logout'             => 'Logout',
     'currently_logged_in'=> 'Logged In As',
     'not_activated'      => 'Not Activated',

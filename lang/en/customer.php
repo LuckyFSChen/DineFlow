@@ -117,6 +117,7 @@ return [
     'cancel_reason_title'          => 'Cancellation Reason',
     'cancel_reason_empty'          => 'The store did not provide a cancellation reason.',
     'error_cart_empty'             => 'Your cart is empty.',
+    'error_items_unavailable'      => 'These items are no longer available or sold out: :items. Please update your cart and submit again.',
     'error_option_payload_invalid' => 'Invalid option data format.',
     'coupon_discount'              => 'Coupon Discount',
     'estimated_payable'            => 'Estimated Amount Due',

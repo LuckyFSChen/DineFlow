@@ -60,45 +60,6 @@
     </section>
 
     @php
-        $previewCards = [
-            [
-                'title' => __('home.full_intro_flow_step_1_title'),
-                'tag' => 'Store Setup',
-                'accent' => 'bg-brand-primary/15',
-                'image' => asset('images/product-intro/productManagement.png'),
-            ],
-            [
-                'title' => __('home.full_intro_flow_step_2_title'),
-                'tag' => 'QR Entry',
-                'accent' => 'bg-brand-highlight/25',
-                'image' => asset('images/product-intro/qrcode.png'),
-            ],
-            [
-                'title' => __('home.full_intro_flow_step_3_title'),
-                'tag' => 'Order Board',
-                'accent' => 'bg-emerald-200/45',
-                'image' => asset('images/product-intro/menu.png'),
-            ],
-            [
-                'title' => __('home.full_intro_flow_step_4_title'),
-                'tag' => 'Kitchen Sync',
-                'accent' => 'bg-orange-200/40',
-                'image' => asset('images/product-intro/billboard.png'),
-            ],
-            [
-                'title' => __('home.full_intro_flow_step_5_title'),
-                'tag' => 'Reports',
-                'accent' => 'bg-sky-200/45',
-                'image' => asset('images/product-intro/financial.png'),
-            ],
-            [
-                'title' => __('home.full_intro_feature_title'),
-                'tag' => 'Feature View',
-                'accent' => 'bg-rose-200/35',
-                'image' => asset('images/product-intro/circleProductTier.png'),
-            ],
-        ];
-
         $flowSteps = [
             [
                 'number' => 1,
@@ -132,8 +93,15 @@
                 'number' => 5,
                 'title' => __('home.full_intro_flow_step_5_title'),
                 'desc' => __('home.full_intro_flow_step_5_desc'),
-                'image' => asset('images/product-intro/financial.png'),
+                'image' => asset('images/product-intro/circleProductTier.png'),
                 'badge' => 'bg-brand-highlight text-brand-dark',
+            ],
+            [
+                'number' => 6,
+                'title' => __('home.full_intro_flow_step_6_title'),
+                'desc' => __('home.full_intro_flow_step_6_desc'),
+                'image' => asset('images/product-intro/financial.png'),
+                'badge' => 'bg-brand-primary text-white',
             ],
         ];
     @endphp

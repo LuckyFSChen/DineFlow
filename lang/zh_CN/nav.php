@@ -19,6 +19,7 @@ return [
     'super_admin'        => '超级管理',
     'account_center'     => '账号中心',
     'profile'            => '个人资料',
+    'order_history'      => '订单记录',
     'logout'             => '登出',
     'currently_logged_in'=> '当前登录',
     'not_activated'      => '未启用',

@@ -144,6 +144,7 @@ Route::middleware(['auth', 'verified', 'role:merchant'])->prefix('merchant')->na
     Route::post('/loyalty/settings', [LoyaltyController::class, 'updateSettings'])->name('loyalty.settings.update');
     Route::post('/loyalty/coupons', [LoyaltyController::class, 'storeCoupon'])->name('loyalty.coupons.store');
     Route::put('/loyalty/coupons/{coupon}', [LoyaltyController::class, 'updateCoupon'])->name('loyalty.coupons.update');
+    Route::delete('/loyalty/coupons/{coupon}', [LoyaltyController::class, 'destroyCoupon'])->name('loyalty.coupons.destroy');
     Route::patch('/loyalty/coupons/{coupon}/toggle', [LoyaltyController::class, 'toggleCoupon'])->name('loyalty.coupons.toggle');
 });
 

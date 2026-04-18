@@ -526,7 +526,85 @@ class ProductManagementController extends Controller
             ]);
         }
 
-        return $decoded;
+        $normalized = [];
+
+        foreach ($decoded as $groupIndex => $group) {
+            if (! is_array($group)) {
+                continue;
+            }
+
+            if (array_key_exists('id', $group)) {
+                throw ValidationException::withMessages([
+                    'option_groups_json' => __('admin.error_option_groups_json_invalid'),
+                ]);
+            }
+
+            $groupName = trim((string) ($group['name'] ?? ''));
+            $groupType = (string) ($group['type'] ?? 'single');
+            $type = $groupType === 'multiple' ? 'multiple' : 'single';
+            $required = (bool) ($group['required'] ?? false);
+            $maxSelect = $type === 'multiple'
+                ? max((int) ($group['max_select'] ?? 1), 1)
+                : 1;
+            $choices = is_array($group['choices'] ?? null) ? $group['choices'] : [];
+
+            $choiceIdCounters = [];
+            $normalizedChoices = [];
+
+            foreach ($choices as $choiceIndex => $choice) {
+                if (! is_array($choice)) {
+                    continue;
+                }
+
+                if (array_key_exists('id', $choice)) {
+                    throw ValidationException::withMessages([
+                        'option_groups_json' => __('admin.error_option_groups_json_invalid'),
+                    ]);
+                }
+
+                $choiceName = trim((string) ($choice['name'] ?? ''));
+                $choicePrice = max((int) ($choice['price'] ?? 0), 0);
+                $choiceBaseId = Str::slug($choiceName !== '' ? $choiceName : 'choice_' . ($choiceIndex + 1), '_');
+                if ($choiceBaseId === '') {
+                    $choiceBaseId = 'choice_' . ($choiceIndex + 1);
+                }
+
+                $choiceCount = ($choiceIdCounters[$choiceBaseId] ?? 0) + 1;
+                $choiceIdCounters[$choiceBaseId] = $choiceCount;
+                $choiceId = $choiceCount > 1
+                    ? $choiceBaseId . '_' . $choiceCount
+                    : $choiceBaseId;
+
+                $normalizedChoices[] = [
+                    'id' => $choiceId,
+                    'name' => $choiceName,
+                    'price' => $choicePrice,
+                ];
+            }
+
+            $groupBaseId = Str::slug($groupName !== '' ? $groupName : 'group_' . ($groupIndex + 1), '_');
+            if ($groupBaseId === '') {
+                $groupBaseId = 'group_' . ($groupIndex + 1);
+            }
+
+            $groupId = $groupBaseId;
+            $suffix = 2;
+            while (collect($normalized)->contains(fn (array $item): bool => ($item['id'] ?? null) === $groupId)) {
+                $groupId = $groupBaseId . '_' . $suffix;
+                $suffix++;
+            }
+
+            $normalized[] = [
+                'id' => $groupId,
+                'name' => $groupName,
+                'type' => $type,
+                'required' => $required,
+                'max_select' => $maxSelect,
+                'choices' => $normalizedChoices,
+            ];
+        }
+
+        return $normalized;
     }
 
     protected function ensureProductBelongsToStore(Store $store, Product $product): void

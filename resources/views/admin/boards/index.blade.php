@@ -492,6 +492,10 @@ function allBoards() {
                 }
 
                 const merged = await res.json();
+                if (!Array.isArray(merged)) {
+                    this.showError(this.i18n.error_update_failed);
+                    return;
+                }
 
                 const oldIds = new Set(this.orders.map((o) => `${o.board}-${o.id}`));
                 const hasNew = merged.some((o) => !oldIds.has(`${o.board}-${o.id}`));

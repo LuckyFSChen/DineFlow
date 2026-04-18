@@ -71,8 +71,8 @@
             align-items: center;
             justify-content: flex-end;
             padding-right: 0.75rem;
-            background: linear-gradient(135deg, rgba(251, 113, 133, 0.52), rgba(244, 114, 182, 0.62));
-            border-left: 1px solid rgba(244, 114, 182, 0.24);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.58), rgba(220, 38, 38, 0.68));
+            border-left: 1px solid rgba(220, 38, 38, 0.3);
             color: white;
             opacity: clamp(0, var(--swipe-progress), 1);
             transition: opacity 140ms ease;
@@ -547,7 +547,34 @@
                     item.classList.remove('is-swiping');
                     shell?.style.setProperty('--swipe-progress', '1');
                     item.classList.add('is-removing');
-                    window.setTimeout(() => removeForm.submit(), 180);
+
+                    const requestDelete = async () => {
+                        const formData = new FormData(removeForm);
+                        const csrf = removeForm.querySelector('input[name="_token"]')?.value || '';
+
+                        const response = await fetch(removeForm.action, {
+                            method: 'POST',
+                            body: formData,
+                            credentials: 'same-origin',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
+                            },
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`Remove request failed: ${response.status}`);
+                        }
+                    };
+
+                    window.setTimeout(() => {
+                        shell?.remove();
+
+                        requestDelete().catch(() => {
+                            window.location.reload();
+                        });
+                    }, 180);
                 };
 
                 item.addEventListener('pointerdown', (event) => {

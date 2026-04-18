@@ -445,6 +445,7 @@ return [
     'error_invalid_item_status'              => '品项状态参数无效。',
     'error_order_item_not_found'             => '找不到该订单品项。',
     'error_only_pending_can_cancel'          => '仅待处理订单可取消。',
+    'error_only_unpaid_completed_can_mark_paid' => '仅已完成且未收款的订单可结单。',
     'error_cancel_reason_required'           => '请至少提供一个取消原因。',
     'error_table_no_reserved'                => '桌号不可使用「外带」，请输入内用桌号。',
     'error_table_no_required'                => '请输入桌号。',

@@ -115,14 +115,14 @@
                     <div class="overflow-hidden rounded-3xl border border-brand-soft/60 bg-white shadow-[0_18px_44px_rgba(90,30,14,0.1)]">
                         <div class="border-b border-brand-soft/60 px-6 py-5">
                             <h2 class="text-xl font-bold text-brand-dark">{{ __('customer.cart_contents') }}</h2>
-                            <p class="mt-1 text-sm text-brand-primary/70">
+                            <p class="mt-1 text-sm text-brand-primary/70" data-cart-line-count>
                                 {{ __('customer.total_products_prefix') }} {{ count($cart) }} {{ __('customer.total_products_suffix') }}
                             </p>
                         </div>
 
-                        <div class="divide-y divide-brand-soft/60">
+                        <div class="divide-y divide-brand-soft/60" data-cart-items>
                             @foreach($cart as $item)
-                                <div class="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+                                <div class="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between" data-cart-item data-line-key="{{ $item['line_key'] }}">
                                     <div class="min-w-0">
                                         <h3 class="truncate text-lg font-semibold text-brand-dark">
                                             {{ $item['product_name'] }}
@@ -137,14 +137,14 @@
                                             <span>{{ __('customer.unit_price') }} {{ $currencySymbol }} {{ number_format($item['price']) }}</span>
                                             <span>{{ __('customer.qty') }}</span>
                                             <div class="inline-flex items-center gap-2 rounded-xl border border-brand-soft/70 bg-brand-soft/20 px-2 py-1">
-                                                <form method="POST" action="{{ route($cartUpdateRouteName, array_merge($routeParams, ['lineKey' => $item['line_key']])) }}">
+                                                <form method="POST" action="{{ route($cartUpdateRouteName, array_merge($routeParams, ['lineKey' => $item['line_key']])) }}" data-cart-update-form>
                                                     @csrf
                                                     @method('PATCH')
                                                     <input type="hidden" name="action" value="decrease">
                                                     <button type="submit" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-brand-soft bg-white text-sm font-bold text-brand-primary transition hover:bg-brand-soft/30" aria-label="{{ __('customer.decrease_qty') }}">−</button>
                                                 </form>
-                                                <span class="min-w-6 text-center text-sm font-semibold text-brand-dark">{{ $item['qty'] }}</span>
-                                                <form method="POST" action="{{ route($cartUpdateRouteName, array_merge($routeParams, ['lineKey' => $item['line_key']])) }}">
+                                                <span class="min-w-6 text-center text-sm font-semibold text-brand-dark" data-cart-item-qty>{{ $item['qty'] }}</span>
+                                                <form method="POST" action="{{ route($cartUpdateRouteName, array_merge($routeParams, ['lineKey' => $item['line_key']])) }}" data-cart-update-form>
                                                     @csrf
                                                     @method('PATCH')
                                                     <input type="hidden" name="action" value="increase">
@@ -155,10 +155,10 @@
                                     </div>
 
                                     <div class="flex items-center gap-3 sm:flex-col sm:items-end">
-                                        <div class="text-lg font-bold text-brand-dark">
+                                        <div class="text-lg font-bold text-brand-dark" data-cart-item-subtotal>
                                             {{ $currencySymbol }} {{ number_format($item['subtotal']) }}
                                         </div>
-                                        <form method="POST" action="{{ route($cartDestroyRouteName, array_merge($routeParams, ['lineKey' => $item['line_key']])) }}">
+                                        <form method="POST" action="{{ route($cartDestroyRouteName, array_merge($routeParams, ['lineKey' => $item['line_key']])) }}" data-cart-remove-form>
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="inline-flex items-center rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">{{ __('customer.remove_item') }}</button>
@@ -184,7 +184,7 @@
                             <div class="mt-5 space-y-4 text-sm">
                                 <div class="flex items-center justify-between text-brand-primary/80">
                                     <span>{{ __('customer.subtotal') }}</span>
-                                    <span>{{ $currencySymbol }} {{ number_format($total) }}</span>
+                                    <span data-cart-total>{{ $currencySymbol }} {{ number_format($total) }}</span>
                                 </div>
 
                                 <div class="flex items-center justify-between text-brand-primary/70">
@@ -195,7 +195,7 @@
                                 <div class="border-t border-brand-soft/60 pt-4">
                                     <div class="flex items-center justify-between text-lg font-bold text-brand-dark">
                                         <span>預估應付</span>
-                                        <span>{{ $currencySymbol }} {{ number_format($total) }}</span>
+                                        <span data-cart-total>{{ $currencySymbol }} {{ number_format($total) }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -357,6 +357,91 @@
 <script>
 (() => {
     const isDineIn = @json($isDineIn);
+    const cartItemsContainer = document.querySelector('[data-cart-items]');
+    const cartLineCount = document.querySelector('[data-cart-line-count]');
+    const cartTotalEls = document.querySelectorAll('[data-cart-total]');
+
+    const sendCartRequest = async (form) => {
+        const formData = new FormData(form);
+        const csrf = form.querySelector('input[name="_token"]')?.value || '';
+        const response = await window.fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Cart request failed: ${response.status}`);
+        }
+
+        return response.json();
+    };
+
+    const syncCartPage = (payload) => {
+        const cart = payload?.cart;
+        if (!cart || !cartItemsContainer || !cartLineCount) {
+            return;
+        }
+
+        if (cart.count <= 0) {
+            window.location.reload();
+            return;
+        }
+
+        cartLineCount.textContent = `{{ __('customer.total_products_prefix') }} ${cart.line_count} {{ __('customer.total_products_suffix') }}`;
+        cartTotalEls.forEach((element) => {
+            element.textContent = cart.total_display;
+        });
+
+        const itemMap = new Map((cart.items || []).map((item) => [item.line_key, item]));
+        cartItemsContainer.querySelectorAll('[data-cart-item]').forEach((row) => {
+            const lineKey = row.dataset.lineKey || '';
+            const item = itemMap.get(lineKey);
+
+            if (!item) {
+                row.remove();
+                return;
+            }
+
+            const qty = row.querySelector('[data-cart-item-qty]');
+            const subtotal = row.querySelector('[data-cart-item-subtotal]');
+            if (qty) {
+                qty.textContent = item.qty;
+            }
+            if (subtotal) {
+                subtotal.textContent = item.subtotal_display;
+            }
+        });
+    };
+
+    if (!isDineIn) {
+        document.querySelectorAll('[data-cart-update-form], [data-cart-remove-form]').forEach((form) => {
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                if (form.dataset.submitting === '1') {
+                    return;
+                }
+
+                form.dataset.submitting = '1';
+
+                try {
+                    const payload = await sendCartRequest(form);
+                    syncCartPage(payload);
+                } catch (_error) {
+                    form.submit();
+                } finally {
+                    form.dataset.submitting = '0';
+                }
+            });
+        });
+    }
+
     if (isDineIn) {
         return;
     }

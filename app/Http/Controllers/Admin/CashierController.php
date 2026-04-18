@@ -109,7 +109,17 @@ class CashierController extends Controller
         }
 
         if ($status === 'paid') {
-            // Collect payment for a completed (postpay) order
+            $isCompleted = in_array((string) $order->status, self::COMPLETED_STATUSES, true);
+            $isUnpaid = ! $order->payment_status || $order->payment_status === 'unpaid';
+
+            if (! $isCompleted || ! $isUnpaid) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => __('admin.error_only_unpaid_completed_can_mark_paid'),
+                ], 422);
+            }
+
+            // Collect payment for a completed unpaid order
             $order->update(['payment_status' => 'paid']);
 
             return response()->json([

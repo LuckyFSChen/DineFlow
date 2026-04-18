@@ -180,7 +180,6 @@
         groupLabel: @json(__('admin.products_group_label')),
         removeGroup: @json(__('admin.products_group_delete')),
         groupName: @json(__('admin.products_group_name')),
-        groupId: @json(__('admin.products_group_id')),
         groupType: @json(__('admin.products_group_type')),
         groupTypeSingle: @json(__('admin.products_group_type_single')),
         groupTypeMultiple: @json(__('admin.products_group_type_multiple')),
@@ -189,11 +188,9 @@
         choicesList: @json(__('admin.products_group_choices_list')),
         addChoice: @json(__('admin.products_group_add_choice')),
         choiceName: @json(__('admin.products_choice_name')),
-        choiceId: @json(__('admin.products_choice_id')),
         choicePrice: @json(__('admin.products_choice_price')),
         delete: @json(__('admin.products_btn_delete')),
         groupExampleName: @json(__('admin.products_group_example_name')),
-        groupExampleId: @json(__('admin.products_group_example_id')),
         confirmClearAllOptions: @json(__('admin.products_confirm_clear_all_options')),
         confirmApplyTemplate: @json(__('admin.products_confirm_apply_template')),
         templateSteakDoneness: @json(__('admin.products_template_steak_doneness')),
@@ -228,12 +225,6 @@
         return;
     }
 
-    const uid = () => Math.random().toString(36).slice(2, 10);
-    const toId = (value) => String(value || '')
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, '_')
-        .replace(/[^a-z0-9_\-]/g, '');
     const esc = (value) => String(value ?? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -242,7 +233,6 @@
         .replace(/'/g, '&#39;');
 
     const createGroup = () => ({
-        id: '',
         name: '',
         type: 'single',
         required: false,
@@ -251,7 +241,6 @@
     });
 
     const createChoice = () => ({
-        id: '',
         name: '',
         price: 0,
     });
@@ -259,61 +248,56 @@
     const optionTemplates = {
         steak: [
             {
-                id: 'doneness',
                 name: i18n.templateSteakDoneness,
                 type: 'single',
                 required: true,
                 choices: [
-                    { id: 'rare', name: i18n.templateSteakRare, price: 0 },
-                    { id: 'medium', name: i18n.templateSteakMedium, price: 0 },
-                    { id: 'well', name: i18n.templateSteakWell, price: 0 },
+                    { name: i18n.templateSteakRare, price: 0 },
+                    { name: i18n.templateSteakMedium, price: 0 },
+                    { name: i18n.templateSteakWell, price: 0 },
                 ],
             },
             {
-                id: 'extras',
                 name: i18n.templateSteakExtras,
                 type: 'multiple',
                 required: false,
                 max_select: 3,
                 choices: [
-                    { id: 'egg', name: i18n.templateSteakEgg, price: 20 },
-                    { id: 'cheese', name: i18n.templateSteakCheese, price: 25 },
-                    { id: 'sauce', name: i18n.templateSteakSauce, price: 15 },
+                    { name: i18n.templateSteakEgg, price: 20 },
+                    { name: i18n.templateSteakCheese, price: 25 },
+                    { name: i18n.templateSteakSauce, price: 15 },
                 ],
             },
         ],
         combo: [
             {
-                id: 'main_choice',
                 name: i18n.templateComboMain,
                 type: 'single',
                 required: true,
                 choices: [
-                    { id: 'chicken', name: i18n.templateComboChicken, price: 0 },
-                    { id: 'pork', name: i18n.templateComboPork, price: 0 },
-                    { id: 'fish', name: i18n.templateComboFish, price: 20 },
+                    { name: i18n.templateComboChicken, price: 0 },
+                    { name: i18n.templateComboPork, price: 0 },
+                    { name: i18n.templateComboFish, price: 20 },
                 ],
             },
             {
-                id: 'side_choice',
                 name: i18n.templateComboSide,
                 type: 'single',
                 required: true,
                 choices: [
-                    { id: 'fries', name: i18n.templateComboFries, price: 0 },
-                    { id: 'salad', name: i18n.templateComboSalad, price: 0 },
-                    { id: 'soup', name: i18n.templateComboSoup, price: 0 },
+                    { name: i18n.templateComboFries, price: 0 },
+                    { name: i18n.templateComboSalad, price: 0 },
+                    { name: i18n.templateComboSoup, price: 0 },
                 ],
             },
             {
-                id: 'drink_choice',
                 name: i18n.templateComboDrink,
                 type: 'single',
                 required: true,
                 choices: [
-                    { id: 'black_tea', name: i18n.templateComboBlackTea, price: 0 },
-                    { id: 'green_tea', name: i18n.templateComboGreenTea, price: 0 },
-                    { id: 'milk_tea', name: i18n.templateComboMilkTea, price: 10 },
+                    { name: i18n.templateComboBlackTea, price: 0 },
+                    { name: i18n.templateComboGreenTea, price: 0 },
+                    { name: i18n.templateComboMilkTea, price: 10 },
                 ],
             },
         ],
@@ -349,7 +333,6 @@
                 const choices = Array.isArray(group.choices) ? group.choices : [];
 
                 return {
-                    id: String(group.id || '').trim(),
                     name: String(group.name || '').trim(),
                     type,
                     required: !!group.required,
@@ -357,7 +340,6 @@
                     choices: choices
                         .filter((choice) => choice && typeof choice === 'object')
                         .map((choice) => ({
-                            id: String(choice.id || '').trim(),
                             name: String(choice.name || '').trim(),
                             price: Math.max(Number(choice.price || 0), 0),
                         })),
@@ -393,10 +375,6 @@
             <div>
                 <label class="mb-1 block text-xs font-semibold text-slate-600">${i18n.groupName}</label>
                 <input type="text" value="${esc(group.name || '')}" data-group-field="name" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200" placeholder="${esc(i18n.groupExampleName)}">
-            </div>
-            <div>
-                <label class="mb-1 block text-xs font-semibold text-slate-600">${i18n.groupId}</label>
-                <input type="text" value="${esc(group.id || '')}" data-group-field="id" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200" placeholder="${esc(i18n.groupExampleId)}">
             </div>
             <div>
                 <label class="mb-1 block text-xs font-semibold text-slate-600">${i18n.groupType}</label>
@@ -440,12 +418,11 @@
 
         (Array.isArray(group.choices) ? group.choices : []).forEach((choice, choiceIndex) => {
             const choiceRow = document.createElement('div');
-            choiceRow.className = 'grid gap-2 rounded-xl border border-slate-200 bg-white p-2 md:grid-cols-[auto,1fr,1fr,140px,auto]';
+            choiceRow.className = 'grid gap-2 rounded-xl border border-slate-200 bg-white p-2 md:grid-cols-[auto,1fr,140px,auto]';
             choiceRow.dataset.choiceIndex = String(choiceIndex);
             choiceRow.innerHTML = `
                 <button type="button" draggable="true" data-drag-choice-handle class="rounded-lg border border-slate-300 bg-slate-50 px-2 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100" title="${esc(i18n.dragChoiceTitle)}">${i18n.dragShort}</button>
                 <input type="text" value="${esc(choice.name || '')}" data-choice-field="name" class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200" placeholder="${esc(i18n.choiceName)}">
-                <input type="text" value="${esc(choice.id || '')}" data-choice-field="id" class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200" placeholder="${esc(i18n.choiceId)}">
                 <input type="number" min="0" value="${Number(choice.price || 0)}" data-choice-field="price" class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200" placeholder="${esc(i18n.choicePrice)}">
                 <button type="button" data-remove-choice class="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100">${i18n.delete}</button>
             `;
@@ -654,10 +631,6 @@
                 groups[groupIndex][groupField] = event.target.value;
             }
 
-            if (groupField === 'name' && !groups[groupIndex].id) {
-                groups[groupIndex].id = toId(groups[groupIndex].name || uid());
-            }
-
             if (groupField === 'type' && event.target.value === 'single') {
                 groups[groupIndex].max_select = 1;
             }
@@ -685,9 +658,6 @@
             groups[groupIndex].choices[choiceIndex][choiceField] = Math.max(Number(event.target.value || 0), 0);
         } else {
             groups[groupIndex].choices[choiceIndex][choiceField] = event.target.value;
-            if (choiceField === 'name' && !groups[groupIndex].choices[choiceIndex].id) {
-                groups[groupIndex].choices[choiceIndex].id = toId(groups[groupIndex].choices[choiceIndex].name || uid());
-            }
         }
 
         sync();

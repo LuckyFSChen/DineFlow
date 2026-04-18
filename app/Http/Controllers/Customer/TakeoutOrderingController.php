@@ -136,6 +136,14 @@ class TakeoutOrderingController extends Controller
         session()->put($cartKey, $cart);
         TakeoutCartSession::persistCurrentSessionCart($request, $store->id, $cart);
 
+        if ($this->shouldReturnJson($request)) {
+            return response()->json($this->buildCartResponse(
+                $store,
+                $cart,
+                __('customer.item_added_to_cart')
+            ));
+        }
+
         return redirect()
             ->route('customer.takeout.menu', ['store' => $store])
             ->with('success', __('customer.item_added_to_cart'));
@@ -207,6 +215,10 @@ class TakeoutOrderingController extends Controller
         session()->put($cartKey, $cart);
         TakeoutCartSession::persistCurrentSessionCart($request, $store->id, $cart);
 
+        if ($this->shouldReturnJson($request)) {
+            return response()->json($this->buildCartResponse($store, $cart));
+        }
+
         return redirect()->back();
     }
 
@@ -221,6 +233,10 @@ class TakeoutOrderingController extends Controller
             unset($cart[$lineKey]);
             session()->put($cartKey, $cart);
             TakeoutCartSession::persistCurrentSessionCart($request, $store->id, $cart);
+        }
+
+        if ($this->shouldReturnJson($request)) {
+            return response()->json($this->buildCartResponse($store, $cart));
         }
 
         return redirect()->back();
@@ -276,48 +292,56 @@ class TakeoutOrderingController extends Controller
             && $request->boolean('create_account_with_phone')
             && ! $phoneAlreadyRegistered;
 
-        $order = DB::transaction(function () use ($store, $validated, $cart, $total, $cartToken, $shouldCreateAccount) {
-            $customerName = $this->normalizeOptionalText($validated['customer_name'] ?? null);
-            $customerEmail = $this->normalizeOptionalText($validated['customer_email'] ?? null);
-            $customerPhone = $this->normalizeOptionalText($validated['customer_phone'] ?? null);
+        try {
+            $order = DB::transaction(function () use ($store, $validated, $cart, $total, $cartToken, $shouldCreateAccount) {
+                $this->assertCartItemsStillAvailable($store, $cart);
 
-            if ($shouldCreateAccount) {
-                $this->customerAccountService->registerOrUpdateFromOrder(
-                    $customerPhone,
-                    $customerName,
-                    $customerEmail
-                );
-            }
+                $customerName = $this->normalizeOptionalText($validated['customer_name'] ?? null);
+                $customerEmail = $this->normalizeOptionalText($validated['customer_email'] ?? null);
+                $customerPhone = $this->normalizeOptionalText($validated['customer_phone'] ?? null);
 
-            $order = Order::create([
-                'store_id' => $store->id,
-                'dining_table_id' => null,
-                'order_type' => 'takeout',
-                'cart_token' => $cartToken,
-                'order_no' => $this->generateOrderNo($store),
-                'status' => 'pending',
-                'payment_status' => 'unpaid',
-                'customer_name' => $customerName,
-                'customer_email' => $customerEmail,
-                'customer_phone' => $customerPhone,
-                'note' => $validated['note'] ?? null,
-                'subtotal' => $total,
-                'total' => $total,
-            ]);
+                if ($shouldCreateAccount) {
+                    $this->customerAccountService->registerOrUpdateFromOrder(
+                        $customerPhone,
+                        $customerName,
+                        $customerEmail
+                    );
+                }
 
-            foreach ($cart as $item) {
-                $order->items()->create([
-                    'product_id' => $item['product_id'],
-                    'product_name' => $item['product_name'],
-                    'price' => $item['price'],
-                    'qty' => $item['qty'],
-                    'subtotal' => $item['subtotal'],
-                    'note' => $this->composeOrderItemNote($item['option_label'] ?? null, $item['item_note'] ?? null),
+                $order = Order::create([
+                    'store_id' => $store->id,
+                    'dining_table_id' => null,
+                    'order_type' => 'takeout',
+                    'cart_token' => $cartToken,
+                    'order_no' => $this->generateOrderNo($store),
+                    'status' => 'pending',
+                    'payment_status' => 'unpaid',
+                    'customer_name' => $customerName,
+                    'customer_email' => $customerEmail,
+                    'customer_phone' => $customerPhone,
+                    'note' => $validated['note'] ?? null,
+                    'subtotal' => $total,
+                    'total' => $total,
                 ]);
-            }
 
-            return $order;
-        });
+                foreach ($cart as $item) {
+                    $order->items()->create([
+                        'product_id' => $item['product_id'],
+                        'product_name' => $item['product_name'],
+                        'price' => $item['price'],
+                        'qty' => $item['qty'],
+                        'subtotal' => $item['subtotal'],
+                        'note' => $this->composeOrderItemNote($item['option_label'] ?? null, $item['item_note'] ?? null),
+                    ]);
+                }
+
+                return $order;
+            });
+        } catch (ValidationException $exception) {
+            return redirect()
+                ->route('customer.takeout.cart.show', ['store' => $store])
+                ->with('error', $exception->validator->errors()->first() ?: __('customer.item_not_available'));
+        }
 
         session()->forget($cartKey);
         session()->forget(TakeoutCartSession::tokenSessionKey($store->id));
@@ -344,6 +368,48 @@ class TakeoutOrderingController extends Controller
             'ok' => true,
             'registered' => $this->customerAccountService->isPhoneRegistered($normalizedPhone),
         ]);
+    }
+
+    protected function assertCartItemsStillAvailable(Store $store, array $cart): void
+    {
+        $productIds = collect($cart)
+            ->pluck('product_id')
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        if ($productIds->isEmpty()) {
+            throw ValidationException::withMessages([
+                'cart' => __('customer.error_items_unavailable', ['items' => __('customer.product_default_name')]),
+            ]);
+        }
+
+        $products = Product::query()
+            ->where('store_id', $store->id)
+            ->whereIn('id', $productIds->all())
+            ->lockForUpdate()
+            ->get(['id', 'name', 'is_active', 'is_sold_out'])
+            ->keyBy('id');
+
+        $unavailableNames = [];
+
+        foreach ($cart as $item) {
+            $productId = (int) ($item['product_id'] ?? 0);
+            $product = $products->get($productId);
+
+            if (! $product || ! $product->is_active || $product->is_sold_out) {
+                $unavailableNames[] = (string) ($item['product_name'] ?? __('customer.product_default_name'));
+            }
+        }
+
+        $unavailableNames = array_values(array_unique(array_filter($unavailableNames)));
+
+        if (! empty($unavailableNames)) {
+            throw ValidationException::withMessages([
+                'cart' => __('customer.error_items_unavailable', ['items' => implode('、', $unavailableNames)]),
+            ]);
+        }
     }
 
     public function clearRememberedCustomerInfo(Store $store)
@@ -594,6 +660,85 @@ class TakeoutOrderingController extends Controller
         $normalized = trim($value);
 
         return $normalized === '' ? null : $normalized;
+    }
+
+    private function shouldReturnJson(Request $request): bool
+    {
+        return $request->expectsJson()
+            || $request->wantsJson()
+            || $request->ajax();
+    }
+
+    private function buildCartResponse(Store $store, array $cart, ?string $message = null): array
+    {
+        $currencySymbol = $this->currencySymbol($store);
+        $items = collect($cart)
+            ->values()
+            ->map(function (array $item) use ($store, $currencySymbol) {
+                $lineKey = (string) ($item['line_key'] ?? '');
+
+                return [
+                    'line_key' => $lineKey,
+                    'product_name' => (string) ($item['product_name'] ?? __('customer.product_default_name')),
+                    'option_label' => $item['option_label'] ?? null,
+                    'item_note' => $item['item_note'] ?? null,
+                    'item_note_display' => ! empty($item['item_note'])
+                        ? __('customer.item_note_prefix') . ' ' . $item['item_note']
+                        : null,
+                    'qty' => (int) ($item['qty'] ?? 0),
+                    'price' => (int) ($item['price'] ?? 0),
+                    'price_display' => $currencySymbol . ' ' . number_format((int) ($item['price'] ?? 0)),
+                    'subtotal' => (int) ($item['subtotal'] ?? 0),
+                    'subtotal_display' => $currencySymbol . ' ' . number_format((int) ($item['subtotal'] ?? 0)),
+                    'update_urls' => [
+                        'increase' => route('customer.takeout.cart.items.update', ['store' => $store, 'lineKey' => $lineKey]),
+                        'decrease' => route('customer.takeout.cart.items.update', ['store' => $store, 'lineKey' => $lineKey]),
+                    ],
+                    'remove_url' => route('customer.takeout.cart.items.destroy', ['store' => $store, 'lineKey' => $lineKey]),
+                ];
+            })
+            ->values();
+
+        $count = (int) $items->sum('qty');
+        $lineCount = $items->count();
+        $total = (int) $items->sum('subtotal');
+
+        return [
+            'ok' => true,
+            'message' => $message,
+            'cart' => [
+                'count' => $count,
+                'line_count' => $lineCount,
+                'total' => $total,
+                'total_display' => $currencySymbol . ' ' . number_format($total),
+                'bar_text' => $count > 0
+                    ? __('customer.cart_bar_total', [
+                        'count' => $count,
+                        'currency' => $currencySymbol,
+                        'total' => number_format($total),
+                    ])
+                    : __('customer.cart_bar_empty'),
+                'view_cart_label' => __('customer.view_cart') . ($count > 0 ? ' (' . $count . ')' : ''),
+                'preview_items' => $items->take(6)->all(),
+                'remaining_preview_count' => max(0, $lineCount - 6),
+                'remaining_preview_text' => $lineCount > 6
+                    ? __('customer.more_items_in_cart', ['count' => $lineCount - 6])
+                    : null,
+                'empty_preview_text' => __('customer.no_products_available'),
+                'cart_url' => route('customer.takeout.cart.show', ['store' => $store]),
+                'items' => $items->all(),
+            ],
+        ];
+    }
+
+    private function currencySymbol(Store $store): string
+    {
+        return match (strtolower((string) ($store->currency ?? 'twd'))) {
+            'vnd' => 'VND',
+            'cny' => 'CNY',
+            'usd' => 'USD',
+            default => 'NT$',
+        };
     }
 
     private function getTakeoutOrderHistorySessionKey(Store $store): string
