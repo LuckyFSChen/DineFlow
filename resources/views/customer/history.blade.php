@@ -88,6 +88,24 @@
                                     <span class="rounded-full bg-white px-2.5 py-1">{{ $historyOrder->payment_status === 'paid' ? __('customer.payment_status_paid') : __('customer.payment_status_unpaid') }}</span>
                                 </div>
 
+                                @if ($historyOrder->items->isNotEmpty())
+                                    <div class="mt-3 rounded-xl border border-orange-100 bg-white/80 px-3 py-2">
+                                        <ul class="list-disc space-y-1 pl-5 text-sm text-gray-700">
+                                            @foreach ($historyOrder->items as $item)
+                                                <li>
+                                                    <span class="font-medium">{{ $item->product_name }}</span>
+                                                    <span class="text-gray-500">x {{ $item->qty }}</span>
+                                                    @if (!empty($item->note))
+                                                        <ul class="list-[circle] pl-5 text-xs text-gray-500">
+                                                            <li>{{ $item->note }}</li>
+                                                        </ul>
+                                                    @endif
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @endif
+
                                 <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="mt-3 inline-flex items-center rounded-xl border border-orange-200 bg-white px-3 py-1.5 text-xs font-semibold text-orange-700 transition hover:bg-orange-100">
                                     {{ __('customer.view_order_detail') }}
                                 </a>

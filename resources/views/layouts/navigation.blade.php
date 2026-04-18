@@ -118,6 +118,12 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-3 sm:-my-px sm:ms-8 sm:flex sm:items-center">
+                    @if(Auth::user()?->isCustomer() && $customerOrderHistoryStoreRoute)
+                        <x-nav-link :href="route('customer.order.history', ['store' => $customerOrderHistoryStoreRoute])" :active="request()->routeIs('customer.order.history')">
+                            {{ __('nav.order_history') }}
+                        </x-nav-link>
+                    @endif
+
                     @if(Auth::user()?->isMerchant())
                         <x-nav-link :href="route('merchant.subscription.index')" :active="request()->routeIs('merchant.subscription.*')">
                             {{ __('nav.subscription') }}
@@ -262,6 +268,12 @@
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
+            @if(Auth::user()?->isCustomer() && $customerOrderHistoryStoreRoute)
+                <x-responsive-nav-link :href="route('customer.order.history', ['store' => $customerOrderHistoryStoreRoute])" :active="request()->routeIs('customer.order.history')">
+                    {{ __('nav.order_history') }}
+                </x-responsive-nav-link>
+            @endif
+
             @if(Auth::user()?->isMerchant())
                 <x-responsive-nav-link :href="route('merchant.subscription.index')" :active="request()->routeIs('merchant.subscription.*')">
                     {{ __('nav.subscription') }}

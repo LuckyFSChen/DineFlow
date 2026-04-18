@@ -120,6 +120,8 @@ return [
     'error_items_unavailable'      => 'Các món sau hiện không còn bán hoặc đã hết hàng: :items. Vui lòng cập nhật giỏ hàng rồi gửi lại.',
     'error_option_payload_invalid' => 'Định dạng dữ liệu tùy chọn không hợp lệ.',
     'coupon_discount'              => 'Giảm giá coupon',
+    'coupon_discount_after_submit' => 'Tự động tính sau khi gửi đơn',
+    'dinein_no_points_or_coupon'   => 'Đơn tại quán không thay đổi điểm và không áp dụng giảm giá coupon',
     'estimated_payable'            => 'Tổng tạm phải trả',
     'estimated_ready_time'         => 'Thời gian dự kiến sẵn sàng',
     'estimated_prep_time_only'     => 'Khoảng :minutes phút',

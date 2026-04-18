@@ -32,6 +32,13 @@
     $backLabel = $isDineIn ? __('customer.back_to_menu') : __('customer.back_to_takeout_menu');
     $badgeLabel = $isDineIn ? __('customer.cart_title') : __('customer.takeout_cart_badge');
     $orderingAvailable = $orderingAvailable ?? true;
+    $oldCouponCode = strtoupper(trim((string) old('coupon_code', '')));
+    $oldAppliedCouponCode = strtoupper(trim((string) old('applied_coupon_code', '')));
+    $oldAppliedCouponSummary = trim((string) old('applied_coupon_summary', ''));
+    $hasOldAppliedCoupon = $oldCouponCode !== ''
+        && $oldAppliedCouponCode !== ''
+        && $oldCouponCode === $oldAppliedCouponCode
+        && $oldAppliedCouponSummary !== '';
 @endphp
 <div class="min-h-screen bg-brand-soft/20">
     <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -188,13 +195,17 @@
                                 </div>
 
                                 <div class="flex items-center justify-between text-brand-primary/70">
-                                    <span>優惠券折扣</span>
-                                    <span>送出訂單後自動計算</span>
+                                    <span>{{ __('customer.coupon_discount') }}</span>
+                                    <span>
+                                        {{ $isDineIn
+                                            ? __('customer.dinein_no_points_or_coupon')
+                                            : __('customer.coupon_discount_after_submit') }}
+                                    </span>
                                 </div>
 
                                 <div class="border-t border-brand-soft/60 pt-4">
                                     <div class="flex items-center justify-between text-lg font-bold text-brand-dark">
-                                        <span>預估應付</span>
+                                        <span>{{ __('customer.estimated_payable') }}</span>
                                         <span data-cart-total>{{ $currencySymbol }} {{ number_format($total) }}</span>
                                     </div>
                                 </div>
@@ -210,6 +221,7 @@
                                   @unless($isDineIn)
                                       data-customer-checkout-form
                                       data-phone-check-url="{{ route('customer.takeout.phone.registered', $routeParams) }}"
+                                      data-coupon-check-url="{{ route('customer.takeout.coupon.check', $routeParams) }}"
                                   @endunless>
                                 @csrf
                                 @unless($isDineIn)
@@ -260,15 +272,39 @@
 
                                 <div>
                                     <label for="coupon_code" class="mb-2 block text-sm font-medium text-brand-dark">
-                                        優惠券代碼
+                                        優惠代碼
                                     </label>
-                                    <input id="coupon_code"
-                                           type="text"
-                                           name="coupon_code"
-                                         value="{{ old('coupon_code') }}"
-                                           placeholder="例如：WELCOME100"
-                                           class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm uppercase text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">
-                                    <p class="mt-1 text-xs text-brand-primary/70">若為點數券，請先填寫手機或 Email 以辨識會員。</p>
+                                    <div class="flex items-center gap-2">
+                                        <input id="coupon_code"
+                                               type="text"
+                                               name="coupon_code"
+                                               value="{{ $oldCouponCode }}"
+                                               placeholder="例如 WELCOME100"
+                                               class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm uppercase text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft"
+                                               data-coupon-input>
+                                        <button type="button"
+                                                class="inline-flex shrink-0 items-center rounded-2xl border border-brand-primary px-4 py-3 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary hover:text-white"
+                                                data-coupon-apply-button>
+                                            套用
+                                        </button>
+                                    </div>
+                                    <input type="hidden"
+                                           name="applied_coupon_code"
+                                           value="{{ $hasOldAppliedCoupon ? $oldAppliedCouponCode : '' }}"
+                                           data-applied-coupon-code>
+                                    <input type="hidden"
+                                           name="applied_coupon_summary"
+                                           value="{{ $hasOldAppliedCoupon ? $oldAppliedCouponSummary : '' }}"
+                                           data-applied-coupon-summary>
+                                    <p class="mt-1 text-xs text-brand-primary/70">輸入優惠碼後按「套用」，變更任何字元都需要重新套用。</p>
+                                    <p class="mt-2 text-xs text-rose-600 {{ $errors->has('coupon_code') ? '' : 'hidden' }}" data-coupon-error>
+                                        {{ $errors->first('coupon_code') }}
+                                    </p>
+                                    <div class="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700 {{ $hasOldAppliedCoupon ? '' : 'hidden' }}"
+                                         data-coupon-applied-box>
+                                        已套用優惠代碼 <span class="font-semibold" data-coupon-applied-code>{{ $hasOldAppliedCoupon ? $oldAppliedCouponCode : '' }}</span>
+                                        ：<span data-coupon-applied-summary>{{ $hasOldAppliedCoupon ? $oldAppliedCouponSummary : '' }}</span>
+                                    </div>
                                 </div>
 
                                 <div>
@@ -481,12 +517,170 @@
     const createAccountInput = checkoutForm?.querySelector('[data-create-account-with-phone]');
     const isGuest = @json($isGuest);
 
-    if (!checkoutForm || !createAccountInput || !isGuest) {
+    if (!checkoutForm) {
         return;
     }
 
-    const promptMessage = @json(__('customer.guest_register_points_prompt'));
     const phoneCheckUrl = checkoutForm.dataset.phoneCheckUrl || '';
+    const couponCheckUrl = checkoutForm.dataset.couponCheckUrl || '';
+    const couponInput = checkoutForm.querySelector('[data-coupon-input]');
+    const couponApplyButton = checkoutForm.querySelector('[data-coupon-apply-button]');
+    const couponError = checkoutForm.querySelector('[data-coupon-error]');
+    const couponAppliedBox = checkoutForm.querySelector('[data-coupon-applied-box]');
+    const couponAppliedCode = checkoutForm.querySelector('[data-coupon-applied-code]');
+    const couponAppliedSummary = checkoutForm.querySelector('[data-coupon-applied-summary]');
+    const appliedCouponCodeInput = checkoutForm.querySelector('[data-applied-coupon-code]');
+    const appliedCouponSummaryInput = checkoutForm.querySelector('[data-applied-coupon-summary]');
+    const promptMessage = @json(__('customer.guest_register_points_prompt'));
+
+    const normalizeCouponCode = (value) => String(value || '').trim().toUpperCase();
+
+    const setCouponError = (message) => {
+        if (!couponError) {
+            return;
+        }
+
+        const text = String(message || '').trim();
+        couponError.textContent = text;
+        couponError.classList.toggle('hidden', text === '');
+    };
+
+    const clearAppliedCoupon = () => {
+        if (appliedCouponCodeInput) {
+            appliedCouponCodeInput.value = '';
+        }
+
+        if (appliedCouponSummaryInput) {
+            appliedCouponSummaryInput.value = '';
+        }
+
+        if (couponAppliedCode) {
+            couponAppliedCode.textContent = '';
+        }
+
+        if (couponAppliedSummary) {
+            couponAppliedSummary.textContent = '';
+        }
+
+        if (couponAppliedBox) {
+            couponAppliedBox.classList.add('hidden');
+        }
+    };
+
+    const renderAppliedCoupon = (code, summary) => {
+        if (appliedCouponCodeInput) {
+            appliedCouponCodeInput.value = code;
+        }
+
+        if (appliedCouponSummaryInput) {
+            appliedCouponSummaryInput.value = summary;
+        }
+
+        if (couponAppliedCode) {
+            couponAppliedCode.textContent = code;
+        }
+
+        if (couponAppliedSummary) {
+            couponAppliedSummary.textContent = summary;
+        }
+
+        if (couponAppliedBox) {
+            couponAppliedBox.classList.remove('hidden');
+        }
+    };
+
+    const validateCouponBeforeSubmit = () => {
+        if (!couponInput) {
+            return true;
+        }
+
+        const currentCode = normalizeCouponCode(couponInput.value);
+        if (currentCode === '') {
+            return true;
+        }
+
+        const appliedCode = normalizeCouponCode(appliedCouponCodeInput?.value);
+        if (appliedCode === currentCode) {
+            return true;
+        }
+
+        setCouponError('請輸入正確優惠代碼');
+        couponInput.focus();
+
+        return false;
+    };
+
+    if (couponInput) {
+        couponInput.addEventListener('input', () => {
+            couponInput.value = normalizeCouponCode(couponInput.value);
+            clearAppliedCoupon();
+            setCouponError('');
+        });
+    }
+
+    if (couponInput && couponApplyButton) {
+        couponApplyButton.addEventListener('click', async () => {
+            if (couponApplyButton.dataset.submitting === '1') {
+                return;
+            }
+
+            const code = normalizeCouponCode(couponInput.value);
+            if (code === '') {
+                clearAppliedCoupon();
+                setCouponError('請先輸入優惠代碼');
+                couponInput.focus();
+                return;
+            }
+
+            if (!couponCheckUrl) {
+                setCouponError('目前無法驗證優惠代碼，請稍後再試');
+                return;
+            }
+
+            couponApplyButton.dataset.submitting = '1';
+            setCouponError('');
+
+            try {
+                const endpoint = new URL(couponCheckUrl, window.location.origin);
+                endpoint.searchParams.set('coupon_code', code);
+
+                const customerEmail = checkoutForm.querySelector('input[name="customer_email"]');
+                const customerPhone = checkoutForm.querySelector('input[name="customer_phone"]');
+                if (customerEmail?.value) {
+                    endpoint.searchParams.set('customer_email', customerEmail.value);
+                }
+
+                if (customerPhone?.value) {
+                    endpoint.searchParams.set('customer_phone', customerPhone.value);
+                }
+
+                const response = await window.fetch(endpoint.toString(), {
+                    method: 'GET',
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    credentials: 'same-origin',
+                });
+
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok || !payload?.ok) {
+                    clearAppliedCoupon();
+                    setCouponError(payload?.error || '請輸入正確優惠代碼');
+                    return;
+                }
+
+                const summary = String(payload?.coupon?.summary || '').trim();
+                renderAppliedCoupon(code, summary);
+                setCouponError('');
+            } catch (_error) {
+                clearAppliedCoupon();
+                setCouponError('目前無法驗證優惠代碼，請稍後再試');
+            } finally {
+                couponApplyButton.dataset.submitting = '0';
+            }
+        });
+    }
 
     checkoutForm.addEventListener('submit', async (event) => {
         if (checkoutForm.dataset.submitting === '1') {
@@ -494,6 +688,16 @@
         }
 
         event.preventDefault();
+
+        if (!validateCouponBeforeSubmit()) {
+            return;
+        }
+
+        if (!isGuest || !createAccountInput) {
+            checkoutForm.dataset.submitting = '1';
+            checkoutForm.submit();
+            return;
+        }
 
         const digits = String(input.value || '').replace(/\D/g, '');
         if (!digits) {

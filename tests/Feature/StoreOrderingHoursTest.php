@@ -161,4 +161,81 @@ class StoreOrderingHoursTest extends TestCase
         $this->assertNull($order->customer_email);
         $this->assertNull($order->customer_phone);
     }
+
+    public function test_dinein_checkout_appends_to_completed_unpaid_order_for_same_table(): void
+    {
+        $store = Store::create([
+            'name' => 'Postpay Merge Store',
+            'slug' => 'postpay-merge-store',
+            'is_active' => true,
+            'checkout_timing' => 'postpay',
+            'opening_time' => '00:00',
+            'closing_time' => '23:59',
+        ]);
+
+        $table = DiningTable::create([
+            'store_id' => $store->id,
+            'table_no' => 'B2',
+            'qr_token' => 'token-b2',
+            'status' => 'available',
+        ]);
+
+        $category = Category::create([
+            'store_id' => $store->id,
+            'name' => 'Combo',
+            'sort' => 1,
+            'is_active' => true,
+        ]);
+
+        $product = Product::create([
+            'store_id' => $store->id,
+            'category_id' => $category->id,
+            'name' => 'Set Meal',
+            'price' => 150,
+            'is_active' => true,
+            'is_sold_out' => false,
+        ]);
+
+        $existingOrder = Order::create([
+            'store_id' => $store->id,
+            'dining_table_id' => $table->id,
+            'order_type' => 'dine_in',
+            'order_no' => 'MERGE-001',
+            'status' => 'completed',
+            'payment_status' => 'unpaid',
+            'subtotal' => 0,
+            'total' => 0,
+        ]);
+
+        $this->post(route('customer.dinein.cart.items.store', [
+            'store' => $store->slug,
+            'table' => $table->qr_token,
+        ]), [
+            'product_id' => $product->id,
+            'qty' => 1,
+        ])->assertStatus(302);
+
+        $response = $this->post(route('customer.dinein.cart.checkout', [
+            'store' => $store->slug,
+            'table' => $table->qr_token,
+        ]), []);
+
+        $response->assertStatus(302);
+        $response->assertRedirect(route('customer.order.success', [
+            'store' => $store->slug,
+            'order' => $existingOrder->uuid,
+        ]));
+
+        $this->assertDatabaseCount('orders', 1);
+        $this->assertDatabaseHas('order_items', [
+            'order_id' => $existingOrder->id,
+            'product_id' => $product->id,
+            'qty' => 1,
+            'subtotal' => 150,
+        ]);
+
+        $existingOrder->refresh();
+        $this->assertSame(150, (int) $existingOrder->subtotal);
+        $this->assertSame(150, (int) $existingOrder->total);
+    }
 }

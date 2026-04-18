@@ -11,6 +11,10 @@ class DineInMenuController extends Controller
 {
     private const ORDER_HISTORY_SESSION_PREFIX = 'dinein_order_history_';
 
+    private const CANCELLED_STATUSES = ['cancel', 'cancelled', 'canceled'];
+
+    private const COMPLETED_STATUSES = ['complete', 'completed', 'ready', 'ready_for_pickup'];
+
     protected function getDineInCartSessionKey(Store $store, DiningTable $table): string
     {
         return 'dinein_cart.' . $store->id . '.' . $table->id;
@@ -54,6 +58,9 @@ class DineInMenuController extends Controller
         $cartCount = collect($cart)->sum('qty');
         $cartTotal = collect($cart)->sum('subtotal');
         $cartPreviewItems = collect($cart)->values();
+        $products = $categories->mapWithKeys(function ($category) {
+            return [$category->id => $category->products];
+        });
         $history = session()->get($this->getDineInOrderHistorySessionKey($store, $table), []);
         $orderHistory = collect();
 
@@ -74,6 +81,17 @@ class DineInMenuController extends Controller
                     ->where('store_id', $store->id)
                     ->where('dining_table_id', $table->id)
                     ->whereIn('uuid', $uuids)
+                    ->whereNotIn('status', self::CANCELLED_STATUSES)
+                    ->where(function ($query) use ($store) {
+                        if ($store->isPrepayCheckout()) {
+                            $query->whereNotIn('status', self::COMPLETED_STATUSES);
+
+                            return;
+                        }
+
+                        $query->where('payment_status', 'unpaid')
+                            ->orWhereNull('payment_status');
+                    })
                     ->orderByDesc('created_at')
                     ->get();
 
@@ -85,17 +103,16 @@ class DineInMenuController extends Controller
             }
         }
 
-        return view('customer.menu.mobile', compact(
+        return view('customer.dine-in.menu-mobile', compact(
             'store',
             'table',
             'categories',
+            'products',
             'orderingAvailable',
             'cartCount',
             'cartTotal',
             'cartPreviewItems',
             'orderHistory'
-        ) + [
-            'mode' => 'dine_in',
-        ]);
+        ));
     }
 }

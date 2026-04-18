@@ -120,6 +120,8 @@ return [
     'error_items_unavailable'      => 'These items are no longer available or sold out: :items. Please update your cart and submit again.',
     'error_option_payload_invalid' => 'Invalid option data format.',
     'coupon_discount'              => 'Coupon Discount',
+    'coupon_discount_after_submit' => 'Calculated automatically after submitting the order',
+    'dinein_no_points_or_coupon'   => 'Dine-in orders do not change points and do not apply coupon discounts',
     'estimated_payable'            => 'Estimated Amount Due',
     'estimated_ready_time'         => 'Estimated Ready Time',
     'estimated_prep_time_only'     => 'About :minutes minutes',

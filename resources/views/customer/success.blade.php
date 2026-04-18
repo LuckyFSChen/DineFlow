@@ -66,10 +66,12 @@
                         <p class="mt-1 font-semibold text-gray-900">{{ $order->store->name }}</p>
                     </div>
 
-                    <div class="rounded-2xl bg-orange-50 px-4 py-4">
-                        <p class="text-sm text-gray-500">{{ __('customer.table_no') }}</p>
-                        <p class="mt-1 font-semibold text-gray-900">{{ $isTakeout ? __('customer.takeout_short') : ($order->table->table_no ?? '-') }}</p>
-                    </div>
+                    @unless($isTakeout)
+                        <div class="rounded-2xl bg-orange-50 px-4 py-4">
+                            <p class="text-sm text-gray-500">{{ __('customer.table_no') }}</p>
+                            <p class="mt-1 font-semibold text-gray-900">{{ $order->table->table_no ?? '-' }}</p>
+                        </div>
+                    @endunless
 
                     <div class="rounded-2xl bg-orange-50 px-4 py-4">
                         <p class="text-sm text-gray-500">{{ __('customer.order_status') }}</p>

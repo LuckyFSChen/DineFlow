@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Models\Coupon;
+use App\Models\Member;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\CustomerAccountService;
+use App\Services\LoyaltyService;
 use App\Support\TakeoutCartSession;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -19,7 +23,10 @@ class TakeoutOrderingController extends Controller
     private const ORDER_HISTORY_SESSION_PREFIX = 'takeout_order_history_';
     private const ORDER_HISTORY_LIMIT = 8;
 
-    public function __construct(private readonly CustomerAccountService $customerAccountService)
+    public function __construct(
+        private readonly CustomerAccountService $customerAccountService,
+        private readonly LoyaltyService $loyaltyService
+    )
     {
     }
 
@@ -284,7 +291,7 @@ class TakeoutOrderingController extends Controller
                 ->with('error', __('customer.error_cart_empty'));
         }
 
-        $total = collect($cart)->sum('subtotal');
+        $total = (int) collect($cart)->sum('subtotal');
         $cartToken = $this->getTakeoutCartToken($store);
         $customerPhone = $this->normalizeOptionalText($validated['customer_phone'] ?? null);
         $phoneAlreadyRegistered = $this->customerAccountService->isPhoneRegistered($customerPhone);
@@ -299,6 +306,7 @@ class TakeoutOrderingController extends Controller
                 $customerName = $this->normalizeOptionalText($validated['customer_name'] ?? null);
                 $customerEmail = $this->normalizeOptionalText($validated['customer_email'] ?? null);
                 $customerPhone = $this->normalizeOptionalText($validated['customer_phone'] ?? null);
+                $couponCode = $this->normalizeCouponCode($validated['coupon_code'] ?? null);
 
                 if ($shouldCreateAccount) {
                     $this->customerAccountService->registerOrUpdateFromOrder(
@@ -307,6 +315,25 @@ class TakeoutOrderingController extends Controller
                         $customerEmail
                     );
                 }
+
+                $member = $this->findExistingMemberForCoupon($store, $customerEmail, $customerPhone, true);
+                $couponResult = $this->loyaltyService->resolveCoupon($store, $couponCode, $total, $member);
+                $couponError = $couponResult['error'] ?? null;
+
+                if ($couponError !== null) {
+                    $message = $couponError === __('customer.coupon_not_found')
+                        ? '請輸入正確優惠代碼'
+                        : $couponError;
+
+                    throw ValidationException::withMessages([
+                        'coupon_code' => $message,
+                    ]);
+                }
+
+                /** @var Coupon|null $coupon */
+                $coupon = $couponResult['coupon'] ?? null;
+                $couponDiscount = max((int) ($couponResult['discount'] ?? 0), 0);
+                $finalTotal = max($total - $couponDiscount, 0);
 
                 $order = Order::create([
                     'store_id' => $store->id,
@@ -320,8 +347,11 @@ class TakeoutOrderingController extends Controller
                     'customer_email' => $customerEmail,
                     'customer_phone' => $customerPhone,
                     'note' => $validated['note'] ?? null,
+                    'coupon_id' => $coupon?->id,
+                    'coupon_code' => $coupon?->code,
+                    'coupon_discount' => $couponDiscount,
                     'subtotal' => $total,
-                    'total' => $total,
+                    'total' => $finalTotal,
                 ]);
 
                 foreach ($cart as $item) {
@@ -335,12 +365,17 @@ class TakeoutOrderingController extends Controller
                     ]);
                 }
 
+                if ($coupon !== null) {
+                    $coupon->increment('used_count');
+                }
+
                 return $order;
             });
         } catch (ValidationException $exception) {
             return redirect()
                 ->route('customer.takeout.cart.show', ['store' => $store])
-                ->with('error', $exception->validator->errors()->first() ?: __('customer.item_not_available'));
+                ->withErrors($exception->validator)
+                ->withInput();
         }
 
         session()->forget($cartKey);
@@ -367,6 +402,64 @@ class TakeoutOrderingController extends Controller
         return response()->json([
             'ok' => true,
             'registered' => $this->customerAccountService->isPhoneRegistered($normalizedPhone),
+        ]);
+    }
+
+    public function checkCoupon(Request $request, Store $store): JsonResponse
+    {
+        $this->ensureTakeoutEnabled($store);
+
+        $validated = $request->validate([
+            'customer_email' => ['nullable', 'email', 'max:255'],
+            'customer_phone' => ['nullable', 'string', 'max:32'],
+            'coupon_code' => ['nullable', 'string', 'max:64'],
+        ]);
+
+        $cart = session()->get($this->getTakeoutCartSessionKey($store), []);
+        $subtotal = (int) collect($cart)->sum('subtotal');
+        $couponCode = $this->normalizeCouponCode($validated['coupon_code'] ?? null);
+
+        if ($couponCode === null) {
+            return response()->json([
+                'ok' => false,
+                'error' => '請先輸入優惠代碼',
+            ], 422);
+        }
+
+        $customerPhone = $this->normalizeCustomerPhone($validated['customer_phone'] ?? null, $store);
+        $customerEmail = $this->normalizeOptionalText($validated['customer_email'] ?? null);
+        $member = $this->findExistingMemberForCoupon($store, $customerEmail, $customerPhone);
+        $result = $this->loyaltyService->resolveCoupon($store, $couponCode, $subtotal, $member);
+
+        $error = $result['error'] ?? null;
+        if ($error !== null) {
+            return response()->json([
+                'ok' => false,
+                'error' => $error === __('customer.coupon_not_found') ? '請輸入正確優惠代碼' : $error,
+            ], 422);
+        }
+
+        /** @var Coupon|null $coupon */
+        $coupon = $result['coupon'] ?? null;
+        if (! $coupon) {
+            return response()->json([
+                'ok' => false,
+                'error' => '請輸入正確優惠代碼',
+            ], 422);
+        }
+
+        $discount = max((int) ($result['discount'] ?? 0), 0);
+        $currencySymbol = $this->currencySymbol($store);
+
+        return response()->json([
+            'ok' => true,
+            'coupon' => [
+                'code' => $coupon->code,
+                'name' => (string) ($coupon->name ?? ''),
+                'discount' => $discount,
+                'discount_display' => $currencySymbol . ' ' . number_format($discount),
+                'summary' => $this->formatCouponSummary($coupon, $discount, $currencySymbol),
+            ],
         ]);
     }
 
@@ -660,6 +753,62 @@ class TakeoutOrderingController extends Controller
         $normalized = trim($value);
 
         return $normalized === '' ? null : $normalized;
+    }
+
+    private function normalizeCouponCode(?string $couponCode): ?string
+    {
+        if ($couponCode === null) {
+            return null;
+        }
+
+        $normalized = strtoupper(trim($couponCode));
+
+        return $normalized === '' ? null : $normalized;
+    }
+
+    private function findExistingMemberForCoupon(Store $store, ?string $email, ?string $phone, bool $lockForUpdate = false): ?Member
+    {
+        if ($email === null && $phone === null) {
+            return null;
+        }
+
+        $query = Member::query()
+            ->where('store_id', $store->id)
+            ->where(function ($nested) use ($email, $phone) {
+                if ($email !== null) {
+                    $nested->orWhere('email', $email);
+                }
+
+                if ($phone !== null) {
+                    $nested->orWhere('phone', $phone);
+                }
+            });
+
+        if ($lockForUpdate) {
+            $query->lockForUpdate();
+        }
+
+        return $query->first();
+    }
+
+    private function formatCouponSummary(Coupon $coupon, int $discount, string $currencySymbol): string
+    {
+        $summary = match ($coupon->discount_type) {
+            'percent' => sprintf('折扣 %d%%（本單折抵 %s）', (int) $coupon->discount_value, $currencySymbol . ' ' . number_format($discount)),
+            'points_reward' => sprintf(
+                '每消費 %s 送 %d 點',
+                $currencySymbol . ' ' . number_format(max((int) $coupon->reward_per_amount, 0)),
+                (int) $coupon->reward_points
+            ),
+            default => sprintf('本單折抵 %s', $currencySymbol . ' ' . number_format($discount)),
+        };
+
+        $minimum = max((int) $coupon->min_order_amount, 0);
+        if ($minimum > 0) {
+            $summary .= '，最低消費 ' . $currencySymbol . ' ' . number_format($minimum);
+        }
+
+        return $summary;
     }
 
     private function shouldReturnJson(Request $request): bool

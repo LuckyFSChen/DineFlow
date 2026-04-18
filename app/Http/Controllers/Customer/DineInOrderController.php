@@ -20,15 +20,17 @@ class DineInOrderController extends Controller
     private const CUSTOMER_PROFILE_SESSION_KEY = 'customer_order_profile';
     private const ORDER_HISTORY_SESSION_PREFIX = 'dinein_order_history_';
     private const ORDER_HISTORY_LIMIT = 8;
-    private const APPENDABLE_ORDER_STATUSES = [
-        'pending',
-        'accepted',
-        'confirmed',
-        'received',
-        'preparing',
-        'processing',
-        'cooking',
-        'in_progress',
+    private const NON_APPENDABLE_ORDER_STATUSES = [
+        'cancel',
+        'cancelled',
+        'canceled',
+    ];
+
+    private const COMPLETED_ORDER_STATUSES = [
+        'complete',
+        'completed',
+        'ready',
+        'ready_for_pickup',
     ];
 
     public function __construct(private readonly CustomerAccountService $customerAccountService)
@@ -382,7 +384,7 @@ class DineInOrderController extends Controller
                 ->where('store_id', $store->id)
                 ->where('customer_email', $email)
                 ->where('customer_phone', $phone)
-                ->with('table')
+                ->with(['table', 'items'])
                 ->orderByDesc('created_at')
                 ->limit(50)
                 ->get();
@@ -666,7 +668,7 @@ class DineInOrderController extends Controller
             ->where('store_id', $store->id)
             ->where('dining_table_id', $table->id)
             ->where('order_type', 'dine_in')
-            ->whereIn('status', self::APPENDABLE_ORDER_STATUSES)
+            ->whereNotIn('status', self::NON_APPENDABLE_ORDER_STATUSES)
             ->where(function ($query) {
                 $query->where('payment_status', 'unpaid')
                     ->orWhereNull('payment_status');
@@ -707,20 +709,31 @@ class DineInOrderController extends Controller
             return collect();
         }
 
-            $orders = Order::query()
-                ->select([
-                    'id',
-                    'uuid',
-                    'order_no',
-                    'store_id',
-                    'dining_table_id',
-                    'status',
-                    'payment_status',
-                    'created_at',
-                ])
-                ->where('store_id', $store->id)
-                ->where('dining_table_id', $table->id)
-                ->whereIn('uuid', $uuids)
+        $orders = Order::query()
+            ->select([
+                'id',
+                'uuid',
+                'order_no',
+                'store_id',
+                'dining_table_id',
+                'status',
+                'payment_status',
+                'created_at',
+            ])
+            ->where('store_id', $store->id)
+            ->where('dining_table_id', $table->id)
+            ->whereIn('uuid', $uuids)
+            ->whereNotIn('status', self::NON_APPENDABLE_ORDER_STATUSES)
+            ->where(function ($query) use ($store) {
+                if ($store->isPrepayCheckout()) {
+                    $query->whereNotIn('status', self::COMPLETED_ORDER_STATUSES);
+
+                    return;
+                }
+
+                $query->where('payment_status', 'unpaid')
+                    ->orWhereNull('payment_status');
+            })
             ->orderByDesc('created_at')
             ->get();
 

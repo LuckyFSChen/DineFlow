@@ -266,6 +266,30 @@ class LoyaltyController extends Controller
             'is_active' => $request->boolean('is_active'),
         ]);
 
+        if ($request->expectsJson()) {
+            $coupon->refresh();
+
+            return response()->json([
+                'message' => '優惠券已更新',
+                'coupon' => [
+                    'id' => (int) $coupon->id,
+                    'name' => (string) $coupon->name,
+                    'code' => (string) $coupon->code,
+                    'discount_type' => (string) $coupon->discount_type,
+                    'discount_value' => (int) $coupon->discount_value,
+                    'reward_per_amount' => (int) $coupon->reward_per_amount,
+                    'reward_points' => (int) $coupon->reward_points,
+                    'min_order_amount' => (int) $coupon->min_order_amount,
+                    'points_cost' => (int) $coupon->points_cost,
+                    'usage_limit' => $coupon->usage_limit !== null ? (int) $coupon->usage_limit : null,
+                    'used_count' => (int) $coupon->used_count,
+                    'starts_at' => optional($coupon->starts_at)->format('Y-m-d\\TH:i'),
+                    'ends_at' => optional($coupon->ends_at)->format('Y-m-d\\TH:i'),
+                    'is_active' => (bool) $coupon->is_active,
+                ],
+            ]);
+        }
+
         return back()->with('status', '優惠券已更新');
     }
 

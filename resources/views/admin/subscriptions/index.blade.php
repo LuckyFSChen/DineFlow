@@ -1,6 +1,18 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $planTierLabels = [
+        'basic' => __('merchant.plan_tier_basic'),
+        'growth' => __('merchant.plan_tier_growth'),
+        'pro' => __('merchant.plan_tier_pro'),
+    ];
+    $planCycleLabels = [
+        'monthly' => __('merchant.plan_cycle_monthly'),
+        'quarterly' => __('merchant.plan_cycle_quarterly'),
+        'yearly' => __('merchant.plan_cycle_yearly'),
+    ];
+@endphp
 <div class="min-h-screen bg-slate-50 py-10">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <x-backend-header
@@ -49,7 +61,14 @@
                                         <div class="font-semibold text-slate-900">{{ $merchant->name }}</div>
                                         <div class="text-slate-500">{{ $merchant->email }}</div>
                                     </td>
-                                    <td class="px-4 py-4 text-slate-700">{{ $merchant->subscriptionPlan ? ucfirst(strtok($merchant->subscriptionPlan->slug, '-')) : '-' }}</td>
+                                    <td class="px-4 py-4 text-slate-700">
+                                        @if($merchant->subscriptionPlan)
+                                            @php([$tier, $cycle] = array_pad(explode('-', $merchant->subscriptionPlan->slug, 2), 2, ''))
+                                            {{ trim(($planTierLabels[$tier] ?? ucfirst($tier)) . ' ' . ($planCycleLabels[$cycle] ?? '')) }}
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
                                     <td class="px-4 py-4 text-slate-700">{{ $merchant->subscription_ends_at ? $merchant->subscription_ends_at->format('Y-m-d') : '-' }}</td>
                                     <td class="px-4 py-4">
                                         <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {{ $merchant->hasActiveSubscription() ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }}">
@@ -62,9 +81,10 @@
                                             @method('PATCH')
                                             <select name="plan_id" class="rounded-lg border border-slate-300 px-2 py-1.5 text-sm">
                                                 @foreach($plans as $plan)
+                                                    @php([$planTier, $planCycle] = array_pad(explode('-', $plan->slug, 2), 2, ''))
                                                     <option value="{{ $plan->id }}" @selected($merchant->subscription_plan_id === $plan->id)>
                                                         {{ __('admin.subscription_plan_option', [
-                                                            'name' => $plan->name,
+                                                            'name' => trim(($planTierLabels[$planTier] ?? $plan->name) . ' ' . ($planCycleLabels[$planCycle] ?? '')),
                                                             'days' => $plan->duration_days,
                                                             'stores' => $plan->max_stores === null
                                                                 ? __('admin.subscription_unlimited_stores')

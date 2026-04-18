@@ -444,6 +444,7 @@ return [
     'error_invalid_item_status'              => 'Trạng thái món không hợp lệ.',
     'error_order_item_not_found'             => 'Không tìm thấy món trong đơn hàng.',
     'error_only_pending_can_cancel'          => 'Chỉ đơn đang chờ mới có thể hủy.',
+    'error_only_unpaid_completed_can_mark_paid' => 'Chỉ đơn đã hoàn thành và chưa thu tiền mới được kết đơn.',
     'error_cancel_reason_required'           => 'Vui lòng cung cấp ít nhất một lý do hủy.',
     'error_table_no_reserved'                => 'Số bàn không được dùng "takeout", vui lòng nhập số bàn ăn tại chỗ.',
     'error_table_no_required'                => 'Vui lòng nhập số bàn.',

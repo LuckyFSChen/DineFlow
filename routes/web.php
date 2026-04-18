@@ -263,6 +263,7 @@ Route::prefix('s/{store:slug}/takeout')
     ->group(function () {
         Route::get('/menu', [TakeoutOrderingController::class, 'menu'])->name('menu');
         Route::get('/phone/registered', [TakeoutOrderingController::class, 'checkPhoneRegistered'])->name('phone.registered');
+        Route::get('/coupon/check', [TakeoutOrderingController::class, 'checkCoupon'])->name('coupon.check');
         Route::post('/cart/items', [TakeoutOrderingController::class, 'addToCart'])->name('cart.items.store');
         Route::patch('/cart/items/{lineKey}', [TakeoutOrderingController::class, 'updateCartItem'])->name('cart.items.update');
         Route::delete('/cart/items/{lineKey}', [TakeoutOrderingController::class, 'removeCartItem'])->name('cart.items.destroy');

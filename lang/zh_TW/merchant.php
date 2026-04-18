@@ -1,13 +1,12 @@
-
 <?php
 
 return [
-    'plan_tier_basic' => '基礎',
+    'plan_tier_basic' => '基礎版',
     'plan_tier_growth' => '加強版',
     'plan_tier_pro' => '專業版',
-    'plan_cycle_monthly' => '月繳',
-    'plan_cycle_quarterly' => '季繳',
-    'plan_cycle_yearly' => '年繳',
+    'plan_cycle_monthly' => '月付',
+    'plan_cycle_quarterly' => '季付',
+    'plan_cycle_yearly' => '年付',
     'start_date' => '開始日期',
     'end_date' => '結束日期',
     'subscription_title' => '商家訂閱方案',
@@ -25,7 +24,7 @@ return [
     'days' => ':days 天',
     'store_count_label' => '店家數：:count',
     'store_count_max' => '最多 :count 間',
-    'pricing_currency' => '方案顯示貨幣',
+    'pricing_currency' => '方案顯示幣別',
     'original_price' => '原價',
     'upgrade_credit' => '升級折抵',
     'settlement_twd_hint' => '實際付款會由金流以 TWD 結算。',
@@ -97,7 +96,7 @@ return [
     'compare_start_date' => '對比開始日',
     'compare_end_date' => '對比結束日',
     'compare_summary' => '區間對比摘要',
-    'compare_empty_hint' => '請選擇對比開始日與結束日，即可看到兩個區間的差異。',
+    'compare_empty_hint' => '請選擇對比開始日與結束日，即可看到兩個區間差異。',
     'clear_compare' => '清除對比',
     'monthly_target' => '月營收目標',
     'save_target' => '儲存目標',
