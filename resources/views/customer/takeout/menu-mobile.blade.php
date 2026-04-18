@@ -346,8 +346,8 @@
             <div class="relative grid grid-cols-[5.5rem,minmax(0,1fr)] items-start gap-4 md:block">
                 <aside class="self-stretch md:hidden">
                     <div class="sticky top-5">
-                        <div class="h-[calc(100vh-2.5rem)] overflow-hidden rounded-[1.75rem] border border-brand-soft/60 bg-gradient-to-b from-white to-brand-soft/20 shadow-[0_18px_40px_rgba(90,30,14,0.08)]">
-                            <div class="h-full overflow-y-auto p-2">
+                        <div class="rounded-[1.75rem] border border-brand-soft/60 bg-gradient-to-b from-white to-brand-soft/20 shadow-[0_18px_40px_rgba(90,30,14,0.08)]">
+                            <div class="p-2">
                                 <div class="flex flex-col gap-2">
                                     @foreach($categories as $category)
                                         <a href="#category-{{ $category->id }}" class="rounded-2xl border border-brand-soft/70 bg-brand-soft/15 px-2 py-3 text-center text-xs font-semibold leading-4 text-brand-primary transition hover:border-brand-accent hover:bg-brand-highlight/50">
