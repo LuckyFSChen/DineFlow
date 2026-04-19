@@ -44,7 +44,7 @@
         <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             @if($activeTab === 'manage')
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200 text-sm">
+                    <table class="min-w-full divide-y divide-slate-200 text-sm" data-datatable data-dt-paging="false" data-dt-info="false">
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-4 py-3 text-left font-semibold text-slate-700">{{ __('admin.merchant_account') }}</th>
@@ -117,7 +117,7 @@
                 </div>
             @else
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200 text-sm">
+                    <table class="min-w-full divide-y divide-slate-200 text-sm" data-datatable data-dt-paging="false" data-dt-info="false">
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-4 py-3 text-left font-semibold text-slate-700">{{ __('admin.subscription_log_changed_at') }}</th>

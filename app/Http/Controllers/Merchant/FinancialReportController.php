@@ -21,8 +21,10 @@ class FinancialReportController extends Controller
         $user = $request->user();
 
         $today = now();
-        $defaultStart = $today->copy()->subDays(29)->toDateString();
+        $defaultStart = $today->copy()->subMonthNoOverflow()->toDateString();
         $defaultEnd = $today->toDateString();
+        $defaultCompareStart = $today->copy()->subMonthsNoOverflow(2)->toDateString();
+        $defaultCompareEnd = $today->copy()->subMonthNoOverflow()->toDateString();
 
         $validated = $request->validate([
             'start_date' => ['nullable', 'date'],
@@ -35,12 +37,13 @@ class FinancialReportController extends Controller
 
         $startDate = (string) ($validated['start_date'] ?? $defaultStart);
         $endDate = (string) ($validated['end_date'] ?? $defaultEnd);
-        $compareStartDate = isset($validated['compare_start_date'])
-            ? (string) $validated['compare_start_date']
-            : null;
-        $compareEndDate = isset($validated['compare_end_date'])
-            ? (string) $validated['compare_end_date']
-            : null;
+        $hasCompareInput = $request->query->has('compare_start_date') || $request->query->has('compare_end_date');
+        $compareStartDate = $hasCompareInput
+            ? (isset($validated['compare_start_date']) ? (string) $validated['compare_start_date'] : null)
+            : $defaultCompareStart;
+        $compareEndDate = $hasCompareInput
+            ? (isset($validated['compare_end_date']) ? (string) $validated['compare_end_date'] : null)
+            : $defaultCompareEnd;
         $trendGranularity = (string) ($validated['trend_granularity'] ?? 'day');
         $hourStep = (int) ($validated['hour_step'] ?? 1);
 

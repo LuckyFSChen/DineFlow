@@ -12,6 +12,8 @@ class Member extends Model
         'name',
         'email',
         'phone',
+        'invoice_carrier_code',
+        'invoice_carrier_bound_at',
         'points_balance',
         'total_spent',
         'total_orders',
@@ -23,6 +25,7 @@ class Member extends Model
         'total_spent' => 'integer',
         'total_orders' => 'integer',
         'last_order_at' => 'datetime',
+        'invoice_carrier_bound_at' => 'datetime',
     ];
 
     public function store()

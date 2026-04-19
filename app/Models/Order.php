@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Jobs\IssueOrderInvoiceJob;
+use App\Jobs\VoidStoreInvoiceJob;
 use App\Mail\CustomerOrderCompletedMail;
 use App\Mail\CustomerOrderCancelledMail;
 use App\Mail\CustomerOrderCreatedMail;
@@ -26,6 +28,13 @@ class Order extends Model
         'order_no',
         'status',
         'payment_status',
+        'invoice_flow',
+        'invoice_mobile_barcode',
+        'invoice_member_carrier_code',
+        'invoice_donation_code',
+        'invoice_company_tax_id',
+        'invoice_company_name',
+        'invoice_requested_at',
         'customer_name',
         'customer_phone',
         'customer_email',
@@ -46,6 +55,7 @@ class Order extends Model
         'coupon_discount' => 'integer',
         'points_used' => 'integer',
         'points_earned' => 'integer',
+        'invoice_requested_at' => 'datetime',
     ];
 
     public function store() {
@@ -66,6 +76,21 @@ class Order extends Model
 
     public function items() {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function review()
+    {
+        return $this->hasOne(StoreReview::class);
+    }
+
+    public function invoice()
+    {
+        return $this->hasOne(StoreInvoice::class);
+    }
+
+    public function invoiceAllowances()
+    {
+        return $this->hasMany(StoreInvoiceAllowance::class);
     }
 
     public function getRouteKeyName()
@@ -116,15 +141,22 @@ class Order extends Model
         });
 
         static::updated(function (self $order) {
-            if (! $order->wasChanged('status')) {
-                return;
-            }
-
+            $statusChanged = $order->wasChanged('status');
             $currentStatus = (string) $order->status;
             $previousStatus = (string) $order->getOriginal('status');
 
-            if (self::isCancelledStatus($currentStatus) && ! self::isCancelledStatus($previousStatus)) {
+            if ($statusChanged && self::isCancelledStatus($currentStatus) && ! self::isCancelledStatus($previousStatus)) {
                 if (blank($order->customer_email)) {
+                    DB::afterCommit(function () use ($order): void {
+                        $invoiceId = StoreInvoice::query()
+                            ->where('order_id', $order->id)
+                            ->value('id');
+
+                        if ($invoiceId) {
+                            VoidStoreInvoiceJob::dispatch((int) $invoiceId);
+                        }
+                    });
+
                     return;
                 }
 
@@ -144,32 +176,47 @@ class Order extends Model
                     }
                 });
 
+                DB::afterCommit(function () use ($order): void {
+                    $invoiceId = StoreInvoice::query()
+                        ->where('order_id', $order->id)
+                        ->value('id');
+
+                    if ($invoiceId) {
+                        VoidStoreInvoiceJob::dispatch((int) $invoiceId);
+                    }
+                });
+
                 return;
             }
 
-            if (! self::isCompletedStatus($currentStatus) || self::isCompletedStatus($previousStatus)) {
-                return;
-            }
+            if ($statusChanged && self::isCompletedStatus($currentStatus) && ! self::isCompletedStatus($previousStatus)) {
+                if (! blank($order->customer_email)) {
+                    DB::afterCommit(function () use ($order): void {
+                        $freshOrder = self::query()->with(['store', 'table', 'items'])->find($order->id);
 
-            if (blank($order->customer_email)) {
-                return;
-            }
+                        if (! $freshOrder || blank($freshOrder->customer_email)) {
+                            return;
+                        }
 
-            DB::afterCommit(function () use ($order): void {
-                $freshOrder = self::query()->with(['store', 'table', 'items'])->find($order->id);
-
-                if (! $freshOrder || blank($freshOrder->customer_email)) {
-                    return;
+                        try {
+                            Mail::to($freshOrder->customer_email)
+                                ->locale(self::resolveOrderLocale($freshOrder->order_locale))
+                                ->queue(new CustomerOrderCompletedMail($freshOrder));
+                        } catch (Throwable $e) {
+                            report($e);
+                        }
+                    });
                 }
+            }
 
-                try {
-                    Mail::to($freshOrder->customer_email)
-                        ->locale(self::resolveOrderLocale($freshOrder->order_locale))
-                        ->queue(new CustomerOrderCompletedMail($freshOrder));
-                } catch (Throwable $e) {
-                    report($e);
-                }
-            });
+            $previousPaymentStatus = strtolower((string) $order->getOriginal('payment_status'));
+            $currentPaymentStatus = strtolower((string) $order->payment_status);
+
+            if ($order->wasChanged('payment_status') && $currentPaymentStatus === 'paid' && $previousPaymentStatus !== 'paid') {
+                DB::afterCommit(function () use ($order): void {
+                    IssueOrderInvoiceJob::dispatch($order->id);
+                });
+            }
         });
     }
 

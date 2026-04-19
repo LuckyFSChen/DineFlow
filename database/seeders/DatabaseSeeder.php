@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             SubscriptionPlanSeeder::class,
             MultiStoreDemoSeeder::class,
             FinancialReportDemoSeeder::class,
+            InvoiceDemoSeeder::class,
         ]);
     }
 }

@@ -61,10 +61,14 @@ class AllBoardsController extends Controller
                 'order_type',
                 'note',
                 'customer_name',
+                'subtotal',
+                'total',
+                'coupon_code',
+                'coupon_discount',
                 'created_at',
             ])
             ->with([
-                'items:id,order_id,product_name,qty,note,item_status,completed_at',
+                'items:id,order_id,product_name,price,qty,subtotal,note,item_status,completed_at',
                 'table:id,table_no',
             ])
             ->where('store_id', $store->id)
@@ -96,10 +100,14 @@ class AllBoardsController extends Controller
                 'order_type',
                 'note',
                 'customer_name',
+                'subtotal',
+                'total',
+                'coupon_code',
+                'coupon_discount',
                 'created_at',
             ])
             ->with([
-                'items:id,order_id,product_name,qty,note,item_status,completed_at',
+                'items:id,order_id,product_name,price,qty,subtotal,note,item_status,completed_at',
                 'table:id,table_no',
             ])
             ->where('store_id', $store->id)
@@ -138,12 +146,18 @@ class AllBoardsController extends Controller
             'order_type' => $order->order_type,
             'note' => $order->note,
             'customer_name' => $order->customer_name,
+            'subtotal' => (int) $order->subtotal,
+            'total' => (int) $order->total,
+            'coupon_code' => $order->coupon_code,
+            'coupon_discount' => (int) $order->coupon_discount,
             'created_at' => $order->created_at?->toIso8601String(),
             'table' => ($table = $order->getRelation('table')) ? ['table_no' => $table->table_no] : null,
             'items' => $order->items->map(fn ($item) => [
                 'id' => $item->id,
                 'product_name' => $item->product_name,
+                'price' => (int) $item->price,
                 'qty' => $item->qty,
+                'subtotal' => (int) $item->subtotal,
                 'note' => $item->note,
                 'item_status' => $item->item_status ?: 'preparing',
                 'completed_at' => $item->completed_at?->toIso8601String(),

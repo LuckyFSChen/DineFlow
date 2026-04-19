@@ -75,10 +75,6 @@
         ? $navUser->stores()->exists()
         : true;
 
-    $customerNavStore = $navUser?->isCustomer()
-        ? ($resolvedRouteStore ?: $firstOpenStore())
-        : null;
-    $customerOrderHistoryStoreRoute = $storeRouteValue($customerNavStore);
 @endphp
 
 @if($isDineInCartPage)
@@ -103,7 +99,7 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ Auth::check() ? route('dashboard') : route('home') }}">
+                    <a href="{{ route('home') }}">
                         <x-application-logo class="block h-11 w-auto fill-current text-gray-800" />
                     </a>
                 </div>
@@ -118,8 +114,8 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-3 sm:-my-px sm:ms-8 sm:flex sm:items-center">
-                    @if(Auth::user()?->isCustomer() && $customerOrderHistoryStoreRoute)
-                        <x-nav-link :href="route('customer.order.history', ['store' => $customerOrderHistoryStoreRoute])" :active="request()->routeIs('customer.order.history')">
+                    @if(Auth::user()?->isCustomer())
+                        <x-nav-link :href="route('customer.order.history')" :active="request()->routeIs('customer.order.history')">
                             {{ __('nav.order_history') }}
                         </x-nav-link>
                     @endif
@@ -131,6 +127,14 @@
 
                         <x-nav-link :href="route('merchant.reports.financial')" :active="request()->routeIs('merchant.reports.*')">
                             {{ __('nav.financial_report') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('merchant.orders.index')" :active="request()->routeIs('merchant.orders.*')">
+                            {{ __('nav.order_history') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('merchant.invoices.index')" :active="request()->routeIs('merchant.invoices.*')">
+                            發票中心
                         </x-nav-link>
 
                         @if($merchantHasStores)
@@ -221,8 +225,8 @@
                                 {{ __('nav.profile') }}
                             </x-dropdown-link>
 
-                            @if(Auth::user()?->isCustomer() && $customerOrderHistoryStoreRoute)
-                                <x-dropdown-link :href="route('customer.order.history', ['store' => $customerOrderHistoryStoreRoute])">
+                            @if(Auth::user()?->isCustomer())
+                                <x-dropdown-link :href="route('customer.order.history')">
                                     {{ __('nav.order_history') }}
                                 </x-dropdown-link>
                             @endif
@@ -268,8 +272,8 @@
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
-            @if(Auth::user()?->isCustomer() && $customerOrderHistoryStoreRoute)
-                <x-responsive-nav-link :href="route('customer.order.history', ['store' => $customerOrderHistoryStoreRoute])" :active="request()->routeIs('customer.order.history')">
+            @if(Auth::user()?->isCustomer())
+                <x-responsive-nav-link :href="route('customer.order.history')" :active="request()->routeIs('customer.order.history')">
                     {{ __('nav.order_history') }}
                 </x-responsive-nav-link>
             @endif
@@ -281,6 +285,14 @@
 
                 <x-responsive-nav-link :href="route('merchant.reports.financial')" :active="request()->routeIs('merchant.reports.*')">
                     {{ __('nav.financial_report') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('merchant.orders.index')" :active="request()->routeIs('merchant.orders.*')">
+                    {{ __('nav.order_history') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('merchant.invoices.index')" :active="request()->routeIs('merchant.invoices.*')">
+                    發票中心
                 </x-responsive-nav-link>
 
                 @if($merchantHasStores)
@@ -330,8 +342,8 @@
                         {{ __('nav.profile') }}
                     </x-responsive-nav-link>
 
-                    @if(Auth::user()?->isCustomer() && $customerOrderHistoryStoreRoute)
-                        <x-responsive-nav-link :href="route('customer.order.history', ['store' => $customerOrderHistoryStoreRoute])">
+                    @if(Auth::user()?->isCustomer())
+                        <x-responsive-nav-link :href="route('customer.order.history')">
                             {{ __('nav.order_history') }}
                         </x-responsive-nav-link>
                     @endif

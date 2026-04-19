@@ -2,17 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\Customer\DineInOrderController;
 use App\Models\Order;
 use App\Models\Store;
 use App\Models\SubscriptionPayment;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Session;
-use Illuminate\View\View;
 use Tests\TestCase;
 
 class SecurityHardeningTest extends TestCase
@@ -85,9 +81,30 @@ class SecurityHardeningTest extends TestCase
         $this->assertFalse($store->fresh()->isOrderingAvailable());
     }
 
-    public function test_order_history_requires_email_and_phone_together(): void
+    public function test_guest_cannot_access_order_history(): void
     {
-        Session::start();
+        $response = $this->get(route('customer.order.history'));
+
+        $response->assertRedirect(route('login'));
+    }
+
+    public function test_order_history_only_shows_authenticated_customer_orders(): void
+    {
+        $customer = User::create([
+            'name' => 'Customer One',
+            'email' => 'customer.one@example.com',
+            'phone' => '0911222333',
+            'password' => Hash::make('password'),
+            'role' => 'customer',
+        ]);
+
+        $otherCustomer = User::create([
+            'name' => 'Customer Two',
+            'email' => 'customer.two@example.com',
+            'phone' => '0999888777',
+            'password' => Hash::make('password'),
+            'role' => 'customer',
+        ]);
 
         $store = Store::create([
             'name' => 'Lookup Safe Store',
@@ -101,21 +118,41 @@ class SecurityHardeningTest extends TestCase
             'order_no' => 'SAFE-001',
             'status' => 'pending',
             'payment_status' => 'unpaid',
-            'customer_email' => 'guest@example.com',
-            'customer_phone' => '0912345678',
+            'customer_email' => 'customer.one@example.com',
+            'customer_phone' => '0222222222',
             'subtotal' => 100,
             'total' => 100,
         ]);
 
-        $request = Request::create(route('customer.order.history', ['store' => $store]), 'GET', [
-            'customer_email' => 'guest@example.com',
+        Order::create([
+            'store_id' => $store->id,
+            'order_type' => 'takeout',
+            'order_no' => 'SAFE-002',
+            'status' => 'pending',
+            'payment_status' => 'unpaid',
+            'customer_email' => 'someone@example.com',
+            'customer_phone' => '0911222333',
+            'subtotal' => 100,
+            'total' => 100,
         ]);
-        $request->setLaravelSession(Session::driver());
 
-        $response = app(DineInOrderController::class)->history($request, $store);
+        Order::create([
+            'store_id' => $store->id,
+            'order_type' => 'takeout',
+            'order_no' => 'SAFE-003',
+            'status' => 'pending',
+            'payment_status' => 'unpaid',
+            'customer_email' => $otherCustomer->email,
+            'customer_phone' => $otherCustomer->phone,
+            'subtotal' => 100,
+            'total' => 100,
+        ]);
 
-        $this->assertInstanceOf(View::class, $response);
-        $this->assertTrue($response->getData()['requiresBothIdentifiers']);
-        $this->assertCount(0, $response->getData()['orders']);
+        $response = $this->actingAs($customer)->get(route('customer.order.history'));
+
+        $response->assertOk();
+        $response->assertSee('SAFE-001');
+        $response->assertSee('SAFE-002');
+        $response->assertDontSee('SAFE-003');
     }
 }

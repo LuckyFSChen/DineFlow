@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
@@ -191,7 +191,7 @@
                         {{ __('customer.back_to_menu') }}
                     </a>
 
-                    <a href="{{ route('customer.order.history', ['store' => $store, 'customer_email' => $order->customer_email, 'customer_phone' => $order->customer_phone]) }}"
+                    <a href="{{ route('customer.order.history') }}"
                        class="mt-3 inline-flex h-11 items-center justify-center rounded-2xl border border-orange-200 bg-orange-50 px-5 text-sm font-semibold text-orange-700 hover:bg-orange-100">
                         {{ __('customer.view_my_order_history') }}
                     </a>
@@ -415,3 +415,4 @@
     </script>
 </body>
 </html>
+

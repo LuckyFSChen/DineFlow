@@ -398,3 +398,64 @@ body.is-admin-area .board-store-select option:checked {
 	background-color: #1d4ed8;
 	font-weight: 600;
 }
+
+.dataTables_wrapper {
+	--dt-input-border: #cbd5e1;
+	--dt-input-ring: rgba(59, 130, 246, 0.25);
+}
+
+.dataTables_wrapper .dataTables_filter {
+	margin-bottom: 0.75rem;
+}
+
+.dataTables_wrapper .dataTables_filter label {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	color: #475569;
+}
+
+.dataTables_wrapper .dataTables_filter input,
+.dataTables_wrapper .dataTables_length select {
+	border: 1px solid var(--dt-input-border);
+	border-radius: 0.75rem;
+	background-color: #ffffff;
+	padding: 0.4rem 0.65rem;
+	font-size: 0.8125rem;
+	color: #0f172a;
+}
+
+.dataTables_wrapper .dataTables_filter input:focus,
+.dataTables_wrapper .dataTables_length select:focus {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--dt-input-ring);
+	border-color: #94a3b8;
+}
+
+.dataTables_wrapper .dataTables_info {
+	padding-top: 0.65rem;
+	font-size: 0.75rem;
+	color: #64748b;
+}
+
+.dataTables_wrapper .dataTables_paginate {
+	padding-top: 0.5rem;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+	border-radius: 0.6rem !important;
+	border: 1px solid #cbd5e1 !important;
+	background: #ffffff !important;
+	color: #334155 !important;
+	padding: 0.22rem 0.65rem !important;
+	font-size: 0.78rem;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+	border-color: #0f172a !important;
+	background: #0f172a !important;
+	color: #ffffff !important;
+}

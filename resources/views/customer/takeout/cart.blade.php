@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('content')
 @php
@@ -81,7 +81,7 @@
                         <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="inline-flex items-center rounded-xl border border-brand-soft bg-brand-soft/20 px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-highlight/50">{{ $historyOrder->order_no }} ・ {{ $historyOrder->customer_status_label }}</a>
                     @endforeach
                 </div>
-                <a href="{{ route('customer.order.history', ['store' => $store]) }}" class="mt-3 inline-flex items-center rounded-xl border border-brand-soft bg-white px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30">{{ __('customer.view_my_order_history') }}</a>
+                <a href="{{ route('customer.order.history') }}" class="mt-3 inline-flex items-center rounded-xl border border-brand-soft bg-white px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30">{{ __('customer.view_my_order_history') }}</a>
             </div>
         @endif
 
@@ -166,8 +166,8 @@
                                 </div>
 
                                 <div class="flex items-center justify-between text-brand-primary/70">
-                                    <span>優惠券折扣</span>
-                                    <span>送出訂單後自動計算</span>
+                                    <span>{{ __('customer.coupon_discount') }}</span>
+                                    <span>{{ __('customer.coupon_discount_after_submit') }}</span>
                                 </div>
 
                                 <div class="border-t border-brand-soft/60 pt-4">
@@ -270,7 +270,7 @@
                                            value="{{ old('coupon_code') }}"
                                            placeholder="例如：WELCOME100"
                                            class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm uppercase text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">
-                                    <p class="mt-1 text-xs text-brand-primary/70">若為點數券，請先填寫手機或 Email 以辨識會員。</p>
+                                    <p class="mt-1 text-xs text-brand-primary/70">若為會員券，請先填寫手機或 Email 以辨識會員。</p>
                                 </div>
 
                                 <div>
@@ -406,3 +406,4 @@
 })();
 </script>
 @endsection
+

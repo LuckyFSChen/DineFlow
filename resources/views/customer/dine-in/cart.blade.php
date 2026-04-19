@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ __('customer.cart_title') }}｜DineFlow</title>
+    <title>{{ __('customer.cart_title') }} | {{ config('app.name', 'DineFlow') }}</title>
     @include('partials.favicon')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -30,7 +30,7 @@
                 </div>
 
                 <h1 class="text-2xl font-bold tracking-tight">{{ __('customer.cart_title') }}</h1>
-                <p class="mt-1 text-sm text-gray-500">{{ __('customer.table_no') }}：{{ $table->table_no }}</p>
+                <p class="mt-1 text-sm text-gray-500">{{ __('customer.table_no') }} {{ $table->table_no }}</p>
             </div>
         </header>
 
@@ -51,7 +51,7 @@
                             <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="inline-flex items-center rounded-xl border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-700 transition hover:bg-orange-100">{{ $historyOrder->order_no }} ・ {{ $historyOrder->customer_status_label }}</a>
                         @endforeach
                     </div>
-                    <a href="{{ route('customer.order.history', ['store' => $store]) }}" class="mt-3 inline-flex items-center rounded-xl border border-orange-200 bg-white px-3 py-1.5 text-xs font-semibold text-orange-700 transition hover:bg-orange-50">{{ __('customer.view_my_order_history') }}</a>
+                    <a href="{{ route('customer.order.history') }}" class="mt-3 inline-flex items-center rounded-xl border border-orange-200 bg-white px-3 py-1.5 text-xs font-semibold text-orange-700 transition hover:bg-orange-50">{{ __('customer.view_my_order_history') }}</a>
                 </div>
             @endif
 
@@ -176,3 +176,4 @@
     </div>
 </body>
 </html>
+

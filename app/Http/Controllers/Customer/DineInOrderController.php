@@ -9,16 +9,20 @@ use App\Models\Product;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\CustomerAccountService;
+use App\Support\PhoneFormatter;
+use App\Support\InvoiceFlow;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class DineInOrderController extends Controller
 {
     private const CUSTOMER_PROFILE_SESSION_KEY = 'customer_order_profile';
     private const ORDER_HISTORY_SESSION_PREFIX = 'dinein_order_history_';
+    private const TAKEOUT_ORDER_HISTORY_SESSION_PREFIX = 'takeout_order_history_';
+    private const GLOBAL_ORDER_HISTORY_SESSION_KEY = 'customer_order_history';
+    private const GLOBAL_ORDER_HISTORY_LIMIT = 60;
     private const ORDER_HISTORY_LIMIT = 8;
     private const NON_APPENDABLE_ORDER_STATUSES = [
         'cancel',
@@ -198,7 +202,16 @@ class DineInOrderController extends Controller
 
         $validated = $request->validate([
             'note' => ['nullable', 'string'],
-        ]);
+        ] + InvoiceFlow::validationRules());
+
+        $invoicePayload = InvoiceFlow::normalize($validated);
+        $invoiceValidationErrors = InvoiceFlow::validateFlowPayload($invoicePayload);
+        if ($invoiceValidationErrors !== []) {
+            return redirect()
+                ->route('customer.dinein.cart.show', ['store' => $store, 'table' => $table])
+                ->withErrors($invoiceValidationErrors)
+                ->withInput();
+        }
 
         $cartKey = $this->getDineInCartSessionKey($store, $table);
         $cart = session()->get($cartKey, []);
@@ -212,7 +225,7 @@ class DineInOrderController extends Controller
         $total = collect($cart)->sum('subtotal');
 
         try {
-            $order = DB::transaction(function () use ($store, $table, $validated, $cart, $total) {
+            $order = DB::transaction(function () use ($store, $table, $validated, $cart, $total, $invoicePayload) {
                 $this->assertCartItemsStillAvailable($store, $cart);
 
                 $customerNote = $this->normalizeOptionalText($validated['note'] ?? null);
@@ -231,12 +244,32 @@ class DineInOrderController extends Controller
                         'order_no' => $this->generateOrderNo($store),
                         'status' => 'pending',
                         'payment_status' => 'unpaid',
+                        'invoice_flow' => $invoicePayload['invoice_flow'],
+                        'invoice_mobile_barcode' => $invoicePayload['invoice_mobile_barcode'],
+                        'invoice_member_carrier_code' => $invoicePayload['invoice_member_carrier_code'],
+                        'invoice_donation_code' => $invoicePayload['invoice_donation_code'],
+                        'invoice_company_tax_id' => $invoicePayload['invoice_company_tax_id'],
+                        'invoice_company_name' => $invoicePayload['invoice_company_name'],
+                        'invoice_requested_at' => $invoicePayload['invoice_flow'] !== InvoiceFlow::NONE ? now() : null,
                         'customer_name' => null,
                         'customer_email' => null,
                         'customer_phone' => null,
                         'note' => $customerNote,
                         'subtotal' => 0,
                         'total' => 0,
+                    ]);
+                } elseif (
+                    (string) $order->invoice_flow === InvoiceFlow::NONE
+                    && (string) $invoicePayload['invoice_flow'] !== InvoiceFlow::NONE
+                ) {
+                    $order->fill([
+                        'invoice_flow' => $invoicePayload['invoice_flow'],
+                        'invoice_mobile_barcode' => $invoicePayload['invoice_mobile_barcode'],
+                        'invoice_member_carrier_code' => $invoicePayload['invoice_member_carrier_code'],
+                        'invoice_donation_code' => $invoicePayload['invoice_donation_code'],
+                        'invoice_company_tax_id' => $invoicePayload['invoice_company_tax_id'],
+                        'invoice_company_name' => $invoicePayload['invoice_company_name'],
+                        'invoice_requested_at' => now(),
                     ]);
                 }
 
@@ -268,6 +301,7 @@ class DineInOrderController extends Controller
 
         session()->forget($cartKey);
         $this->pushDineInOrderToHistory($store, $table, $order);
+        $this->pushOrderToGlobalHistory($order);
 
         return redirect()->route('customer.order.success', [
             'store' => $store->slug,
@@ -355,54 +389,34 @@ class DineInOrderController extends Controller
         ]);
     }
 
-    public function history(Request $request, Store $store)
+    public function history(Request $request)
     {
-        $remembered = session()->get(self::CUSTOMER_PROFILE_SESSION_KEY, []);
+        $user = $request->user();
+        abort_unless($user instanceof User && $user->isCustomer(), 403);
 
-        $email = trim((string) $request->query('customer_email', $remembered['customer_email'] ?? ''));
-        $phoneRaw = trim((string) $request->query('customer_phone', $remembered['customer_phone'] ?? ''));
-
-        $validator = Validator::make([
-            'customer_email' => $email,
-            'customer_phone' => $phoneRaw,
-        ], [
-            'customer_email' => ['nullable', 'email', 'max:255'],
-            'customer_phone' => $this->customerPhoneValidationRules($store),
-        ]);
-
-        if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
-        }
-
-        $phone = $this->normalizeCustomerPhone($phoneRaw, $store);
-        $hasFilters = $email !== '' || $phone !== null;
-        $hasStrongLookup = $email !== '' && $phone !== null;
+        $email = strtolower(trim((string) ($user->email ?? '')));
+        $phone = PhoneFormatter::digitsOnly((string) ($user->phone ?? ''), 32);
 
         $orders = collect();
-        if ($hasStrongLookup) {
+        if ($email !== '' || $phone !== null) {
             $orders = Order::query()
-                ->where('store_id', $store->id)
-                ->where('customer_email', $email)
-                ->where('customer_phone', $phone)
-                ->with(['table', 'items'])
-                ->orderByDesc('created_at')
-                ->limit(50)
-                ->get();
+                ->where(function ($query) use ($email, $phone): void {
+                    if ($email !== '') {
+                        $query->orWhereRaw('LOWER(customer_email) = ?', [$email]);
+                    }
 
-            session()->put(self::CUSTOMER_PROFILE_SESSION_KEY, [
-                'customer_name' => $remembered['customer_name'] ?? '',
-                'customer_email' => $email,
-                'customer_phone' => $phone ?? '',
-            ]);
+                    if ($phone !== null) {
+                        $query->orWhere('customer_phone', $phone);
+                    }
+                })
+                ->with(['store:id,slug,name,currency', 'table', 'items', 'review'])
+                ->orderByDesc('created_at')
+                ->limit(self::GLOBAL_ORDER_HISTORY_LIMIT)
+                ->get();
         }
 
         return view('customer.history', [
-            'store' => $store,
             'orders' => $orders,
-            'customerEmail' => $email,
-            'customerPhone' => $phoneRaw,
-            'hasFilters' => $hasFilters,
-            'requiresBothIdentifiers' => $hasFilters && ! $hasStrongLookup,
         ]);
     }
 
@@ -681,6 +695,136 @@ class DineInOrderController extends Controller
     private function getDineInOrderHistorySessionKey(Store $store, DiningTable $table): string
     {
         return self::ORDER_HISTORY_SESSION_PREFIX . $store->id . '_' . $table->id;
+    }
+
+    private function getGlobalOrderHistoryUuids(): array
+    {
+        $history = session()->get(self::GLOBAL_ORDER_HISTORY_SESSION_KEY, []);
+        $uuids = $this->normalizeOrderHistoryUuids(is_array($history) ? $history : []);
+        if (! empty($uuids)) {
+            return $uuids;
+        }
+
+        $legacyUuids = $this->getLegacyOrderHistoryUuids();
+        if (empty($legacyUuids)) {
+            return [];
+        }
+
+        $uuids = Order::query()
+            ->whereIn('uuid', $legacyUuids)
+            ->orderByDesc('created_at')
+            ->limit(self::GLOBAL_ORDER_HISTORY_LIMIT)
+            ->pluck('uuid')
+            ->map(fn ($uuid) => (string) $uuid)
+            ->all();
+
+        $uuids = $this->normalizeOrderHistoryUuids($uuids);
+        if (! empty($uuids)) {
+            session()->put(self::GLOBAL_ORDER_HISTORY_SESSION_KEY, $uuids);
+        }
+
+        return $uuids;
+    }
+
+    private function getLegacyOrderHistoryUuids(): array
+    {
+        $legacy = [];
+        $sessionData = session()->all();
+
+        foreach ($sessionData as $key => $value) {
+            if (! is_string($key) || ! is_array($value)) {
+                continue;
+            }
+
+            if (
+                ! str_starts_with($key, self::ORDER_HISTORY_SESSION_PREFIX)
+                && ! str_starts_with($key, self::TAKEOUT_ORDER_HISTORY_SESSION_PREFIX)
+            ) {
+                continue;
+            }
+
+            foreach ($value as $uuid) {
+                if (! is_string($uuid)) {
+                    continue;
+                }
+
+                $normalized = trim($uuid);
+                if ($normalized === '') {
+                    continue;
+                }
+
+                $legacy[] = $normalized;
+            }
+        }
+
+        return $this->normalizeOrderHistoryUuids($legacy);
+    }
+
+    private function pushOrderToGlobalHistory(Order $order): void
+    {
+        $this->pushManyOrdersToGlobalHistory([$order->uuid]);
+    }
+
+    private function pushManyOrdersToGlobalHistory(array $uuids): void
+    {
+        $incoming = $this->normalizeOrderHistoryUuids($uuids);
+        if (empty($incoming)) {
+            return;
+        }
+
+        $history = session()->get(self::GLOBAL_ORDER_HISTORY_SESSION_KEY, []);
+        $history = $this->normalizeOrderHistoryUuids(is_array($history) ? $history : []);
+
+        foreach (array_reverse($incoming) as $uuid) {
+            $history = array_values(array_filter($history, fn (string $value) => $value !== $uuid));
+            array_unshift($history, $uuid);
+        }
+
+        session()->put(
+            self::GLOBAL_ORDER_HISTORY_SESSION_KEY,
+            array_slice($history, 0, self::GLOBAL_ORDER_HISTORY_LIMIT)
+        );
+    }
+
+    private function getOrdersByUuids(array $uuids)
+    {
+        $normalizedUuids = $this->normalizeOrderHistoryUuids($uuids);
+        if (empty($normalizedUuids)) {
+            return collect();
+        }
+
+        $orders = Order::query()
+            ->whereIn('uuid', $normalizedUuids)
+            ->with(['store:id,slug,name,currency', 'table', 'items', 'review'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        $orderMap = $orders->keyBy('uuid');
+
+        return collect($normalizedUuids)
+            ->map(fn (string $uuid) => $orderMap->get($uuid))
+            ->filter()
+            ->values();
+    }
+
+    private function normalizeOrderHistoryUuids(array $uuids): array
+    {
+        $normalized = [];
+
+        foreach ($uuids as $uuid) {
+            if (! is_string($uuid)) {
+                continue;
+            }
+
+            $value = trim($uuid);
+            if ($value === '' || isset($normalized[$value])) {
+                continue;
+            }
+
+            $normalized[$value] = true;
+        }
+
+        return array_keys($normalized);
     }
 
     private function pushDineInOrderToHistory(Store $store, DiningTable $table, Order $order): void

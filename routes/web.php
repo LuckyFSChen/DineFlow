@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use App\Http\Controllers\Admin\StoreManagementController as AdminStoreController;
 use App\Http\Controllers\Admin\UserSubscriptionController;
@@ -11,11 +11,14 @@ use App\Http\Controllers\Admin\Auth\AuthenticatedSessionController as AdminAuthe
 use App\Http\Controllers\Admin\ChefManagementController;
 use App\Http\Controllers\Customer\DineInMenuController;
 use App\Http\Controllers\Customer\DineInOrderController;
+use App\Http\Controllers\Customer\StoreReviewController;
 use App\Http\Controllers\Customer\TakeoutOrderingController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Merchant\FinancialReportController;
+use App\Http\Controllers\Merchant\InvoiceCenterController;
 use App\Http\Controllers\Merchant\LoyaltyController;
+use App\Http\Controllers\Merchant\OrderHistoryController;
 use App\Http\Controllers\Merchant\SubscriptionController as MerchantSubscriptionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StoreController;
@@ -138,6 +141,16 @@ Route::middleware(['auth', 'verified', 'role:merchant'])->prefix('merchant')->na
     Route::post('/subscription', [MerchantSubscriptionController::class, 'subscribe'])->name('subscription.subscribe');
     Route::post('/subscription/trial', [MerchantSubscriptionController::class, 'startTrial'])->name('subscription.trial');
     Route::get('/subscription/success', [MerchantSubscriptionController::class, 'success'])->name('subscription.success');
+    Route::get('/orders', [OrderHistoryController::class, 'index'])->name('orders.index');
+    Route::get('/invoices', [InvoiceCenterController::class, 'index'])->name('invoices.index');
+    Route::post('/invoices/wizard', [InvoiceCenterController::class, 'updateWizard'])->name('invoices.wizard.update');
+    Route::post('/invoices/test-issue', [InvoiceCenterController::class, 'runTestIssue'])->name('invoices.test-issue');
+    Route::post('/invoices/orders/{order}/retry-issue', [InvoiceCenterController::class, 'retryOrderIssue'])->name('invoices.orders.retry-issue');
+    Route::post('/invoices/{invoice}/retry-issue', [InvoiceCenterController::class, 'retryIssue'])->name('invoices.retry-issue');
+    Route::post('/invoices/{invoice}/retry-upload', [InvoiceCenterController::class, 'retryUpload'])->name('invoices.retry-upload');
+    Route::post('/invoices/{invoice}/retry-void', [InvoiceCenterController::class, 'retryVoid'])->name('invoices.retry-void');
+    Route::post('/invoices/{invoice}/allowances', [InvoiceCenterController::class, 'createAllowance'])->name('invoices.allowances.store');
+    Route::post('/invoice-allowances/{allowance}/retry', [InvoiceCenterController::class, 'retryAllowance'])->name('invoices.allowances.retry');
     Route::get('/reports/financial', [FinancialReportController::class, 'index'])->name('reports.financial');
     Route::post('/reports/financial/monthly-target', [FinancialReportController::class, 'updateMonthlyTarget'])->name('reports.financial.monthly-target');
     Route::get('/loyalty', [LoyaltyController::class, 'index'])->name('loyalty.index');
@@ -274,9 +287,14 @@ Route::prefix('s/{store:slug}/takeout')
 
 Route::get('/s/{store:slug}/orders/{order}', [DineInOrderController::class, 'success'])
     ->name('customer.order.success');
-Route::get('/s/{store:slug}/orders', [DineInOrderController::class, 'history'])
-    ->middleware('throttle:10,1')
+Route::post('/s/{store:slug}/orders/{order}/review', [StoreReviewController::class, 'store'])
+    ->name('customer.order.review.store');
+Route::get('/orders/history', [DineInOrderController::class, 'history'])
+    ->middleware(['auth', 'throttle:10,1'])
     ->name('customer.order.history');
+Route::get('/s/{store:slug}/orders', function (Request $request) {
+    return redirect()->route('customer.order.history', $request->query());
+})->middleware(['auth', 'throttle:10,1']);
 Route::get('/s/{store:slug}/orders/{order}/status', [DineInOrderController::class, 'orderStatus'])
     ->name('customer.order.status');
 

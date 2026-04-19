@@ -11,6 +11,7 @@ use App\Models\Store;
 use App\Models\User;
 use App\Services\CustomerAccountService;
 use App\Services\LoyaltyService;
+use App\Support\InvoiceFlow;
 use App\Support\TakeoutCartSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,6 +22,8 @@ class TakeoutOrderingController extends Controller
 {
     private const CUSTOMER_PROFILE_SESSION_KEY = 'customer_order_profile';
     private const ORDER_HISTORY_SESSION_PREFIX = 'takeout_order_history_';
+    private const GLOBAL_ORDER_HISTORY_SESSION_KEY = 'customer_order_history';
+    private const GLOBAL_ORDER_HISTORY_LIMIT = 60;
     private const ORDER_HISTORY_LIMIT = 8;
 
     public function __construct(
@@ -174,9 +177,41 @@ class TakeoutOrderingController extends Controller
     {
         $rememberedCustomerInfo = session()->get(self::CUSTOMER_PROFILE_SESSION_KEY, []);
         $user = request()->user();
+        $routeStore = request()->route('store');
+
+        $rememberedMemberCarrierCode = trim((string) ($rememberedCustomerInfo['invoice_member_carrier_code'] ?? ''));
+        if (
+            $rememberedMemberCarrierCode === ''
+            && $routeStore instanceof Store
+            && $user instanceof User
+            && $user->isCustomer()
+        ) {
+            $rememberedMemberCarrierCode = (string) (Member::query()
+                ->where('store_id', $routeStore->id)
+                ->where(function ($query) use ($user) {
+                    $email = trim((string) ($user->email ?? ''));
+                    $phone = preg_replace('/\\D+/', '', (string) ($user->phone ?? ''));
+
+                    if ($email !== '') {
+                        $query->orWhere('email', $email);
+                    }
+
+                    if (is_string($phone) && $phone !== '') {
+                        $query->orWhere('phone', $phone);
+                    }
+                })
+                ->value('invoice_carrier_code') ?? '');
+        }
 
         if (! $user instanceof User || ! $user->isCustomer()) {
-            return $rememberedCustomerInfo;
+            return $rememberedCustomerInfo + [
+                'invoice_flow' => $rememberedCustomerInfo['invoice_flow'] ?? InvoiceFlow::NONE,
+                'invoice_mobile_barcode' => $rememberedCustomerInfo['invoice_mobile_barcode'] ?? '',
+                'invoice_member_carrier_code' => $rememberedMemberCarrierCode,
+                'invoice_donation_code' => $rememberedCustomerInfo['invoice_donation_code'] ?? '',
+                'invoice_company_tax_id' => $rememberedCustomerInfo['invoice_company_tax_id'] ?? '',
+                'invoice_company_name' => $rememberedCustomerInfo['invoice_company_name'] ?? '',
+            ];
         }
 
         return [
@@ -184,6 +219,12 @@ class TakeoutOrderingController extends Controller
             'customer_email' => $rememberedCustomerInfo['customer_email'] ?? (string) ($user->email ?? ''),
             'customer_phone' => $rememberedCustomerInfo['customer_phone'] ?? (string) ($user->phone ?? ''),
             'note' => $rememberedCustomerInfo['note'] ?? '',
+            'invoice_flow' => $rememberedCustomerInfo['invoice_flow'] ?? InvoiceFlow::NONE,
+            'invoice_mobile_barcode' => $rememberedCustomerInfo['invoice_mobile_barcode'] ?? '',
+            'invoice_member_carrier_code' => $rememberedMemberCarrierCode,
+            'invoice_donation_code' => $rememberedCustomerInfo['invoice_donation_code'] ?? '',
+            'invoice_company_tax_id' => $rememberedCustomerInfo['invoice_company_tax_id'] ?? '',
+            'invoice_company_name' => $rememberedCustomerInfo['invoice_company_name'] ?? '',
         ];
     }
 
@@ -267,7 +308,16 @@ class TakeoutOrderingController extends Controller
             'note' => ['nullable', 'string'],
             'remember_customer_info' => ['nullable', 'boolean'],
             'create_account_with_phone' => ['nullable', 'boolean'],
-        ]);
+        ] + InvoiceFlow::validationRules());
+
+        $invoicePayload = InvoiceFlow::normalize($validated);
+        $invoiceValidationErrors = InvoiceFlow::validateFlowPayload($invoicePayload);
+        if ($invoiceValidationErrors !== []) {
+            return redirect()
+                ->route('customer.takeout.cart.show', ['store' => $store])
+                ->withErrors($invoiceValidationErrors)
+                ->withInput();
+        }
 
         $validated['customer_phone'] = $this->normalizeCustomerPhone($validated['customer_phone'] ?? null, $store);
 
@@ -277,6 +327,12 @@ class TakeoutOrderingController extends Controller
                 'customer_email' => $validated['customer_email'] ?? '',
                 'customer_phone' => $validated['customer_phone'] ?? '',
                 'note' => $this->normalizeOptionalText($validated['note'] ?? null) ?? '',
+                'invoice_flow' => $invoicePayload['invoice_flow'] ?? InvoiceFlow::NONE,
+                'invoice_mobile_barcode' => $invoicePayload['invoice_mobile_barcode'] ?? '',
+                'invoice_member_carrier_code' => $invoicePayload['invoice_member_carrier_code'] ?? '',
+                'invoice_donation_code' => $invoicePayload['invoice_donation_code'] ?? '',
+                'invoice_company_tax_id' => $invoicePayload['invoice_company_tax_id'] ?? '',
+                'invoice_company_name' => $invoicePayload['invoice_company_name'] ?? '',
             ]);
         } else {
             session()->forget(self::CUSTOMER_PROFILE_SESSION_KEY);
@@ -300,7 +356,7 @@ class TakeoutOrderingController extends Controller
             && ! $phoneAlreadyRegistered;
 
         try {
-            $order = DB::transaction(function () use ($store, $validated, $cart, $total, $cartToken, $shouldCreateAccount) {
+            $order = DB::transaction(function () use ($store, $validated, $cart, $total, $cartToken, $shouldCreateAccount, $invoicePayload) {
                 $this->assertCartItemsStillAvailable($store, $cart);
 
                 $customerName = $this->normalizeOptionalText($validated['customer_name'] ?? null);
@@ -343,6 +399,13 @@ class TakeoutOrderingController extends Controller
                     'order_no' => $this->generateOrderNo($store),
                     'status' => 'pending',
                     'payment_status' => 'unpaid',
+                    'invoice_flow' => $invoicePayload['invoice_flow'],
+                    'invoice_mobile_barcode' => $invoicePayload['invoice_mobile_barcode'],
+                    'invoice_member_carrier_code' => $invoicePayload['invoice_member_carrier_code'],
+                    'invoice_donation_code' => $invoicePayload['invoice_donation_code'],
+                    'invoice_company_tax_id' => $invoicePayload['invoice_company_tax_id'],
+                    'invoice_company_name' => $invoicePayload['invoice_company_name'],
+                    'invoice_requested_at' => $invoicePayload['invoice_flow'] !== InvoiceFlow::NONE ? now() : null,
                     'customer_name' => $customerName,
                     'customer_email' => $customerEmail,
                     'customer_phone' => $customerPhone,
@@ -369,6 +432,14 @@ class TakeoutOrderingController extends Controller
                     $coupon->increment('used_count');
                 }
 
+                $this->bindMemberCarrierCode(
+                    $store,
+                    $customerName,
+                    $customerEmail,
+                    $customerPhone,
+                    $invoicePayload
+                );
+
                 return $order;
             });
         } catch (ValidationException $exception) {
@@ -382,6 +453,7 @@ class TakeoutOrderingController extends Controller
         session()->forget(TakeoutCartSession::tokenSessionKey($store->id));
         TakeoutCartSession::clearPersistedCartForCurrentUser($request, $store->id);
         $this->pushTakeoutOrderToHistory($store, $order);
+        $this->pushOrderToGlobalHistory($order);
 
         return redirect()->route('customer.order.success', [
             'store' => $store->slug,
@@ -791,6 +863,32 @@ class TakeoutOrderingController extends Controller
         return $query->first();
     }
 
+    private function bindMemberCarrierCode(
+        Store $store,
+        ?string $customerName,
+        ?string $customerEmail,
+        ?string $customerPhone,
+        array $invoicePayload
+    ): void {
+        if (($invoicePayload['invoice_flow'] ?? null) !== InvoiceFlow::MEMBER_CARRIER) {
+            return;
+        }
+
+        $carrierCode = trim((string) ($invoicePayload['invoice_member_carrier_code'] ?? ''));
+        if ($carrierCode === '') {
+            return;
+        }
+
+        $member = $this->loyaltyService->resolveMember($store, $customerName, $customerEmail, $customerPhone);
+        if (! $member) {
+            return;
+        }
+
+        $member->invoice_carrier_code = strtoupper($carrierCode);
+        $member->invoice_carrier_bound_at = now();
+        $member->save();
+    }
+
     private function formatCouponSummary(Coupon $coupon, int $discount, string $currencySymbol): string
     {
         $summary = match ($coupon->discount_type) {
@@ -893,6 +991,52 @@ class TakeoutOrderingController extends Controller
     private function getTakeoutOrderHistorySessionKey(Store $store): string
     {
         return self::ORDER_HISTORY_SESSION_PREFIX . $store->id;
+    }
+
+    private function pushOrderToGlobalHistory(Order $order): void
+    {
+        $this->pushManyOrdersToGlobalHistory([$order->uuid]);
+    }
+
+    private function pushManyOrdersToGlobalHistory(array $uuids): void
+    {
+        $incoming = $this->normalizeOrderHistoryUuids($uuids);
+        if (empty($incoming)) {
+            return;
+        }
+
+        $history = session()->get(self::GLOBAL_ORDER_HISTORY_SESSION_KEY, []);
+        $history = $this->normalizeOrderHistoryUuids(is_array($history) ? $history : []);
+
+        foreach (array_reverse($incoming) as $uuid) {
+            $history = array_values(array_filter($history, fn (string $value) => $value !== $uuid));
+            array_unshift($history, $uuid);
+        }
+
+        session()->put(
+            self::GLOBAL_ORDER_HISTORY_SESSION_KEY,
+            array_slice($history, 0, self::GLOBAL_ORDER_HISTORY_LIMIT)
+        );
+    }
+
+    private function normalizeOrderHistoryUuids(array $uuids): array
+    {
+        $normalized = [];
+
+        foreach ($uuids as $uuid) {
+            if (! is_string($uuid)) {
+                continue;
+            }
+
+            $value = trim($uuid);
+            if ($value === '' || isset($normalized[$value])) {
+                continue;
+            }
+
+            $normalized[$value] = true;
+        }
+
+        return array_keys($normalized);
     }
 
     private function pushTakeoutOrderToHistory(Store $store, Order $order): void

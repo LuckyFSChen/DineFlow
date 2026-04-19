@@ -63,6 +63,12 @@ class HomeController extends Controller
         }
 
         $featuredStores = $featuredStoresQuery
+            ->withAvg(['reviews as reviews_avg_rating' => function ($query) {
+                $query->where('is_visible', true);
+            }], 'rating')
+            ->withCount(['reviews as reviews_count' => function ($query) {
+                $query->where('is_visible', true);
+            }])
             ->limit(6)
             ->get();
 
@@ -106,6 +112,12 @@ class HomeController extends Controller
         }
 
         $stores = $query
+            ->withAvg(['reviews as reviews_avg_rating' => function ($query) {
+                $query->where('is_visible', true);
+            }], 'rating')
+            ->withCount(['reviews as reviews_count' => function ($query) {
+                $query->where('is_visible', true);
+            }])
             ->when(! $hasUserLocation, function ($q) {
                 $q->orderBy('name');
             })

@@ -16,6 +16,13 @@ $storeRouteValue = static function ($value) {
 };
 
 $storeRoute = $storeRouteValue($store);
+$currencyCode = strtolower((string) ($store->currency ?? 'twd'));
+$currencySymbol = match ($currencyCode) {
+    'vnd' => 'VND',
+    'cny' => 'CNY',
+    'usd' => 'USD',
+    default => 'NT$',
+};
 function cashierFormatOrder(\App\Models\Order $order): array {
     return [
         'id'             => $order->id,
@@ -26,12 +33,18 @@ function cashierFormatOrder(\App\Models\Order $order): array {
         'order_type'     => $order->order_type,
         'note'           => $order->note,
         'customer_name'  => $order->customer_name,
+        'subtotal'       => (int) $order->subtotal,
+        'total'          => (int) $order->total,
+        'coupon_code'    => $order->coupon_code,
+        'coupon_discount'=> (int) $order->coupon_discount,
         'created_at'     => $order->created_at?->toIso8601String(),
         'table'          => ($t = $order->getRelation('table')) ? ['table_no' => $t->table_no] : null,
         'items'          => $order->items->map(fn($i) => [
             'id'             => $i->id,
             'product_name'   => $i->product_name,
+            'price'          => (int) $i->price,
             'qty'            => $i->qty,
+            'subtotal'       => (int) $i->subtotal,
             'note'           => $i->note,
             'option_summary' => null,
         ])->values()->all(),
@@ -77,6 +90,13 @@ $cashierI18n = [
     'status_accepted' => __('admin.board_status_accepted'),
     'status_confirmed' => __('admin.board_status_confirmed'),
     'status_received' => __('admin.board_status_received'),
+    'item_price' => __('admin.board_item_price'),
+    'item_subtotal' => __('admin.board_item_subtotal'),
+    'order_subtotal' => __('admin.board_order_subtotal'),
+    'order_total' => __('admin.board_order_total'),
+    'coupon_label' => __('admin.board_coupon_label'),
+    'mark_paid_confirm' => __('admin.board_mark_paid_confirm'),
+    'accept_prepay_confirm' => __('admin.board_accept_prepay_confirm'),
     'seconds_ago' => __('admin.board_time_seconds_ago'),
     'minutes_ago' => __('admin.board_time_minutes_ago'),
     'hours_ago' => __('admin.board_time_hours_ago'),
@@ -261,8 +281,32 @@ $cashierI18n = [
                                     <div x-show="item.option_summary" class="mt-0.5 text-xs text-slate-400" x-text="item.option_summary"></div>
                                 </div>
                             </div>
+                            <div class="shrink-0 text-right text-xs text-slate-300">
+                                <div><span x-text="i18n.item_price"></span> <span x-text="formatMoney(item.price)"></span></div>
+                                <div class="font-semibold text-white"><span x-text="i18n.item_subtotal"></span> <span x-text="formatMoney(item.subtotal)"></span></div>
+                            </div>
                         </div>
                     </template>
+                </div>
+
+                <div class="mx-4 mb-3 rounded-lg border border-slate-700/70 bg-slate-800/70 px-3 py-2 text-xs text-slate-200 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span x-text="i18n.order_subtotal"></span>
+                        <span class="tabular-nums" x-text="formatMoney(orderSubtotal(order))"></span>
+                    </div>
+                    <template x-if="hasCoupon(order)">
+                        <div class="flex items-center justify-between text-emerald-300">
+                            <span>
+                                <span x-text="i18n.coupon_label"></span>
+                                <span x-show="order.coupon_code" class="font-semibold" x-text="' (' + order.coupon_code + ')' "></span>
+                            </span>
+                            <span class="tabular-nums" x-text="'-' + formatMoney(orderCouponDiscount(order))"></span>
+                        </div>
+                    </template>
+                    <div class="flex items-center justify-between border-t border-slate-700 pt-1.5 text-sm font-semibold text-white">
+                        <span x-text="i18n.order_total"></span>
+                        <span class="tabular-nums" x-text="formatMoney(orderTotal(order))"></span>
+                    </div>
                 </div>
 
                 {{-- Order note --}}
@@ -297,7 +341,7 @@ $cashierI18n = [
                     {{-- Collect payment: completed unpaid order --}}
                     <template x-if="isUnpaidCompleted(order)">
                         <button
-                            @click="setStatus(order, 'paid')"
+                            @click="markPaid(order)"
                             :disabled="order._loading"
                             class="flex-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50">
                             <span x-text="order._loading ? i18n.processing : i18n.mark_paid"></span>
@@ -404,6 +448,7 @@ $cashierI18n = [
 function cashierBoard() {
     return {
         orders: @json($ordersData),
+        currencySymbol: @json($currencySymbol),
         statusUrlTemplate: @json(route('admin.stores.cashier.orders.status', ['store' => $storeRoute, 'order' => '__ORDER__'])),
         checkoutTiming: @json($checkoutTiming ?? 'postpay'),
         i18n: @json($cashierI18n),
@@ -579,6 +624,13 @@ function cashierBoard() {
 
         // Accept a pending order → send to kitchen board
         acceptOrder(order) {
+            if (this.checkoutTiming === 'prepay') {
+                const confirmed = window.confirm(this.i18n.accept_prepay_confirm);
+                if (!confirmed) {
+                    return;
+                }
+            }
+
             this.setStatus(order, 'preparing');
         },
 
@@ -633,6 +685,54 @@ function cashierBoard() {
 
             this.closeCancelDialog();
             this.setStatus(order, 'cancelled', payload);
+        },
+
+        formatMoney(value) {
+            const amount = Number(value || 0);
+            const safe = Number.isFinite(amount) ? amount : 0;
+            return `${this.currencySymbol} ${safe.toLocaleString()}`;
+        },
+
+        orderSubtotal(order) {
+            const subtotal = Number(order?.subtotal);
+            if (Number.isFinite(subtotal) && subtotal > 0) {
+                return subtotal;
+            }
+
+            const items = Array.isArray(order?.items) ? order.items : [];
+            return items.reduce((sum, item) => sum + Number(item?.subtotal || 0), 0);
+        },
+
+        orderCouponDiscount(order) {
+            const discount = Number(order?.coupon_discount || 0);
+            return Number.isFinite(discount) ? Math.max(0, discount) : 0;
+        },
+
+        orderTotal(order) {
+            const total = Number(order?.total);
+            if (Number.isFinite(total) && total > 0) {
+                return total;
+            }
+
+            return Math.max(0, this.orderSubtotal(order) - this.orderCouponDiscount(order));
+        },
+
+        hasCoupon(order) {
+            const code = String(order?.coupon_code || '').trim();
+            return code !== '' || this.orderCouponDiscount(order) > 0;
+        },
+
+        markPaid(order) {
+            if (!order || order._loading) {
+                return;
+            }
+
+            const confirmed = window.confirm(this.i18n.mark_paid_confirm);
+            if (!confirmed) {
+                return;
+            }
+
+            this.setStatus(order, 'paid');
         },
 
         async setStatus(order, status, payload = {}) {

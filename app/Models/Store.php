@@ -308,6 +308,26 @@ class Store extends Model
         return $this->hasMany(Coupon::class);
     }
 
+    public function reviews()
+    {
+        return $this->hasMany(StoreReview::class);
+    }
+
+    public function invoiceSetting()
+    {
+        return $this->hasOne(StoreInvoiceSetting::class);
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(StoreInvoice::class);
+    }
+
+    public function invoiceAllowances()
+    {
+        return $this->hasMany(StoreInvoiceAllowance::class);
+    }
+
     public function calculateEarnedPoints(int $paidAmount): int
     {
         if (! $this->loyalty_enabled) {

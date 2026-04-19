@@ -16,6 +16,13 @@ $storeRouteValue = static function ($value) {
 };
 
 $storeRoute = $storeRouteValue($store);
+$currencyCode = strtolower((string) ($store->currency ?? 'twd'));
+$currencySymbol = match ($currencyCode) {
+    'vnd' => 'VND',
+    'cny' => 'CNY',
+    'usd' => 'USD',
+    default => 'NT$',
+};
 $defaultCancelQuickReasons = __('admin.board_cancel_quick_reasons');
 if (! is_array($defaultCancelQuickReasons)) {
     $defaultCancelQuickReasons = [];
@@ -51,7 +58,14 @@ $allBoardsI18n = [
     'label_cashier' => __('admin.board_label_cashier'),
     'item_progress' => __('admin.board_item_progress'),
     'item_note_label' => __('admin.board_item_note_label'),
+    'item_price' => __('admin.board_item_price'),
+    'item_subtotal' => __('admin.board_item_subtotal'),
+    'order_subtotal' => __('admin.board_order_subtotal'),
+    'order_total' => __('admin.board_order_total'),
+    'coupon_label' => __('admin.board_coupon_label'),
     'processing' => __('admin.board_processing'),
+    'mark_paid_confirm' => __('admin.board_mark_paid_confirm'),
+    'accept_prepay_confirm' => __('admin.board_accept_prepay_confirm'),
     'status_preparing' => __('admin.board_status_preparing'),
     'status_unpaid_collect' => __('admin.board_status_unpaid_collect'),
     'status_pending' => __('admin.board_status_pending'),
@@ -214,8 +228,32 @@ $allBoardsI18n = [
                                     <div x-show="item.option_summary" class="mt-0.5 text-xs text-slate-400" x-text="item.option_summary"></div>
                                 </div>
                             </div>
+                            <div x-show="order.board === 'cashier'" class="shrink-0 text-right text-xs text-slate-300">
+                                <div><span x-text="i18n.item_price"></span> <span x-text="formatMoney(item.price)"></span></div>
+                                <div class="font-semibold text-white"><span x-text="i18n.item_subtotal"></span> <span x-text="formatMoney(item.subtotal)"></span></div>
+                            </div>
                         </div>
                     </template>
+                </div>
+
+                <div x-show="order.board === 'cashier'" class="mx-4 mb-3 rounded-lg border border-slate-700/70 bg-slate-800/70 px-3 py-2 text-xs text-slate-200 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span x-text="i18n.order_subtotal"></span>
+                        <span class="tabular-nums" x-text="formatMoney(orderSubtotal(order))"></span>
+                    </div>
+                    <template x-if="hasCoupon(order)">
+                        <div class="flex items-center justify-between text-emerald-300">
+                            <span>
+                                <span x-text="i18n.coupon_label"></span>
+                                <span x-show="order.coupon_code" class="font-semibold" x-text="' (' + order.coupon_code + ')' "></span>
+                            </span>
+                            <span class="tabular-nums" x-text="'-' + formatMoney(orderCouponDiscount(order))"></span>
+                        </div>
+                    </template>
+                    <div class="flex items-center justify-between border-t border-slate-700 pt-1.5 text-sm font-semibold text-white">
+                        <span x-text="i18n.order_total"></span>
+                        <span class="tabular-nums" x-text="formatMoney(orderTotal(order))"></span>
+                    </div>
                 </div>
 
                 <template x-if="order.note">
@@ -227,7 +265,7 @@ $allBoardsI18n = [
                 <div class="border-t border-slate-700/50 px-4 py-3">
                     <div class="flex gap-2" x-show="canAccept(order) || canCancel(order) || canCollect(order) || canComplete(order)">
                         <button x-show="canAccept(order)"
-                                @click="updateOrder(order, 'preparing')"
+                            @click="acceptOrder(order)"
                                 :disabled="order._loading"
                                 class="flex-1 rounded-xl px-3 py-2 text-xs font-semibold text-white transition disabled:opacity-50"
                                 :class="checkoutTiming === 'prepay' ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-blue-600 hover:bg-blue-500'"
@@ -242,7 +280,7 @@ $allBoardsI18n = [
                         </button>
 
                         <button x-show="canCollect(order)"
-                                @click="updateOrder(order, 'paid')"
+                                @click="collectOrder(order)"
                                 :disabled="order._loading"
                                 class="flex-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50">
                             {{ __('admin.board_action_mark_paid') }}
@@ -358,6 +396,7 @@ $allBoardsI18n = [
 function allBoards() {
     return {
         orders: @json($ordersData),
+        currencySymbol: @json($currencySymbol),
         boardFilter: 'all',
         checkoutTiming: @json($checkoutTiming ?? 'postpay'),
         canCashierActions: @json($canCashierActions),
@@ -479,6 +518,69 @@ function allBoards() {
 
             this.closeCancelDialog();
             this.updateOrder(order, 'cancelled', payload);
+        },
+
+        acceptOrder(order) {
+            if (!order || order._loading) {
+                return;
+            }
+
+            if (this.checkoutTiming === 'prepay') {
+                const confirmed = window.confirm(this.i18n.accept_prepay_confirm);
+                if (!confirmed) {
+                    return;
+                }
+            }
+
+            this.updateOrder(order, 'preparing');
+        },
+
+        collectOrder(order) {
+            if (!order || order._loading) {
+                return;
+            }
+
+            const confirmed = window.confirm(this.i18n.mark_paid_confirm);
+            if (!confirmed) {
+                return;
+            }
+
+            this.updateOrder(order, 'paid');
+        },
+
+        formatMoney(value) {
+            const amount = Number(value || 0);
+            const safe = Number.isFinite(amount) ? amount : 0;
+            return `${this.currencySymbol} ${safe.toLocaleString()}`;
+        },
+
+        orderSubtotal(order) {
+            const subtotal = Number(order?.subtotal);
+            if (Number.isFinite(subtotal) && subtotal > 0) {
+                return subtotal;
+            }
+
+            const items = Array.isArray(order?.items) ? order.items : [];
+            return items.reduce((sum, item) => sum + Number(item?.subtotal || 0), 0);
+        },
+
+        orderCouponDiscount(order) {
+            const discount = Number(order?.coupon_discount || 0);
+            return Number.isFinite(discount) ? Math.max(0, discount) : 0;
+        },
+
+        orderTotal(order) {
+            const total = Number(order?.total);
+            if (Number.isFinite(total) && total > 0) {
+                return total;
+            }
+
+            return Math.max(0, this.orderSubtotal(order) - this.orderCouponDiscount(order));
+        },
+
+        hasCoupon(order) {
+            const code = String(order?.coupon_code || '').trim();
+            return code !== '' || this.orderCouponDiscount(order) > 0;
         },
 
         async poll() {

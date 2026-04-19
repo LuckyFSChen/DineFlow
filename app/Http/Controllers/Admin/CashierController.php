@@ -45,12 +45,18 @@ class CashierController extends Controller
             'order_type'     => $o->order_type,
             'note'           => $o->note,
             'customer_name'  => $o->customer_name,
+            'subtotal'       => (int) $o->subtotal,
+            'total'          => (int) $o->total,
+            'coupon_code'    => $o->coupon_code,
+            'coupon_discount'=> (int) $o->coupon_discount,
             'created_at'     => $o->created_at?->toIso8601String(),
             'table'          => ($t = $o->getRelation('table')) ? ['table_no' => $t->table_no] : null,
             'items'          => $o->items->map(fn ($i) => [
                 'id'             => $i->id,
                 'product_name'   => $i->product_name,
+                'price'          => (int) $i->price,
                 'qty'            => $i->qty,
+                'subtotal'       => (int) $i->subtotal,
                 'note'           => $i->note,
                 'option_summary' => null,
             ])->values()->all(),
@@ -160,10 +166,14 @@ class CashierController extends Controller
                 'order_type',
                 'note',
                 'customer_name',
+                'subtotal',
+                'total',
+                'coupon_code',
+                'coupon_discount',
                 'created_at',
             ])
             ->with([
-                'items:id,order_id,product_name,qty,note',
+                'items:id,order_id,product_name,price,qty,subtotal,note',
                 'table:id,table_no',
             ])
             ->where('store_id', $store->id)

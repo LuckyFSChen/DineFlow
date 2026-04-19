@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 return [
     'manage_title' => '廚師帳號管理',

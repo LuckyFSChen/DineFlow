@@ -144,6 +144,11 @@
 
                 <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                     @foreach($stores as $store)
+                        @php
+                            $avgRating = (float) ($store->reviews_avg_rating ?? 0);
+                            $roundedRating = (int) round($avgRating);
+                            $reviewCount = (int) ($store->reviews_count ?? 0);
+                        @endphp
                         <div class="group flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-brand-soft/60 bg-white shadow-[0_18px_44px_rgba(90,30,14,0.1)] transition duration-300 hover:-translate-y-1 hover:border-brand-primary/30 hover:shadow-[0_24px_60px_rgba(90,30,14,0.16)]">
                             <div class="relative h-48 w-full overflow-hidden">
                                 <img
@@ -191,6 +196,16 @@
                                 </p>
 
                                 <div class="mt-5 space-y-2 text-base text-brand-primary/70">
+                                    <div class="flex items-center gap-2">
+                                        <svg class="h-4 w-4 text-brand-primary/70" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path d="M10 2.8l2.22 4.5 4.96.72-3.59 3.5.85 4.95L10 14.35l-4.44 2.32.85-4.95-3.59-3.5 4.96-.72L10 2.8z"/>
+                                        </svg>
+                                        @if($reviewCount > 0)
+                                            <span>{{ str_repeat('★', $roundedRating) }}{{ str_repeat('☆', max(5 - $roundedRating, 0)) }} {{ number_format($avgRating, 1) }} ({{ $reviewCount }} {{ __('home.store_reviews_unit') }})</span>
+                                        @else
+                                            <span>{{ __('home.store_rating_empty') }}</span>
+                                        @endif
+                                    </div>
                                     <div class="flex items-center gap-2">
                                         <svg class="h-4 w-4 text-brand-primary/70" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.5a.75.75 0 10-1.5 0v3.25c0 .2.08.39.22.53l2 2a.75.75 0 101.06-1.06l-1.78-1.78V6.5z" clip-rule="evenodd"/>

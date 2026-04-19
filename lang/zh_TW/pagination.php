@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 return [
     'previous' => '上一頁',

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('content')
 @php
@@ -71,7 +71,7 @@
                 @if($maxStores === null)
                     / {{ __('admin.no_limit') }}
                 @else
-                    / {{ __('admin.limit_stores', ['max' => $maxStores]) }}（{{ __('admin.remaining_stores', ['count' => $remainingStores]) }}）
+                    / {{ __('admin.limit_stores', ['max' => $maxStores]) }}，{{ __('admin.remaining_stores', ['count' => $remainingStores]) }}
                 @endif
                 <span class="ml-2 text-indigo-700">{{ __('admin.quota_inactive_not_counted') }}</span>
             </div>
@@ -117,7 +117,7 @@
 
         <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[1240px] divide-y divide-slate-200 text-sm">
+                <table class="w-full min-w-[1240px] divide-y divide-slate-200 text-sm" data-datatable data-dt-paging="false" data-dt-info="false" data-dt-searching="false">
                     <thead class="bg-slate-50">
                         <tr>
                             <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('admin.store_name') }}</th>
@@ -187,11 +187,7 @@
                                             {{ __('admin.store_actions_expand') }}
                                         </button>
                                     </div>
-                                </td>
-                            </tr>
-                            <tr class="hidden bg-slate-50/70" data-store-actions-row="{{ $store->id }}">
-                                <td colspan="9" class="px-6 pb-5 pt-0">
-                                    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                    <div class="mt-3 hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" data-store-actions-panel="{{ $store->id }}">
                                         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('admin.store_actionable_items') }}</p>
                                         <div class="mt-3 flex flex-wrap gap-2">
                                             <a href="{{ route('admin.stores.products.index', $store) }}"
@@ -212,7 +208,7 @@
 
                                                 <a href="{{ route('admin.stores.chefs.index', $store) }}"
                                                    class="inline-flex items-center rounded-xl border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100">
-                                                    👨‍🍳 {{ __('admin.chef_accounts') }}
+                                                    {{ __('admin.chef_accounts') }}
                                                 </a>
                                             @endif
 
@@ -236,7 +232,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr>
+                            <tr data-datatable-row="ignore">
                                 <td colspan="9" class="px-6 py-12 text-center text-slate-500">
                                     {{ __('admin.no_stores') }}
                                 </td>
@@ -260,7 +256,7 @@
                 <h3 id="store-modal-title" class="text-lg font-bold text-slate-900">{{ __('admin.add_store_modal_title') }}</h3>
                 <p class="text-xs text-slate-500">{{ __('admin.modal_subtitle') }}</p>
             </div>
-            <button type="button" id="store-modal-close" class="rounded-full p-2 text-slate-500 hover:bg-slate-100">✕</button>
+            <button type="button" id="store-modal-close" class="rounded-full p-2 text-slate-500 hover:bg-slate-100" aria-label="Close">&times;</button>
         </div>
 
         <form id="store-modal-form" class="max-h-[78vh] overflow-y-auto px-6 py-5" enctype="multipart/form-data">
@@ -407,16 +403,16 @@
 
                     <div id="store-banner-preview-wrapper" class="mt-3 hidden">
                         <canvas id="store-banner-crop-preview" width="1200" height="400" class="w-full rounded-xl border border-slate-300 bg-white"></canvas>
-                        <p id="store-banner-helper" class="mt-2 text-xs text-slate-500">尚未選擇橫幅</p>
+                        <p id="store-banner-helper" class="mt-2 text-xs text-slate-500">尚未選擇封面圖</p>
                         <div class="mt-3">
                             <label for="store-banner-zoom" class="mb-1 block text-xs font-semibold text-slate-600">縮放</label>
                             <input id="store-banner-zoom" type="range" min="1" max="3" step="0.05" value="1" class="w-full">
                         </div>
                         <div class="mt-2 flex flex-wrap gap-2">
-                            <button type="button" id="store-banner-reset" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">重設位置</button>
+                            <button type="button" id="store-banner-reset" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">重置縮放</button>
                             <button type="button" id="store-banner-remove" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">{{ __('admin.remove') }}</button>
                         </div>
-                        <p class="mt-2 text-[11px] text-slate-500">在預覽區拖曳可調整橫幅裁切範圍，儲存時會套用。</p>
+                        <p class="mt-2 text-[11px] text-slate-500">可拖曳圖片調整裁切位置，儲存時會自動轉成 JPG。</p>
                     </div>
                 </div>
 
@@ -765,7 +761,7 @@
             bannerCropCtx.fillStyle = '#64748b';
             bannerCropCtx.font = '24px sans-serif';
             bannerCropCtx.textAlign = 'center';
-            bannerCropCtx.fillText('尚未選擇橫幅', bannerCropPreview.width / 2, bannerCropPreview.height / 2 + 8);
+            bannerCropCtx.fillText('尚未選擇封面圖', bannerCropPreview.width / 2, bannerCropPreview.height / 2 + 8);
             return;
         }
 
@@ -844,7 +840,7 @@
             bannerZoomInput.value = '1';
         }
         if (bannerHelper) {
-            bannerHelper.textContent = '尚未選擇橫幅';
+            bannerHelper.textContent = '尚未選擇封面圖';
         }
         bannerPreviewWrapper.classList.add('hidden');
         renderBannerPreview();
@@ -870,7 +866,7 @@
             centerBannerImage();
             bannerPreviewWrapper.classList.remove('hidden');
             if (bannerHelper) {
-                bannerHelper.textContent = '目前橫幅（可拖曳調整裁切）';
+                bannerHelper.textContent = '已載入目前封面圖，可拖曳調整裁切。';
             }
             renderBannerPreview();
         };
@@ -906,7 +902,7 @@
             centerBannerImage();
             bannerPreviewWrapper.classList.remove('hidden');
             if (bannerHelper) {
-                bannerHelper.textContent = `已選擇：${file.name}`;
+                bannerHelper.textContent = `已載入檔案：${file.name}`;
             }
             renderBannerPreview();
         };
@@ -1040,7 +1036,7 @@
 
             const data = await res.json();
             if (!res.ok || !data.ok) {
-                const validationMessage = Object.values(data.errors || {}).flat().join('，');
+                const validationMessage = Object.values(data.errors || {}).flat().join('、');
                 throw new Error(data.message || validationMessage || i18n.saveFailed);
             }
 
@@ -1069,15 +1065,15 @@
     document.querySelectorAll('[data-store-actions-toggle]').forEach((button) => {
         button.addEventListener('click', () => {
             const storeId = button.getAttribute('data-store-actions-toggle');
-            const targetRow = document.querySelector(`[data-store-actions-row="${storeId}"]`);
-            if (!targetRow) {
+            const targetPanel = document.querySelector(`[data-store-actions-panel="${storeId}"]`);
+            if (!targetPanel) {
                 return;
             }
 
-            const isHidden = targetRow.classList.contains('hidden');
+            const isHidden = targetPanel.classList.contains('hidden');
 
-            document.querySelectorAll('[data-store-actions-row]').forEach((row) => {
-                row.classList.add('hidden');
+            document.querySelectorAll('[data-store-actions-panel]').forEach((panel) => {
+                panel.classList.add('hidden');
             });
 
             document.querySelectorAll('[data-store-actions-toggle]').forEach((toggleBtn) => {
@@ -1086,7 +1082,7 @@
             });
 
             if (isHidden) {
-                targetRow.classList.remove('hidden');
+                targetPanel.classList.remove('hidden');
                 button.setAttribute('aria-expanded', 'true');
                 button.textContent = i18n.actionsCollapse;
             }
@@ -1202,3 +1198,5 @@
 })();
 </script>
 @endsection
+
+

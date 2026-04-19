@@ -83,7 +83,7 @@
                         <button type="submit" class="rounded-lg bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-accent hover:text-brand-dark">{{ __('merchant.apply_filter') }}</button>
                         <a href="{{ route('merchant.reports.financial') }}" class="rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-white/20">{{ __('merchant.reset_all') }}</a>
                         @if($comparison)
-                            <a href="{{ route('merchant.reports.financial', array_merge($storeQuery, ['start_date' => $startDate, 'end_date' => $endDate, 'compare_start_date' => null, 'compare_end_date' => null])) }}" class="rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-white/20">{{ __('merchant.clear_compare') }}</a>
+                            <a href="{{ route('merchant.reports.financial', array_merge($storeQuery, ['start_date' => $startDate, 'end_date' => $endDate, 'compare_start_date' => '', 'compare_end_date' => ''])) }}" class="rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-white/20">{{ __('merchant.clear_compare') }}</a>
                         @endif
                     </div>
                 </form>
@@ -268,7 +268,7 @@
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 class="text-lg font-semibold text-slate-900">{{ __('merchant.top_products') }}</h2>
                 <div class="mt-4 overflow-x-auto">
-                    <table class="min-w-full text-sm">
+                    <table class="min-w-full text-sm" data-datatable data-dt-paging="false" data-dt-info="false">
                         <thead class="bg-slate-100 text-slate-600">
                             <tr>
                                 <th class="px-3 py-2 text-left">{{ __('merchant.rank') }}</th>
@@ -298,7 +298,7 @@
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 class="text-lg font-semibold text-slate-900">{{ __('merchant.store_revenue_distribution') }}</h2>
                 <div class="mt-4 overflow-x-auto">
-                    <table class="min-w-full text-sm">
+                    <table class="min-w-full text-sm" data-datatable data-dt-paging="false" data-dt-info="false">
                         <thead class="bg-slate-100 text-slate-600">
                             <tr>
                                 <th class="px-3 py-2 text-left">{{ __('merchant.store') }}</th>

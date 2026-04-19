@@ -1,6 +1,10 @@
 import './bootstrap';
 
 import Alpine from 'alpinejs';
+import DataTable from 'datatables.net-dt';
+import 'datatables.net-responsive-dt';
+import 'datatables.net-dt/css/dataTables.dataTables.css';
+import 'datatables.net-responsive-dt/css/responsive.dataTables.css';
 
 window.Alpine = Alpine;
 
@@ -109,8 +113,184 @@ const bootPhoneFormatter = () => {
     });
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bootPhoneFormatter, { once: true });
-} else {
+const dataTableLanguage = {
+    emptyTable: '目前沒有資料',
+    zeroRecords: '找不到符合條件的資料',
+    info: '顯示第 _START_ 到 _END_ 筆，共 _TOTAL_ 筆',
+    infoEmpty: '顯示第 0 到 0 筆，共 0 筆',
+    infoFiltered: '(從 _MAX_ 筆資料中篩選)',
+    lengthMenu: '每頁顯示 _MENU_ 筆',
+    search: '搜尋：',
+    paginate: {
+        first: '第一頁',
+        previous: '上一頁',
+        next: '下一頁',
+        last: '最後一頁',
+    },
+};
+
+const toBooleanOption = (value, fallback) => {
+    if (value === undefined || value === null || value === '') {
+        return fallback;
+    }
+
+    const normalized = String(value).trim().toLowerCase();
+    if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+        return true;
+    }
+
+    if (['0', 'false', 'no', 'off'].includes(normalized)) {
+        return false;
+    }
+
+    return fallback;
+};
+
+const getTableBooleanOption = (table, key, fallback) => toBooleanOption(table.dataset[key], fallback);
+
+const getTableNumberOption = (table, key, fallback) => {
+    const raw = Number(table.dataset[key]);
+    if (!Number.isFinite(raw) || raw <= 0) {
+        return fallback;
+    }
+
+    return Math.floor(raw);
+};
+
+const getTableOrderableTargets = (table) => {
+    const raw = (table.dataset.dtDisableOrderCols || '').trim();
+    if (!raw) {
+        return [];
+    }
+
+    return raw
+        .split(',')
+        .map((v) => Number(v.trim()))
+        .filter((v) => Number.isInteger(v) && v >= 0);
+};
+
+const initDataTable = (table) => {
+    if (!(table instanceof HTMLTableElement) || table.dataset.datatable === 'off') {
+        return;
+    }
+
+    if (table.dataset.datatableReady === '1') {
+        return;
+    }
+
+    if (typeof DataTable.isDataTable === 'function' && DataTable.isDataTable(table)) {
+        table.dataset.datatableReady = '1';
+        return;
+    }
+
+    const allBodyRows = Array.from(table.querySelectorAll('tbody tr'));
+    const ignoreRows = allBodyRows.filter((row) => row.dataset.datatableRow === 'ignore');
+    const dataRows = allBodyRows.filter((row) => row.dataset.datatableRow !== 'ignore');
+    if (dataRows.length === 0) {
+        return;
+    }
+
+    ignoreRows.forEach((row) => row.remove());
+
+    const headerColumns = table.tHead?.rows?.[0]?.cells?.length ?? 0;
+    if (headerColumns <= 0) {
+        return;
+    }
+
+    const hasMalformedBodyRow = Array.from(table.querySelectorAll('tbody tr')).some((row) => {
+        const cellCount = row.cells?.length ?? 0;
+        return cellCount > 0 && cellCount !== headerColumns;
+    });
+
+    if (hasMalformedBodyRow) {
+        return;
+    }
+
+    const paging = getTableBooleanOption(table, 'dtPaging', false);
+    const searching = getTableBooleanOption(table, 'dtSearching', true);
+    const ordering = getTableBooleanOption(table, 'dtOrdering', true);
+    const info = getTableBooleanOption(table, 'dtInfo', false);
+    const responsive = getTableBooleanOption(table, 'dtResponsive', true);
+    const lengthChange = getTableBooleanOption(table, 'dtLengthChange', false);
+    const pageLength = getTableNumberOption(table, 'dtPageLength', 10);
+    const disabledOrderCols = getTableOrderableTargets(table);
+
+    const options = {
+        responsive,
+        paging,
+        searching,
+        ordering,
+        info,
+        lengthChange,
+        pageLength,
+        autoWidth: false,
+        language: dataTableLanguage,
+    };
+
+    if (disabledOrderCols.length > 0) {
+        options.columnDefs = [
+            {
+                targets: disabledOrderCols,
+                orderable: false,
+            },
+        ];
+    }
+
+    const customDom = (table.dataset.dtDom || '').trim();
+    if (customDom) {
+        options.dom = customDom;
+    } else if (!paging && !info && searching) {
+        options.dom = 'ft';
+    } else if (!paging && !info && !searching) {
+        options.dom = 't';
+    }
+
+    new DataTable(table, options);
+    table.dataset.datatableReady = '1';
+};
+
+const bindDataTables = (root = document) => {
+    if (!(root instanceof Document || root instanceof Element)) {
+        return;
+    }
+
+    if (root instanceof Element && root.matches('table[data-datatable]')) {
+        initDataTable(root);
+    }
+
+    root.querySelectorAll('table[data-datatable]').forEach(initDataTable);
+};
+
+const bootDataTables = () => {
+    bindDataTables();
+
+    if (!document.body || typeof MutationObserver === 'undefined') {
+        return;
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node instanceof Element) {
+                    bindDataTables(node);
+                }
+            });
+        });
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+    });
+};
+
+const bootFrontendEnhancements = () => {
     bootPhoneFormatter();
+    bootDataTables();
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootFrontendEnhancements, { once: true });
+} else {
+    bootFrontendEnhancements();
 }

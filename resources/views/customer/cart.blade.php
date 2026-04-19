@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', __('customer.cart_title') . ' | ' . config('app.name', 'DineFlow'))
 @section('meta_description', __('customer.cart_title'))
@@ -112,7 +112,7 @@
                         <a href="{{ route('customer.order.success', ['store' => $store, 'order' => $historyOrder]) }}" class="inline-flex items-center rounded-xl border border-brand-soft bg-brand-soft/20 px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-highlight/50">{{ $historyOrder->order_no }} ・ {{ $historyOrder->customer_status_label }}</a>
                     @endforeach
                 </div>
-                <a href="{{ route('customer.order.history', ['store' => $store]) }}" class="mt-3 inline-flex items-center rounded-xl border border-brand-soft bg-white px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30">{{ __('customer.view_my_order_history') }}</a>
+                <a href="{{ route('customer.order.history') }}" class="mt-3 inline-flex items-center rounded-xl border border-brand-soft bg-white px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30">{{ __('customer.view_my_order_history') }}</a>
             </div>
         @endif
 
@@ -272,14 +272,14 @@
 
                                 <div>
                                     <label for="coupon_code" class="mb-2 block text-sm font-medium text-brand-dark">
-                                        優惠代碼
+                                        優惠券代碼
                                     </label>
                                     <div class="flex items-center gap-2">
                                         <input id="coupon_code"
                                                type="text"
                                                name="coupon_code"
                                                value="{{ $oldCouponCode }}"
-                                               placeholder="例如 WELCOME100"
+                                               placeholder="例如：WELCOME100"
                                                class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm uppercase text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft"
                                                data-coupon-input>
                                         <button type="button"
@@ -292,18 +292,18 @@
                                            name="applied_coupon_code"
                                            value="{{ $hasOldAppliedCoupon ? $oldAppliedCouponCode : '' }}"
                                            data-applied-coupon-code>
-                                    <input type="hidden"
+                                   <input type="hidden"
                                            name="applied_coupon_summary"
                                            value="{{ $hasOldAppliedCoupon ? $oldAppliedCouponSummary : '' }}"
                                            data-applied-coupon-summary>
-                                    <p class="mt-1 text-xs text-brand-primary/70">輸入優惠碼後按「套用」，變更任何字元都需要重新套用。</p>
+                                    <p class="mt-1 text-xs text-brand-primary/70">請先輸入優惠券代碼，再按「套用」。</p>
                                     <p class="mt-2 text-xs text-rose-600 {{ $errors->has('coupon_code') ? '' : 'hidden' }}" data-coupon-error>
                                         {{ $errors->first('coupon_code') }}
                                     </p>
                                     <div class="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700 {{ $hasOldAppliedCoupon ? '' : 'hidden' }}"
                                          data-coupon-applied-box>
-                                        已套用優惠代碼 <span class="font-semibold" data-coupon-applied-code>{{ $hasOldAppliedCoupon ? $oldAppliedCouponCode : '' }}</span>
-                                        ：<span data-coupon-applied-summary>{{ $hasOldAppliedCoupon ? $oldAppliedCouponSummary : '' }}</span>
+                                        已套用優惠券：<span class="font-semibold" data-coupon-applied-code>{{ $hasOldAppliedCoupon ? $oldAppliedCouponCode : '' }}</span>
+                                        <span data-coupon-applied-summary>{{ $hasOldAppliedCoupon ? $oldAppliedCouponSummary : '' }}</span>
                                     </div>
                                 </div>
 
@@ -316,6 +316,8 @@
                                               rows="4"
                                               class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">{{ old('note', $rememberedCustomerInfo['note'] ?? '') }}</textarea>
                                 </div>
+
+                                @include('customer.partials.invoice-flow-fields')
 
                                 @if($isGuest)
                                     <div>
@@ -358,6 +360,7 @@
                                               rows="4"
                                               class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">{{ old('note') }}</textarea>
                                 </div>
+                                @include('customer.partials.invoice-flow-fields')
                                 @endunless
 
                                 <button type="submit"
@@ -604,7 +607,7 @@
             return true;
         }
 
-        setCouponError('請輸入正確優惠代碼');
+        setCouponError('請先套用優惠券。');
         couponInput.focus();
 
         return false;
@@ -627,13 +630,13 @@
             const code = normalizeCouponCode(couponInput.value);
             if (code === '') {
                 clearAppliedCoupon();
-                setCouponError('請先輸入優惠代碼');
+                setCouponError('請輸入優惠券代碼。');
                 couponInput.focus();
                 return;
             }
 
             if (!couponCheckUrl) {
-                setCouponError('目前無法驗證優惠代碼，請稍後再試');
+                setCouponError('目前無法驗證優惠券，請稍後再試。');
                 return;
             }
 
@@ -666,7 +669,7 @@
                 const payload = await response.json().catch(() => ({}));
                 if (!response.ok || !payload?.ok) {
                     clearAppliedCoupon();
-                    setCouponError(payload?.error || '請輸入正確優惠代碼');
+                    setCouponError(payload?.error || '優惠券驗證失敗，請確認後再試。');
                     return;
                 }
 
@@ -675,7 +678,7 @@
                 setCouponError('');
             } catch (_error) {
                 clearAppliedCoupon();
-                setCouponError('目前無法驗證優惠代碼，請稍後再試');
+                setCouponError('目前無法驗證優惠券，請稍後再試。');
             } finally {
                 couponApplyButton.dataset.submitting = '0';
             }
@@ -739,3 +742,4 @@
 })();
 </script>
 @endsection
+

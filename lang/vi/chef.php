@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 return [
     'manage_title' => 'Quản lý tài khoản bếp',

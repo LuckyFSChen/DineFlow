@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 return [
     'admin_console'      => '管理後台',

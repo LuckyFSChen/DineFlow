@@ -174,7 +174,7 @@
         <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="text-lg font-semibold text-slate-900">Top 會員消費排行</h2>
             <div class="mt-4 overflow-x-auto">
-                <table class="min-w-full text-sm">
+                <table class="min-w-full text-sm" data-datatable data-dt-paging="false" data-dt-info="false">
                     <thead class="bg-slate-100 text-slate-700">
                         <tr>
                             <th class="px-3 py-2 text-left">會員</th>
@@ -204,7 +204,7 @@
         <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="text-lg font-semibold text-slate-900">會員清單</h2>
             <div class="mt-4 overflow-x-auto">
-                <table class="min-w-full text-sm">
+                <table class="min-w-full text-sm" data-datatable data-dt-paging="false" data-dt-info="false" data-dt-searching="false">
                     <thead class="bg-slate-100 text-slate-700">
                         <tr>
                             <th class="px-3 py-2 text-left">姓名</th>
@@ -277,7 +277,7 @@
                data-update-url-template="{{ route('merchant.loyalty.coupons.update', ['coupon' => '__COUPON__']) }}">
             <h2 class="text-lg font-semibold text-slate-900">優惠券清單</h2>
             <div class="mt-4 overflow-x-auto">
-                <table class="min-w-full text-sm">
+                <table class="min-w-full text-sm" data-datatable data-dt-paging="false" data-dt-info="false" data-dt-searching="false">
                     <thead class="bg-slate-100 text-slate-700">
                         <tr>
                             <th class="px-3 py-2 text-left">名稱</th>
@@ -495,4 +495,3 @@
     }
 </script>
 @endsection
-
