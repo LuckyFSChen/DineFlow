@@ -119,4 +119,6 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    'merchant_registration_notify_to' => env('MERCHANT_REGISTER_NOTIFY_EMAIL', 'lowy.chen0504@gmail.com'),
+
 ];

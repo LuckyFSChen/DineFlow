@@ -72,8 +72,10 @@ class RegisteredUserController extends Controller
 
         if ($accountType === 'merchant') {
             try {
-                Mail::to('lowy.chen0504@gmail.com')
-                    ->send(new MerchantRegisteredNotificationMail($user));
+                $notifyEmail = trim((string) config('mail.merchant_registration_notify_to', ''));
+                if ($notifyEmail !== '') {
+                    Mail::to($notifyEmail)->send(new MerchantRegisteredNotificationMail($user));
+                }
             } catch (Throwable $e) {
                 report($e);
             }
