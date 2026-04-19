@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\MerchantRegisteredNotificationMail;
 use App\Models\User;
 use App\Support\PhoneFormatter;
 use App\Support\TakeoutCartSession;
@@ -11,9 +12,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Throwable;
 
 class RegisteredUserController extends Controller
 {
@@ -66,6 +69,15 @@ class RegisteredUserController extends Controller
                 ? $request->string('merchant_region')->toString()
                 : null,
         ]);
+
+        if ($accountType === 'merchant') {
+            try {
+                Mail::to('lowy.chen0504@gmail.com')
+                    ->send(new MerchantRegisteredNotificationMail($user));
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
 
         event(new Registered($user));
 
