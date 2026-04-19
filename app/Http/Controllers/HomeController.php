@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Store;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -125,6 +126,35 @@ class HomeController extends Controller
             ->withQueryString();
 
         return view('stores.index', compact('stores', 'keyword', 'userLatitude', 'userLongitude', 'hasUserLocation'));
+    }
+
+    public function reviews(Store $store): JsonResponse
+    {
+        if (! $store->is_active || ! $store->takeout_qr_enabled) {
+            abort(404);
+        }
+
+        $reviews = $store->reviews()
+            ->select(['id', 'rating', 'comment', 'customer_name', 'created_at'])
+            ->where('is_visible', true)
+            ->whereNotNull('comment')
+            ->whereRaw("TRIM(comment) <> ''")
+            ->latest('created_at')
+            ->get()
+            ->map(function ($review) {
+                return [
+                    'id' => (int) $review->id,
+                    'rating' => (int) $review->rating,
+                    'comment' => trim((string) $review->comment),
+                    'customer_name' => filled($review->customer_name) ? (string) $review->customer_name : null,
+                    'created_at' => $review->created_at?->toIso8601String(),
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'reviews' => $reviews,
+        ]);
     }
 
     private function parseLatitude(mixed $value): ?float

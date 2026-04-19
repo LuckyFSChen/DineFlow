@@ -187,48 +187,50 @@
                                             {{ __('admin.store_actions_expand') }}
                                         </button>
                                     </div>
-                                    <div class="mt-3 hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" data-store-actions-panel="{{ $store->id }}">
-                                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('admin.store_actionable_items') }}</p>
-                                        <div class="mt-3 flex flex-wrap gap-2">
-                                            <a href="{{ route('admin.stores.products.index', $store) }}"
-                                               class="inline-flex items-center rounded-xl border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100">
-                                                {{ __('admin.products') }}
-                                            </a>
-
-                                            <a href="{{ route('admin.stores.tables.index', $store) }}"
-                                               class="inline-flex items-center rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100">
-                                                {{ __('admin.tables_qr') }}
-                                            </a>
-
-                                            @if($store->is_active)
-                                                <a href="{{ route('admin.stores.boards', $store) }}"
-                                                   class="inline-flex items-center rounded-xl border border-orange-300 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">
-                                                    {{ __('admin.board_all_title') }}
+                                    <template data-store-actions-panel-template="{{ $store->id }}">
+                                        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('admin.store_actionable_items') }}</p>
+                                            <div class="mt-3 flex flex-wrap gap-2">
+                                                <a href="{{ route('admin.stores.products.index', $store) }}"
+                                                   class="inline-flex items-center rounded-xl border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100">
+                                                    {{ __('admin.products') }}
                                                 </a>
 
-                                                <a href="{{ route('admin.stores.chefs.index', $store) }}"
-                                                   class="inline-flex items-center rounded-xl border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100">
-                                                    {{ __('admin.chef_accounts') }}
+                                                <a href="{{ route('admin.stores.tables.index', $store) }}"
+                                                   class="inline-flex items-center rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100">
+                                                    {{ __('admin.tables_qr') }}
                                                 </a>
-                                            @endif
 
-                                            <button
-                                                type="button"
-                                                data-edit-store="{{ $store->slug }}"
-                                                class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-                                                {{ __('admin.edit') }}
-                                            </button>
+                                                @if($store->is_active)
+                                                    <a href="{{ route('admin.stores.boards', $store) }}"
+                                                       class="inline-flex items-center rounded-xl border border-orange-300 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">
+                                                        {{ __('admin.board_all_title') }}
+                                                    </a>
 
-                                            <form method="POST" action="{{ route('admin.stores.destroy', $store) }}" onsubmit="return confirm('{{ __('admin.delete_confirm') }}')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit"
-                                                    class="inline-flex items-center rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-500">
-                                                    {{ __('admin.delete') }}
+                                                    <a href="{{ route('admin.stores.chefs.index', $store) }}"
+                                                       class="inline-flex items-center rounded-xl border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100">
+                                                        {{ __('admin.chef_accounts') }}
+                                                    </a>
+                                                @endif
+
+                                                <button
+                                                    type="button"
+                                                    data-edit-store="{{ $store->slug }}"
+                                                    class="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+                                                    {{ __('admin.edit') }}
                                                 </button>
-                                            </form>
+
+                                                <form method="POST" action="{{ route('admin.stores.destroy', $store) }}" onsubmit="return confirm('{{ __('admin.delete_confirm') }}')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit"
+                                                        class="inline-flex items-center rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-500">
+                                                        {{ __('admin.delete') }}
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </div>
-                                    </div>
+                                    </template>
                                 </td>
                             </tr>
                         @empty
@@ -1056,37 +1058,72 @@
     modalCancel?.addEventListener('click', closeModal);
     modalForm?.addEventListener('submit', submitModalForm);
 
-    document.querySelectorAll('[data-edit-store]').forEach((button) => {
-        button.addEventListener('click', () => {
-            openEditModal(button.getAttribute('data-edit-store'));
+    const closeStoreActionsRows = () => {
+        document.querySelectorAll('tr[data-store-actions-row]').forEach((row) => {
+            row.remove();
         });
-    });
 
-    document.querySelectorAll('[data-store-actions-toggle]').forEach((button) => {
-        button.addEventListener('click', () => {
-            const storeId = button.getAttribute('data-store-actions-toggle');
-            const targetPanel = document.querySelector(`[data-store-actions-panel="${storeId}"]`);
-            if (!targetPanel) {
-                return;
-            }
-
-            const isHidden = targetPanel.classList.contains('hidden');
-
-            document.querySelectorAll('[data-store-actions-panel]').forEach((panel) => {
-                panel.classList.add('hidden');
-            });
-
-            document.querySelectorAll('[data-store-actions-toggle]').forEach((toggleBtn) => {
-                toggleBtn.setAttribute('aria-expanded', 'false');
-                toggleBtn.textContent = i18n.actionsExpand;
-            });
-
-            if (isHidden) {
-                targetPanel.classList.remove('hidden');
-                button.setAttribute('aria-expanded', 'true');
-                button.textContent = i18n.actionsCollapse;
-            }
+        document.querySelectorAll('[data-store-actions-toggle]').forEach((toggleBtn) => {
+            toggleBtn.setAttribute('aria-expanded', 'false');
+            toggleBtn.textContent = i18n.actionsExpand;
         });
+    };
+
+    document.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) {
+            return;
+        }
+
+        const editTrigger = target.closest('[data-edit-store]');
+        if (editTrigger instanceof HTMLElement) {
+            const storeId = editTrigger.getAttribute('data-edit-store');
+            if (storeId) {
+                event.preventDefault();
+                openEditModal(storeId);
+            }
+            return;
+        }
+
+        const toggleBtn = target.closest('[data-store-actions-toggle]');
+        if (!(toggleBtn instanceof HTMLElement)) {
+            return;
+        }
+
+        const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+        closeStoreActionsRows();
+        if (isExpanded) {
+            return;
+        }
+
+        const storeId = toggleBtn.getAttribute('data-store-actions-toggle');
+        const parentRow = toggleBtn.closest('tr');
+        if (!storeId || !(parentRow instanceof HTMLTableRowElement)) {
+            return;
+        }
+
+        const template = parentRow.querySelector(`[data-store-actions-panel-template="${storeId}"]`);
+        if (!(template instanceof HTMLTemplateElement)) {
+            return;
+        }
+
+        const table = parentRow.closest('table');
+        const columnCount = table?.tHead?.rows?.[0]?.cells?.length || parentRow.cells.length || 1;
+
+        const actionRow = document.createElement('tr');
+        actionRow.dataset.storeActionsRow = storeId;
+        actionRow.className = 'bg-slate-50';
+
+        const actionCell = document.createElement('td');
+        actionCell.colSpan = columnCount;
+        actionCell.className = 'px-6 pb-4 pt-0';
+        actionCell.append(template.content.cloneNode(true));
+
+        actionRow.append(actionCell);
+        parentRow.insertAdjacentElement('afterend', actionRow);
+
+        toggleBtn.setAttribute('aria-expanded', 'true');
+        toggleBtn.textContent = i18n.actionsCollapse;
     });
 
     phoneInput?.addEventListener('input', (event) => {

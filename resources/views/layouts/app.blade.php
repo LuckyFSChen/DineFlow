@@ -78,9 +78,7 @@
             @endif
         </main>
 
-        @unless ($isAdminArea)
-            @include('partials.public-footer')
-        @endunless
+        @include('partials.public-footer')
     </div>
 </body>
 </html>

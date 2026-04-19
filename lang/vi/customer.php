@@ -126,6 +126,7 @@ return [
     'review_already_submitted'     => 'Bạn đã đánh giá đơn hàng này.',
     'review_only_completed_order'  => 'Bạn chỉ có thể đánh giá sau khi đơn hàng hoàn tất.',
     'review_identity_mismatch'     => 'Thông tin liên hệ không khớp với đơn hàng này. Vui lòng kiểm tra lại.',
+    'review_store_unavailable'     => 'Không có thông tin cửa hàng để đánh giá.',
     'cancel_reason_title'          => 'Lý do hủy đơn',
     'cancel_reason_empty'          => 'Quán không cung cấp lý do hủy đơn.',
     'error_cart_empty'             => 'Giỏ hàng đang trống.',
@@ -147,4 +148,9 @@ return [
     'coupon_member_required'       => 'Mã này yêu cầu đăng nhập thành viên (vui lòng nhập số điện thoại hoặc email)',
     'coupon_points_insufficient'   => 'Điểm thành viên không đủ để dùng mã này',
     'guest_register_points_prompt' => 'Số điện thoại này chưa được đăng ký. Bạn có muốn tạo tài khoản và tích điểm cho đơn này không? Mật khẩu đăng nhập lần đầu là 0000 và bạn phải đổi mật khẩu khi đăng nhập lần đầu.',
+    'reorder_to_cart'              => 'Thêm lại vào giỏ hàng',
+    'reorder_added_to_cart'        => 'Đã thêm lại :count món vào giỏ hàng.',
+    'reorder_partial_added_to_cart'=> 'Đã thêm :added món vào giỏ hàng, bỏ qua :skipped món không còn phục vụ.',
+    'reorder_items_unavailable'    => 'Các món trong đơn này hiện không còn phục vụ.',
+    'reorder_unavailable'          => 'Đơn này hiện không thể thêm lại vào giỏ hàng.',
 ];

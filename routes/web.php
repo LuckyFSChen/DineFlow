@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware('guest')->prefix('admin')->name('admin.')->group(function () {
-    Route::get('login', [AdminAuthenticatedSessionController::class, 'create'])->name('login');
+    Route::redirect('login', '/login?account_type=merchant')->name('login');
     Route::post('login', [AdminAuthenticatedSessionController::class, 'store'])->name('login.store');
 });
 
@@ -180,6 +180,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::view('/product-intro', 'product-intro')->name('product.intro');
 Route::view('/privacy-policy', 'privacy-policy')->name('privacy.policy');
 Route::get('/stores', [HomeController::class, 'stores'])->name('stores.list');
+Route::get('/stores/{store:slug}/reviews', [HomeController::class, 'reviews'])->name('stores.reviews');
 Route::get('/stores/{store:slug}', [StoreController::class, 'enter'])->name('stores.enter');
 Route::get('/sitemap.xml', function () {
     $latestStoreUpdateAt = \App\Models\Store::query()->max('updated_at');
@@ -287,14 +288,17 @@ Route::prefix('s/{store:slug}/takeout')
 
 Route::get('/s/{store:slug}/orders/{order}', [DineInOrderController::class, 'success'])
     ->name('customer.order.success');
+Route::post('/orders/{order}/reorder', [DineInOrderController::class, 'reorderToCart'])
+    ->middleware(['auth'])
+    ->name('customer.order.reorder');
 Route::post('/s/{store:slug}/orders/{order}/review', [StoreReviewController::class, 'store'])
     ->name('customer.order.review.store');
 Route::get('/orders/history', [DineInOrderController::class, 'history'])
-    ->middleware(['auth', 'throttle:10,1'])
+    ->middleware(['throttle:10,1'])
     ->name('customer.order.history');
 Route::get('/s/{store:slug}/orders', function (Request $request) {
     return redirect()->route('customer.order.history', $request->query());
-})->middleware(['auth', 'throttle:10,1']);
+})->middleware(['throttle:10,1']);
 Route::get('/s/{store:slug}/orders/{order}/status', [DineInOrderController::class, 'orderStatus'])
     ->name('customer.order.status');
 

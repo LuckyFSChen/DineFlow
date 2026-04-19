@@ -3,7 +3,7 @@
 return [
     'admin_console'      => 'Admin Console',
     'admin_login'        => 'Merchant Login',
-    'login'              => 'Customer Login',
+    'login'              => 'Login',
     'register'           => 'Register',
     'subscription'       => 'Subscription',
     'financial_report'   => 'Financial Report',
@@ -30,7 +30,6 @@ return [
     'lang_en'            => 'English',
     'lang_vi'            => 'Tiếng Việt',
 ];
-
 
 
 

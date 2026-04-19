@@ -191,7 +191,7 @@
                         {{ __('customer.back_to_menu') }}
                     </a>
 
-                    <a href="{{ route('customer.order.history') }}"
+                    <a href="{{ route('customer.order.history', $isTakeout ? [] : ['store' => $store->slug, 'table' => $order->dining_table_id]) }}"
                        class="mt-3 inline-flex h-11 items-center justify-center rounded-2xl border border-orange-200 bg-orange-50 px-5 text-sm font-semibold text-orange-700 hover:bg-orange-100">
                         {{ __('customer.view_my_order_history') }}
                     </a>

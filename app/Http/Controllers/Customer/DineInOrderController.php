@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\CustomerAccountService;
 use App\Support\PhoneFormatter;
 use App\Support\InvoiceFlow;
+use App\Support\TakeoutCartSession;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -113,6 +114,7 @@ class DineInOrderController extends Controller
 
         $cartKey = $this->getDineInCartSessionKey($store, $table);
         $cart = session()->get($cartKey, []);
+        $cart = $this->hydrateEditableProductMeta($store, $cart);
         $total = collect($cart)->sum('subtotal');
         $orderingAvailable = $store->isOrderingAvailable();
         $rememberedCustomerInfo = $this->resolvePrefilledCustomerInfo();
@@ -143,7 +145,9 @@ class DineInOrderController extends Controller
         abort_unless($table->store_id === $store->id, 404);
 
         $validated = $request->validate([
-            'action' => ['required', 'in:increase,decrease'],
+            'action' => ['required', 'in:increase,decrease,update_options'],
+            'option_payload' => ['nullable', 'string'],
+            'item_note' => ['nullable', 'string', 'max:255'],
         ]);
 
         $cartKey = $this->getDineInCartSessionKey($store, $table);
@@ -157,11 +161,45 @@ class DineInOrderController extends Controller
 
         if ($validated['action'] === 'increase') {
             $cart[$lineKey]['qty'] = (int) $cart[$lineKey]['qty'] + 1;
-        } else {
+        } elseif ($validated['action'] === 'decrease') {
             $cart[$lineKey]['qty'] = (int) $cart[$lineKey]['qty'] - 1;
 
             if ($cart[$lineKey]['qty'] <= 0) {
                 unset($cart[$lineKey]);
+            }
+        } else {
+            $existingItem = $cart[$lineKey];
+            $product = Product::query()
+                ->where('id', (int) ($existingItem['product_id'] ?? 0))
+                ->where('store_id', $store->id)
+                ->where('is_active', true)
+                ->where('is_sold_out', false)
+                ->firstOrFail();
+
+            $optionResult = $this->resolveSelectedOptions($product, $validated['option_payload'] ?? null);
+            $itemNote = $this->sanitizeItemNote($validated['item_note'] ?? null, (bool) $product->allow_item_note);
+            $updatedLineKey = $this->cartLineKey((int) $product->id, $optionResult['selected'], $itemNote);
+            $qty = max(1, (int) ($existingItem['qty'] ?? 1));
+            $unitPrice = (int) $product->price + (int) $optionResult['extra_price'];
+
+            unset($cart[$lineKey]);
+
+            if (isset($cart[$updatedLineKey])) {
+                $cart[$updatedLineKey]['qty'] = (int) $cart[$updatedLineKey]['qty'] + $qty;
+            } else {
+                $cart[$updatedLineKey] = [
+                    'line_key' => $updatedLineKey,
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'base_price' => (int) $product->price,
+                    'extra_price' => (int) $optionResult['extra_price'],
+                    'price' => $unitPrice,
+                    'option_items' => $optionResult['selected'],
+                    'option_label' => $optionResult['label'],
+                    'item_note' => $itemNote,
+                    'qty' => $qty,
+                    'subtotal' => 0,
+                ];
             }
         }
 
@@ -392,32 +430,231 @@ class DineInOrderController extends Controller
     public function history(Request $request)
     {
         $user = $request->user();
-        abort_unless($user instanceof User && $user->isCustomer(), 403);
+        if ($user instanceof User) {
+            $email = strtolower(trim((string) ($user->email ?? '')));
+            $phone = PhoneFormatter::digitsOnly((string) ($user->phone ?? ''), 32);
 
-        $email = strtolower(trim((string) ($user->email ?? '')));
-        $phone = PhoneFormatter::digitsOnly((string) ($user->phone ?? ''), 32);
+            $orders = collect();
+            if ($email !== '' || $phone !== null) {
+                $orders = Order::query()
+                    ->where(function ($query) use ($email, $phone): void {
+                        if ($email !== '') {
+                            $query->orWhereRaw('LOWER(customer_email) = ?', [$email]);
+                        }
 
+                        if ($phone !== null) {
+                            $query->orWhere('customer_phone', $phone);
+                        }
+                    })
+                    ->with(['store:id,slug,name,currency', 'table', 'items', 'review'])
+                    ->orderByDesc('created_at')
+                    ->limit(self::GLOBAL_ORDER_HISTORY_LIMIT)
+                    ->get();
+            }
+
+            return view('customer.history', [
+                'orders' => $orders,
+            ]);
+        }
+
+        $storeParam = (string) $request->query('store', '');
+        $tableParam = (int) $request->query('table', 0);
         $orders = collect();
-        if ($email !== '' || $phone !== null) {
-            $orders = Order::query()
-                ->where(function ($query) use ($email, $phone): void {
-                    if ($email !== '') {
-                        $query->orWhereRaw('LOWER(customer_email) = ?', [$email]);
-                    }
 
-                    if ($phone !== null) {
-                        $query->orWhere('customer_phone', $phone);
-                    }
-                })
-                ->with(['store:id,slug,name,currency', 'table', 'items', 'review'])
-                ->orderByDesc('created_at')
-                ->limit(self::GLOBAL_ORDER_HISTORY_LIMIT)
-                ->get();
+        if ($storeParam !== '' && $tableParam > 0) {
+            $store = Store::query()
+                ->where('slug', $storeParam)
+                ->orWhere('id', $storeParam)
+                ->first();
+
+            if ($store instanceof Store) {
+                $table = DiningTable::query()
+                    ->where('id', $tableParam)
+                    ->where('store_id', $store->id)
+                    ->first();
+
+                if ($table instanceof DiningTable) {
+                    $orders = Order::query()
+                        ->where('store_id', $store->id)
+                        ->where('dining_table_id', $table->id)
+                        ->where('order_type', 'dine_in')
+                        ->with(['store:id,slug,name,currency', 'table', 'items', 'review'])
+                        ->orderByDesc('created_at')
+                        ->limit(self::ORDER_HISTORY_LIMIT)
+                        ->get();
+                }
+            }
         }
 
         return view('customer.history', [
             'orders' => $orders,
         ]);
+    }
+
+    public function reorderToCart(Request $request, Order $order)
+    {
+        $user = $request->user();
+        if (! $user instanceof User || ! $user->isCustomer()) {
+            abort(403);
+        }
+
+        $order->loadMissing(['store', 'table:id,store_id,qr_token', 'items:id,order_id,product_id,product_name,qty']);
+
+        if (! $this->canReorderOrder($user, $order)) {
+            abort(403);
+        }
+
+        $store = $order->store;
+        if (! $store instanceof Store) {
+            return redirect()
+                ->route('customer.order.history')
+                ->with('error', __('customer.reorder_unavailable'));
+        }
+
+        if (! $store->isOrderingAvailable()) {
+            return redirect()
+                ->route('customer.order.history')
+                ->with('error', $store->orderingClosedMessage());
+        }
+
+        $orderItems = $order->items;
+        if ($orderItems->isEmpty()) {
+            return redirect()
+                ->route('customer.order.history')
+                ->with('error', __('customer.reorder_items_unavailable'));
+        }
+
+        $productIds = $orderItems
+            ->pluck('product_id')
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        $availableProducts = Product::query()
+            ->where('store_id', $store->id)
+            ->whereIn('id', $productIds->all())
+            ->where('is_active', true)
+            ->where('is_sold_out', false)
+            ->get(['id', 'name', 'price'])
+            ->keyBy('id');
+
+        $addedQty = 0;
+        $skippedQty = 0;
+
+        if ($order->order_type === 'takeout') {
+            $cartKey = TakeoutCartSession::currentCartSessionKey($request, $store->id);
+            $cart = session()->get($cartKey, []);
+
+            foreach ($orderItems as $orderItem) {
+                $qty = max(1, (int) $orderItem->qty);
+                $product = $availableProducts->get((int) $orderItem->product_id);
+
+                if (! $product instanceof Product) {
+                    $skippedQty += $qty;
+                    continue;
+                }
+
+                $lineKey = $this->cartLineKey((int) $product->id, [], null);
+
+                if (isset($cart[$lineKey])) {
+                    $cart[$lineKey]['qty'] = (int) $cart[$lineKey]['qty'] + $qty;
+                } else {
+                    $cart[$lineKey] = [
+                        'line_key' => $lineKey,
+                        'product_id' => (int) $product->id,
+                        'product_name' => (string) $product->name,
+                        'base_price' => (int) $product->price,
+                        'extra_price' => 0,
+                        'price' => (int) $product->price,
+                        'option_items' => [],
+                        'option_label' => null,
+                        'item_note' => null,
+                        'qty' => $qty,
+                        'subtotal' => 0,
+                    ];
+                }
+
+                $addedQty += $qty;
+            }
+
+            foreach ($cart as &$item) {
+                $item['subtotal'] = (int) $item['price'] * (int) $item['qty'];
+            }
+            unset($item);
+
+            session()->put($cartKey, $cart);
+            TakeoutCartSession::persistCurrentSessionCart($request, $store->id, $cart);
+
+            if ($addedQty === 0) {
+                return redirect()
+                    ->route('customer.takeout.cart.show', ['store' => $store])
+                    ->with('error', __('customer.reorder_items_unavailable'));
+            }
+
+            return redirect()
+                ->route('customer.takeout.cart.show', ['store' => $store])
+                ->with('success', $this->buildReorderSuccessMessage($addedQty, $skippedQty));
+        }
+
+        $table = $order->table;
+        if (! $table instanceof DiningTable || (int) $table->store_id !== (int) $store->id) {
+            return redirect()
+                ->route('customer.order.history')
+                ->with('error', __('customer.reorder_unavailable'));
+        }
+
+        $cartKey = $this->getDineInCartSessionKey($store, $table);
+        $cart = session()->get($cartKey, []);
+
+        foreach ($orderItems as $orderItem) {
+            $qty = max(1, (int) $orderItem->qty);
+            $product = $availableProducts->get((int) $orderItem->product_id);
+
+            if (! $product instanceof Product) {
+                $skippedQty += $qty;
+                continue;
+            }
+
+            $lineKey = $this->cartLineKey((int) $product->id, [], null);
+
+            if (isset($cart[$lineKey])) {
+                $cart[$lineKey]['qty'] = (int) $cart[$lineKey]['qty'] + $qty;
+            } else {
+                $cart[$lineKey] = [
+                    'line_key' => $lineKey,
+                    'product_id' => (int) $product->id,
+                    'product_name' => (string) $product->name,
+                    'base_price' => (int) $product->price,
+                    'extra_price' => 0,
+                    'price' => (int) $product->price,
+                    'option_items' => [],
+                    'option_label' => null,
+                    'item_note' => null,
+                    'qty' => $qty,
+                    'subtotal' => 0,
+                ];
+            }
+
+            $addedQty += $qty;
+        }
+
+        foreach ($cart as &$item) {
+            $item['subtotal'] = (int) $item['price'] * (int) $item['qty'];
+        }
+        unset($item);
+
+        session()->put($cartKey, $cart);
+
+        if ($addedQty === 0) {
+            return redirect()
+                ->route('customer.dinein.cart.show', ['store' => $store, 'table' => $table])
+                ->with('error', __('customer.reorder_items_unavailable'));
+        }
+
+        return redirect()
+            ->route('customer.dinein.cart.show', ['store' => $store, 'table' => $table])
+            ->with('success', $this->buildReorderSuccessMessage($addedQty, $skippedQty));
     }
 
     public function clearRememberedCustomerInfo(Store $store, DiningTable $table)
@@ -674,6 +911,67 @@ class DineInOrderController extends Controller
         $normalized = trim($value);
 
         return $normalized === '' ? null : $normalized;
+    }
+
+    private function canReorderOrder(User $user, Order $order): bool
+    {
+        $orderEmail = strtolower(trim((string) ($order->getRawOriginal('customer_email') ?? '')));
+        $orderPhone = PhoneFormatter::digitsOnly((string) ($order->getRawOriginal('customer_phone') ?? ''), 32);
+
+        $userEmail = strtolower(trim((string) ($user->email ?? '')));
+        $userPhone = PhoneFormatter::digitsOnly((string) ($user->phone ?? ''), 32);
+
+        $matchesEmail = $userEmail !== '' && $orderEmail !== '' && hash_equals($orderEmail, $userEmail);
+        $matchesPhone = $userPhone !== null && $orderPhone !== null && hash_equals($orderPhone, $userPhone);
+
+        return $matchesEmail || $matchesPhone;
+    }
+
+    private function buildReorderSuccessMessage(int $addedQty, int $skippedQty): string
+    {
+        if ($skippedQty > 0) {
+            return __('customer.reorder_partial_added_to_cart', [
+                'added' => $addedQty,
+                'skipped' => $skippedQty,
+            ]);
+        }
+
+        return __('customer.reorder_added_to_cart', [
+            'count' => $addedQty,
+        ]);
+    }
+
+    private function hydrateEditableProductMeta(Store $store, array $cart): array
+    {
+        if (empty($cart)) {
+            return $cart;
+        }
+
+        $productIds = collect($cart)
+            ->pluck('product_id')
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        if ($productIds->isEmpty()) {
+            return $cart;
+        }
+
+        $products = Product::query()
+            ->where('store_id', $store->id)
+            ->whereIn('id', $productIds->all())
+            ->get(['id', 'option_groups', 'allow_item_note'])
+            ->keyBy('id');
+
+        foreach ($cart as &$item) {
+            $product = $products->get((int) ($item['product_id'] ?? 0));
+            $item['editable_option_groups'] = is_array($product?->option_groups) ? $product->option_groups : [];
+            $item['allow_item_note'] = (bool) ($product?->allow_item_note ?? false);
+        }
+        unset($item);
+
+        return $cart;
     }
 
     private function findAppendableDineInOrder(Store $store, DiningTable $table): ?Order

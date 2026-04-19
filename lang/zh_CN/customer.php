@@ -126,6 +126,7 @@ return [
     'review_already_submitted'     => '你已完成此筆訂單的評論。',
     'review_only_completed_order'  => '訂單完成後才可以進行評論。',
     'review_identity_mismatch'     => '聯絡資訊與本筆訂單不一致，請確認後再送出。',
+    'review_store_unavailable'     => '当前无法获取店铺信息，无法进行评价。',
     'cancel_reason_title'          => '取消原因',
     'cancel_reason_empty'          => '店家未提供取消原因。',
     'error_cart_empty'             => '购物车是空的。',
@@ -147,4 +148,9 @@ return [
     'coupon_member_required'       => '此优惠券需登录会员（请填手机或 Email）',
     'coupon_points_insufficient'   => '会员点数不足，无法使用此优惠券',
     'guest_register_points_prompt' => '此手机号尚未注册会员，是否建立账号并累积本次点数？首次登录密码为 0000，登录后需立即修改密码。',
+    'reorder_to_cart'              => '再次加入购物车',
+    'reorder_added_to_cart'        => '已将 :count 项商品加入购物车。',
+    'reorder_partial_added_to_cart'=> '已加入 :added 项商品，略过 :skipped 项目前未提供的商品。',
+    'reorder_items_unavailable'    => '此订单商品目前未提供，无法加入购物车。',
+    'reorder_unavailable'          => '此订单目前无法再次加入购物车。',
 ];

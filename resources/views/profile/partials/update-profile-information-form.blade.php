@@ -18,18 +18,6 @@
         @method('patch')
 
         <div>
-            <x-input-label for="role" :value="__('profile.role_label')" />
-            <x-text-input id="role" type="text" class="mt-1 block w-full bg-slate-50" :value="$user->localizedRoleLabel()" readonly />
-        </div>
-
-        @if($user->isMerchant())
-            <div>
-                <x-input-label for="subscription_ends_at" :value="__('profile.subscription_end')" />
-                <x-text-input id="subscription_ends_at" type="text" class="mt-1 block w-full bg-slate-50" :value="$user->subscription_ends_at ? $user->subscription_ends_at->format('Y-m-d') : __('profile.not_activated')" readonly />
-            </div>
-        @endif
-
-        <div>
             <x-input-label for="name" :value="__('profile.name_label')" />
             <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
             <x-input-error class="mt-2" :messages="$errors->get('name')" />

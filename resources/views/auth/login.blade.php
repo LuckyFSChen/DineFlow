@@ -1,5 +1,20 @@
 <x-guest-layout>
-    <!-- Session Status -->
+    @php
+        $defaultType = ($defaultAccountType ?? 'customer') === 'merchant' ? 'merchant' : 'customer';
+        $selectedAccountType = old('account_type', $defaultType);
+
+        if (! old('account_type')) {
+            if ($errors->has('email')) {
+                $selectedAccountType = 'merchant';
+            } elseif ($errors->has('phone')) {
+                $selectedAccountType = 'customer';
+            }
+        }
+
+        $isMerchantSelected = $selectedAccountType === 'merchant';
+        $formAction = $isMerchantSelected ? route('admin.login.store') : route('login');
+    @endphp
+
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
     @if(session('warning'))
@@ -12,24 +27,51 @@
         {{ __('auth.first_login_password_hint') }}
     </div>
 
-    <form method="POST" action="{{ route('login') }}">
+    <form method="POST" action="{{ $formAction }}" id="login-form">
         @csrf
 
-        <!-- Phone -->
+        <input type="hidden" name="account_type" id="account_type" value="{{ $selectedAccountType }}">
+
         <div>
+            <x-input-label for="login_account_type" :value="__('auth.Account Type')" />
+            <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-300 p-3">
+                    <input type="radio" id="login_account_type_customer" name="login_account_type" value="customer" class="mt-1" {{ $selectedAccountType === 'customer' ? 'checked' : '' }}>
+                    <span>
+                        <span class="block text-sm font-semibold text-slate-800">{{ __('auth.customer_type') }}</span>
+                        <span class="block text-xs text-slate-500">{{ __('auth.customer_desc') }}</span>
+                    </span>
+                </label>
+
+                <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-300 p-3">
+                    <input type="radio" id="login_account_type_merchant" name="login_account_type" value="merchant" class="mt-1" {{ $selectedAccountType === 'merchant' ? 'checked' : '' }}>
+                    <span>
+                        <span class="block text-sm font-semibold text-slate-800">{{ __('auth.merchant_type') }}</span>
+                        <span class="block text-xs text-slate-500">{{ __('auth.merchant_desc') }}</span>
+                    </span>
+                </label>
+            </div>
+        </div>
+
+        <div class="mt-4 {{ $isMerchantSelected ? 'hidden' : '' }}" id="phone-wrap">
             <x-input-label for="phone" :value="__('auth.Phone')" />
-            <x-text-input id="phone" class="block mt-1 w-full" type="tel" name="phone" :value="old('phone')" required autofocus autocomplete="tel" />
+            <x-text-input id="phone" class="block mt-1 w-full" type="tel" name="phone" :value="old('phone')" :required="! $isMerchantSelected" :autofocus="! $isMerchantSelected" autocomplete="tel" />
             <x-input-error :messages="$errors->get('phone')" class="mt-2" />
         </div>
 
-        <!-- Password -->
+        <div class="mt-4 {{ $isMerchantSelected ? '' : 'hidden' }}" id="email-wrap">
+            <x-input-label for="email" :value="__('auth.Email')" />
+            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" :required="$isMerchantSelected" :autofocus="$isMerchantSelected" autocomplete="username" />
+            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+        </div>
+
         <div class="mt-4">
             <x-input-label for="password" :value="__('auth.Password')" />
 
             <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
+                          type="password"
+                          name="password"
+                          required autocomplete="current-password" />
 
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
             <p class="mt-2 text-xs text-gray-500">{{ __('auth.first_login_password_hint') }}</p>
@@ -52,18 +94,70 @@
             <x-input-error :messages="$errors->get('captcha_answer')" class="mt-2" />
         </div>
 
-        <!-- Remember Me -->
         <div class="block mt-4">
             <label for="remember_me" class="inline-flex items-center">
-                <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-brand-primary shadow-sm focus:ring-brand-highlight" name="remember">
+                <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-brand-primary shadow-sm focus:ring-brand-highlight" name="remember" @checked(old('remember'))>
                 <span class="ms-2 text-sm text-gray-600">{{ __('auth.Remember me') }}</span>
             </label>
         </div>
 
-        <div class="flex items-center justify-end mt-4">
-            <x-primary-button class="ms-3">
+        <div class="flex items-center justify-end mt-4 gap-3">
+            <a
+                class="{{ $isMerchantSelected ? '' : 'hidden' }} underline text-sm text-brand-primary hover:text-brand-dark rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-highlight"
+                href="{{ route('password.request') }}"
+                id="forgot-password-link"
+            >
+                {{ __('auth.Forgot your password?') }}
+            </a>
+
+            <x-primary-button>
                 {{ __('auth.Log in') }}
             </x-primary-button>
         </div>
     </form>
+
+    <script>
+    (() => {
+        const form = document.getElementById('login-form');
+        const accountTypeInput = document.getElementById('account_type');
+        const accountTypeRadios = Array.from(document.querySelectorAll('input[name="login_account_type"]'));
+        const phoneWrap = document.getElementById('phone-wrap');
+        const emailWrap = document.getElementById('email-wrap');
+        const phoneInput = document.getElementById('phone');
+        const emailInput = document.getElementById('email');
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
+
+        if (!form || !accountTypeInput || accountTypeRadios.length === 0 || !phoneWrap || !emailWrap || !phoneInput || !emailInput || !forgotPasswordLink) {
+            return;
+        }
+
+        const customerLoginAction = @json(route('login'));
+        const merchantLoginAction = @json(route('admin.login.store'));
+
+        const syncByType = (accountType) => {
+            const isMerchant = accountType === 'merchant';
+
+            accountTypeInput.value = isMerchant ? 'merchant' : 'customer';
+            form.action = isMerchant ? merchantLoginAction : customerLoginAction;
+
+            phoneWrap.classList.toggle('hidden', isMerchant);
+            emailWrap.classList.toggle('hidden', !isMerchant);
+            forgotPasswordLink.classList.toggle('hidden', !isMerchant);
+
+            phoneInput.required = !isMerchant;
+            emailInput.required = isMerchant;
+        };
+
+        const applyCurrentSelection = () => {
+            const selected = accountTypeRadios.find((radio) => radio.checked)?.value || 'customer';
+            syncByType(selected);
+        };
+
+        accountTypeRadios.forEach((radio) => {
+            radio.addEventListener('change', applyCurrentSelection);
+        });
+
+        applyCurrentSelection();
+    })();
+    </script>
 </x-guest-layout>

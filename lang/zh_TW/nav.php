@@ -3,7 +3,7 @@
 return [
     'admin_console'      => '管理後台',
     'admin_login'        => '商家登入',
-    'login'              => '消費者登入',
+    'login'              => '登入',
     'register'           => '註冊',
     'subscription'       => '訂閱方案',
     'financial_report'   => '財務報表',

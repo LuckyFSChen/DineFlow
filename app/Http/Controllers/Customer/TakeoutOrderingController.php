@@ -165,6 +165,7 @@ class TakeoutOrderingController extends Controller
 
         $cartKey = $this->getTakeoutCartSessionKey($store);
         $cart = session()->get($cartKey, []);
+        $cart = $this->hydrateEditableProductMeta($store, $cart);
         $total = collect($cart)->sum('subtotal');
         $orderingAvailable = $store->isOrderingAvailable();
         $rememberedCustomerInfo = $this->resolvePrefilledCustomerInfo();
@@ -233,7 +234,9 @@ class TakeoutOrderingController extends Controller
         $this->ensureTakeoutEnabled($store);
 
         $validated = $request->validate([
-            'action' => ['required', 'in:increase,decrease'],
+            'action' => ['required', 'in:increase,decrease,update_options'],
+            'option_payload' => ['nullable', 'string'],
+            'item_note' => ['nullable', 'string', 'max:255'],
         ]);
 
         $cartKey = $this->getTakeoutCartSessionKey($store);
@@ -247,11 +250,45 @@ class TakeoutOrderingController extends Controller
 
         if ($validated['action'] === 'increase') {
             $cart[$lineKey]['qty'] = (int) $cart[$lineKey]['qty'] + 1;
-        } else {
+        } elseif ($validated['action'] === 'decrease') {
             $cart[$lineKey]['qty'] = (int) $cart[$lineKey]['qty'] - 1;
 
             if ($cart[$lineKey]['qty'] <= 0) {
                 unset($cart[$lineKey]);
+            }
+        } else {
+            $existingItem = $cart[$lineKey];
+            $product = Product::query()
+                ->where('id', (int) ($existingItem['product_id'] ?? 0))
+                ->where('store_id', $store->id)
+                ->where('is_active', true)
+                ->where('is_sold_out', false)
+                ->firstOrFail();
+
+            $optionResult = $this->resolveSelectedOptions($product, $validated['option_payload'] ?? null);
+            $itemNote = $this->sanitizeItemNote($validated['item_note'] ?? null, (bool) $product->allow_item_note);
+            $updatedLineKey = $this->cartLineKey((int) $product->id, $optionResult['selected'], $itemNote);
+            $qty = max(1, (int) ($existingItem['qty'] ?? 1));
+            $unitPrice = (int) $product->price + (int) $optionResult['extra_price'];
+
+            unset($cart[$lineKey]);
+
+            if (isset($cart[$updatedLineKey])) {
+                $cart[$updatedLineKey]['qty'] = (int) $cart[$updatedLineKey]['qty'] + $qty;
+            } else {
+                $cart[$updatedLineKey] = [
+                    'line_key' => $updatedLineKey,
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'base_price' => (int) $product->price,
+                    'extra_price' => (int) $optionResult['extra_price'],
+                    'price' => $unitPrice,
+                    'option_items' => $optionResult['selected'],
+                    'option_label' => $optionResult['label'],
+                    'item_note' => $itemNote,
+                    'qty' => $qty,
+                    'subtotal' => 0,
+                ];
             }
         }
 
@@ -836,6 +873,39 @@ class TakeoutOrderingController extends Controller
         $normalized = strtoupper(trim($couponCode));
 
         return $normalized === '' ? null : $normalized;
+    }
+
+    private function hydrateEditableProductMeta(Store $store, array $cart): array
+    {
+        if (empty($cart)) {
+            return $cart;
+        }
+
+        $productIds = collect($cart)
+            ->pluck('product_id')
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        if ($productIds->isEmpty()) {
+            return $cart;
+        }
+
+        $products = Product::query()
+            ->where('store_id', $store->id)
+            ->whereIn('id', $productIds->all())
+            ->get(['id', 'option_groups', 'allow_item_note'])
+            ->keyBy('id');
+
+        foreach ($cart as &$item) {
+            $product = $products->get((int) ($item['product_id'] ?? 0));
+            $item['editable_option_groups'] = is_array($product?->option_groups) ? $product->option_groups : [];
+            $item['allow_item_note'] = (bool) ($product?->allow_item_note ?? false);
+        }
+        unset($item);
+
+        return $cart;
     }
 
     private function findExistingMemberForCoupon(Store $store, ?string $email, ?string $phone, bool $lockForUpdate = false): ?Member

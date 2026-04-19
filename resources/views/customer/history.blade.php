@@ -29,6 +29,18 @@
             </section>
 
             <section class="mt-6 rounded-3xl border border-orange-100 bg-white p-5 shadow-sm">
+                @if (session('success'))
+                    <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                        {{ session('success') }}
+                    </div>
+                @endif
+
+                @if (session('error'))
+                    <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        {{ session('error') }}
+                    </div>
+                @endif
+
                 @if ($orders->isEmpty())
                     <p class="text-sm text-gray-600">
                         目前沒有你的訂單紀錄。
@@ -106,12 +118,26 @@
                                 @endif
 
                                 @if($orderStore)
-                                    <a
-                                        href="{{ route('customer.order.success', ['store' => $orderStore, 'order' => $historyOrder]) }}"
-                                        class="mt-3 inline-flex items-center rounded-xl border border-orange-200 bg-white px-3 py-1.5 text-xs font-semibold text-orange-700 transition hover:bg-orange-100"
-                                    >
-                                        {{ __('customer.view_order_detail') }}
-                                    </a>
+                                    <div class="mt-3 flex flex-wrap items-center gap-2">
+                                        <a
+                                            href="{{ route('customer.order.success', ['store' => $orderStore, 'order' => $historyOrder]) }}"
+                                            class="inline-flex items-center rounded-xl border border-orange-200 bg-white px-3 py-1.5 text-xs font-semibold text-orange-700 transition hover:bg-orange-100"
+                                        >
+                                            {{ __('customer.view_order_detail') }}
+                                        </a>
+
+                                        @auth
+                                            <form method="POST" action="{{ route('customer.order.reorder', ['order' => $historyOrder]) }}">
+                                                @csrf
+                                                <button
+                                                    type="submit"
+                                                    class="inline-flex items-center rounded-xl border border-orange-200 bg-white px-3 py-1.5 text-xs font-semibold text-orange-700 transition hover:bg-orange-100"
+                                                >
+                                                    {{ __('customer.reorder_to_cart') }}
+                                                </button>
+                                            </form>
+                                        @endauth
+                                    </div>
                                 @endif
 
                                 @if($isCompleted)
@@ -167,7 +193,7 @@
                                                 </button>
                                             </form>
                                         @else
-                                            <p class="text-xs text-gray-600">Store information unavailable for review.</p>
+                                            <p class="text-xs text-gray-600">{{ __('customer.review_store_unavailable') }}</p>
                                         @endif
                                     </div>
                                 @endif

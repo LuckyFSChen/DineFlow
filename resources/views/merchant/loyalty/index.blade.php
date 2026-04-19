@@ -109,7 +109,11 @@
 
             <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h2 class="text-lg font-semibold text-slate-900">建立優惠券</h2>
-                <form method="POST" action="{{ route('merchant.loyalty.coupons.store') }}" class="mt-4 grid gap-3 sm:grid-cols-2">
+                <form method="POST"
+                      action="{{ route('merchant.loyalty.coupons.store') }}"
+                      class="mt-4 grid gap-3 sm:grid-cols-2"
+                      x-data="couponCreateForm(@js(old('discount_type', 'fixed')))"
+                      x-init="onDiscountTypeChange()">
                     @csrf
                     <input type="hidden" name="store_id" value="{{ $selectedStore->id }}">
                     <div class="sm:col-span-2">
@@ -122,7 +126,10 @@
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-slate-600">折扣類型</label>
-                        <select name="discount_type" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        <select name="discount_type"
+                                x-model="discountType"
+                                @change="onDiscountTypeChange()"
+                                class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                             <option value="fixed">固定金額</option>
                             <option value="percent">百分比</option>
                             <option value="points_reward">滿額贈點</option>
@@ -130,15 +137,15 @@
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-slate-600">折扣值</label>
-                        <input type="number" min="0" name="discount_value" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        <input type="number" min="0" name="discount_value" x-ref="discountValue" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-slate-600">贈點門檻金額（X）</label>
-                        <input type="number" min="0" name="reward_per_amount" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        <input type="number" min="0" name="reward_per_amount" x-ref="rewardPerAmount" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-slate-600">每門檻贈點（Y）</label>
-                        <input type="number" min="0" name="reward_points" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        <input type="number" min="0" name="reward_points" x-ref="rewardPoints" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-slate-600">最低消費</label>
@@ -396,7 +403,7 @@
                         </div>
                         <div>
                             <label class="mb-1 block text-xs font-semibold text-slate-600">折扣類型</label>
-                            <select name="discount_type" x-model="form.discount_type" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            <select name="discount_type" x-model="form.discount_type" @change="normalizeFieldsByDiscountType()" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                                 <option value="fixed">固定金額</option>
                                 <option value="percent">百分比</option>
                                 <option value="points_reward">滿額贈點</option>
@@ -404,15 +411,15 @@
                         </div>
                         <div>
                             <label class="mb-1 block text-xs font-semibold text-slate-600">折扣值</label>
-                            <input type="number" min="0" name="discount_value" x-model="form.discount_value" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            <input type="number" min="0" name="discount_value" x-model="form.discount_value" x-ref="editDiscountValue" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                         </div>
                         <div>
                             <label class="mb-1 block text-xs font-semibold text-slate-600">贈點門檻金額（X）</label>
-                            <input type="number" min="0" name="reward_per_amount" x-model="form.reward_per_amount" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            <input type="number" min="0" name="reward_per_amount" x-model="form.reward_per_amount" x-ref="editRewardPerAmount" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                         </div>
                         <div>
                             <label class="mb-1 block text-xs font-semibold text-slate-600">每門檻贈點（Y）</label>
-                            <input type="number" min="0" name="reward_points" x-model="form.reward_points" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            <input type="number" min="0" name="reward_points" x-model="form.reward_points" x-ref="editRewardPoints" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                         </div>
                         <div>
                             <label class="mb-1 block text-xs font-semibold text-slate-600">最低消費</label>
@@ -449,6 +456,38 @@
     </div>
 </div>
 <script>
+    function couponCreateForm(initialType = 'fixed') {
+        return {
+            discountType: initialType || 'fixed',
+            onDiscountTypeChange() {
+                const isPointsReward = this.discountType === 'points_reward';
+                this.toggleFieldGroup(this.$refs.discountValue, !isPointsReward);
+                this.toggleFieldGroup(this.$refs.rewardPerAmount, isPointsReward);
+                this.toggleFieldGroup(this.$refs.rewardPoints, isPointsReward);
+
+                if (isPointsReward && this.$refs.discountValue) {
+                    this.$refs.discountValue.value = '0';
+                }
+                if (!isPointsReward) {
+                    if (this.$refs.rewardPerAmount) {
+                        this.$refs.rewardPerAmount.value = '0';
+                    }
+                    if (this.$refs.rewardPoints) {
+                        this.$refs.rewardPoints.value = '0';
+                    }
+                }
+            },
+            toggleFieldGroup(field, shouldShow) {
+                const group = field?.closest('div');
+                if (!group) {
+                    return;
+                }
+
+                group.style.display = shouldShow ? '' : 'none';
+            },
+        };
+    }
+
     function couponManager() {
         return {
             editModalOpen: false,
@@ -486,7 +525,30 @@
                     ends_at: coupon.ends_at || '',
                     is_active: Boolean(coupon.is_active),
                 };
+                this.normalizeFieldsByDiscountType();
                 this.editModalOpen = true;
+            },
+            normalizeFieldsByDiscountType() {
+                const isPointsReward = this.form.discount_type === 'points_reward';
+                this.toggleFieldGroup(this.$refs.editDiscountValue, !isPointsReward);
+                this.toggleFieldGroup(this.$refs.editRewardPerAmount, isPointsReward);
+                this.toggleFieldGroup(this.$refs.editRewardPoints, isPointsReward);
+
+                if (isPointsReward) {
+                    this.form.discount_value = 0;
+                    return;
+                }
+
+                this.form.reward_per_amount = 0;
+                this.form.reward_points = 0;
+            },
+            toggleFieldGroup(field, shouldShow) {
+                const group = field?.closest('div');
+                if (!group) {
+                    return;
+                }
+
+                group.style.display = shouldShow ? '' : 'none';
             },
             closeEditModal() {
                 this.editModalOpen = false;

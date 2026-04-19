@@ -59,7 +59,7 @@
                     <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h2 class="text-xl font-bold text-slate-900">{{ $category->name }}</h2>
-                            <p class="mt-1 text-sm text-slate-500">{{ $category->products->count() }} {{ __('admin.products_items_count_suffix') }} ・ {{ __('admin.products_sort_label') }} {{ $category->sort ?? 1 }}</p>
+                            <p class="mt-1 text-sm text-slate-500"><span data-category-item-count>{{ $category->products->count() }}</span> {{ __('admin.products_items_count_suffix') }} ・ {{ __('admin.products_sort_label') }} {{ $category->sort ?? 1 }}</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
                             <button type="button" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100" data-edit-category="{{ $category->id }}">{{ __('admin.products_btn_edit_category') }}</button>
@@ -1192,6 +1192,26 @@
         });
     };
 
+    const updateCategoryItemCount = (categoryId) => {
+        if (!categoryId) {
+            return;
+        }
+
+        const section = document.querySelector(`[data-category-section][data-category-id="${categoryId}"]`);
+        if (!section) {
+            return;
+        }
+
+        const countNode = section.querySelector('[data-category-item-count]');
+        if (!countNode) {
+            return;
+        }
+
+        const container = section.querySelector('[data-category-products][data-category-id]');
+        const count = container ? container.querySelectorAll('[data-product-card]').length : 0;
+        countNode.textContent = String(count);
+    };
+
     const orderSignature = (container) => [...container.querySelectorAll('[data-product-card]')]
         .map((card) => card.getAttribute('data-product-id'))
         .join(',');
@@ -1467,6 +1487,10 @@
                 }
                 toggleEmptyPlaceholder(sourceContainer);
                 toggleEmptyPlaceholder(targetContainer);
+                updateCategoryItemCount(sourceCategoryId);
+                if (sourceCategoryId !== targetCategoryId) {
+                    updateCategoryItemCount(targetCategoryId);
+                }
             }
 
             dragState.card = null;

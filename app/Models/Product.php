@@ -12,6 +12,7 @@ class Product extends Model
     protected $fillable = [
         'store_id',
         'category_id',
+        'sort',
         'name',
         'description',
         'price',
@@ -24,6 +25,7 @@ class Product extends Model
     ];
 
     protected $casts = [
+        'sort' => 'integer',
         'price' => 'integer',
         'cost' => 'integer',
         'is_active' => 'boolean',

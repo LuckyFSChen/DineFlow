@@ -3,7 +3,7 @@
 return [
     'admin_console'      => 'Bảng Điều Khiển',
     'admin_login'        => 'Đăng Nhập Người Bán',
-    'login'              => 'Đăng Nhập Khách Hàng',
+    'login'              => 'Đăng Nhập',
     'register'           => 'Đăng Ký',
     'subscription'       => 'Gói Đăng Ký',
     'financial_report'   => 'Báo Cáo Tài Chính',
@@ -30,7 +30,6 @@ return [
     'lang_en'            => 'English',
     'lang_vi'            => 'Tiếng Việt',
 ];
-
 
 
 

@@ -210,7 +210,16 @@
                                             <path d="M10 2.8l2.22 4.5 4.96.72-3.59 3.5.85 4.95L10 14.35l-4.44 2.32.85-4.95-3.59-3.5 4.96-.72L10 2.8z"/>
                                         </svg>
                                         @if($reviewCount > 0)
-                                            <span>{{ str_repeat('★', $roundedRating) }}{{ str_repeat('☆', max(5 - $roundedRating, 0)) }} {{ number_format($avgRating, 1) }} ({{ $reviewCount }} {{ __('home.store_reviews_unit') }})</span>
+                                            <button
+                                                type="button"
+                                                class="rounded-lg px-1 text-left underline decoration-brand-primary/35 underline-offset-4 transition hover:text-brand-primary hover:decoration-brand-primary"
+                                                data-store-review-trigger
+                                                data-store-review-url="{{ route('stores.reviews', ['store' => $store]) }}"
+                                                data-store-name="{{ $store->name }}"
+                                                data-review-count="{{ $reviewCount }}"
+                                            >
+                                                {{ str_repeat('★', $roundedRating) }}{{ str_repeat('☆', max(5 - $roundedRating, 0)) }} {{ number_format($avgRating, 1) }} ({{ $reviewCount }} {{ __('home.store_reviews_unit') }})
+                                            </button>
                                         @else
                                             <span>{{ __('home.store_rating_empty') }}</span>
                                         @endif
@@ -404,6 +413,7 @@
         </div>
     </section>
 </div>
+@include('partials.store-reviews-modal')
 <script>
 (() => {
     const locationButton = document.getElementById('home-use-current-location');

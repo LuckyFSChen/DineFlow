@@ -126,6 +126,7 @@ return [
     'review_already_submitted'     => '你已完成此筆訂單的評論。',
     'review_only_completed_order'  => '訂單完成後才可以進行評論。',
     'review_identity_mismatch'     => '聯絡資訊與本筆訂單不一致，請確認後再送出。',
+    'review_store_unavailable'     => '目前無法取得店家資訊，無法進行評論。',
     'cancel_reason_title'          => '取消原因',
     'cancel_reason_empty'          => '店家未提供取消原因。',
     'error_cart_empty'             => '購物車是空的。',
@@ -147,4 +148,9 @@ return [
     'coupon_member_required'       => '此優惠券需登入會員（請填手機或 Email）',
     'coupon_points_insufficient'   => '會員點數不足，無法使用此優惠券',
     'guest_register_points_prompt' => '此手機尚未註冊會員，是否建立帳號並累積本次點數？首次登入密碼為 0000，登入後需立即修改密碼。',
+    'reorder_to_cart'              => '再次加入購物車',
+    'reorder_added_to_cart'        => '已將 :count 項商品加入購物車。',
+    'reorder_partial_added_to_cart'=> '已加入 :added 項商品，略過 :skipped 項目前未提供的商品。',
+    'reorder_items_unavailable'    => '此訂單商品目前未提供，無法加入購物車。',
+    'reorder_unavailable'          => '此訂單目前無法再次加入購物車。',
 ];

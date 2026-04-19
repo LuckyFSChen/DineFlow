@@ -35,6 +35,7 @@
     $oldCouponCode = strtoupper(trim((string) old('coupon_code', '')));
     $oldAppliedCouponCode = strtoupper(trim((string) old('applied_coupon_code', '')));
     $oldAppliedCouponSummary = trim((string) old('applied_coupon_summary', ''));
+    $oldAppliedCouponDiscount = max((int) old('applied_coupon_discount', 0), 0);
     $hasOldAppliedCoupon = $oldCouponCode !== ''
         && $oldAppliedCouponCode !== ''
         && $oldCouponCode === $oldAppliedCouponCode
@@ -140,6 +141,28 @@
                                         @if(!empty($item['item_note']))
                                             <p class="mt-1 text-xs text-amber-700">{{ __('customer.item_note_prefix') }} {{ $item['item_note'] }}</p>
                                         @endif
+                                        @if(!empty($item['editable_option_groups']) || !empty($item['allow_item_note']))
+                                            <form method="POST"
+                                                  action="{{ route($cartUpdateRouteName, array_merge($routeParams, ['lineKey' => $item['line_key']])) }}"
+                                                  class="mt-2"
+                                                  data-option-edit-form>
+                                                @csrf
+                                                @method('PATCH')
+                                                <input type="hidden" name="action" value="update_options">
+                                                <input type="hidden" name="option_payload" value="" data-option-edit-payload>
+                                                <input type="hidden" name="item_note" value="{{ $item['item_note'] ?? '' }}" data-option-edit-note>
+                                                <button type="button"
+                                                        class="inline-flex items-center rounded-lg border border-brand-soft bg-white px-2.5 py-1 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30"
+                                                        data-open-option-editor
+                                                        data-product-name="{{ $item['product_name'] }}"
+                                                        data-option-groups='@json($item['editable_option_groups'] ?? [])'
+                                                        data-selected-options='@json($item['option_items'] ?? [])'
+                                                        data-item-note="{{ $item['item_note'] ?? '' }}"
+                                                        data-allow-item-note="{{ !empty($item['allow_item_note']) ? '1' : '0' }}">
+                                                    {{ __('customer.select_options_title') }}
+                                                </button>
+                                            </form>
+                                        @endif
                                         <div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-brand-primary/75">
                                             <span>{{ __('customer.unit_price') }} {{ $currencySymbol }} {{ number_format($item['price']) }}</span>
                                             <span>{{ __('customer.qty') }}</span>
@@ -191,23 +214,32 @@
                             <div class="mt-5 space-y-4 text-sm">
                                 <div class="flex items-center justify-between text-brand-primary/80">
                                     <span>{{ __('customer.subtotal') }}</span>
-                                    <span data-cart-total>{{ $currencySymbol }} {{ number_format($total) }}</span>
+                                    <span data-cart-subtotal>{{ $currencySymbol }} {{ number_format($total) }}</span>
                                 </div>
 
                                 <div class="flex items-center justify-between text-brand-primary/70">
                                     <span>{{ __('customer.coupon_discount') }}</span>
-                                    <span>
-                                        {{ $isDineIn
-                                            ? __('customer.dinein_no_points_or_coupon')
-                                            : __('customer.coupon_discount_after_submit') }}
-                                    </span>
+                                    @if($isDineIn)
+                                        <span>{{ __('customer.dinein_no_points_or_coupon') }}</span>
+                                    @else
+                                        <span class="font-semibold text-emerald-700" data-coupon-discount>
+                                            - {{ $currencySymbol }} {{ number_format($oldAppliedCouponDiscount) }}
+                                        </span>
+                                    @endif
                                 </div>
 
                                 <div class="border-t border-brand-soft/60 pt-4">
                                     <div class="flex items-center justify-between text-lg font-bold text-brand-dark">
                                         <span>{{ __('customer.estimated_payable') }}</span>
-                                        <span data-cart-total>{{ $currencySymbol }} {{ number_format($total) }}</span>
+                                        <span data-cart-payable>
+                                            {{ $currencySymbol }} {{ number_format(max($total - $oldAppliedCouponDiscount, 0)) }}
+                                        </span>
                                     </div>
+                                    @unless($isDineIn)
+                                        <p class="mt-2 text-xs text-brand-primary/70" data-coupon-discount-hint>
+                                            {{ $hasOldAppliedCoupon ? $oldAppliedCouponSummary : __('customer.coupon_discount_after_submit') }}
+                                        </p>
+                                    @endunless
                                 </div>
                             </div>
                         </div>
@@ -296,6 +328,10 @@
                                            name="applied_coupon_summary"
                                            value="{{ $hasOldAppliedCoupon ? $oldAppliedCouponSummary : '' }}"
                                            data-applied-coupon-summary>
+                                   <input type="hidden"
+                                           name="applied_coupon_discount"
+                                           value="{{ $hasOldAppliedCoupon ? $oldAppliedCouponDiscount : 0 }}"
+                                           data-applied-coupon-discount>
                                     <p class="mt-1 text-xs text-brand-primary/70">請先輸入優惠券代碼，再按「套用」。</p>
                                     <p class="mt-2 text-xs text-rose-600 {{ $errors->has('coupon_code') ? '' : 'hidden' }}" data-coupon-error>
                                         {{ $errors->first('coupon_code') }}
@@ -393,12 +429,73 @@
     </div>
 </div>
 
+<div class="fixed inset-0 z-50 hidden items-end justify-center bg-black/45 p-4 sm:items-center" data-option-edit-modal>
+    <div class="w-full max-w-lg rounded-3xl bg-white p-5 shadow-xl">
+        <div class="flex items-center justify-between gap-3">
+            <h3 class="text-lg font-bold text-brand-dark" data-option-edit-modal-title>{{ __('customer.select_options_title') }}</h3>
+            <button type="button" class="rounded-full p-2 text-slate-500 hover:bg-slate-100" data-option-edit-modal-close>✕</button>
+        </div>
+        <div class="mt-4 max-h-[60vh] space-y-4 overflow-y-auto" data-option-edit-modal-body></div>
+        <div class="mt-5 flex gap-3">
+            <button type="button" class="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100" data-option-edit-modal-cancel>{{ __('customer.cancel') }}</button>
+            <button type="button" class="inline-flex flex-1 items-center justify-center rounded-2xl bg-brand-primary px-4 py-3 text-sm font-semibold text-white hover:bg-brand-accent hover:text-brand-dark" data-option-edit-modal-confirm>{{ __('customer.confirm_add') }}</button>
+        </div>
+    </div>
+</div>
+
 <script>
 (() => {
     const isDineIn = @json($isDineIn);
     const cartItemsContainer = document.querySelector('[data-cart-items]');
     const cartLineCount = document.querySelector('[data-cart-line-count]');
-    const cartTotalEls = document.querySelectorAll('[data-cart-total]');
+    const cartSubtotalEl = document.querySelector('[data-cart-subtotal]');
+    const cartPayableEl = document.querySelector('[data-cart-payable]');
+    const couponDiscountEl = document.querySelector('[data-coupon-discount]');
+    const couponDiscountHintEl = document.querySelector('[data-coupon-discount-hint]');
+    const optionEditModal = document.querySelector('[data-option-edit-modal]');
+    const optionEditModalTitle = document.querySelector('[data-option-edit-modal-title]');
+    const optionEditModalBody = document.querySelector('[data-option-edit-modal-body]');
+    const optionEditModalClose = document.querySelector('[data-option-edit-modal-close]');
+    const optionEditModalCancel = document.querySelector('[data-option-edit-modal-cancel]');
+    const optionEditModalConfirm = document.querySelector('[data-option-edit-modal-confirm]');
+    const optionEditTriggers = document.querySelectorAll('[data-open-option-editor]');
+    const currencySymbol = @json($currencySymbol);
+    const optionEditI18n = {
+        optionsTitle: @json(__('customer.select_options_title')),
+        optionsTitleWithProduct: @json(__('customer.select_options_title_with_product', ['product' => '__product__'])),
+        requiredSuffix: @json(__('customer.required_suffix')),
+        requiredError: @json(__('customer.option_required_error', ['group' => '__group__'])),
+        maxSelectError: @json(__('customer.option_max_select_error', ['group' => '__group__', 'max' => '__max__'])),
+        itemNoteLabel: @json(__('customer.item_note_label')),
+        itemNotePlaceholder: @json(__('customer.item_note_placeholder')),
+        free: @json(__('customer.free')),
+        currencySymbol: @json($currencySymbol),
+    };
+    let currentCartTotal = Number(@json((int) $total));
+    let appliedCouponDiscount = Number(@json($isDineIn ? 0 : $oldAppliedCouponDiscount));
+    let activeOptionEditForm = null;
+    let activeOptionEditGroups = [];
+    let activeOptionAllowItemNote = false;
+
+    const formatCurrency = (amount) => `${currencySymbol} ${Number(Math.max(Number(amount || 0), 0)).toLocaleString()}`;
+
+    const updateSummaryTotals = () => {
+        const payable = Math.max(currentCartTotal - appliedCouponDiscount, 0);
+
+        if (cartSubtotalEl) {
+            cartSubtotalEl.textContent = formatCurrency(currentCartTotal);
+        }
+
+        if (couponDiscountEl) {
+            couponDiscountEl.textContent = `- ${formatCurrency(appliedCouponDiscount)}`;
+        }
+
+        if (cartPayableEl) {
+            cartPayableEl.textContent = formatCurrency(payable);
+        }
+    };
+
+    updateSummaryTotals();
 
     const sendCartRequest = async (form) => {
         const formData = new FormData(form);
@@ -433,9 +530,8 @@
         }
 
         cartLineCount.textContent = `{{ __('customer.total_products_prefix') }} ${cart.line_count} {{ __('customer.total_products_suffix') }}`;
-        cartTotalEls.forEach((element) => {
-            element.textContent = cart.total_display;
-        });
+        currentCartTotal = Number(cart.total || 0);
+        updateSummaryTotals();
 
         const itemMap = new Map((cart.items || []).map((item) => [item.line_key, item]));
         cartItemsContainer.querySelectorAll('[data-cart-item]').forEach((row) => {
@@ -456,7 +552,223 @@
                 subtotal.textContent = item.subtotal_display;
             }
         });
+
+        const appliedCode = normalizeCouponCode(appliedCouponCodeInput?.value);
+        if (appliedCode !== '') {
+            clearAppliedCoupon();
+            setCouponError('購物車已更新，請重新套用優惠券。');
+        }
     };
+
+    const closeOptionEditModal = () => {
+        optionEditModal?.classList.add('hidden');
+        optionEditModal?.classList.remove('flex');
+        if (optionEditModalBody) {
+            optionEditModalBody.innerHTML = '';
+        }
+        activeOptionEditForm = null;
+        activeOptionEditGroups = [];
+        activeOptionAllowItemNote = false;
+    };
+
+    const parseJsonSafe = (raw, fallback) => {
+        try {
+            const parsed = JSON.parse(raw || '');
+            return parsed ?? fallback;
+        } catch (_error) {
+            return fallback;
+        }
+    };
+
+    const openOptionEditModal = (trigger) => {
+        const form = trigger.closest('form[data-option-edit-form]');
+        if (!form || !optionEditModalBody || !optionEditModalTitle) {
+            return;
+        }
+
+        const groups = parseJsonSafe(trigger.dataset.optionGroups, []);
+        const selected = parseJsonSafe(trigger.dataset.selectedOptions, {});
+        const allowItemNote = trigger.dataset.allowItemNote === '1';
+        const currentNote = String(trigger.dataset.itemNote || '');
+        const productName = String(trigger.dataset.productName || '');
+        const selectedMap = {};
+
+        if (selected && typeof selected === 'object') {
+            Object.keys(selected).forEach((groupId) => {
+                const group = selected[groupId];
+                const items = Array.isArray(group?.items) ? group.items : [];
+                selectedMap[groupId] = items
+                    .map((choice) => String(choice?.id || '').trim())
+                    .filter((value) => value !== '');
+            });
+        }
+
+        activeOptionEditForm = form;
+        activeOptionEditGroups = Array.isArray(groups) ? groups : [];
+        activeOptionAllowItemNote = allowItemNote;
+        optionEditModalTitle.textContent = productName !== ''
+            ? optionEditI18n.optionsTitleWithProduct.replace('__product__', productName)
+            : optionEditI18n.optionsTitle;
+        optionEditModalBody.innerHTML = '';
+
+        activeOptionEditGroups.forEach((group) => {
+            const groupId = String(group?.id || '');
+            if (!groupId) {
+                return;
+            }
+
+            const type = group?.type === 'multiple' ? 'multiple' : 'single';
+            const required = !!group?.required;
+            const maxSelect = Number(group?.max_select || 99);
+            const wrapper = document.createElement('div');
+            wrapper.className = 'rounded-2xl border border-slate-200 p-4';
+            wrapper.dataset.groupId = groupId;
+            wrapper.dataset.groupType = type;
+            wrapper.dataset.groupRequired = required ? '1' : '0';
+            wrapper.dataset.groupMax = String(maxSelect);
+
+            const title = document.createElement('div');
+            title.className = 'mb-2 text-sm font-semibold text-slate-800';
+            title.textContent = `${group?.name || groupId}${required ? optionEditI18n.requiredSuffix : ''}`;
+            wrapper.appendChild(title);
+
+            const choices = Array.isArray(group?.choices) ? group.choices : [];
+            const preselected = Array.isArray(selectedMap[groupId]) ? selectedMap[groupId] : [];
+
+            choices.forEach((choice, index) => {
+                const choiceId = String(choice?.id || '');
+                if (!choiceId) {
+                    return;
+                }
+
+                const row = document.createElement('label');
+                row.className = 'mb-2 flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-sm last:mb-0 hover:bg-slate-50';
+
+                const left = document.createElement('div');
+                left.className = 'flex items-center gap-2';
+
+                const input = document.createElement('input');
+                input.type = type === 'single' ? 'radio' : 'checkbox';
+                input.name = `edit_opt_${groupId}` + (type === 'multiple' ? '[]' : '');
+                input.value = choiceId;
+                if (preselected.includes(choiceId)) {
+                    input.checked = true;
+                }
+                if (required && type === 'single' && preselected.length === 0 && index === 0) {
+                    input.checked = true;
+                }
+
+                const text = document.createElement('span');
+                text.textContent = String(choice?.name || choiceId);
+                left.appendChild(input);
+                left.appendChild(text);
+
+                const price = document.createElement('span');
+                const value = Number(choice?.price || 0);
+                price.className = 'text-xs font-semibold ' + (value > 0 ? 'text-brand-primary' : 'text-slate-500');
+                price.textContent = value > 0 ? `+${optionEditI18n.currencySymbol} ${value}` : optionEditI18n.free;
+
+                row.appendChild(left);
+                row.appendChild(price);
+                wrapper.appendChild(row);
+            });
+
+            optionEditModalBody.appendChild(wrapper);
+        });
+
+        if (allowItemNote) {
+            const noteWrapper = document.createElement('div');
+            noteWrapper.className = 'rounded-2xl border border-slate-200 p-4';
+
+            const noteLabel = document.createElement('div');
+            noteLabel.className = 'mb-2 text-sm font-semibold text-slate-800';
+            noteLabel.textContent = optionEditI18n.itemNoteLabel;
+
+            const noteInput = document.createElement('textarea');
+            noteInput.rows = 3;
+            noteInput.maxLength = 255;
+            noteInput.value = currentNote;
+            noteInput.placeholder = optionEditI18n.itemNotePlaceholder;
+            noteInput.className = 'w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft';
+            noteInput.setAttribute('data-option-edit-note-input', '1');
+
+            noteWrapper.appendChild(noteLabel);
+            noteWrapper.appendChild(noteInput);
+            optionEditModalBody.appendChild(noteWrapper);
+        }
+
+        optionEditModal.classList.remove('hidden');
+        optionEditModal.classList.add('flex');
+    };
+
+    optionEditTriggers.forEach((trigger) => {
+        trigger.addEventListener('click', () => openOptionEditModal(trigger));
+    });
+
+    optionEditModalClose?.addEventListener('click', closeOptionEditModal);
+    optionEditModalCancel?.addEventListener('click', closeOptionEditModal);
+    optionEditModal?.addEventListener('click', (event) => {
+        if (event.target === optionEditModal) {
+            closeOptionEditModal();
+        }
+    });
+
+    optionEditModalConfirm?.addEventListener('click', () => {
+        if (!activeOptionEditForm || !optionEditModalBody) {
+            closeOptionEditModal();
+            return;
+        }
+
+        const payload = {};
+
+        for (const group of activeOptionEditGroups) {
+            const groupId = String(group?.id || '');
+            if (!groupId) {
+                continue;
+            }
+
+            const wrapper = optionEditModalBody.querySelector(`[data-group-id="${groupId}"]`);
+            if (!wrapper) {
+                continue;
+            }
+
+            const type = wrapper.dataset.groupType || 'single';
+            const required = wrapper.dataset.groupRequired === '1';
+            const maxSelect = Number(wrapper.dataset.groupMax || 99);
+            const checked = Array.from(wrapper.querySelectorAll('input:checked')).map((input) => input.value);
+
+            if (required && checked.length === 0) {
+                alert(optionEditI18n.requiredError.replace('__group__', group?.name || groupId));
+                return;
+            }
+
+            if (type === 'multiple' && checked.length > maxSelect) {
+                alert(optionEditI18n.maxSelectError.replace('__group__', group?.name || groupId).replace('__max__', maxSelect));
+                return;
+            }
+
+            if (checked.length > 0) {
+                payload[groupId] = type === 'single' ? [checked[0]] : checked;
+            }
+        }
+
+        const payloadInput = activeOptionEditForm.querySelector('[data-option-edit-payload]');
+        if (payloadInput) {
+            payloadInput.value = JSON.stringify(payload);
+        }
+
+        const noteField = activeOptionEditForm.querySelector('[data-option-edit-note]');
+        if (noteField) {
+            const noteInput = optionEditModalBody.querySelector('[data-option-edit-note-input]');
+            noteField.value = activeOptionAllowItemNote && noteInput
+                ? String(noteInput.value || '').trim()
+                : '';
+        }
+
+        const formToSubmit = activeOptionEditForm;
+        closeOptionEditModal();
+        formToSubmit.submit();
+    });
 
     if (!isDineIn) {
         document.querySelectorAll('[data-cart-update-form], [data-cart-remove-form]').forEach((form) => {
@@ -534,7 +846,9 @@
     const couponAppliedSummary = checkoutForm.querySelector('[data-coupon-applied-summary]');
     const appliedCouponCodeInput = checkoutForm.querySelector('[data-applied-coupon-code]');
     const appliedCouponSummaryInput = checkoutForm.querySelector('[data-applied-coupon-summary]');
+    const appliedCouponDiscountInput = checkoutForm.querySelector('[data-applied-coupon-discount]');
     const promptMessage = @json(__('customer.guest_register_points_prompt'));
+    const couponAfterSubmitHint = @json(__('customer.coupon_discount_after_submit'));
 
     const normalizeCouponCode = (value) => String(value || '').trim().toUpperCase();
 
@@ -549,12 +863,18 @@
     };
 
     const clearAppliedCoupon = () => {
+        appliedCouponDiscount = 0;
+
         if (appliedCouponCodeInput) {
             appliedCouponCodeInput.value = '';
         }
 
         if (appliedCouponSummaryInput) {
             appliedCouponSummaryInput.value = '';
+        }
+
+        if (appliedCouponDiscountInput) {
+            appliedCouponDiscountInput.value = '0';
         }
 
         if (couponAppliedCode) {
@@ -568,15 +888,27 @@
         if (couponAppliedBox) {
             couponAppliedBox.classList.add('hidden');
         }
+
+        if (couponDiscountHintEl) {
+            couponDiscountHintEl.textContent = couponAfterSubmitHint;
+        }
+
+        updateSummaryTotals();
     };
 
-    const renderAppliedCoupon = (code, summary) => {
+    const renderAppliedCoupon = (code, summary, discount) => {
+        appliedCouponDiscount = Math.max(Number(discount || 0), 0);
+
         if (appliedCouponCodeInput) {
             appliedCouponCodeInput.value = code;
         }
 
         if (appliedCouponSummaryInput) {
             appliedCouponSummaryInput.value = summary;
+        }
+
+        if (appliedCouponDiscountInput) {
+            appliedCouponDiscountInput.value = String(appliedCouponDiscount);
         }
 
         if (couponAppliedCode) {
@@ -590,6 +922,12 @@
         if (couponAppliedBox) {
             couponAppliedBox.classList.remove('hidden');
         }
+
+        if (couponDiscountHintEl) {
+            couponDiscountHintEl.textContent = summary || couponAfterSubmitHint;
+        }
+
+        updateSummaryTotals();
     };
 
     const validateCouponBeforeSubmit = () => {
@@ -618,6 +956,15 @@
             couponInput.value = normalizeCouponCode(couponInput.value);
             clearAppliedCoupon();
             setCouponError('');
+        });
+
+        couponInput.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter') {
+                return;
+            }
+
+            event.preventDefault();
+            couponApplyButton?.click();
         });
     }
 
@@ -674,7 +1021,8 @@
                 }
 
                 const summary = String(payload?.coupon?.summary || '').trim();
-                renderAppliedCoupon(code, summary);
+                const discount = Number(payload?.coupon?.discount || 0);
+                renderAppliedCoupon(code, summary, discount);
                 setCouponError('');
             } catch (_error) {
                 clearAppliedCoupon();
