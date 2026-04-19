@@ -54,7 +54,7 @@
                 <h2 class="text-2xl font-bold tracking-tight text-brand-dark">{{ __('privacy.contact_title') }}</h2>
                 <p class="mt-3 text-base leading-8 text-brand-primary/80">{{ __('privacy.contact_body') }}</p>
                 <div class="mt-4 flex flex-wrap gap-4 text-base font-semibold">
-                    <a href="mailto:bigtw178@gmail.com" class="text-brand-primary transition hover:text-brand-accent">bigtw178@gmail.com</a>
+                    <a href="mailto:lowy.chen0504@gmail.com" class="text-brand-primary transition hover:text-brand-accent">lowy.chen0504@gmail.com</a>
                     <a href="tel:0979300504" class="text-brand-primary transition hover:text-brand-accent">0979-300-504</a>
                 </div>
             </div>

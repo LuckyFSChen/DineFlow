@@ -7,7 +7,7 @@
         <span>{{ __('footer.contact_label') }}</span>
         <a href="tel:0979300504" class="font-semibold text-brand-highlight transition hover:text-brand-soft">0979-300-504</a>
         <span class="text-white/35">/</span>
-        <a href="mailto:bigtw178@gmail.com" class="font-semibold text-brand-highlight transition hover:text-brand-soft">bigtw178@gmail.com</a>
+        <a href="mailto:lowy.chen0504@gmail.com" class="font-semibold text-brand-highlight transition hover:text-brand-soft">lowy.chen0504@gmail.com</a>
         <span class="text-white/30">|</span>
         <a href="{{ route('privacy.policy') }}" class="font-semibold text-brand-highlight transition hover:text-brand-soft">
             {{ __('footer.privacy_policy') }}
