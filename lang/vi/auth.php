@@ -26,6 +26,8 @@ return [
     'force_password_change_notice' => 'Tài khoản của bạn vẫn đang dùng mật khẩu khởi tạo. Vui lòng đổi mật khẩu trước khi tiếp tục.',
     'merchant_type'              => 'Thương Nhân',
     'merchant_desc'              => 'Tài khoản thương nhân, cần đăng ký gói để quản lý cửa hàng.',
+    'merchant_staff_type'        => 'Thương Nhân / Hậu Đài',
+    'merchant_staff_desc'        => 'Thương nhân và nhân sự hậu đài dùng chung mục đăng nhập này.',
     'backend_staff_type'         => 'Nhân Sự Hậu Đài',
     'backend_staff_desc'         => 'Tài khoản hậu đài, chỉ đăng nhập để xem tất cả bảng.',
     'customer_email_optional_hint' => 'Khách hàng có thể bỏ trống email và đăng ký/đăng nhập bằng số điện thoại.',

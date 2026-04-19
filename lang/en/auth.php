@@ -26,6 +26,8 @@ return [
     'force_password_change_notice' => 'Your account is still using the initial password. Please update your password before continuing.',
     'merchant_type'              => 'Merchant',
     'merchant_desc'              => 'Merchant account. Requires an active subscription to manage stores.',
+    'merchant_staff_type'        => 'Merchant / Backend Staff',
+    'merchant_staff_desc'        => 'Merchants and backend staff use this shared login option.',
     'backend_staff_type'         => 'Backend Staff',
     'backend_staff_desc'         => 'Backend staff account. Can sign in to access all boards only.',
     'customer_email_optional_hint' => 'Email is optional for customers. You can sign up and log in with phone.',

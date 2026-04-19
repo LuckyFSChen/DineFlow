@@ -26,6 +26,8 @@ return [
     'force_password_change_notice' => '此帳號尚未修改初始密碼，請先更新密碼後再繼續。',
     'merchant_type'              => '商家',
     'merchant_desc'              => '商家帳號，需啟用訂閱後才能新增與管理商家。',
+    'merchant_staff_type'        => '商家 / 後台人員',
+    'merchant_staff_desc'        => '商家與後台人員共用此登入入口。',
     'backend_staff_type'         => '後台人員',
     'backend_staff_desc'         => '後台人員帳號，只能登入查看所有看板。',
     'customer_email_optional_hint' => '顧客可不填 Email，使用手機註冊與登入即可。',

@@ -23,7 +23,7 @@ class AuthenticatedSessionController extends Controller
 
         $requestedType = (string) $request->query('account_type', 'customer');
         $defaultAccountType = in_array($requestedType, ['merchant', 'backend_staff'], true)
-            ? $requestedType
+            ? 'merchant'
             : 'customer';
 
         return view('auth.login', [

@@ -1,7 +1,10 @@
 <x-guest-layout>
     @php
-        $allowedTypes = ['customer', 'merchant', 'backend_staff'];
+        $allowedTypes = ['customer', 'merchant'];
         $requestedDefault = (string) ($defaultAccountType ?? 'customer');
+        if ($requestedDefault === 'backend_staff') {
+            $requestedDefault = 'merchant';
+        }
         $defaultType = in_array($requestedDefault, $allowedTypes, true) ? $requestedDefault : 'customer';
         $selectedAccountType = old('account_type', $defaultType);
 
@@ -11,7 +14,7 @@
 
         if (! old('account_type')) {
             if ($errors->has('email')) {
-                $selectedAccountType = $selectedAccountType === 'backend_staff' ? 'backend_staff' : 'merchant';
+                $selectedAccountType = 'merchant';
             } elseif ($errors->has('phone')) {
                 $selectedAccountType = 'customer';
             }
@@ -40,7 +43,7 @@
 
         <div>
             <x-input-label for="login_account_type" :value="__('auth.Account Type')" />
-            <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-300 p-3">
                     <input type="radio" id="login_account_type_customer" name="login_account_type" value="customer" class="mt-1" {{ $selectedAccountType === 'customer' ? 'checked' : '' }}>
                     <span>
@@ -52,16 +55,8 @@
                 <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-300 p-3">
                     <input type="radio" id="login_account_type_merchant" name="login_account_type" value="merchant" class="mt-1" {{ $selectedAccountType === 'merchant' ? 'checked' : '' }}>
                     <span>
-                        <span class="block text-sm font-semibold text-slate-800">{{ __('auth.merchant_type') }}</span>
-                        <span class="block text-xs text-slate-500">{{ __('auth.merchant_desc') }}</span>
-                    </span>
-                </label>
-
-                <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-300 p-3">
-                    <input type="radio" id="login_account_type_backend_staff" name="login_account_type" value="backend_staff" class="mt-1" {{ $selectedAccountType === 'backend_staff' ? 'checked' : '' }}>
-                    <span>
-                        <span class="block text-sm font-semibold text-slate-800">{{ __('auth.backend_staff_type') }}</span>
-                        <span class="block text-xs text-slate-500">{{ __('auth.backend_staff_desc') }}</span>
+                        <span class="block text-sm font-semibold text-slate-800">{{ __('auth.merchant_staff_type') }}</span>
+                        <span class="block text-xs text-slate-500">{{ __('auth.merchant_staff_desc') }}</span>
                     </span>
                 </label>
             </div>
@@ -151,7 +146,7 @@
         const syncByType = (accountType) => {
             const isCustomer = accountType === 'customer';
 
-            accountTypeInput.value = isCustomer ? 'customer' : accountType;
+            accountTypeInput.value = isCustomer ? 'customer' : 'merchant';
             form.action = isCustomer ? customerLoginAction : merchantLoginAction;
 
             phoneWrap.classList.toggle('hidden', !isCustomer);
