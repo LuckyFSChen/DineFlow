@@ -28,7 +28,7 @@ class AllBoardsController extends Controller
         $user = $request->user();
 
         $canCashierActions = $user->isAdmin() || $user->isMerchant() || $user->isCashier();
-        $canKitchenActions = $user->isAdmin() || $user->isMerchant() || $user->isChef();
+        $canKitchenActions = $user->isAdmin() || $user->isMerchant();
 
         return view('admin.boards.index', [
             'store' => $store,

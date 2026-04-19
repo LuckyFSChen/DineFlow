@@ -52,10 +52,6 @@ class StorePolicy
             return Response::allow();
         }
 
-        if ($user->isChef() && (int) $user->store_id === (int) $store->id) {
-            return Response::allow();
-        }
-
         return $this->denyManageStore();
     }
 

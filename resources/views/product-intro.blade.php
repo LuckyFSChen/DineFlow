@@ -290,11 +290,11 @@
 
             <div class="intro-reveal mt-8 flex flex-wrap gap-4" data-reveal style="--delay: 220ms;">
                 @auth
-                    <a href="{{ route('dashboard') }}" class="intro-cta-pulse inline-flex items-center gap-2 rounded-2xl bg-brand-highlight px-5 py-3 text-base font-semibold text-brand-dark transition hover:-translate-y-0.5 hover:bg-brand-soft">
+                    <a href="{{ auth()->user()?->role === 'customer' ? route('join.merchant.register') : route('dashboard') }}" class="intro-cta-pulse inline-flex items-center gap-2 rounded-2xl bg-brand-highlight px-5 py-3 text-base font-semibold text-brand-dark transition hover:-translate-y-0.5 hover:bg-brand-soft">
                         {{ __('home.full_intro_join_button') }}
                     </a>
                 @else
-                    <a href="{{ route('register') }}" class="intro-cta-pulse inline-flex items-center gap-2 rounded-2xl bg-brand-highlight px-5 py-3 text-base font-semibold text-brand-dark transition hover:-translate-y-0.5 hover:bg-brand-soft">
+                    <a href="{{ route('register', ['account_type' => 'merchant']) }}" class="intro-cta-pulse inline-flex items-center gap-2 rounded-2xl bg-brand-highlight px-5 py-3 text-base font-semibold text-brand-dark transition hover:-translate-y-0.5 hover:bg-brand-soft">
                         {{ __('home.full_intro_join_button') }}
                     </a>
                 @endauth
@@ -392,11 +392,11 @@
 
             <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
                 @auth
-                    <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2 rounded-2xl bg-brand-highlight px-5 py-3 text-base font-semibold text-brand-dark transition hover:-translate-y-0.5 hover:bg-brand-soft">
+                    <a href="{{ auth()->user()?->role === 'customer' ? route('join.merchant.register') : route('dashboard') }}" class="inline-flex items-center gap-2 rounded-2xl bg-brand-highlight px-5 py-3 text-base font-semibold text-brand-dark transition hover:-translate-y-0.5 hover:bg-brand-soft">
                         {{ __('home.full_intro_join_button') }}
                     </a>
                 @else
-                    <a href="{{ route('register') }}" class="inline-flex items-center gap-2 rounded-2xl bg-brand-highlight px-5 py-3 text-base font-semibold text-brand-dark transition hover:-translate-y-0.5 hover:bg-brand-soft">
+                    <a href="{{ route('register', ['account_type' => 'merchant']) }}" class="inline-flex items-center gap-2 rounded-2xl bg-brand-highlight px-5 py-3 text-base font-semibold text-brand-dark transition hover:-translate-y-0.5 hover:bg-brand-soft">
                         {{ __('home.full_intro_join_button') }}
                     </a>
                 @endauth

@@ -279,12 +279,12 @@
             </div>
         </div>
 
-           <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+           <div class="admin-modal-host rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
                x-data="couponManager()"
                data-update-url-template="{{ route('merchant.loyalty.coupons.update', ['coupon' => '__COUPON__']) }}">
             <h2 class="text-lg font-semibold text-slate-900">優惠券清單</h2>
             <div class="mt-4 overflow-x-auto">
-                <table class="min-w-full text-sm" data-datatable data-dt-paging="false" data-dt-info="false" data-dt-searching="false">
+                <table class="min-w-full text-sm" data-datatable="off">
                     <thead class="bg-slate-100 text-slate-700">
                         <tr>
                             <th class="px-3 py-2 text-left">名稱</th>
@@ -292,6 +292,8 @@
                             <th class="px-3 py-2 text-left">折扣</th>
                             <th class="px-3 py-2 text-left">門檻/點數成本</th>
                             <th class="px-3 py-2 text-left">使用次數</th>
+                            <th class="px-3 py-2 text-left">????</th>
+                            <th class="px-3 py-2 text-left">????</th>
                             <th class="px-3 py-2 text-left">狀態</th>
                             <th class="px-3 py-2 text-right">操作</th>
                         </tr>
@@ -324,6 +326,12 @@
                                     @endif
                                 </td>
                                 <td class="px-3 py-2">
+                                    {{ optional($coupon->starts_at)->format('Y-m-d H:i') ?: '-' }}
+                                </td>
+                                <td class="px-3 py-2">
+                                    {{ optional($coupon->ends_at)->format('Y-m-d H:i') ?: '-' }}
+                                </td>
+                                <td class="px-3 py-2">
                                     <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {{ $coupon->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600' }}">
                                         {{ $coupon->is_active ? '啟用中' : '停用' }}
                                     </span>
@@ -331,21 +339,20 @@
                                 <td class="px-3 py-2 text-right">
                                     <div class="inline-flex gap-2">
                                         <button type="button"
-                                                @click='openEditModal({
-                                                    id: {{ (int) $coupon->id }},
-                                                    name: @js($coupon->name),
-                                                    code: @js($coupon->code),
-                                                    discount_type: @js($coupon->discount_type),
-                                                    discount_value: {{ (int) $coupon->discount_value }},
-                                                    reward_per_amount: {{ (int) $coupon->reward_per_amount }},
-                                                    reward_points: {{ (int) $coupon->reward_points }},
-                                                    min_order_amount: {{ (int) $coupon->min_order_amount }},
-                                                    points_cost: {{ (int) $coupon->points_cost }},
-                                                    usage_limit: {{ $coupon->usage_limit !== null ? (int) $coupon->usage_limit : 'null' }},
-                                                    starts_at: @js(optional($coupon->starts_at)->format('Y-m-d\\TH:i')),
-                                                    ends_at: @js(optional($coupon->ends_at)->format('Y-m-d\\TH:i')),
-                                                    is_active: {{ $coupon->is_active ? 'true' : 'false' }}
-                                                })'
+                                                data-coupon-id="{{ (int) $coupon->id }}"
+                                                data-coupon-name="{{ $coupon->name }}"
+                                                data-coupon-code="{{ $coupon->code }}"
+                                                data-coupon-discount-type="{{ $coupon->discount_type }}"
+                                                data-coupon-discount-value="{{ (int) $coupon->discount_value }}"
+                                                data-coupon-reward-per-amount="{{ (int) $coupon->reward_per_amount }}"
+                                                data-coupon-reward-points="{{ (int) $coupon->reward_points }}"
+                                                data-coupon-min-order-amount="{{ (int) $coupon->min_order_amount }}"
+                                                data-coupon-points-cost="{{ (int) $coupon->points_cost }}"
+                                                data-coupon-usage-limit="{{ $coupon->usage_limit !== null ? (int) $coupon->usage_limit : '' }}"
+                                                data-coupon-starts-at="{{ optional($coupon->starts_at)->format('Y-m-d\TH:i') }}"
+                                                data-coupon-ends-at="{{ optional($coupon->ends_at)->format('Y-m-d\TH:i') }}"
+                                                data-coupon-is-active="{{ $coupon->is_active ? '1' : '0' }}"
+                                                @click="openEditModalFromButton($el)"
                                                 class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
                                             修改
                                         </button>
@@ -368,7 +375,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-3 py-6 text-center text-slate-500">尚未建立優惠券</td>
+                                <td colspan="9" class="px-3 py-6 text-center text-slate-500">尚未建立優惠券</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -378,80 +385,82 @@
                 {{ $coupons->links() }}
             </div>
 
-            <div x-cloak
-                 x-show="editModalOpen"
-                 @keydown.escape.window="closeEditModal()"
-                 class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6"
-                 style="display: none;">
-                <div @click.outside="closeEditModal()" class="w-full max-w-2xl rounded-2xl bg-white p-5 shadow-2xl">
-                    <div class="mb-4 flex items-center justify-between">
-                        <h3 class="text-lg font-semibold text-slate-900">修改優惠券</h3>
-                        <button type="button" @click="closeEditModal()" class="rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100">關閉</button>
+            <template x-teleport="body">
+                <div x-cloak
+                     x-show="editModalOpen"
+                     @keydown.escape.window="closeEditModal()"
+                     class="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/50 px-4 py-6"
+                     style="display: none;">
+                    <div @click.outside="closeEditModal()" class="w-full max-w-2xl rounded-2xl bg-white p-5 shadow-2xl">
+                        <div class="mb-4 flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-slate-900">修改優惠券</h3>
+                            <button type="button" @click="closeEditModal()" class="rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100">關閉</button>
+                        </div>
+
+                        <form method="POST" :action="updateAction" class="grid gap-3 sm:grid-cols-2">
+                            @csrf
+                            @method('PUT')
+
+                            <div class="sm:col-span-2">
+                                <label class="mb-1 block text-xs font-semibold text-slate-600">名稱</label>
+                                <input type="text" name="name" required x-model="form.name" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-semibold text-slate-600">代碼</label>
+                                <input type="text" name="code" required x-model="form.code" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm uppercase">
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-semibold text-slate-600">折扣類型</label>
+                                <select name="discount_type" x-model="form.discount_type" @change="normalizeFieldsByDiscountType()" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                                    <option value="fixed">固定金額</option>
+                                    <option value="percent">百分比</option>
+                                    <option value="points_reward">滿額贈點</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-semibold text-slate-600">折扣值</label>
+                                <input type="number" min="0" name="discount_value" x-model="form.discount_value" x-ref="editDiscountValue" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-semibold text-slate-600">贈點門檻金額（X）</label>
+                                <input type="number" min="0" name="reward_per_amount" x-model="form.reward_per_amount" x-ref="editRewardPerAmount" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-semibold text-slate-600">每門檻贈點（Y）</label>
+                                <input type="number" min="0" name="reward_points" x-model="form.reward_points" x-ref="editRewardPoints" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-semibold text-slate-600">最低消費</label>
+                                <input type="number" min="0" name="min_order_amount" x-model="form.min_order_amount" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-semibold text-slate-600">兌換點數成本（選填）</label>
+                                <input type="number" min="0" name="points_cost" x-model="form.points_cost" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-semibold text-slate-600">使用次數上限（選填）</label>
+                                <input type="number" min="1" name="usage_limit" x-model="form.usage_limit" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-semibold text-slate-600">開始時間（選填）</label>
+                                <input type="datetime-local" name="starts_at" x-model="form.starts_at" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-semibold text-slate-600">結束時間（選填）</label>
+                                <input type="datetime-local" name="ends_at" x-model="form.ends_at" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            </div>
+                            <label class="sm:col-span-2 inline-flex items-center gap-2 text-sm text-slate-700">
+                                <input type="checkbox" name="is_active" value="1" x-model="form.is_active" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                優惠券啟用中
+                            </label>
+                            <div class="sm:col-span-2 flex items-center justify-end gap-2">
+                                <button type="button" @click="closeEditModal()" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">取消</button>
+                                <button type="submit" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">儲存修改</button>
+                            </div>
+                        </form>
                     </div>
-
-                    <form method="POST" :action="updateAction" class="grid gap-3 sm:grid-cols-2">
-                        @csrf
-                        @method('PUT')
-
-                        <div class="sm:col-span-2">
-                            <label class="mb-1 block text-xs font-semibold text-slate-600">名稱</label>
-                            <input type="text" name="name" required x-model="form.name" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-semibold text-slate-600">代碼</label>
-                            <input type="text" name="code" required x-model="form.code" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm uppercase">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-semibold text-slate-600">折扣類型</label>
-                            <select name="discount_type" x-model="form.discount_type" @change="normalizeFieldsByDiscountType()" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                                <option value="fixed">固定金額</option>
-                                <option value="percent">百分比</option>
-                                <option value="points_reward">滿額贈點</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-semibold text-slate-600">折扣值</label>
-                            <input type="number" min="0" name="discount_value" x-model="form.discount_value" x-ref="editDiscountValue" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-semibold text-slate-600">贈點門檻金額（X）</label>
-                            <input type="number" min="0" name="reward_per_amount" x-model="form.reward_per_amount" x-ref="editRewardPerAmount" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-semibold text-slate-600">每門檻贈點（Y）</label>
-                            <input type="number" min="0" name="reward_points" x-model="form.reward_points" x-ref="editRewardPoints" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-semibold text-slate-600">最低消費</label>
-                            <input type="number" min="0" name="min_order_amount" x-model="form.min_order_amount" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-semibold text-slate-600">兌換點數成本（選填）</label>
-                            <input type="number" min="0" name="points_cost" x-model="form.points_cost" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-semibold text-slate-600">使用次數上限（選填）</label>
-                            <input type="number" min="1" name="usage_limit" x-model="form.usage_limit" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-semibold text-slate-600">開始時間（選填）</label>
-                            <input type="datetime-local" name="starts_at" x-model="form.starts_at" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-semibold text-slate-600">結束時間（選填）</label>
-                            <input type="datetime-local" name="ends_at" x-model="form.ends_at" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                        </div>
-                        <label class="sm:col-span-2 inline-flex items-center gap-2 text-sm text-slate-700">
-                            <input type="checkbox" name="is_active" value="1" x-model="form.is_active" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-                            優惠券啟用中
-                        </label>
-                        <div class="sm:col-span-2 flex items-center justify-end gap-2">
-                            <button type="button" @click="closeEditModal()" class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">取消</button>
-                            <button type="submit" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">儲存修改</button>
-                        </div>
-                    </form>
                 </div>
-            </div>
+            </template>
         </div>
     </div>
 </div>
@@ -506,6 +515,27 @@
                 starts_at: '',
                 ends_at: '',
                 is_active: true,
+            },
+            openEditModalFromButton(button) {
+                if (!(button instanceof HTMLElement)) {
+                    return;
+                }
+
+                this.openEditModal({
+                    id: Number(button.dataset.couponId || 0),
+                    name: button.dataset.couponName || '',
+                    code: button.dataset.couponCode || '',
+                    discount_type: button.dataset.couponDiscountType || 'fixed',
+                    discount_value: Number(button.dataset.couponDiscountValue || 0),
+                    reward_per_amount: Number(button.dataset.couponRewardPerAmount || 0),
+                    reward_points: Number(button.dataset.couponRewardPoints || 0),
+                    min_order_amount: Number(button.dataset.couponMinOrderAmount || 0),
+                    points_cost: Number(button.dataset.couponPointsCost || 0),
+                    usage_limit: button.dataset.couponUsageLimit === '' ? null : Number(button.dataset.couponUsageLimit || 0),
+                    starts_at: button.dataset.couponStartsAt || '',
+                    ends_at: button.dataset.couponEndsAt || '',
+                    is_active: button.dataset.couponIsActive === '1',
+                });
             },
             openEditModal(coupon) {
                 const template = this.$root.dataset.updateUrlTemplate || '';

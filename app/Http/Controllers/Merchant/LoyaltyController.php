@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Closure;
 
 class LoyaltyController extends Controller
 {
@@ -161,6 +162,18 @@ class LoyaltyController extends Controller
                 'nullable',
                 'integer',
                 'min:0',
+                function (string $attribute, mixed $value, Closure $fail) use ($request): void {
+                    $type = (string) $request->input('discount_type');
+                    $amount = (int) ($value ?? 0);
+
+                    if ($type === 'fixed' && $amount < 1) {
+                        $fail('固定金額折扣必須至少為 1。');
+                    }
+
+                    if ($type === 'percent' && ($amount < 1 || $amount > 100)) {
+                        $fail('百分比折扣必須介於 1 到 100。');
+                    }
+                },
             ],
             'reward_per_amount' => [
                 Rule::requiredIf(fn () => $request->input('discount_type') === 'points_reward'),
@@ -230,6 +243,18 @@ class LoyaltyController extends Controller
                 'nullable',
                 'integer',
                 'min:0',
+                function (string $attribute, mixed $value, Closure $fail) use ($request): void {
+                    $type = (string) $request->input('discount_type');
+                    $amount = (int) ($value ?? 0);
+
+                    if ($type === 'fixed' && $amount < 1) {
+                        $fail('固定金額折扣必須至少為 1。');
+                    }
+
+                    if ($type === 'percent' && ($amount < 1 || $amount > 100)) {
+                        $fail('百分比折扣必須介於 1 到 100。');
+                    }
+                },
             ],
             'reward_per_amount' => [
                 Rule::requiredIf(fn () => $request->input('discount_type') === 'points_reward'),

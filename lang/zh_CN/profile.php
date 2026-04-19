@@ -20,7 +20,7 @@ return [
         'admin' => '管理员',
         'merchant' => '商家',
         'customer' => '顾客',
-        'chef' => '厨房人员',
+        'chef' => '后台人员',
         'cashier' => '收银人员',
     ],
     'subscription_end'       => '訂閱到期日',

@@ -23,6 +23,7 @@ use App\Http\Controllers\Merchant\SubscriptionController as MerchantSubscription
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StoreController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -38,6 +39,8 @@ Route::middleware('guest')->prefix('admin')->name('admin.')->group(function () {
 
 Route::middleware(['auth', 'verified', 'role:merchant,admin', 'merchant.subscription'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('stores', AdminStoreController::class)->except(['show']);
+    Route::patch('stores/{store}/activate', [AdminStoreController::class, 'activate'])->name('stores.activate');
+    Route::patch('stores/{store}/deactivate', [AdminStoreController::class, 'deactivate'])->name('stores.deactivate');
     Route::post('stores/{store}/categories', [ProductManagementController::class, 'storeCategory'])->name('stores.categories.store');
     Route::get('stores/{store}/categories/{category}/edit', [ProductManagementController::class, 'editCategory'])->name('stores.categories.edit');
     Route::put('stores/{store}/categories/{category}', [ProductManagementController::class, 'updateCategory'])->name('stores.categories.update');
@@ -59,7 +62,7 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin', 'merchant.subscrip
     Route::delete('stores/{store}/chefs/{chef}', [ChefManagementController::class, 'destroy'])->name('stores.chefs.destroy');
 });
 
-Route::middleware(['auth', 'verified', 'role:merchant,admin,chef'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:merchant,admin'])->prefix('admin')->name('admin.')->group(function () {
     // Kitchen display
     Route::get('stores/{store}/kitchen', [KitchenController::class, 'index'])
         ->name('stores.kitchen')
@@ -177,6 +180,15 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('super-admin')->na
 
 Route::get('/locale/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/join-dineflow', function (Request $request) {
+    if (Auth::guard('web')->check()) {
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+    }
+
+    return redirect()->route('register', ['account_type' => 'merchant']);
+})->name('join.merchant.register');
 Route::view('/product-intro', 'product-intro')->name('product.intro');
 Route::view('/privacy-policy', 'privacy-policy')->name('privacy.policy');
 Route::get('/stores', [HomeController::class, 'stores'])->name('stores.list');

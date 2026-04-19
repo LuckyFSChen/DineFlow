@@ -20,7 +20,7 @@ return [
         'admin' => 'Quản Trị Viên',
         'merchant' => 'Thương Nhân',
         'customer' => 'Khách Hàng',
-        'chef' => 'Đầu Bếp',
+        'chef' => 'Nhân Sự Hậu Đài',
         'cashier' => 'Thu Ngân',
     ],
     'subscription_end'       => 'Hết Hạn Đăng Ký',

@@ -22,7 +22,9 @@ class AuthenticatedSessionController extends Controller
         LoginCaptcha::refresh($request);
 
         $requestedType = (string) $request->query('account_type', 'customer');
-        $defaultAccountType = $requestedType === 'merchant' ? 'merchant' : 'customer';
+        $defaultAccountType = in_array($requestedType, ['merchant', 'backend_staff'], true)
+            ? $requestedType
+            : 'customer';
 
         return view('auth.login', [
             'defaultAccountType' => $defaultAccountType,

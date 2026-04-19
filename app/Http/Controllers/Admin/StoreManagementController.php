@@ -249,14 +249,14 @@ class StoreManagementController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'ok' => true,
-                'message' => '店家已更新。',
+                'message' => __('admin.store_saved'),
                 'store' => $this->storePayload($store->fresh()),
             ]);
         }
 
         return redirect()
             ->route('admin.stores.index')
-            ->with('success', '店家已更新。');
+            ->with('success', __('admin.store_saved'));
     }
 
     public function destroy(Store $store)
@@ -267,7 +267,38 @@ class StoreManagementController extends Controller
 
         return redirect()
             ->route('admin.stores.index')
-            ->with('success', '店家已刪除。');
+            ->with('success', __('admin.store_deleted'));
+    }
+
+    public function activate(Request $request, Store $store)
+    {
+        $this->authorize('update', $store);
+
+        if ((bool) $store->is_active) {
+            return back()->with('success', __('admin.store_already_active'));
+        }
+
+        $user = $request->user();
+        if ($user && $user->isMerchant() && ! $this->canActivateStore($user, $store->id)) {
+            return back()->with('error', $this->activationBlockedMessage($user));
+        }
+
+        $store->update(['is_active' => true]);
+
+        return back()->with('success', __('admin.store_activate_success'));
+    }
+
+    public function deactivate(Request $request, Store $store)
+    {
+        $this->authorize('update', $store);
+
+        if (! (bool) $store->is_active) {
+            return back()->with('success', __('admin.store_already_inactive'));
+        }
+
+        $store->update(['is_active' => false]);
+
+        return back()->with('success', __('admin.store_deactivate_success'));
     }
 
     protected function validatedData(Request $request, ?int $storeId = null): array
@@ -505,18 +536,18 @@ class StoreManagementController extends Controller
     protected function storeCreatedMessage(?User $user, bool $isActive): string
     {
         if (! $user || ! $user->isMerchant()) {
-            return '店家已建立。';
+            return '店家建立成功。';
         }
 
         if ($isActive) {
-            return '店家已建立。';
+            return '店家建立成功。';
         }
 
         if (! $user->hasActiveSubscription()) {
-            return '店家已建立，但因訂閱已到期，目前為關閉狀態。';
+            return '店家建立成功，但因訂閱已到期，目前為停用狀態。';
         }
 
-        return '店家已建立，但因已達可開啟店家上限，目前為關閉狀態。';
+        return '店家建立成功，但因已達啟用上限，目前為停用狀態。';
     }
 
     protected function activationBlockedMessage(User $user): string
@@ -709,3 +740,4 @@ class StoreManagementController extends Controller
         return DB::getDriverName() === 'pgsql' ? 'ILIKE' : 'like';
     }
 }
+

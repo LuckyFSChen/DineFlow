@@ -1,18 +1,24 @@
 <x-guest-layout>
     @php
-        $defaultType = ($defaultAccountType ?? 'customer') === 'merchant' ? 'merchant' : 'customer';
+        $allowedTypes = ['customer', 'merchant', 'backend_staff'];
+        $requestedDefault = (string) ($defaultAccountType ?? 'customer');
+        $defaultType = in_array($requestedDefault, $allowedTypes, true) ? $requestedDefault : 'customer';
         $selectedAccountType = old('account_type', $defaultType);
+
+        if (! old('account_type') && ! in_array($selectedAccountType, $allowedTypes, true)) {
+            $selectedAccountType = $defaultType;
+        }
 
         if (! old('account_type')) {
             if ($errors->has('email')) {
-                $selectedAccountType = 'merchant';
+                $selectedAccountType = $selectedAccountType === 'backend_staff' ? 'backend_staff' : 'merchant';
             } elseif ($errors->has('phone')) {
                 $selectedAccountType = 'customer';
             }
         }
 
-        $isMerchantSelected = $selectedAccountType === 'merchant';
-        $formAction = $isMerchantSelected ? route('admin.login.store') : route('login');
+        $isCustomerSelected = $selectedAccountType === 'customer';
+        $formAction = $isCustomerSelected ? route('login') : route('admin.login.store');
     @endphp
 
     <x-auth-session-status class="mb-4" :status="session('status')" />
@@ -34,7 +40,7 @@
 
         <div>
             <x-input-label for="login_account_type" :value="__('auth.Account Type')" />
-            <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-300 p-3">
                     <input type="radio" id="login_account_type_customer" name="login_account_type" value="customer" class="mt-1" {{ $selectedAccountType === 'customer' ? 'checked' : '' }}>
                     <span>
@@ -50,18 +56,26 @@
                         <span class="block text-xs text-slate-500">{{ __('auth.merchant_desc') }}</span>
                     </span>
                 </label>
+
+                <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-300 p-3">
+                    <input type="radio" id="login_account_type_backend_staff" name="login_account_type" value="backend_staff" class="mt-1" {{ $selectedAccountType === 'backend_staff' ? 'checked' : '' }}>
+                    <span>
+                        <span class="block text-sm font-semibold text-slate-800">{{ __('auth.backend_staff_type') }}</span>
+                        <span class="block text-xs text-slate-500">{{ __('auth.backend_staff_desc') }}</span>
+                    </span>
+                </label>
             </div>
         </div>
 
-        <div class="mt-4 {{ $isMerchantSelected ? 'hidden' : '' }}" id="phone-wrap">
+        <div class="mt-4 {{ $isCustomerSelected ? '' : 'hidden' }}" id="phone-wrap">
             <x-input-label for="phone" :value="__('auth.Phone')" />
-            <x-text-input id="phone" class="block mt-1 w-full" type="tel" name="phone" :value="old('phone')" :required="! $isMerchantSelected" :autofocus="! $isMerchantSelected" autocomplete="tel" />
+            <x-text-input id="phone" class="block mt-1 w-full" type="tel" name="phone" :value="old('phone')" :required="$isCustomerSelected" :autofocus="$isCustomerSelected" autocomplete="tel" />
             <x-input-error :messages="$errors->get('phone')" class="mt-2" />
         </div>
 
-        <div class="mt-4 {{ $isMerchantSelected ? '' : 'hidden' }}" id="email-wrap">
+        <div class="mt-4 {{ $isCustomerSelected ? 'hidden' : '' }}" id="email-wrap">
             <x-input-label for="email" :value="__('auth.Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" :required="$isMerchantSelected" :autofocus="$isMerchantSelected" autocomplete="username" />
+            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" :required="! $isCustomerSelected" :autofocus="! $isCustomerSelected" autocomplete="username" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
@@ -103,7 +117,7 @@
 
         <div class="flex items-center justify-end mt-4 gap-3">
             <a
-                class="{{ $isMerchantSelected ? '' : 'hidden' }} underline text-sm text-brand-primary hover:text-brand-dark rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-highlight"
+                class="{{ $isCustomerSelected ? 'hidden' : '' }} underline text-sm text-brand-primary hover:text-brand-dark rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-highlight"
                 href="{{ route('password.request') }}"
                 id="forgot-password-link"
             >
@@ -135,17 +149,17 @@
         const merchantLoginAction = @json(route('admin.login.store'));
 
         const syncByType = (accountType) => {
-            const isMerchant = accountType === 'merchant';
+            const isCustomer = accountType === 'customer';
 
-            accountTypeInput.value = isMerchant ? 'merchant' : 'customer';
-            form.action = isMerchant ? merchantLoginAction : customerLoginAction;
+            accountTypeInput.value = isCustomer ? 'customer' : accountType;
+            form.action = isCustomer ? customerLoginAction : merchantLoginAction;
 
-            phoneWrap.classList.toggle('hidden', isMerchant);
-            emailWrap.classList.toggle('hidden', !isMerchant);
-            forgotPasswordLink.classList.toggle('hidden', !isMerchant);
+            phoneWrap.classList.toggle('hidden', !isCustomer);
+            emailWrap.classList.toggle('hidden', isCustomer);
+            forgotPasswordLink.classList.toggle('hidden', isCustomer);
 
-            phoneInput.required = !isMerchant;
-            emailInput.required = isMerchant;
+            phoneInput.required = isCustomer;
+            emailInput.required = !isCustomer;
         };
 
         const applyCurrentSelection = () => {

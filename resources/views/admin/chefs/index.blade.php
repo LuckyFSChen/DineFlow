@@ -34,6 +34,7 @@
         <div class="grid gap-6 lg:grid-cols-2">
             <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h2 class="text-lg font-bold text-slate-900">{{ __('chef.add_title') }}</h2>
+                <p class="mt-2 text-sm text-slate-500">{{ __('chef.login_hint') }}</p>
                 <form method="POST" action="{{ route('admin.stores.chefs.store', $store) }}" class="mt-4 space-y-4">
                     @csrf
                     <div>

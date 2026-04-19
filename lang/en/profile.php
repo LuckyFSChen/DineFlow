@@ -20,7 +20,7 @@ return [
         'admin' => 'Admin',
         'merchant' => 'Merchant',
         'customer' => 'Customer',
-        'chef' => 'Chef',
+        'chef' => 'Backend Staff',
         'cashier' => 'Cashier',
     ],
     'subscription_end'       => 'Subscription Expires',

@@ -1,4 +1,10 @@
 <x-guest-layout>
+    @php
+        $requestedAccountType = (string) request()->query('account_type', 'customer');
+        $defaultAccountType = in_array($requestedAccountType, ['customer', 'merchant'], true) ? $requestedAccountType : 'customer';
+        $selectedAccountType = (string) old('account_type', $defaultAccountType);
+    @endphp
+
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
@@ -28,7 +34,7 @@
             <x-input-label for="account_type" :value="__('auth.Account Type')" />
             <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-300 p-3">
-                    <input type="radio" name="account_type" value="customer" class="mt-1" {{ old('account_type', 'customer') === 'customer' ? 'checked' : '' }}>
+                    <input type="radio" name="account_type" value="customer" class="mt-1" {{ $selectedAccountType === 'customer' ? 'checked' : '' }}>
                     <span>
                         <span class="block text-sm font-semibold text-slate-800">{{ __('auth.customer_type') }}</span>
                         <span class="block text-xs text-slate-500">{{ __('auth.customer_desc') }}</span>
@@ -36,7 +42,7 @@
                 </label>
 
                 <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-300 p-3">
-                    <input type="radio" name="account_type" value="merchant" class="mt-1" {{ old('account_type') === 'merchant' ? 'checked' : '' }}>
+                    <input type="radio" name="account_type" value="merchant" class="mt-1" {{ $selectedAccountType === 'merchant' ? 'checked' : '' }}>
                     <span>
                         <span class="block text-sm font-semibold text-slate-800">{{ __('auth.merchant_type') }}</span>
                         <span class="block text-xs text-slate-500">{{ __('auth.merchant_desc') }}</span>

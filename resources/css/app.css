@@ -137,6 +137,11 @@ body.is-admin-area .mx-auto.max-w-7xl > :nth-child(3) {
 	animation-delay: 0.09s;
 }
 
+body.is-admin-area .mx-auto.max-w-7xl > div.admin-modal-host {
+	animation: none !important;
+	transform: none !important;
+}
+
 @media (min-width: 1280px) {
 	body.is-admin-area .mx-auto.max-w-7xl {
 		max-width: 92rem;

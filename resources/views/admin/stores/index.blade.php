@@ -211,6 +211,24 @@
                                                        class="inline-flex items-center rounded-xl border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100">
                                                         {{ __('admin.chef_accounts') }}
                                                     </a>
+
+                                                    <form method="POST" action="{{ route('admin.stores.deactivate', $store) }}">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit"
+                                                            class="inline-flex items-center rounded-xl border border-slate-300 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200">
+                                                            {{ __('admin.disable_store') }}
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <form method="POST" action="{{ route('admin.stores.activate', $store) }}">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit"
+                                                            class="inline-flex items-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">
+                                                            {{ __('admin.enable_store') }}
+                                                        </button>
+                                                    </form>
                                                 @endif
 
                                                 <button

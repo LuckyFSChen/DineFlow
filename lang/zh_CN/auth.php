@@ -26,6 +26,8 @@ return [
     'force_password_change_notice' => '此帳號尚未修改初始密碼，請先更新密碼後再繼續。',
     'merchant_type'              => '商家',
     'merchant_desc'              => '商家帳號，需啟用訂閱後才能新增與管理商家。',
+    'backend_staff_type'         => '后台人员',
+    'backend_staff_desc'         => '后台人员账号，只能登录查看所有看板。',
     'customer_email_optional_hint' => '顾客可不填 Email，使用手机号注册与登录即可。',
     'secure_area_confirm_password' => '這是系統的安全區域，請先確認密碼後再繼續。',
     'Confirm'                    => '确认',
