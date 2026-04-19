@@ -21,7 +21,7 @@ return [
     'inactive' => 'Chưa Kích Hoạt / Hết Hạn',
     'store_usage' => 'Mức Dùng Cửa Hàng',
     'unlimited' => 'Không Giới Hạn',
-    'limit' => 'Tối đa :count',
+    'limit' => ':count',
     'days' => ':days ngày',
     'store_count_label' => 'Số cửa hàng: :count',
     'store_count_max' => 'tối đa :count cửa hàng',

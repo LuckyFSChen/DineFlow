@@ -20,7 +20,7 @@ return [
     'inactive' => '未啟用 / 已到期',
     'store_usage' => '店家使用量',
     'unlimited' => '不限',
-    'limit' => '上限 :count',
+    'limit' => ':count',
     'days' => ':days 天',
     'store_count_label' => '店家數：:count',
     'store_count_max' => '最多 :count 間',
