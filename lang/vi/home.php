@@ -92,6 +92,8 @@ return [
     'store_label' => 'Cửa Hàng',
     'store_reviews_unit' => 'đánh giá',
     'store_rating_empty' => 'Chưa có đánh giá',
+    'store_rating_with_comment_count' => '(:ratings) (:comments nhận xét)',
+    'store_rating_without_comments' => '(:ratings) (Chưa có bình luận)',
     'default_store_desc' => 'Chào mừng đến trải nghiệm gọi món của DineFlow.',
     'business_hours' => 'Giờ Hoạt Động',
     'prep_time_minutes' => 'Thời gian chuẩn bị dự kiến: :minutes phút',

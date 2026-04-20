@@ -235,6 +235,8 @@ class StoreOrderingHoursTest extends TestCase
         ]);
 
         $existingOrder->refresh();
+        $this->assertSame('preparing', $existingOrder->status);
+        $this->assertSame('unpaid', $existingOrder->payment_status);
         $this->assertSame(150, (int) $existingOrder->subtotal);
         $this->assertSame(150, (int) $existingOrder->total);
     }

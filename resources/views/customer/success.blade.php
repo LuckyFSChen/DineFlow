@@ -17,11 +17,7 @@
             'usd' => 'USD',
             default => 'NT$',
         };
-        $configuredPrepTimeMinutes = $order->store->prep_time_minutes ?? $store->prep_time_minutes ?? null;
-        $defaultPrepTimeMinutes = max(1, (int) config('dineflow.default_prep_time_minutes', 30));
-        $prepTimeMinutes = (is_numeric($configuredPrepTimeMinutes) && (int) $configuredPrepTimeMinutes > 0)
-            ? (int) $configuredPrepTimeMinutes
-            : $defaultPrepTimeMinutes;
+        $prepTimeMinutes = $store->estimatePrepTimeMinutesForOrderItems($order->items);
         $estimatedReadyAt = ($prepTimeMinutes !== null && $order->created_at !== null)
             ? $order->created_at->copy()->setTimezone($store->businessTimezone())->addMinutes($prepTimeMinutes)
             : null;
@@ -415,4 +411,3 @@
     </script>
 </body>
 </html>
-

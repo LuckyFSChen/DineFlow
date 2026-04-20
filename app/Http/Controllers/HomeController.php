@@ -67,8 +67,13 @@ class HomeController extends Controller
             ->withAvg(['reviews as reviews_avg_rating' => function ($query) {
                 $query->where('is_visible', true);
             }], 'rating')
-            ->withCount(['reviews as reviews_count' => function ($query) {
+            ->withCount(['reviews as ratings_count' => function ($query) {
                 $query->where('is_visible', true);
+            }])
+            ->withCount(['reviews as comments_count' => function ($query) {
+                $query->where('is_visible', true)
+                    ->whereNotNull('comment')
+                    ->whereRaw("TRIM(comment) <> ''");
             }])
             ->limit(6)
             ->get();
@@ -116,8 +121,13 @@ class HomeController extends Controller
             ->withAvg(['reviews as reviews_avg_rating' => function ($query) {
                 $query->where('is_visible', true);
             }], 'rating')
-            ->withCount(['reviews as reviews_count' => function ($query) {
+            ->withCount(['reviews as ratings_count' => function ($query) {
                 $query->where('is_visible', true);
+            }])
+            ->withCount(['reviews as comments_count' => function ($query) {
+                $query->where('is_visible', true)
+                    ->whereNotNull('comment')
+                    ->whereRaw("TRIM(comment) <> ''");
             }])
             ->when(! $hasUserLocation, function ($q) {
                 $q->orderBy('name');

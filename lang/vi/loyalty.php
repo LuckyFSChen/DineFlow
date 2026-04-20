@@ -33,6 +33,10 @@ return [
     'reward_points' => 'Diem tang',
     'min_order_amount' => 'Don toi thieu',
     'points_cost' => 'Diem can doi',
+    'order_type_availability' => 'Loai don ap dung',
+    'allow_dine_in' => 'Ap dung tai quan',
+    'allow_takeout' => 'Ap dung mang ve',
+    'available_for_column' => 'Loai ap dung',
     'usage_limit' => 'Gioi han su dung',
     'usage_limit_placeholder' => 'De trong de khong gioi han',
     'usage_limit_hint' => 'De trong de khong gioi han',
@@ -60,6 +64,10 @@ return [
     'min_spend' => 'Toi thieu :currency :amount',
     'redeem_points' => 'Doi :points diem',
     'reward_rule' => 'Chi :currency :amount tang :points diem',
+    'available_for' => 'Ap dung cho:',
+    'available_for_both' => 'Tai quan / Mang ve',
+    'available_for_dine_in_only' => 'Chi tai quan',
+    'available_for_takeout_only' => 'Chi mang ve',
     'usage_unlimited' => 'Da dung :used lan | Khong gioi han',
     'usage_limited' => 'Da dung :used lan / :limit',
     'enabled' => 'Bat',
@@ -82,5 +90,6 @@ return [
     'coupon_disabled' => 'Da tat coupon.',
     'fixed_discount_min' => 'Giam gia co dinh phai tu 1 tro len.',
     'percent_discount_range' => 'Giam theo phan tram phai trong khoang 1 den 100.',
+    'order_type_required' => 'Hay chon it nhat mot loai don ap dung.',
 ];
 

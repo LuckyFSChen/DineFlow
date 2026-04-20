@@ -270,6 +270,7 @@ Route::prefix('s/{store:slug}/t/{table:qr_token}')
     ->group(function () {
         Route::get('/menu', [DineInMenuController::class, 'index'])->name('menu');
         Route::get('/phone/registered', [DineInOrderController::class, 'checkPhoneRegistered'])->name('phone.registered');
+        Route::get('/coupon/check', [DineInOrderController::class, 'checkCoupon'])->name('coupon.check');
         Route::post('/cart/items', [DineInOrderController::class, 'addToCart'])->name('cart.items.store');
         Route::patch('/cart/items/{lineKey}', [DineInOrderController::class, 'updateCartItem'])->name('cart.items.update');
         Route::delete('/cart/items/{lineKey}', [DineInOrderController::class, 'removeCartItem'])->name('cart.items.destroy');

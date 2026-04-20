@@ -324,7 +324,7 @@
                     <div class="flex items-start justify-between gap-3">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-highlight/80">{{ __('customer.cart') }}</p>
-                            <p class="mt-1 text-sm font-semibold">{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'currency' => $currencySymbol, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
+                            <p class="mt-1 text-sm font-semibold" data-cart-preview-summary>{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'currency' => $currencySymbol, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
                         </div>
                         <button
                             type="button"
@@ -341,62 +341,13 @@
                     </div>
                 </div>
 
-                <div class="max-h-[52vh] space-y-3 overflow-y-auto px-4 py-4">
-                    @forelse($cartPreviewItems->take(6) as $item)
-                        <div class="cart-preview-item-shell" data-cart-preview-shell>
-                            <div class="cart-preview-item-delete" data-cart-preview-delete>
-                                <span class="rounded-full border border-white/40 bg-white/22 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-50 shadow-sm">
-                                    {{ __('customer.remove_item') }}
-                                </span>
-                            </div>
-                            <article class="cart-preview-item rounded-2xl border border-brand-soft/70 bg-brand-soft/15 px-3 py-3" data-cart-preview-item>
-                                <div class="flex items-start justify-between gap-3">
-                                    <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-brand-dark">{{ $item['product_name'] ?? __('customer.product_default_name') }}</p>
-                                        @if(!empty($item['option_label']))
-                                            <p class="mt-1 text-xs text-brand-primary/75">{{ $item['option_label'] }}</p>
-                                        @endif
-                                        @if(!empty($item['item_note']))
-                                            <p class="mt-1 text-xs text-amber-700">{{ __('customer.item_note_prefix') }} {{ $item['item_note'] }}</p>
-                                        @endif
-                                    </div>
-                                    <p class="shrink-0 text-xs font-semibold text-brand-accent">{{ $currencySymbol }} {{ number_format((int) ($item['subtotal'] ?? 0)) }}</p>
-                                </div>
-
-                                <div class="mt-3 flex items-center justify-between gap-3">
-                                    <div class="inline-flex shrink-0 items-center gap-2 rounded-xl border border-brand-soft/70 bg-white/80 px-2 py-1 shadow-sm">
-                                        <form method="POST" action="{{ route('customer.dinein.cart.items.update', ['store' => $store, 'table' => $table, 'lineKey' => $item['line_key']]) }}">
-                                            @csrf
-                                            @method('PATCH')
-                                            <input type="hidden" name="action" value="decrease">
-                                            <button type="submit" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-brand-soft bg-white text-sm font-bold text-brand-primary transition hover:bg-brand-soft/30" aria-label="{{ __('customer.decrease_qty') }}">-</button>
-                                        </form>
-                                        <span class="min-w-[1.8rem] text-center text-sm font-semibold text-brand-dark">{{ $item['qty'] ?? 1 }}</span>
-                                        <form method="POST" action="{{ route('customer.dinein.cart.items.update', ['store' => $store, 'table' => $table, 'lineKey' => $item['line_key']]) }}">
-                                            @csrf
-                                            @method('PATCH')
-                                            <input type="hidden" name="action" value="increase">
-                                            <button type="submit" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-brand-soft bg-white text-sm font-bold text-brand-primary transition hover:bg-brand-soft/30" aria-label="{{ __('customer.increase_qty') }}">+</button>
-                                        </form>
-                                    </div>
-
-                                    <form method="POST" action="{{ route('customer.dinein.cart.items.destroy', ['store' => $store, 'table' => $table, 'lineKey' => $item['line_key']]) }}" data-cart-preview-remove-form>
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-rose-200 bg-white px-2.5 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">{{ __('customer.remove_item') }}</button>
-                                    </form>
-                                </div>
-                            </article>
-                        </div>
-                    @empty
-                        <div class="rounded-2xl border border-dashed border-brand-soft/80 bg-brand-soft/10 px-3 py-8 text-center text-sm text-brand-primary/75">
-                            {{ __('customer.no_products_available') }}
-                        </div>
-                    @endforelse
-
-                    @if($cartPreviewItems->count() > 6)
-                        <p class="text-center text-xs font-semibold text-brand-primary/70">{{ __('customer.more_items_in_cart', ['count' => $cartPreviewItems->count() - 6]) }}</p>
-                    @endif
+                <div class="max-h-[52vh] space-y-3 overflow-y-auto px-4 py-4" data-cart-preview-list>
+                    @include('customer.dine-in.partials.cart-preview-items', [
+                        'cartPreviewItems' => $cartPreviewItems,
+                        'store' => $store,
+                        'table' => $table,
+                        'currencySymbol' => $currencySymbol,
+                    ])
                 </div>
 
                 <div class="border-t border-brand-soft/60 p-4">
@@ -411,7 +362,7 @@
                 <div>
                     <p class="text-xs uppercase tracking-[0.2em] text-brand-highlight/80">{{ __('customer.table_no') }} {{ $table->table_no }}</p>
                     <p class="text-sm font-semibold">{{ $orderingAvailable ? __('customer.cart_bar_ordering_available') : __('customer.cart_bar_not_available') }}</p>
-                    <p class="mt-1 text-xs text-white/70">{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'currency' => $currencySymbol, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
+                    <p class="mt-1 text-xs text-white/70" data-cart-bar-summary>{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'currency' => $currencySymbol, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
                     @if(isset($orderHistory) && $orderHistory->isNotEmpty())
                         <div class="mt-1 flex flex-wrap gap-2">
                             @foreach($orderHistory->take(2) as $historyOrder)
@@ -445,6 +396,9 @@
         const cartTarget = document.querySelector('[data-cart-target]');
         const cartPreviewTarget = document.querySelector('[data-cart-preview-target]');
         const cartBar = document.querySelector('[data-cart-bar]');
+        const cartBarSummary = document.querySelector('[data-cart-bar-summary]');
+        const cartPreviewSummary = document.querySelector('[data-cart-preview-summary]');
+        const cartPreviewList = document.querySelector('[data-cart-preview-list]');
         const cartPreviewWindow = document.querySelector('[data-cart-preview-window]');
         const cartPreviewHandle = document.querySelector('[data-cart-preview-handle]');
         const modal = document.getElementById('option-modal');
@@ -470,6 +424,59 @@
         let activeGroups = [];
         let cartPreviewPulseTimer = null;
         let activeSwipeItem = null;
+
+        const updateCartSummary = (cart) => {
+            if (!cart) {
+                return;
+            }
+
+            if (cartBarSummary) {
+                cartBarSummary.textContent = cart.summary_label || '';
+            }
+
+            if (cartPreviewSummary) {
+                cartPreviewSummary.textContent = cart.summary_label || '';
+            }
+
+            if (cartTarget) {
+                cartTarget.textContent = cart.link_label || '';
+            }
+
+            if (cartPreviewTarget) {
+                cartPreviewTarget.textContent = cart.link_label || '';
+            }
+
+            if (cartPreviewList && typeof cart.preview_html === 'string') {
+                cartPreviewList.innerHTML = cart.preview_html;
+                activeSwipeItem = null;
+                initCartPreviewSwipe();
+            }
+        };
+
+        const sendAddToCartRequest = async (form) => {
+            const formData = new FormData(form);
+            const csrf = form.querySelector('input[name="_token"]')?.value || '';
+
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
+                },
+            });
+
+            const payload = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                const message = payload?.message || payload?.errors?.product_id?.[0] || `Add to cart failed: ${response.status}`;
+                throw new Error(message);
+            }
+
+            return payload;
+        };
 
         const getCartFlyTarget = () => {
             if (cartPreviewTarget && cartPreviewWindow && cartPreviewWindow.offsetParent !== null) {
@@ -499,6 +506,11 @@
             const items = document.querySelectorAll('[data-cart-preview-item]');
 
             items.forEach((item) => {
+                if (item.dataset.swipeReady === '1') {
+                    return;
+                }
+
+                item.dataset.swipeReady = '1';
                 const removeForm = item.parentElement?.querySelector('[data-cart-preview-remove-form]');
                 const shell = item.parentElement;
                 if (!removeForm) {
@@ -663,6 +675,11 @@
                 item.addEventListener('pointercancel', finishSwipe);
             });
 
+            if (document.body.dataset.cartPreviewSwipeBound === '1') {
+                return;
+            }
+
+            document.body.dataset.cartPreviewSwipeBound = '1';
             document.addEventListener('pointerdown', (event) => {
                 if (!activeSwipeItem) {
                     return;
@@ -1034,7 +1051,24 @@
                 window.setTimeout(() => {
                     clone.remove();
                     cartBar?.classList.remove('scale-[1.02]');
-                    form.submit();
+                    sendAddToCartRequest(form)
+                        .then((payload) => {
+                            updateCartSummary(payload?.cart);
+                            syncQty(1);
+                            const payloadInput = form.querySelector('[data-option-payload]');
+                            if (payloadInput) {
+                                payloadInput.value = '';
+                            }
+                            if (itemNoteInput) {
+                                itemNoteInput.value = '';
+                            }
+                        })
+                        .catch(() => {
+                            form.submit();
+                        })
+                        .finally(() => {
+                            form.dataset.animating = 'false';
+                        });
                 }, 620);
             });
         });

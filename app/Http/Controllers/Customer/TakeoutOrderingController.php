@@ -413,7 +413,7 @@ class TakeoutOrderingController extends Controller
                 if ($member !== null) {
                     $member = Member::query()->lockForUpdate()->find($member->id);
                 }
-                $couponResult = $this->loyaltyService->resolveCoupon($store, $couponCode, $total, $member);
+                $couponResult = $this->loyaltyService->resolveCoupon($store, $couponCode, $total, $member, 'takeout');
                 $couponError = $couponResult['error'] ?? null;
 
                 if ($couponError !== null) {
@@ -556,7 +556,7 @@ class TakeoutOrderingController extends Controller
         $customerPhone = $this->normalizeCustomerPhone($validated['customer_phone'] ?? null, $store);
         $customerEmail = $this->normalizeOptionalText($validated['customer_email'] ?? null);
         $member = $this->findExistingMemberForCoupon($store, $customerEmail, $customerPhone);
-        $result = $this->loyaltyService->resolveCoupon($store, $couponCode, $subtotal, $member);
+        $result = $this->loyaltyService->resolveCoupon($store, $couponCode, $subtotal, $member, 'takeout');
 
         $error = $result['error'] ?? null;
         if ($error !== null) {

@@ -24,6 +24,8 @@ class Coupon extends Model
         'used_count',
         'starts_at',
         'ends_at',
+        'allow_dine_in',
+        'allow_takeout',
         'is_active',
     ];
 
@@ -35,6 +37,8 @@ class Coupon extends Model
         'reward_points' => 'integer',
         'usage_limit' => 'integer',
         'used_count' => 'integer',
+        'allow_dine_in' => 'boolean',
+        'allow_takeout' => 'boolean',
         'is_active' => 'boolean',
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
@@ -126,5 +130,34 @@ class Coupon extends Model
     public function isPercentType(): bool
     {
         return $this->normalizedDiscountType() === self::DISCOUNT_TYPE_PERCENT;
+    }
+
+    public function allowsDineIn(): bool
+    {
+        if (! array_key_exists('allow_dine_in', $this->attributes) || $this->attributes['allow_dine_in'] === null) {
+            return true;
+        }
+
+        return (bool) $this->allow_dine_in;
+    }
+
+    public function allowsTakeout(): bool
+    {
+        if (! array_key_exists('allow_takeout', $this->attributes) || $this->attributes['allow_takeout'] === null) {
+            return true;
+        }
+
+        return (bool) $this->allow_takeout;
+    }
+
+    public function isAvailableForOrderType(?string $orderType): bool
+    {
+        $normalized = strtolower(trim((string) $orderType));
+
+        return match ($normalized) {
+            'takeout', 'take_out' => $this->allowsTakeout(),
+            'dine_in', 'dinein', '' => $this->allowsDineIn(),
+            default => $this->allowsDineIn(),
+        };
     }
 }

@@ -33,6 +33,10 @@ return [
     'reward_points' => 'Reward Points',
     'min_order_amount' => 'Minimum Order Amount',
     'points_cost' => 'Points Required',
+    'order_type_availability' => 'Available Order Types',
+    'allow_dine_in' => 'Available for dine-in',
+    'allow_takeout' => 'Available for takeout',
+    'available_for_column' => 'Available For',
     'usage_limit' => 'Usage Limit',
     'usage_limit_placeholder' => 'Leave blank for unlimited use',
     'usage_limit_hint' => 'Leave blank for unlimited use',
@@ -60,6 +64,10 @@ return [
     'min_spend' => 'Min spend :currency :amount',
     'redeem_points' => 'Redeem cost :points pts',
     'reward_rule' => 'Spend :currency :amount to earn :points pts',
+    'available_for' => 'Available for:',
+    'available_for_both' => 'Dine-in / Takeout',
+    'available_for_dine_in_only' => 'Dine-in only',
+    'available_for_takeout_only' => 'Takeout only',
     'usage_unlimited' => 'Used :used times | Unlimited',
     'usage_limited' => 'Used :used times / :limit',
     'enabled' => 'Active',
@@ -82,5 +90,6 @@ return [
     'coupon_disabled' => 'Coupon disabled.',
     'fixed_discount_min' => 'Fixed discount must be at least 1.',
     'percent_discount_range' => 'Percent discount must be between 1 and 100.',
+    'order_type_required' => 'Select at least one order type.',
 ];
 

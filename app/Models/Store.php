@@ -341,6 +341,136 @@ class Store extends Model
         return (int) (floor($paidAmount / $unitAmount) * $rewardPoints);
     }
 
+    public function estimatePrepTimeMinutesForProductIds(iterable $productIds): int
+    {
+        $normalizedProductIds = collect($productIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->values();
+
+        $fallbackMinutes = $this->defaultPrepTimeMinutes();
+
+        if ($normalizedProductIds->isEmpty()) {
+            return $fallbackMinutes;
+        }
+
+        return $this->estimatePrepTimeMinutesForOrderItems(
+            $normalizedProductIds->map(fn (int $productId) => [
+                'product_id' => $productId,
+                'qty' => 1,
+            ])->all()
+        );
+    }
+
+    public function estimatePrepTimeMinutesForOrderItems(iterable $items): int
+    {
+        $fallbackMinutes = $this->defaultPrepTimeMinutes();
+
+        $normalizedItems = collect($items)
+            ->map(function ($item) {
+                if ($item instanceof OrderItem) {
+                    return [
+                        'product_id' => (int) $item->product_id,
+                        'qty' => max(1, (int) $item->qty),
+                    ];
+                }
+
+                if (is_array($item)) {
+                    return [
+                        'product_id' => (int) ($item['product_id'] ?? 0),
+                        'qty' => max(1, (int) ($item['qty'] ?? 1)),
+                    ];
+                }
+
+                if (is_object($item)) {
+                    return [
+                        'product_id' => (int) ($item->product_id ?? 0),
+                        'qty' => max(1, (int) ($item->qty ?? 1)),
+                    ];
+                }
+
+                return [
+                    'product_id' => (int) $item,
+                    'qty' => 1,
+                ];
+            })
+            ->filter(fn (array $item) => $item['product_id'] > 0)
+            ->groupBy('product_id')
+            ->map(fn ($group) => [
+                'product_id' => (int) $group->first()['product_id'],
+                'qty' => (int) $group->sum('qty'),
+            ])
+            ->values();
+
+        if ($normalizedItems->isEmpty()) {
+            return $fallbackMinutes;
+        }
+
+        $products = Product::query()
+            ->with(['category:id,store_id,prep_time_minutes'])
+            ->where('store_id', $this->id)
+            ->whereIn('id', $normalizedItems->pluck('product_id')->all())
+            ->get(['id', 'store_id', 'category_id']);
+
+        if ($products->isEmpty()) {
+            return $fallbackMinutes;
+        }
+
+        $qtyByProductId = $normalizedItems->pluck('qty', 'product_id');
+        $categoryLoads = [];
+        $distinctProductCount = $normalizedItems->count();
+
+        foreach ($products as $product) {
+            $qty = max(1, (int) ($qtyByProductId[$product->id] ?? 1));
+            $categoryPrepMinutes = max(1, (int) ($product->category?->prep_time_minutes ?? $fallbackMinutes));
+            $categoryKey = $product->category_id !== null ? 'category:' . $product->category_id : 'fallback';
+
+            if (! isset($categoryLoads[$categoryKey])) {
+                $categoryLoads[$categoryKey] = [
+                    'prep_minutes' => $categoryPrepMinutes,
+                    'qty' => 0,
+                ];
+            }
+
+            $categoryLoads[$categoryKey]['prep_minutes'] = max(
+                (int) $categoryLoads[$categoryKey]['prep_minutes'],
+                $categoryPrepMinutes
+            );
+            $categoryLoads[$categoryKey]['qty'] += $qty;
+        }
+
+        if ($categoryLoads === []) {
+            return $fallbackMinutes;
+        }
+
+        $criticalPathMinutes = collect($categoryLoads)
+            ->map(function (array $load) {
+                $prepMinutes = max(1, (int) ($load['prep_minutes'] ?? 1));
+                $qty = max(1, (int) ($load['qty'] ?? 1));
+                $parallelPenaltyPerExtraItem = max(1, (int) ceil($prepMinutes * 0.25));
+
+                return $prepMinutes + max(0, $qty - 1) * $parallelPenaltyPerExtraItem;
+            })
+            ->max();
+
+        $stationCount = count($categoryLoads);
+        $coordinationBufferMinutes = min(
+            15,
+            max(0, $stationCount - 1) * 2 + max(0, $distinctProductCount - $stationCount)
+        );
+
+        return max($fallbackMinutes, (int) $criticalPathMinutes) + $coordinationBufferMinutes;
+    }
+
+    private function defaultPrepTimeMinutes(): int
+    {
+        return max(
+            1,
+            (int) ($this->prep_time_minutes ?? config('dineflow.default_prep_time_minutes', 30))
+        );
+    }
+
     private function normalizeTime(?string $time): ?string
     {
         if (blank($time)) {

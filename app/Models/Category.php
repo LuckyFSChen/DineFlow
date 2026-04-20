@@ -13,7 +13,13 @@ class Category extends Model
         'store_id',
         'name',
         'sort',
+        'prep_time_minutes',
         'is_active',
+    ];
+
+    protected $casts = [
+        'prep_time_minutes' => 'integer',
+        'is_active' => 'boolean',
     ];
 
     public function store() {

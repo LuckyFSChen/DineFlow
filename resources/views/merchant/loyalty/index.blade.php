@@ -182,6 +182,21 @@
                         <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('loyalty.points_cost') }}</label>
                         <input type="number" min="0" name="points_cost" value="{{ old('points_cost', 0) }}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                     </div>
+                            <div class="sm:col-span-2">
+                                <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('loyalty.order_type_availability') }}</label>
+                                <div class="flex flex-wrap gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                    <input type="hidden" name="allow_dine_in" value="0">
+                                    <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                                        <input type="checkbox" name="allow_dine_in" value="1" @checked(old('allow_dine_in', true)) class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                        {{ __('loyalty.allow_dine_in') }}
+                                    </label>
+                                    <input type="hidden" name="allow_takeout" value="0">
+                                    <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                                        <input type="checkbox" name="allow_takeout" value="1" @checked(old('allow_takeout', true)) class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                        {{ __('loyalty.allow_takeout') }}
+                                    </label>
+                                </div>
+                    </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('loyalty.usage_limit') }}</label>
                         <input type="number" min="1" name="usage_limit" value="{{ old('usage_limit') }}" placeholder="{{ __('loyalty.usage_limit_placeholder') }}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
@@ -326,6 +341,7 @@
                             <th class="px-3 py-2 text-left">{{ __('loyalty.code') }}</th>
                             <th class="px-3 py-2 text-left">{{ __('loyalty.discount_content') }}</th>
                             <th class="px-3 py-2 text-left">{{ __('loyalty.threshold_exchange') }}</th>
+                            <th class="px-3 py-2 text-left">{{ __('loyalty.available_for_column') }}</th>
                             <th class="px-3 py-2 text-left">{{ __('loyalty.usage_count') }}</th>
                             <th class="px-3 py-2 text-left">{{ __('loyalty.start_time') }}</th>
                             <th class="px-3 py-2 text-left">{{ __('loyalty.end_time') }}</th>
@@ -352,6 +368,23 @@
                                     {{ __('loyalty.redeem_points', ['points' => number_format((int) $coupon->points_cost)]) }}
                                     @if($coupon->isPointsRewardType())
                                         <br>{{ __('loyalty.reward_rule', ['currency' => $currencySymbol, 'amount' => number_format((int) $coupon->reward_per_amount), 'points' => number_format((int) $coupon->reward_points)]) }}
+                                    @endif
+                                </td>
+                                <td class="px-3 py-2">
+                                    @if($coupon->allowsDineIn() && $coupon->allowsTakeout())
+                                        <span class="inline-flex rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-700">
+                                            {{ __('loyalty.available_for_both') }}
+                                        </span>
+                                    @elseif($coupon->allowsDineIn())
+                                        <span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                                            {{ __('loyalty.available_for_dine_in_only') }}
+                                        </span>
+                                    @elseif($coupon->allowsTakeout())
+                                        <span class="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                                            {{ __('loyalty.available_for_takeout_only') }}
+                                        </span>
+                                    @else
+                                        <span class="text-slate-400">-</span>
                                     @endif
                                 </td>
                                 <td class="px-3 py-2">
@@ -385,6 +418,8 @@
                                                 data-coupon-usage-limit="{{ $coupon->usage_limit ?? '' }}"
                                                 data-coupon-starts-at="{{ optional($coupon->starts_at)->format('Y-m-d\TH:i') }}"
                                                 data-coupon-ends-at="{{ optional($coupon->ends_at)->format('Y-m-d\TH:i') }}"
+                                                data-coupon-allow-dine-in="{{ $coupon->allowsDineIn() ? '1' : '0' }}"
+                                                data-coupon-allow-takeout="{{ $coupon->allowsTakeout() ? '1' : '0' }}"
                                                 data-coupon-is-active="{{ $coupon->is_active ? '1' : '0' }}"
                                                 @click="openEditModalFromButton($el)"
                                                 class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
@@ -409,7 +444,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="px-3 py-6 text-center text-slate-500">{{ __('loyalty.no_coupons') }}</td>
+                                <td colspan="10" class="px-3 py-6 text-center text-slate-500">{{ __('loyalty.no_coupons') }}</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -479,6 +514,21 @@
                             <div>
                                 <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('loyalty.points_cost') }}</label>
                                 <input type="number" min="0" name="points_cost" x-model="form.points_cost" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('loyalty.order_type_availability') }}</label>
+                                <div class="flex flex-wrap gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                    <input type="hidden" name="allow_dine_in" value="0">
+                                    <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                                        <input type="checkbox" name="allow_dine_in" value="1" x-model="form.allow_dine_in" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                        {{ __('loyalty.allow_dine_in') }}
+                                    </label>
+                                    <input type="hidden" name="allow_takeout" value="0">
+                                    <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                                        <input type="checkbox" name="allow_takeout" value="1" x-model="form.allow_takeout" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                        {{ __('loyalty.allow_takeout') }}
+                                    </label>
+                                </div>
                             </div>
                             <div>
                                 <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('loyalty.usage_limit') }}</label>
@@ -562,6 +612,8 @@
                 reward_points: 0,
                 min_order_amount: 0,
                 points_cost: 0,
+                allow_dine_in: true,
+                allow_takeout: true,
                 usage_limit: '',
                 starts_at: '',
                 ends_at: '',
@@ -582,6 +634,8 @@
                     reward_points: Number(button.dataset.couponRewardPoints || 0),
                     min_order_amount: Number(button.dataset.couponMinOrderAmount || 0),
                     points_cost: Number(button.dataset.couponPointsCost || 0),
+                    allow_dine_in: button.dataset.couponAllowDineIn === '1',
+                    allow_takeout: button.dataset.couponAllowTakeout === '1',
                     usage_limit: button.dataset.couponUsageLimit === '' ? null : Number(button.dataset.couponUsageLimit || 0),
                     starts_at: button.dataset.couponStartsAt || '',
                     ends_at: button.dataset.couponEndsAt || '',
@@ -601,6 +655,8 @@
                     reward_points: Number(coupon.reward_points || 0),
                     min_order_amount: Number(coupon.min_order_amount || 0),
                     points_cost: Number(coupon.points_cost || 0),
+                    allow_dine_in: coupon.allow_dine_in !== false,
+                    allow_takeout: coupon.allow_takeout !== false,
                     usage_limit: coupon.usage_limit === null ? '' : Number(coupon.usage_limit || 0),
                     starts_at: coupon.starts_at || '',
                     ends_at: coupon.ends_at || '',

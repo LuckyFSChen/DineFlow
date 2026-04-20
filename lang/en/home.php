@@ -92,6 +92,8 @@ return [
     'store_label' => 'Store',
     'store_reviews_unit' => 'reviews',
     'store_rating_empty' => 'No reviews yet',
+    'store_rating_with_comment_count' => '(:ratings) (:comments comments)',
+    'store_rating_without_comments' => '(:ratings) (No comments)',
     'default_store_desc' => 'Welcome to the DineFlow store ordering experience.',
     'business_hours' => 'Business Hours',
     'prep_time_minutes' => 'Estimated prep time: :minutes min',

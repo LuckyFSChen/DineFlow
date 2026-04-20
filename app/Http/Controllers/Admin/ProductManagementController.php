@@ -179,6 +179,7 @@ class ProductManagementController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'sort' => ['nullable', 'integer', 'min:1'],
+            'prep_time_minutes' => ['nullable', 'integer', 'min:1', 'max:300'],
         ]);
 
         $sort = $data['sort'] ?? ((int) Category::query()->where('store_id', $store->id)->max('sort') + 1);
@@ -187,6 +188,7 @@ class ProductManagementController extends Controller
             'store_id' => $store->id,
             'name' => $data['name'],
             'sort' => max((int) $sort, 1),
+            'prep_time_minutes' => isset($data['prep_time_minutes']) ? (int) $data['prep_time_minutes'] : null,
             'is_active' => true,
         ]);
 
@@ -216,11 +218,13 @@ class ProductManagementController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'sort' => ['nullable', 'integer', 'min:1'],
+            'prep_time_minutes' => ['nullable', 'integer', 'min:1', 'max:300'],
         ]);
 
         $category->update([
             'name' => $data['name'],
             'sort' => max((int) ($data['sort'] ?? $category->sort ?? 1), 1),
+            'prep_time_minutes' => isset($data['prep_time_minutes']) ? (int) $data['prep_time_minutes'] : null,
         ]);
 
         return response()->json([
@@ -628,6 +632,7 @@ class ProductManagementController extends Controller
             'store_id' => $category->store_id,
             'name' => $category->name,
             'sort' => (int) ($category->sort ?? 1),
+            'prep_time_minutes' => $category->prep_time_minutes !== null ? (int) $category->prep_time_minutes : null,
             'is_active' => (bool) ($category->is_active ?? true),
         ];
     }

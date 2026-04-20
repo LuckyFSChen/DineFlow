@@ -29,6 +29,9 @@
     $cartUpdateRouteName = $isDineIn ? 'customer.dinein.cart.items.update' : 'customer.takeout.cart.items.update';
     $cartDestroyRouteName = $isDineIn ? 'customer.dinein.cart.items.destroy' : 'customer.takeout.cart.items.destroy';
     $checkoutRouteName = $isDineIn ? 'customer.dinein.cart.checkout' : 'customer.takeout.cart.checkout';
+    $phoneCheckRouteName = $isDineIn ? 'customer.dinein.phone.registered' : 'customer.takeout.phone.registered';
+    $couponCheckRouteName = $isDineIn ? 'customer.dinein.coupon.check' : 'customer.takeout.coupon.check';
+    $clearCustomerInfoRouteName = $isDineIn ? 'customer.dinein.customer-info.clear' : 'customer.takeout.customer-info.clear';
     $backLabel = $isDineIn ? __('customer.back_to_menu') : __('customer.back_to_takeout_menu');
     $badgeLabel = $isDineIn ? __('customer.cart_title') : __('customer.takeout_cart_badge');
     $orderingAvailable = $orderingAvailable ?? true;
@@ -219,13 +222,9 @@
 
                                 <div class="flex items-center justify-between text-brand-primary/70">
                                     <span>{{ __('customer.coupon_discount') }}</span>
-                                    @if($isDineIn)
-                                        <span>{{ __('customer.dinein_no_points_or_coupon') }}</span>
-                                    @else
-                                        <span class="font-semibold text-emerald-700" data-coupon-discount>
-                                            - {{ $currencySymbol }} {{ number_format($oldAppliedCouponDiscount) }}
-                                        </span>
-                                    @endif
+                                    <span class="font-semibold text-emerald-700" data-coupon-discount>
+                                        - {{ $currencySymbol }} {{ number_format($oldAppliedCouponDiscount) }}
+                                    </span>
                                 </div>
 
                                 <div class="border-t border-brand-soft/60 pt-4">
@@ -235,11 +234,9 @@
                                             {{ $currencySymbol }} {{ number_format(max($total - $oldAppliedCouponDiscount, 0)) }}
                                         </span>
                                     </div>
-                                    @unless($isDineIn)
-                                        <p class="mt-2 text-xs text-brand-primary/70" data-coupon-discount-hint>
-                                            {{ $hasOldAppliedCoupon ? $oldAppliedCouponSummary : __('customer.coupon_discount_after_submit') }}
-                                        </p>
-                                    @endunless
+                                    <p class="mt-2 text-xs text-brand-primary/70" data-coupon-discount-hint>
+                                        {{ $hasOldAppliedCoupon ? $oldAppliedCouponSummary : __('customer.coupon_discount_after_submit') }}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -250,17 +247,14 @@
                             <form method="POST"
                                   action="{{ route($checkoutRouteName, $routeParams) }}"
                                   class="mt-6 space-y-5"
-                                  @unless($isDineIn)
-                                      data-customer-checkout-form
-                                      data-phone-check-url="{{ route('customer.takeout.phone.registered', $routeParams) }}"
-                                      data-coupon-check-url="{{ route('customer.takeout.coupon.check', $routeParams) }}"
-                                  @endunless>
+                                  data-customer-checkout-form
+                                  data-phone-check-url="{{ route($phoneCheckRouteName, $routeParams) }}"
+                                  data-coupon-check-url="{{ route($couponCheckRouteName, $routeParams) }}">
                                 @csrf
                                 @unless($isDineIn)
                                     <input type="hidden" name="create_account_with_phone" value="0" data-create-account-with-phone>
                                 @endunless
 
-                                @unless($isDineIn)
                                 <div>
                                     <label for="customer_name" class="mb-2 block text-sm font-medium text-brand-dark">
                                         {{ __('customer.name') }}
@@ -372,7 +366,7 @@
                                             <div class="mt-2">
                                                 <button
                                                     type="submit"
-                                                    formaction="{{ route('customer.takeout.customer-info.clear', $routeParams) }}"
+                                                    formaction="{{ route($clearCustomerInfoRouteName, $routeParams) }}"
                                                     formmethod="POST"
                                                     formnovalidate
                                                     class="inline-flex items-center rounded-xl border border-brand-soft bg-white px-3 py-1.5 text-xs font-semibold text-brand-primary transition hover:bg-brand-soft/30"
@@ -383,21 +377,6 @@
                                         @endif
                                     </div>
                                 @endif
-                                @else
-                                <div class="rounded-2xl border border-brand-soft/60 bg-brand-soft/20 px-4 py-3 text-sm text-brand-primary/80">
-                                    {{ __('customer.submit_order_hint') }}
-                                </div>
-                                <div>
-                                    <label for="note" class="mb-2 block text-sm font-medium text-brand-dark">
-                                        {{ __('customer.note') }}
-                                    </label>
-                                    <textarea id="note"
-                                              name="note"
-                                              rows="4"
-                                              class="w-full rounded-2xl border border-brand-soft px-4 py-3 text-sm text-brand-dark focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-soft">{{ old('note') }}</textarea>
-                                </div>
-                                @include('customer.partials.invoice-flow-fields')
-                                @endunless
 
                                 <button type="submit"
                                         class="inline-flex w-full items-center justify-center rounded-2xl bg-brand-primary px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:bg-brand-accent hover:text-brand-dark">

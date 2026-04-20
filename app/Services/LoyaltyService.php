@@ -57,7 +57,7 @@ class LoyaltyService
         return $member;
     }
 
-    public function resolveCoupon(Store $store, ?string $couponCode, int $subtotal, ?Member $member): array
+    public function resolveCoupon(Store $store, ?string $couponCode, int $subtotal, ?Member $member, ?string $orderType = null): array
     {
         $code = strtoupper((string) $this->normalizeText($couponCode));
         if ($code === '') {
@@ -81,6 +81,14 @@ class LoyaltyService
 
         if (! $coupon->isCurrentlyValid()) {
             return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'bonus_points' => 0, 'error' => __('customer.coupon_unavailable')];
+        }
+
+        if (! $coupon->isAvailableForOrderType($orderType)) {
+            $orderTypeLabel = in_array(strtolower(trim((string) $orderType)), ['takeout', 'take_out'], true)
+                ? __('customer.takeout')
+                : __('customer.dine_in');
+
+            return ['coupon' => null, 'discount' => 0, 'points_cost' => 0, 'bonus_points' => 0, 'error' => __('customer.coupon_order_type_unavailable', ['order_type' => $orderTypeLabel])];
         }
 
         if ($subtotal < (int) $coupon->min_order_amount) {
@@ -220,4 +228,3 @@ class LoyaltyService
         return $normalized === '' ? null : $normalized;
     }
 }
-

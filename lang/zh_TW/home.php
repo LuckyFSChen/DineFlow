@@ -92,6 +92,8 @@ return [
     'store_label' => '門市',
     'store_reviews_unit' => '則評論',
     'store_rating_empty' => '尚無評論',
+    'store_rating_with_comment_count' => '(:ratings) (共 :comments 則評論)',
+    'store_rating_without_comments' => '(:ratings) (沒有評論)',
     'default_store_desc' => '歡迎使用 DineFlow 進入店家專屬點餐體驗。',
     'business_hours' => '營業時段',
     'prep_time_minutes' => '預估製作時間：:minutes 分鐘',

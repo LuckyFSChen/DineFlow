@@ -147,7 +147,11 @@
                         @php
                             $avgRating = (float) ($store->reviews_avg_rating ?? 0);
                             $roundedRating = (int) round($avgRating);
-                            $reviewCount = (int) ($store->reviews_count ?? 0);
+                            $ratingCount = (int) ($store->ratings_count ?? 0);
+                            $commentCount = (int) ($store->comments_count ?? 0);
+                            $ratingSummary = $commentCount > 0
+                                ? __('home.store_rating_with_comment_count', ['ratings' => $ratingCount, 'comments' => $commentCount])
+                                : __('home.store_rating_without_comments', ['ratings' => $ratingCount]);
                         @endphp
                         <div class="group flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-brand-soft/60 bg-white shadow-[0_18px_44px_rgba(90,30,14,0.1)] transition duration-300 hover:-translate-y-1 hover:border-brand-primary/30 hover:shadow-[0_24px_60px_rgba(90,30,14,0.16)]">
                             <div class="relative h-48 w-full overflow-hidden">
@@ -200,16 +204,16 @@
                                         <svg class="h-4 w-4 text-brand-primary/70" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                             <path d="M10 2.8l2.22 4.5 4.96.72-3.59 3.5.85 4.95L10 14.35l-4.44 2.32.85-4.95-3.59-3.5 4.96-.72L10 2.8z"/>
                                         </svg>
-                                        @if($reviewCount > 0)
+                                        @if($ratingCount > 0)
                                             <button
                                                 type="button"
                                                 class="rounded-lg px-1 text-left underline decoration-brand-primary/35 underline-offset-4 transition hover:text-brand-primary hover:decoration-brand-primary"
                                                 data-store-review-trigger
                                                 data-store-review-url="{{ route('stores.reviews', ['store' => $store]) }}"
                                                 data-store-name="{{ $store->name }}"
-                                                data-review-count="{{ $reviewCount }}"
+                                                data-review-count="{{ $commentCount }}"
                                             >
-                                                {{ str_repeat('★', $roundedRating) }}{{ str_repeat('☆', max(5 - $roundedRating, 0)) }} {{ number_format($avgRating, 1) }} ({{ $reviewCount }} {{ __('home.store_reviews_unit') }})
+                                                {{ str_repeat('★', $roundedRating) }}{{ str_repeat('☆', max(5 - $roundedRating, 0)) }} {{ number_format($avgRating, 1) }} {{ $ratingSummary }}
                                             </button>
                                         @else
                                             <span>{{ __('home.store_rating_empty') }}</span>

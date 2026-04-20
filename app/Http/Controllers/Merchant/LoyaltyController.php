@@ -192,8 +192,16 @@ class LoyaltyController extends Controller
             'usage_limit' => ['nullable', 'integer', 'min:1'],
             'starts_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
+            'allow_dine_in' => ['nullable', 'boolean'],
+            'allow_takeout' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
         ]);
+
+        if (! $request->boolean('allow_dine_in') && ! $request->boolean('allow_takeout')) {
+            return back()
+                ->withErrors(['allow_dine_in' => __('loyalty.order_type_required')])
+                ->withInput();
+        }
 
         $store = Store::query()
             ->where('user_id', $user->id)
@@ -213,6 +221,8 @@ class LoyaltyController extends Controller
             'usage_limit' => isset($validated['usage_limit']) ? (int) $validated['usage_limit'] : null,
             'starts_at' => $validated['starts_at'] ?? null,
             'ends_at' => $validated['ends_at'] ?? null,
+            'allow_dine_in' => $request->boolean('allow_dine_in', true),
+            'allow_takeout' => $request->boolean('allow_takeout', true),
             'is_active' => $request->boolean('is_active', true),
         ]);
 
@@ -273,8 +283,22 @@ class LoyaltyController extends Controller
             'usage_limit' => ['nullable', 'integer', 'min:1'],
             'starts_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
+            'allow_dine_in' => ['nullable', 'boolean'],
+            'allow_takeout' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
         ]);
+
+        if (! $request->boolean('allow_dine_in') && ! $request->boolean('allow_takeout')) {
+            $message = __('loyalty.order_type_required');
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 422);
+            }
+
+            return back()
+                ->withErrors(['allow_dine_in' => $message])
+                ->withInput();
+        }
 
         $coupon->update([
             'name' => $validated['name'],
@@ -288,6 +312,8 @@ class LoyaltyController extends Controller
             'usage_limit' => isset($validated['usage_limit']) ? (int) $validated['usage_limit'] : null,
             'starts_at' => $validated['starts_at'] ?? null,
             'ends_at' => $validated['ends_at'] ?? null,
+            'allow_dine_in' => $request->boolean('allow_dine_in'),
+            'allow_takeout' => $request->boolean('allow_takeout'),
             'is_active' => $request->boolean('is_active'),
         ]);
 
@@ -310,6 +336,8 @@ class LoyaltyController extends Controller
                     'used_count' => (int) $coupon->used_count,
                     'starts_at' => optional($coupon->starts_at)->format('Y-m-d\\TH:i'),
                     'ends_at' => optional($coupon->ends_at)->format('Y-m-d\\TH:i'),
+                    'allow_dine_in' => $coupon->allowsDineIn(),
+                    'allow_takeout' => $coupon->allowsTakeout(),
                     'is_active' => (bool) $coupon->is_active,
                 ],
             ]);
