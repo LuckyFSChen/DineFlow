@@ -32,25 +32,39 @@
             align="center"
         >
             <x-slot name="actions">
-                <form id="financial-filter-form" method="GET" class="grid gap-3 rounded-xl border border-white/30 bg-white/10 p-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-                    <label class="space-y-1 text-left">
-                        <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.start_date') }}</span>
-                        <input type="date" name="start_date" value="{{ $startDate }}" class="w-full rounded-lg border-slate-300 bg-white text-sm text-slate-900">
+                <form id="financial-filter-form" method="GET" class="grid gap-3 rounded-xl border border-white/30 bg-white/10 p-3 sm:grid-cols-2 lg:grid-cols-6">
+                    <label class="space-y-1 text-left lg:col-span-2">
+                        <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.range') }}</span>
+                        <input
+                            type="text"
+                            data-flatpickr-range
+                            data-range-start-name="start_date"
+                            data-range-end-name="end_date"
+                            value="{{ $startDate && $endDate ? $startDate . ' ~ ' . $endDate : '' }}"
+                            placeholder="{{ __('merchant.start_date') }} ~ {{ __('merchant.end_date') }}"
+                            autocomplete="off"
+                            class="w-full rounded-lg border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 shadow-sm"
+                        >
+                        <input type="hidden" name="start_date" value="{{ $startDate }}">
+                        <input type="hidden" name="end_date" value="{{ $endDate }}">
                     </label>
-                    <label class="space-y-1 text-left">
-                        <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.end_date') }}</span>
-                        <input type="date" name="end_date" value="{{ $endDate }}" class="w-full rounded-lg border-slate-300 bg-white text-sm text-slate-900">
-                    </label>
-                    <label class="space-y-1 text-left">
-                        <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.compare_start_date') }}</span>
-                        <input type="date" name="compare_start_date" value="{{ $compareStartDate }}" class="w-full rounded-lg border-slate-300 bg-white text-sm text-slate-900" placeholder="{{ __('merchant.compare_start_date') }}">
-                    </label>
-                    <label class="space-y-1 text-left">
-                        <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.compare_end_date') }}</span>
-                        <input type="date" name="compare_end_date" value="{{ $compareEndDate }}" class="w-full rounded-lg border-slate-300 bg-white text-sm text-slate-900" placeholder="{{ __('merchant.compare_end_date') }}">
+                    <label class="space-y-1 text-left lg:col-span-2">
+                        <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.compare_range') }}</span>
+                        <input
+                            type="text"
+                            data-flatpickr-range
+                            data-range-start-name="compare_start_date"
+                            data-range-end-name="compare_end_date"
+                            value="{{ $compareStartDate && $compareEndDate ? $compareStartDate . ' ~ ' . $compareEndDate : '' }}"
+                            placeholder="{{ __('merchant.compare_start_date') }} ~ {{ __('merchant.compare_end_date') }}"
+                            autocomplete="off"
+                            class="w-full rounded-lg border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 shadow-sm"
+                        >
+                        <input type="hidden" name="compare_start_date" value="{{ $compareStartDate }}">
+                        <input type="hidden" name="compare_end_date" value="{{ $compareEndDate }}">
                     </label>
 
-                    <label class="space-y-1 text-left">
+                    <label class="space-y-1 text-left lg:col-span-1">
                         <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.trend_granularity') }}</span>
                         <select name="trend_granularity" class="w-full rounded-lg border-slate-200 bg-white text-sm font-semibold text-slate-900 [color-scheme:light] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" style="color:#0f172a;background-color:#ffffff;">
                             <option class="bg-white text-slate-900" value="day" @selected($trendGranularity === 'day')>{{ __('merchant.trend_granularity_day') }}</option>
@@ -58,7 +72,7 @@
                         </select>
                     </label>
 
-                    <label class="space-y-1 text-left">
+                    <label class="space-y-1 text-left lg:col-span-1">
                         <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.hour_step') }}</span>
                         <select name="hour_step" class="w-full rounded-lg border-slate-200 bg-white text-sm font-semibold text-slate-900 [color-scheme:light] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" style="color:#0f172a;background-color:#ffffff;">
                             @foreach([1,2,3,4,6,12] as $step)
@@ -68,7 +82,7 @@
                     </label>
 
                     @if($stores->count() > 1)
-                        <label class="space-y-1 text-left">
+                        <label class="space-y-1 text-left lg:col-span-2">
                             <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-100/90">{{ __('merchant.store') }}</span>
                             <select name="store_id" class="w-full rounded-lg border-slate-200 bg-white text-sm font-semibold text-slate-900 [color-scheme:light] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" style="color:#0f172a;background-color:#ffffff;">
                                 <option class="bg-white text-slate-900" value="">{{ __('merchant.all_stores') }}</option>
@@ -79,7 +93,7 @@
                         </label>
                     @endif
 
-                    <div class="sm:col-span-2 lg:col-span-4 xl:col-span-5 flex flex-wrap items-center gap-2">
+                    <div class="sm:col-span-2 lg:col-span-6 flex flex-wrap items-center gap-2">
                         <button type="submit" class="rounded-lg bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-accent hover:text-brand-dark">{{ __('merchant.apply_filter') }}</button>
                         <a href="{{ route('merchant.reports.financial') }}" class="rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-white/20">{{ __('merchant.reset_all') }}</a>
                         @if($comparison)

@@ -33,13 +33,20 @@
                         @endforeach
                     </select>
                 </div>
-                <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">起始日</label>
-                    <input type="date" name="start_date" value="{{ $startDate }}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                </div>
-                <div>
-                    <label class="mb-1 block text-xs font-semibold text-slate-600">結束日</label>
-                    <input type="date" name="end_date" value="{{ $endDate }}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('merchant.range') }}</label>
+                    <input
+                        type="text"
+                        data-flatpickr-range
+                        data-range-start-name="start_date"
+                        data-range-end-name="end_date"
+                        value="{{ $startDate && $endDate ? $startDate . ' ~ ' . $endDate : '' }}"
+                        placeholder="{{ __('merchant.start_date') }} ~ {{ __('merchant.end_date') }}"
+                        autocomplete="off"
+                        class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-medium"
+                    >
+                    <input type="hidden" name="start_date" value="{{ $startDate }}">
+                    <input type="hidden" name="end_date" value="{{ $endDate }}">
                 </div>
                 <div>
                     <label class="mb-1 block text-xs font-semibold text-slate-600">會員搜尋</label>
@@ -161,11 +168,11 @@
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-slate-600">開始時間（選填）</label>
-                        <input type="datetime-local" name="starts_at" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        <input type="datetime-local" data-flatpickr-datetime name="starts_at" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-slate-600">結束時間（選填）</label>
-                        <input type="datetime-local" name="ends_at" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        <input type="datetime-local" data-flatpickr-datetime name="ends_at" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                     </div>
                     <label class="sm:col-span-2 inline-flex items-center gap-2 text-sm text-slate-700">
                         <input type="checkbox" name="is_active" value="1" checked class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
@@ -443,11 +450,11 @@
                             </div>
                             <div>
                                 <label class="mb-1 block text-xs font-semibold text-slate-600">開始時間（選填）</label>
-                                <input type="datetime-local" name="starts_at" x-model="form.starts_at" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                                <input type="datetime-local" data-flatpickr-datetime name="starts_at" x-model="form.starts_at" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                             </div>
                             <div>
                                 <label class="mb-1 block text-xs font-semibold text-slate-600">結束時間（選填）</label>
-                                <input type="datetime-local" name="ends_at" x-model="form.ends_at" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                                <input type="datetime-local" data-flatpickr-datetime name="ends_at" x-model="form.ends_at" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                             </div>
                             <label class="sm:col-span-2 inline-flex items-center gap-2 text-sm text-slate-700">
                                 <input type="checkbox" name="is_active" value="1" x-model="form.is_active" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">

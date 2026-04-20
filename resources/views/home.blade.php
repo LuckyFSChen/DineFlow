@@ -30,8 +30,8 @@
 @endpush
 
 @section('content')
-<div class="min-h-screen bg-brand-soft/20 text-brand-dark">
-    <section class="relative isolate overflow-hidden border-b border-brand-soft/60 bg-brand-dark text-white">
+<div class="min-h-screen bg-brand-soft/20 text-brand-dark flex flex-col">
+    <section class="order-1 relative isolate overflow-hidden border-b border-brand-soft/60 bg-brand-dark text-white">
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,214,112,0.22),_transparent_30%),linear-gradient(135deg,_rgba(90,30,14,0.98),_rgba(236,144,87,0.92))]"></div>
         <div class="absolute -left-16 top-20 h-44 w-44 rounded-full bg-brand-accent/20 blur-3xl"></div>
         <div class="absolute -right-10 bottom-0 h-56 w-56 rounded-full bg-brand-highlight/10 blur-3xl"></div>
@@ -54,15 +54,25 @@
                 </p>
 
                 <div class="mt-8 flex flex-wrap gap-4">
-                    <a href="#store-list" class="inline-flex items-center gap-2 rounded-2xl bg-brand-highlight px-5 py-3 text-base font-semibold text-brand-dark shadow-lg shadow-brand-highlight/30 transition hover:-translate-y-0.5 hover:bg-brand-soft">
+                    @auth
+                        <a href="{{ auth()->user()?->isCustomer() ? route('join.merchant.register') : route('dashboard') }}" class="inline-flex items-center gap-2 rounded-2xl bg-brand-highlight px-5 py-3 text-base font-semibold text-brand-dark shadow-lg shadow-brand-highlight/30 transition hover:-translate-y-0.5 hover:bg-brand-soft">
+                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M10 2a4 4 0 00-4 4v1H5a2 2 0 00-2 2v6a3 3 0 003 3h8a3 3 0 003-3V9a2 2 0 00-2-2h-1V6a4 4 0 00-4-4zm-2 5V6a2 2 0 114 0v1H8zm2 3a1 1 0 011 1v2a1 1 0 11-2 0v-2a1 1 0 011-1z" clip-rule="evenodd"/>
+                            </svg>
+                            {{ __('home.view_stores') }}
+                        </a>
+                    @else
+                        <a href="{{ route('register', ['account_type' => 'merchant']) }}" class="inline-flex items-center gap-2 rounded-2xl bg-brand-highlight px-5 py-3 text-base font-semibold text-brand-dark shadow-lg shadow-brand-highlight/30 transition hover:-translate-y-0.5 hover:bg-brand-soft">
+                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M10 2a4 4 0 00-4 4v1H5a2 2 0 00-2 2v6a3 3 0 003 3h8a3 3 0 003-3V9a2 2 0 00-2-2h-1V6a4 4 0 00-4-4zm-2 5V6a2 2 0 114 0v1H8zm2 3a1 1 0 011 1v2a1 1 0 11-2 0v-2a1 1 0 011-1z" clip-rule="evenodd"/>
+                            </svg>
+                            {{ __('home.view_stores') }}
+                        </a>
+                    @endauth
+                    <a href="#store-list" class="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-base font-semibold text-white transition hover:bg-white/15">
                         <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M10 2a6 6 0 00-6 6c0 4.03 4.86 8.84 5.07 9.04a1.3 1.3 0 001.86 0c.2-.2 5.07-5.01 5.07-9.04a6 6 0 00-6-6zm0 8a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
-                        </svg>
-                        {{ __('home.view_stores') }}
-                    </a>
-                    <a href="#how-it-works" class="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-base font-semibold text-white transition hover:bg-white/15">
-                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.5a.75.75 0 10-1.5 0v3.25c0 .2.08.39.22.53l2 2a.75.75 0 101.06-1.06l-1.78-1.78V6.5z" clip-rule="evenodd"/>
+                            <path d="M3 4.75A1.75 1.75 0 014.75 3h.74a1.75 1.75 0 011.67 1.23l.17.52h8.92a.75.75 0 01.73.91l-1.2 5A1.75 1.75 0 0114.08 12H8.1a1.75 1.75 0 01-1.68-1.23L4.78 5.75h-.03A.25.25 0 004.5 6v7.25a.75.75 0 01-1.5 0V4.75z"/>
+                            <path d="M8 15.5a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM13 15.5a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z"/>
                         </svg>
                         {{ __('home.learn_flow') }}
                     </a>
@@ -127,16 +137,125 @@
         </div>
     </section>
 
-    <section id="store-list" class="border-t border-brand-soft/50 bg-white py-16">
+    <section id="why-dineflow" class="order-3 border-t border-brand-soft/60 bg-brand-soft/15 py-16">
+        <div class="mx-auto max-w-7xl px-6 lg:px-8">
+            <div class="max-w-4xl">
+                <span class="inline-flex items-center rounded-full border border-brand-primary/20 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary">
+                    {{ __('home.positioning_badge') }}
+                </span>
+                <h2 class="mt-5 text-3xl font-bold tracking-tight text-brand-dark sm:text-4xl">
+                    {{ __('home.positioning_title') }}
+                </h2>
+                <p class="mt-4 text-lg leading-8 text-brand-primary/80">
+                    {{ __('home.positioning_desc') }}
+                </p>
+            </div>
+
+            <div class="mt-8 grid gap-6 md:grid-cols-3">
+                <article class="rounded-[1.7rem] border border-brand-soft/70 bg-white p-6 shadow-[0_14px_36px_rgba(90,30,14,0.08)]">
+                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-soft/40 text-sm font-bold text-brand-primary">01</span>
+                    <h3 class="mt-4 text-xl font-bold text-brand-dark">{{ __('home.positioning_card_1_title') }}</h3>
+                    <p class="mt-3 text-base leading-7 text-brand-primary/75">{{ __('home.positioning_card_1_desc') }}</p>
+                </article>
+                <article class="rounded-[1.7rem] border border-brand-soft/70 bg-white p-6 shadow-[0_14px_36px_rgba(90,30,14,0.08)]">
+                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-soft/40 text-sm font-bold text-brand-primary">02</span>
+                    <h3 class="mt-4 text-xl font-bold text-brand-dark">{{ __('home.positioning_card_2_title') }}</h3>
+                    <p class="mt-3 text-base leading-7 text-brand-primary/75">{{ __('home.positioning_card_2_desc') }}</p>
+                </article>
+                <article class="rounded-[1.7rem] border border-brand-soft/70 bg-white p-6 shadow-[0_14px_36px_rgba(90,30,14,0.08)]">
+                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-soft/40 text-sm font-bold text-brand-primary">03</span>
+                    <h3 class="mt-4 text-xl font-bold text-brand-dark">{{ __('home.positioning_card_3_title') }}</h3>
+                    <p class="mt-3 text-base leading-7 text-brand-primary/75">{{ __('home.positioning_card_3_desc') }}</p>
+                </article>
+            </div>
+
+            <div class="mt-8 rounded-[1.9rem] border border-brand-soft/70 bg-white p-7 shadow-[0_16px_40px_rgba(90,30,14,0.08)]">
+                <h3 class="text-2xl font-bold tracking-tight text-brand-dark">{{ __('home.positioning_fit_title') }}</h3>
+                <p class="mt-3 text-base leading-7 text-brand-primary/75">{{ __('home.positioning_fit_desc') }}</p>
+                <div class="mt-5 flex flex-wrap gap-2">
+                    @foreach ([
+                        __('home.positioning_fit_store_1'),
+                        __('home.positioning_fit_store_2'),
+                        __('home.positioning_fit_store_3'),
+                        __('home.positioning_fit_store_4'),
+                        __('home.positioning_fit_store_5'),
+                    ] as $fitStore)
+                        <span class="inline-flex items-center rounded-full border border-brand-soft/70 bg-brand-soft/20 px-4 py-2 text-sm font-semibold text-brand-primary">
+                            {{ $fitStore }}
+                        </span>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="compare-dineflow" class="order-4 border-t border-brand-soft/60 bg-white py-16">
+        <div class="mx-auto max-w-7xl px-6 lg:px-8">
+            <div class="max-w-4xl">
+                <span class="inline-flex items-center rounded-full border border-brand-soft/80 bg-brand-soft/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary">
+                    {{ __('home.comparison_badge') }}
+                </span>
+                <h2 class="mt-5 text-3xl font-bold tracking-tight text-brand-dark sm:text-4xl">{{ __('home.comparison_title') }}</h2>
+                <p class="mt-4 text-lg leading-8 text-brand-primary/80">{{ __('home.comparison_desc') }}</p>
+            </div>
+
+            <div class="mt-8 overflow-hidden rounded-[1.7rem] border border-brand-soft/70 shadow-[0_16px_36px_rgba(90,30,14,0.08)]">
+                <div class="overflow-x-auto bg-white">
+                    <table class="min-w-full text-left text-sm text-brand-primary/80">
+                        <thead class="bg-brand-dark text-white">
+                            <tr>
+                                <th class="px-5 py-4 font-semibold">{{ __('home.comparison_col_dimension') }}</th>
+                                <th class="px-5 py-4 font-semibold">{{ __('home.comparison_col_dineflow') }}</th>
+                                <th class="px-5 py-4 font-semibold">{{ __('home.comparison_col_traditional') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-brand-soft/70">
+                            <tr class="bg-white">
+                                <th scope="row" class="px-5 py-4 font-semibold text-brand-dark">{{ __('home.comparison_row_cost_label') }}</th>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_cost_dineflow') }}</td>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_cost_traditional') }}</td>
+                            </tr>
+                            <tr class="bg-brand-soft/10">
+                                <th scope="row" class="px-5 py-4 font-semibold text-brand-dark">{{ __('home.comparison_row_speed_label') }}</th>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_speed_dineflow') }}</td>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_speed_traditional') }}</td>
+                            </tr>
+                            <tr class="bg-white">
+                                <th scope="row" class="px-5 py-4 font-semibold text-brand-dark">{{ __('home.comparison_row_complexity_label') }}</th>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_complexity_dineflow') }}</td>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_complexity_traditional') }}</td>
+                            </tr>
+                            <tr class="bg-brand-soft/10">
+                                <th scope="row" class="px-5 py-4 font-semibold text-brand-dark">{{ __('home.comparison_row_fit_label') }}</th>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_fit_dineflow') }}</td>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_fit_traditional') }}</td>
+                            </tr>
+                            <tr class="bg-white">
+                                <th scope="row" class="px-5 py-4 font-semibold text-brand-dark">{{ __('home.comparison_row_flexibility_label') }}</th>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_flexibility_dineflow') }}</td>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_flexibility_traditional') }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="store-list" class="order-2 border-t border-brand-soft/50 bg-white py-16">
         <div class="mx-auto max-w-7xl px-6 lg:px-8">
             <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
                 <div>
+                    <span class="inline-flex items-center rounded-full border border-brand-soft/80 bg-brand-soft/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary">
+                        {{ __('home.customer_entry_badge') }}
+                    </span>
                     <h2 class="inline-flex items-center gap-2 text-3xl font-bold tracking-tight text-brand-dark">
                         <svg class="h-7 w-7 text-brand-primary" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fill-rule="evenodd" d="M10 2a6 6 0 00-6 6c0 4.03 4.86 8.84 5.07 9.04a1.3 1.3 0 001.86 0c.2-.2 5.07-5.01 5.07-9.04a6 6 0 00-6-6zm0 8a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                         </svg>
                         {{ __('home.orderable_stores') }}
                     </h2>
+                    <p class="mt-2 text-sm text-brand-primary/65">{{ __('home.customer_entry_desc') }}</p>
                     <p class="mt-3 text-lg text-brand-primary/75">{{ __('home.choose_store_desc') }}</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
@@ -297,7 +416,7 @@
         </div>
     </section>
 
-    <section id="how-it-works" class="border-t border-brand-soft/60 bg-white py-16">
+    <section id="how-it-works" class="order-5 border-t border-brand-soft/60 bg-white py-16">
         <div class="mx-auto max-w-7xl px-6 lg:px-8">
             <div class="mb-10 text-center">
                 <h2 class="inline-flex items-center gap-2 text-3xl font-bold tracking-tight text-brand-dark">
@@ -344,7 +463,7 @@
         </div>
     </section>
 
-    <section id="merchant-flow" class="border-t border-brand-soft/60 bg-brand-soft/20 py-16">
+    <section id="merchant-flow" class="order-6 border-t border-brand-soft/60 bg-brand-soft/20 py-16">
         <div class="mx-auto max-w-7xl px-6 lg:px-8">
             <div class="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
                 <div>

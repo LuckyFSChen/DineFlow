@@ -5,6 +5,11 @@ import DataTable from 'datatables.net-dt';
 import 'datatables.net-responsive-dt';
 import 'datatables.net-dt/css/dataTables.dataTables.css';
 import 'datatables.net-responsive-dt/css/responsive.dataTables.css';
+import flatpickr from 'flatpickr';
+import { Mandarin } from 'flatpickr/dist/l10n/zh.js';
+import { MandarinTraditional } from 'flatpickr/dist/l10n/zh-tw.js';
+import { Vietnamese } from 'flatpickr/dist/l10n/vn.js';
+import 'flatpickr/dist/flatpickr.min.css';
 
 window.Alpine = Alpine;
 
@@ -284,9 +289,211 @@ const bootDataTables = () => {
     });
 };
 
+const findNamedInput = (input, name) => {
+    if (!(input instanceof HTMLInputElement) || !name) {
+        return null;
+    }
+
+    const scopes = [];
+    if (input.form instanceof HTMLFormElement) {
+        scopes.push(input.form);
+    }
+    if (input.parentElement instanceof Element) {
+        scopes.push(input.parentElement);
+    }
+    scopes.push(document);
+
+    for (const scope of scopes) {
+        const matched = scope.querySelector(`input[name="${name}"]`);
+        if (matched instanceof HTMLInputElement) {
+            return matched;
+        }
+    }
+
+    return null;
+};
+
+const getCurrentDocumentLang = () => String(document.documentElement?.lang || 'en')
+    .trim()
+    .toLowerCase()
+    .replace('_', '-');
+
+const getFlatpickrLocaleKey = () => {
+    const lang = getCurrentDocumentLang();
+
+    if (lang.startsWith('zh-tw') || lang.startsWith('zh-hant')) {
+        return 'zh_tw';
+    }
+
+    if (lang.startsWith('zh')) {
+        return 'zh';
+    }
+
+    if (lang.startsWith('vi')) {
+        return 'vn';
+    }
+
+    return 'en';
+};
+
+const getFlatpickrLocale = () => {
+    const localeKey = getFlatpickrLocaleKey();
+    const localeMap = {
+        zh: Mandarin,
+        zh_tw: MandarinTraditional,
+        vn: Vietnamese,
+    };
+
+    return localeMap[localeKey] || flatpickr.l10ns.default || {};
+};
+
+const flatpickrLocale = getFlatpickrLocale();
+
+const normalizeFlatpickrInputType = (input) => {
+    if (!(input instanceof HTMLInputElement)) {
+        return;
+    }
+
+    if (input.type === 'date' || input.type === 'datetime-local') {
+        input.type = 'text';
+    }
+};
+
+const syncRangeHiddenFields = (selectedDates, instance, startInput, endInput) => {
+    if (!(startInput instanceof HTMLInputElement) || !(endInput instanceof HTMLInputElement)) {
+        return;
+    }
+
+    if (!Array.isArray(selectedDates) || selectedDates.length === 0) {
+        startInput.value = '';
+        endInput.value = '';
+        return;
+    }
+
+    const startDate = selectedDates[0];
+    const endDate = selectedDates.length > 1 ? selectedDates[1] : selectedDates[0];
+    startInput.value = instance.formatDate(startDate, 'Y-m-d');
+    endInput.value = instance.formatDate(endDate, 'Y-m-d');
+};
+
+const initRangeDateInput = (input) => {
+    if (!(input instanceof HTMLInputElement) || input.dataset.flatpickrReady === '1') {
+        return;
+    }
+
+    const startName = (input.dataset.rangeStartName || '').trim();
+    const endName = (input.dataset.rangeEndName || '').trim();
+    const startInput = findNamedInput(input, startName);
+    const endInput = findNamedInput(input, endName);
+    if (!startInput || !endInput) {
+        return;
+    }
+
+    input.dataset.flatpickrReady = '1';
+    normalizeFlatpickrInputType(input);
+
+    const defaultDates = [];
+    if (startInput.value) {
+        defaultDates.push(startInput.value);
+    }
+    if (endInput.value && endInput.value !== startInput.value) {
+        defaultDates.push(endInput.value);
+    }
+
+    flatpickr(input, {
+        mode: 'range',
+        dateFormat: 'Y-m-d',
+        locale: flatpickrLocale,
+        allowInput: true,
+        defaultDate: defaultDates.length > 0 ? defaultDates : null,
+        onReady: (selectedDates, _dateStr, instance) => {
+            syncRangeHiddenFields(selectedDates, instance, startInput, endInput);
+        },
+        onChange: (selectedDates, _dateStr, instance) => {
+            syncRangeHiddenFields(selectedDates, instance, startInput, endInput);
+        },
+        onClose: (selectedDates, _dateStr, instance) => {
+            syncRangeHiddenFields(selectedDates, instance, startInput, endInput);
+        },
+    });
+};
+
+const initDateInput = (input) => {
+    if (!(input instanceof HTMLInputElement) || input.dataset.flatpickrReady === '1') {
+        return;
+    }
+
+    input.dataset.flatpickrReady = '1';
+    normalizeFlatpickrInputType(input);
+
+    flatpickr(input, {
+        dateFormat: 'Y-m-d',
+        locale: flatpickrLocale,
+        allowInput: true,
+    });
+};
+
+const initDateTimeInput = (input) => {
+    if (!(input instanceof HTMLInputElement) || input.dataset.flatpickrReady === '1') {
+        return;
+    }
+
+    input.dataset.flatpickrReady = '1';
+    normalizeFlatpickrInputType(input);
+
+    flatpickr(input, {
+        enableTime: true,
+        time_24hr: true,
+        dateFormat: 'Y-m-d\\TH:i',
+        locale: flatpickrLocale,
+        allowInput: true,
+    });
+};
+
+const bindFlatpickrInputs = (root = document) => {
+    if (!(root instanceof Document || root instanceof Element)) {
+        return;
+    }
+
+    const bindBySelector = (selector, initializer) => {
+        if (root instanceof Element && root.matches(selector)) {
+            initializer(root);
+        }
+        root.querySelectorAll(selector).forEach(initializer);
+    };
+
+    bindBySelector('input[data-flatpickr-range]', initRangeDateInput);
+    bindBySelector('input[data-flatpickr-datetime], input[type="datetime-local"]', initDateTimeInput);
+    bindBySelector('input[data-flatpickr-date], input[type="date"]', initDateInput);
+};
+
+const bootFlatpickr = () => {
+    bindFlatpickrInputs();
+
+    if (!document.body || typeof MutationObserver === 'undefined') {
+        return;
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node instanceof Element) {
+                    bindFlatpickrInputs(node);
+                }
+            });
+        });
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+    });
+};
+
 const bootFrontendEnhancements = () => {
     bootPhoneFormatter();
     bootDataTables();
+    bootFlatpickr();
 };
 
 if (document.readyState === 'loading') {

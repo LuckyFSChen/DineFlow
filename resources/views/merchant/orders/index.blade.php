@@ -124,13 +124,19 @@
                 @endif
 
                 <label class="space-y-1">
-                    <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{{ __('merchant.start_date') }}</span>
-                    <input type="date" name="start_date" value="{{ $filters['start_date'] }}" class="w-full rounded-xl border-slate-300 bg-white text-sm text-slate-900 shadow-sm focus:border-brand-primary focus:ring-brand-primary">
-                </label>
-
-                <label class="space-y-1">
-                    <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{{ __('merchant.end_date') }}</span>
-                    <input type="date" name="end_date" value="{{ $filters['end_date'] }}" class="w-full rounded-xl border-slate-300 bg-white text-sm text-slate-900 shadow-sm focus:border-brand-primary focus:ring-brand-primary">
+                    <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{{ __('merchant.range') }}</span>
+                    <input
+                        type="text"
+                        data-flatpickr-range
+                        data-range-start-name="start_date"
+                        data-range-end-name="end_date"
+                        value="{{ $filters['start_date'] && $filters['end_date'] ? $filters['start_date'] . ' ~ ' . $filters['end_date'] : '' }}"
+                        placeholder="{{ __('merchant.start_date') }} ~ {{ __('merchant.end_date') }}"
+                        autocomplete="off"
+                        class="w-full rounded-xl border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 shadow-sm focus:border-brand-primary focus:ring-brand-primary"
+                    >
+                    <input type="hidden" name="start_date" value="{{ $filters['start_date'] }}">
+                    <input type="hidden" name="end_date" value="{{ $filters['end_date'] }}">
                 </label>
 
                 <label class="space-y-1">

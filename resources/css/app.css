@@ -464,3 +464,28 @@ body.is-admin-area .board-store-select option:checked {
 	background: #0f172a !important;
 	color: #ffffff !important;
 }
+
+input[data-flatpickr-range],
+input[data-flatpickr-date],
+input[data-flatpickr-datetime] {
+	letter-spacing: 0.01em;
+}
+
+.flatpickr-calendar {
+	border: 1px solid #cbd5e1;
+	border-radius: 0.9rem;
+	box-shadow: 0 14px 28px rgba(15, 23, 42, 0.16);
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+	background: #0f766e;
+	border-color: #0f766e;
+}
+
+.flatpickr-day.inRange {
+	background: #d1fae5;
+	border-color: #d1fae5;
+	box-shadow: -5px 0 0 #d1fae5, 5px 0 0 #d1fae5;
+}
