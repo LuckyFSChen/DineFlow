@@ -164,5 +164,12 @@ return [
     'full_intro_join_title' => '准备好把你的店家流程升级成系统化运营？',
     'full_intro_join_desc' => '现在就开始建立你的 DineFlow 工作流程，让接单、出餐与管理都更稳定。',
     'full_intro_join_button' => '立即加入 DineFlow',
+    'video_play' => '播放视频',
+    'video_pause' => '暂停视频',
+    'video_mute' => '静音',
+    'video_unmute' => '开启声音',
+    'video_fullscreen_enter' => '进入全屏',
+    'video_fullscreen_exit' => '退出全屏',
+    'video_fallback' => '你的浏览器不支持嵌入式视频播放。',
     'footer_subtitle' => 'QR Code 点餐体验平台',
 ];

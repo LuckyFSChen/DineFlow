@@ -164,6 +164,13 @@ return [
     'full_intro_join_title' => '準備好讓你的店更快接單、更省人力嗎？',
     'full_intro_join_desc' => '加入 DineFlow，快速啟用品牌點餐系統，讓通路、接單與營運效率一起升級。',
     'full_intro_join_button' => '立即加入 DineFlow',
+    'video_play' => '播放影片',
+    'video_pause' => '暫停影片',
+    'video_mute' => '靜音',
+    'video_unmute' => '開啟聲音',
+    'video_fullscreen_enter' => '進入全螢幕',
+    'video_fullscreen_exit' => '離開全螢幕',
+    'video_fallback' => '你的瀏覽器不支援內嵌影片播放。',
     'footer_subtitle' => 'QR Code 點餐體驗平台',
 ];
 

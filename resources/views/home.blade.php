@@ -29,15 +29,43 @@
 </script>
 @endpush
 
+@push('head')
+<style>
+    :root {
+        --public-nav-height: 4rem;
+    }
+
+    html {
+        scroll-behavior: smooth;
+        scroll-padding-top: calc(var(--public-nav-height) + 0.5rem);
+        scroll-snap-type: y proximity;
+    }
+
+    @media (min-width: 1280px) and (min-height: 860px) {
+        html {
+            scroll-snap-type: y mandatory;
+        }
+    }
+
+    body .app-shell > nav:not(.admin-nav) {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        backdrop-filter: blur(14px);
+        background: rgba(255, 255, 255, 0.92);
+    }
+</style>
+@endpush
+
 @section('content')
-<div class="min-h-screen bg-brand-soft/20 text-brand-dark flex flex-col">
-    <section class="order-1 relative isolate overflow-hidden border-b border-brand-soft/60 bg-brand-dark text-white">
+<div class="home-scroll-shell min-h-screen bg-brand-soft/20 text-brand-dark">
+    <section class="home-scroll-panel home-scroll-panel--hero relative isolate overflow-hidden border-b border-brand-soft/60 bg-brand-dark text-white">
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,214,112,0.22),_transparent_30%),linear-gradient(135deg,_rgba(90,30,14,0.98),_rgba(236,144,87,0.92))]"></div>
         <div class="absolute -left-16 top-20 h-44 w-44 rounded-full bg-brand-accent/20 blur-3xl"></div>
         <div class="absolute -right-10 bottom-0 h-56 w-56 rounded-full bg-brand-highlight/10 blur-3xl"></div>
 
-        <div class="relative mx-auto grid max-w-7xl items-center gap-10 px-6 py-16 lg:grid-cols-2 lg:px-8 lg:py-24">
-            <div>
+        <div class="relative mx-auto grid max-w-[92rem] items-center gap-12 px-6 py-16 lg:grid-cols-[minmax(0,1.08fr)_minmax(30rem,0.92fr)] lg:px-8 lg:py-24 2xl:max-w-[98rem]">
+            <div class="lg:pr-4">
                 <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-base font-semibold tracking-[0.2em] text-brand-highlight">
                     <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fill-rule="evenodd" d="M3 3h5v5H3V3zm1.5 1.5v2h2v-2h-2zM12 3h5v5h-5V3zm1.5 1.5v2h2v-2h-2zM3 12h5v5H3v-5zm1.5 1.5v2h2v-2h-2zM11.5 12a.5.5 0 01.5-.5h1v-1a.5.5 0 011 0v1h1a.5.5 0 010 1h-1v1a.5.5 0 01-1 0v-1h-1a.5.5 0 01-.5-.5zm3 3a.5.5 0 01.5-.5h1a.5.5 0 010 1h-1a.5.5 0 01-.5-.5z" clip-rule="evenodd"/>
@@ -45,11 +73,11 @@
                     {{ __('home.badge_qr_ordering') }}
                 </span>
 
-                <h1 class="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">
+                <h1 class="mt-6 max-w-4xl text-4xl font-bold tracking-tight sm:text-5xl xl:text-[3.6rem] xl:leading-[1.08]">
                     {!! nl2br(e(__('home.hero_title'))) !!}
                 </h1>
 
-                <p class="mt-5 max-w-2xl text-xl leading-9 text-white/75">
+                <p class="mt-5 max-w-3xl text-lg leading-8 text-white/75 sm:text-xl sm:leading-9">
                     {{ __('home.hero_desc') }}
                 </p>
 
@@ -79,56 +107,72 @@
                 </div>
             </div>
 
-            <div class="rounded-[2rem] border border-white/10 bg-white/10 p-8 shadow-[0_30px_80px_rgba(0,0,0,0.28)] backdrop-blur">
-                <div class="mb-6">
-                    <div class="text-base font-semibold uppercase tracking-[0.2em] text-brand-highlight/80">
-                        {{ __('home.product_feel') }}
+            <div class="relative rounded-[2rem] border border-white/10 bg-white/10 p-6 shadow-[0_30px_80px_rgba(0,0,0,0.28)] backdrop-blur lg:p-7 xl:p-8">
+                <div class="absolute inset-x-8 top-6 h-20 rounded-full bg-brand-highlight/15 blur-3xl" aria-hidden="true"></div>
+
+                <div class="relative flex flex-wrap items-start justify-between gap-4">
+                    <div class="max-w-xl">
+                        <div class="text-base font-semibold uppercase tracking-[0.2em] text-brand-highlight/80">
+                            {{ __('home.product_feel') }}
+                        </div>
+                        <h2 class="mt-3 text-2xl font-bold text-white">
+                            {{ __('home.product_feel_title') }}
+                        </h2>
+                        <p class="mt-3 text-lg leading-8 text-white/70">
+                            {{ __('home.product_feel_desc') }}
+                        </p>
                     </div>
-                    <h2 class="mt-3 text-2xl font-bold text-white">
-                        {{ __('home.product_feel_title') }}
-                    </h2>
-                    <p class="mt-3 text-lg leading-8 text-white/70">
-                        {{ __('home.product_feel_desc') }}
-                    </p>
+
+                    <a href="{{ route('product.intro') }}" class="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15">
+                        {{ __('home.merchant_intro_cta') }}
+                    </a>
                 </div>
 
-                <div class="space-y-4">
-                    <div class="rounded-2xl border border-white/10 bg-white/10 p-4">
-                        <div class="flex items-start gap-3">
-                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-highlight/20 text-brand-highlight">
-                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M3 3h6v6H3V3zm1.5 1.5v3h3v-3h-3zM11 3h6v6h-6V3zm1.5 1.5v3h3v-3h-3zM3 11h6v6H3v-6zm1.5 1.5v3h3v-3h-3zM12 11a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1a1 1 0 10-2 0v1h-1z" clip-rule="evenodd"/>
-                                </svg>
-                            </span>
-                            <div>
-                                <div class="text-lg font-semibold text-white">{{ __('home.feature_card_1_title') }}</div>
-                                <div class="mt-1 text-base leading-7 text-white/70">{{ __('home.feature_card_1_desc') }}</div>
+                <div class="relative mt-7 space-y-6">
+                    <x-marketing-video
+                        class="mx-auto w-full max-w-[22rem] sm:max-w-[24rem] xl:max-w-[25rem]"
+                        :src="asset('video/dineflow_short_video_cta.mp4')"
+                        :badge="__('home.badge_qr_ordering')"
+                    />
+
+                    <div class="grid max-w-4xl gap-4">
+                        <div class="rounded-[1.75rem] border border-white/10 bg-white/10 p-5 sm:p-6">
+                            <div class="flex items-start gap-4 sm:gap-5">
+                                <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-highlight/20 text-brand-highlight">
+                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M3 3h6v6H3V3zm1.5 1.5v3h3v-3h-3zM11 3h6v6h-6V3zm1.5 1.5v3h3v-3h-3zM3 11h6v6H3v-6zm1.5 1.5v3h3v-3h-3zM12 11a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1v-1a1 1 0 10-2 0v1h-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                </span>
+                                <div class="min-w-0">
+                                    <div class="text-xl font-semibold leading-snug text-white sm:text-[1.35rem]">{{ __('home.feature_card_1_title') }}</div>
+                                    <div class="mt-2 text-base leading-8 text-white/72 sm:text-[1.05rem]">{{ __('home.feature_card_1_desc') }}</div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="rounded-2xl border border-white/10 bg-white/10 p-4">
-                        <div class="flex items-start gap-3">
-                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-highlight/20 text-brand-highlight">
-                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M4 3a1 1 0 00-1 1v9a4 4 0 004 4h8a1 1 0 100-2H7a2 2 0 01-2-2V4a1 1 0 00-1-1zm4 1a1 1 0 011-1h7a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V4z" clip-rule="evenodd"/>
-                                </svg>
-                            </span>
-                            <div>
-                                <div class="text-lg font-semibold text-white">{{ __('home.feature_card_2_title') }}</div>
-                                <div class="mt-1 text-base leading-7 text-white/70">{{ __('home.feature_card_2_desc') }}</div>
+                        <div class="rounded-[1.75rem] border border-white/10 bg-white/10 p-5 sm:p-6">
+                            <div class="flex items-start gap-4 sm:gap-5">
+                                <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-highlight/20 text-brand-highlight">
+                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M4 3a1 1 0 00-1 1v9a4 4 0 004 4h8a1 1 0 100-2H7a2 2 0 01-2-2V4a1 1 0 00-1-1zm4 1a1 1 0 011-1h7a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V4z" clip-rule="evenodd"/>
+                                    </svg>
+                                </span>
+                                <div class="min-w-0">
+                                    <div class="text-xl font-semibold leading-snug text-white sm:text-[1.35rem]">{{ __('home.feature_card_2_title') }}</div>
+                                    <div class="mt-2 text-base leading-8 text-white/72 sm:text-[1.05rem]">{{ __('home.feature_card_2_desc') }}</div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="rounded-2xl border border-white/10 bg-white/10 p-4">
-                        <div class="flex items-start gap-3">
-                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-highlight/20 text-brand-highlight">
-                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7.4a2 2 0 00-.59-1.41l-2.4-2.4A2 2 0 0013.6 3H4zm3.3 4.2a1 1 0 011.4 0l1.1 1.1 2.5-2.5a1 1 0 111.4 1.4l-3.2 3.2a1 1 0 01-1.4 0L7.3 7.6a1 1 0 010-1.4zM6 12a1 1 0 100 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
-                                </svg>
-                            </span>
-                            <div>
-                                <div class="text-lg font-semibold text-white">{{ __('home.feature_card_3_title') }}</div>
-                                <div class="mt-1 text-base leading-7 text-white/70">{{ __('home.feature_card_3_desc') }}</div>
+                        <div class="rounded-[1.75rem] border border-white/10 bg-white/10 p-5 sm:p-6">
+                            <div class="flex items-start gap-4 sm:gap-5">
+                                <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-highlight/20 text-brand-highlight">
+                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7.4a2 2 0 00-.59-1.41l-2.4-2.4A2 2 0 0013.6 3H4zm3.3 4.2a1 1 0 011.4 0l1.1 1.1 2.5-2.5a1 1 0 111.4 1.4l-3.2 3.2a1 1 0 01-1.4 0L7.3 7.6a1 1 0 010-1.4zM6 12a1 1 0 100 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                                    </svg>
+                                </span>
+                                <div class="min-w-0">
+                                    <div class="text-xl font-semibold leading-snug text-white sm:text-[1.35rem]">{{ __('home.feature_card_3_title') }}</div>
+                                    <div class="mt-2 text-base leading-8 text-white/72 sm:text-[1.05rem]">{{ __('home.feature_card_3_desc') }}</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -137,112 +181,7 @@
         </div>
     </section>
 
-    <section id="why-dineflow" class="order-3 border-t border-brand-soft/60 bg-brand-soft/15 py-16">
-        <div class="mx-auto max-w-7xl px-6 lg:px-8">
-            <div class="max-w-4xl">
-                <span class="inline-flex items-center rounded-full border border-brand-primary/20 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary">
-                    {{ __('home.positioning_badge') }}
-                </span>
-                <h2 class="mt-5 text-3xl font-bold tracking-tight text-brand-dark sm:text-4xl">
-                    {{ __('home.positioning_title') }}
-                </h2>
-                <p class="mt-4 text-lg leading-8 text-brand-primary/80">
-                    {{ __('home.positioning_desc') }}
-                </p>
-            </div>
-
-            <div class="mt-8 grid gap-6 md:grid-cols-3">
-                <article class="rounded-[1.7rem] border border-brand-soft/70 bg-white p-6 shadow-[0_14px_36px_rgba(90,30,14,0.08)]">
-                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-soft/40 text-sm font-bold text-brand-primary">01</span>
-                    <h3 class="mt-4 text-xl font-bold text-brand-dark">{{ __('home.positioning_card_1_title') }}</h3>
-                    <p class="mt-3 text-base leading-7 text-brand-primary/75">{{ __('home.positioning_card_1_desc') }}</p>
-                </article>
-                <article class="rounded-[1.7rem] border border-brand-soft/70 bg-white p-6 shadow-[0_14px_36px_rgba(90,30,14,0.08)]">
-                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-soft/40 text-sm font-bold text-brand-primary">02</span>
-                    <h3 class="mt-4 text-xl font-bold text-brand-dark">{{ __('home.positioning_card_2_title') }}</h3>
-                    <p class="mt-3 text-base leading-7 text-brand-primary/75">{{ __('home.positioning_card_2_desc') }}</p>
-                </article>
-                <article class="rounded-[1.7rem] border border-brand-soft/70 bg-white p-6 shadow-[0_14px_36px_rgba(90,30,14,0.08)]">
-                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-soft/40 text-sm font-bold text-brand-primary">03</span>
-                    <h3 class="mt-4 text-xl font-bold text-brand-dark">{{ __('home.positioning_card_3_title') }}</h3>
-                    <p class="mt-3 text-base leading-7 text-brand-primary/75">{{ __('home.positioning_card_3_desc') }}</p>
-                </article>
-            </div>
-
-            <div class="mt-8 rounded-[1.9rem] border border-brand-soft/70 bg-white p-7 shadow-[0_16px_40px_rgba(90,30,14,0.08)]">
-                <h3 class="text-2xl font-bold tracking-tight text-brand-dark">{{ __('home.positioning_fit_title') }}</h3>
-                <p class="mt-3 text-base leading-7 text-brand-primary/75">{{ __('home.positioning_fit_desc') }}</p>
-                <div class="mt-5 flex flex-wrap gap-2">
-                    @foreach ([
-                        __('home.positioning_fit_store_1'),
-                        __('home.positioning_fit_store_2'),
-                        __('home.positioning_fit_store_3'),
-                        __('home.positioning_fit_store_4'),
-                        __('home.positioning_fit_store_5'),
-                    ] as $fitStore)
-                        <span class="inline-flex items-center rounded-full border border-brand-soft/70 bg-brand-soft/20 px-4 py-2 text-sm font-semibold text-brand-primary">
-                            {{ $fitStore }}
-                        </span>
-                    @endforeach
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="compare-dineflow" class="order-4 border-t border-brand-soft/60 bg-white py-16">
-        <div class="mx-auto max-w-7xl px-6 lg:px-8">
-            <div class="max-w-4xl">
-                <span class="inline-flex items-center rounded-full border border-brand-soft/80 bg-brand-soft/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary">
-                    {{ __('home.comparison_badge') }}
-                </span>
-                <h2 class="mt-5 text-3xl font-bold tracking-tight text-brand-dark sm:text-4xl">{{ __('home.comparison_title') }}</h2>
-                <p class="mt-4 text-lg leading-8 text-brand-primary/80">{{ __('home.comparison_desc') }}</p>
-            </div>
-
-            <div class="mt-8 overflow-hidden rounded-[1.7rem] border border-brand-soft/70 shadow-[0_16px_36px_rgba(90,30,14,0.08)]">
-                <div class="overflow-x-auto bg-white">
-                    <table class="min-w-full text-left text-sm text-brand-primary/80">
-                        <thead class="bg-brand-dark text-white">
-                            <tr>
-                                <th class="px-5 py-4 font-semibold">{{ __('home.comparison_col_dimension') }}</th>
-                                <th class="px-5 py-4 font-semibold">{{ __('home.comparison_col_dineflow') }}</th>
-                                <th class="px-5 py-4 font-semibold">{{ __('home.comparison_col_traditional') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-brand-soft/70">
-                            <tr class="bg-white">
-                                <th scope="row" class="px-5 py-4 font-semibold text-brand-dark">{{ __('home.comparison_row_cost_label') }}</th>
-                                <td class="px-5 py-4">{{ __('home.comparison_row_cost_dineflow') }}</td>
-                                <td class="px-5 py-4">{{ __('home.comparison_row_cost_traditional') }}</td>
-                            </tr>
-                            <tr class="bg-brand-soft/10">
-                                <th scope="row" class="px-5 py-4 font-semibold text-brand-dark">{{ __('home.comparison_row_speed_label') }}</th>
-                                <td class="px-5 py-4">{{ __('home.comparison_row_speed_dineflow') }}</td>
-                                <td class="px-5 py-4">{{ __('home.comparison_row_speed_traditional') }}</td>
-                            </tr>
-                            <tr class="bg-white">
-                                <th scope="row" class="px-5 py-4 font-semibold text-brand-dark">{{ __('home.comparison_row_complexity_label') }}</th>
-                                <td class="px-5 py-4">{{ __('home.comparison_row_complexity_dineflow') }}</td>
-                                <td class="px-5 py-4">{{ __('home.comparison_row_complexity_traditional') }}</td>
-                            </tr>
-                            <tr class="bg-brand-soft/10">
-                                <th scope="row" class="px-5 py-4 font-semibold text-brand-dark">{{ __('home.comparison_row_fit_label') }}</th>
-                                <td class="px-5 py-4">{{ __('home.comparison_row_fit_dineflow') }}</td>
-                                <td class="px-5 py-4">{{ __('home.comparison_row_fit_traditional') }}</td>
-                            </tr>
-                            <tr class="bg-white">
-                                <th scope="row" class="px-5 py-4 font-semibold text-brand-dark">{{ __('home.comparison_row_flexibility_label') }}</th>
-                                <td class="px-5 py-4">{{ __('home.comparison_row_flexibility_dineflow') }}</td>
-                                <td class="px-5 py-4">{{ __('home.comparison_row_flexibility_traditional') }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="store-list" class="order-2 border-t border-brand-soft/50 bg-white py-16">
+    <section id="store-list" class="home-scroll-panel home-scroll-panel--catalog border-t border-brand-soft/50 bg-white py-16">
         <div class="mx-auto max-w-7xl px-6 lg:px-8">
             <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
                 <div>
@@ -420,7 +359,112 @@
         </div>
     </section>
 
-    <section id="how-it-works" class="order-5 border-t border-brand-soft/60 bg-white py-16">
+    <section id="why-dineflow" class="home-scroll-panel border-t border-brand-soft/60 bg-brand-soft/15 py-16">
+        <div class="mx-auto max-w-7xl px-6 lg:px-8">
+            <div class="max-w-4xl">
+                <span class="inline-flex items-center rounded-full border border-brand-primary/20 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary">
+                    {{ __('home.positioning_badge') }}
+                </span>
+                <h2 class="mt-5 text-3xl font-bold tracking-tight text-brand-dark sm:text-4xl">
+                    {{ __('home.positioning_title') }}
+                </h2>
+                <p class="mt-4 text-lg leading-8 text-brand-primary/80">
+                    {{ __('home.positioning_desc') }}
+                </p>
+            </div>
+
+            <div class="mt-8 grid gap-6 md:grid-cols-3">
+                <article class="rounded-[1.7rem] border border-brand-soft/70 bg-white p-6 shadow-[0_14px_36px_rgba(90,30,14,0.08)]">
+                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-soft/40 text-sm font-bold text-brand-primary">01</span>
+                    <h3 class="mt-4 text-xl font-bold text-brand-dark">{{ __('home.positioning_card_1_title') }}</h3>
+                    <p class="mt-3 text-base leading-7 text-brand-primary/75">{{ __('home.positioning_card_1_desc') }}</p>
+                </article>
+                <article class="rounded-[1.7rem] border border-brand-soft/70 bg-white p-6 shadow-[0_14px_36px_rgba(90,30,14,0.08)]">
+                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-soft/40 text-sm font-bold text-brand-primary">02</span>
+                    <h3 class="mt-4 text-xl font-bold text-brand-dark">{{ __('home.positioning_card_2_title') }}</h3>
+                    <p class="mt-3 text-base leading-7 text-brand-primary/75">{{ __('home.positioning_card_2_desc') }}</p>
+                </article>
+                <article class="rounded-[1.7rem] border border-brand-soft/70 bg-white p-6 shadow-[0_14px_36px_rgba(90,30,14,0.08)]">
+                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand-soft/40 text-sm font-bold text-brand-primary">03</span>
+                    <h3 class="mt-4 text-xl font-bold text-brand-dark">{{ __('home.positioning_card_3_title') }}</h3>
+                    <p class="mt-3 text-base leading-7 text-brand-primary/75">{{ __('home.positioning_card_3_desc') }}</p>
+                </article>
+            </div>
+
+            <div class="mt-8 rounded-[1.9rem] border border-brand-soft/70 bg-white p-7 shadow-[0_16px_40px_rgba(90,30,14,0.08)]">
+                <h3 class="text-2xl font-bold tracking-tight text-brand-dark">{{ __('home.positioning_fit_title') }}</h3>
+                <p class="mt-3 text-base leading-7 text-brand-primary/75">{{ __('home.positioning_fit_desc') }}</p>
+                <div class="mt-5 flex flex-wrap gap-2">
+                    @foreach ([
+                        __('home.positioning_fit_store_1'),
+                        __('home.positioning_fit_store_2'),
+                        __('home.positioning_fit_store_3'),
+                        __('home.positioning_fit_store_4'),
+                        __('home.positioning_fit_store_5'),
+                    ] as $fitStore)
+                        <span class="inline-flex items-center rounded-full border border-brand-soft/70 bg-brand-soft/20 px-4 py-2 text-sm font-semibold text-brand-primary">
+                            {{ $fitStore }}
+                        </span>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="compare-dineflow" class="home-scroll-panel border-t border-brand-soft/60 bg-white py-16">
+        <div class="mx-auto max-w-7xl px-6 lg:px-8">
+            <div class="max-w-4xl">
+                <span class="inline-flex items-center rounded-full border border-brand-soft/80 bg-brand-soft/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary">
+                    {{ __('home.comparison_badge') }}
+                </span>
+                <h2 class="mt-5 text-3xl font-bold tracking-tight text-brand-dark sm:text-4xl">{{ __('home.comparison_title') }}</h2>
+                <p class="mt-4 text-lg leading-8 text-brand-primary/80">{{ __('home.comparison_desc') }}</p>
+            </div>
+
+            <div class="mt-8 overflow-hidden rounded-[1.7rem] border border-brand-soft/70 shadow-[0_16px_36px_rgba(90,30,14,0.08)]">
+                <div class="overflow-x-auto bg-white">
+                    <table class="min-w-full text-left text-sm text-brand-primary/80">
+                        <thead class="bg-brand-dark text-white">
+                            <tr>
+                                <th class="px-5 py-4 font-semibold">{{ __('home.comparison_col_dimension') }}</th>
+                                <th class="px-5 py-4 font-semibold">{{ __('home.comparison_col_dineflow') }}</th>
+                                <th class="px-5 py-4 font-semibold">{{ __('home.comparison_col_traditional') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-brand-soft/70">
+                            <tr class="bg-white">
+                                <th scope="row" class="px-5 py-4 font-semibold text-brand-dark">{{ __('home.comparison_row_cost_label') }}</th>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_cost_dineflow') }}</td>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_cost_traditional') }}</td>
+                            </tr>
+                            <tr class="bg-brand-soft/10">
+                                <th scope="row" class="px-5 py-4 font-semibold text-brand-dark">{{ __('home.comparison_row_speed_label') }}</th>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_speed_dineflow') }}</td>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_speed_traditional') }}</td>
+                            </tr>
+                            <tr class="bg-white">
+                                <th scope="row" class="px-5 py-4 font-semibold text-brand-dark">{{ __('home.comparison_row_complexity_label') }}</th>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_complexity_dineflow') }}</td>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_complexity_traditional') }}</td>
+                            </tr>
+                            <tr class="bg-brand-soft/10">
+                                <th scope="row" class="px-5 py-4 font-semibold text-brand-dark">{{ __('home.comparison_row_fit_label') }}</th>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_fit_dineflow') }}</td>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_fit_traditional') }}</td>
+                            </tr>
+                            <tr class="bg-white">
+                                <th scope="row" class="px-5 py-4 font-semibold text-brand-dark">{{ __('home.comparison_row_flexibility_label') }}</th>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_flexibility_dineflow') }}</td>
+                                <td class="px-5 py-4">{{ __('home.comparison_row_flexibility_traditional') }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="how-it-works" class="home-scroll-panel border-t border-brand-soft/60 bg-white py-16">
         <div class="mx-auto max-w-7xl px-6 lg:px-8">
             <div class="mb-10 text-center">
                 <h2 class="inline-flex items-center gap-2 text-3xl font-bold tracking-tight text-brand-dark">
@@ -467,7 +511,7 @@
         </div>
     </section>
 
-    <section id="merchant-flow" class="order-6 border-t border-brand-soft/60 bg-brand-soft/20 py-16">
+    <section id="merchant-flow" class="home-scroll-panel border-t border-brand-soft/60 bg-brand-soft/20 py-16">
         <div class="mx-auto max-w-7xl px-6 lg:px-8">
             <div class="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
                 <div>

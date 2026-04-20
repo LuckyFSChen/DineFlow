@@ -164,5 +164,12 @@ return [
     'full_intro_join_title' => 'Ready to upgrade your store operations into a system?',
     'full_intro_join_desc' => 'Start building your DineFlow workflow today and run orders, kitchen, and management with more stability.',
     'full_intro_join_button' => 'Join DineFlow Now',
+    'video_play' => 'Play video',
+    'video_pause' => 'Pause video',
+    'video_mute' => 'Mute video',
+    'video_unmute' => 'Unmute video',
+    'video_fullscreen_enter' => 'Enter fullscreen',
+    'video_fullscreen_exit' => 'Exit fullscreen',
+    'video_fallback' => 'Your browser does not support embedded video playback.',
     'footer_subtitle' => 'QR Code Ordering Experience Platform',
 ];

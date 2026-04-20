@@ -552,10 +552,286 @@ const bootFlatpickr = () => {
     });
 };
 
+const getFullscreenElement = () => document.fullscreenElement
+    || document.webkitFullscreenElement
+    || document.msFullscreenElement
+    || null;
+
+const isVideoFullscreen = (video) => {
+    if (!(video instanceof HTMLVideoElement)) {
+        return false;
+    }
+
+    return getFullscreenElement() === video || video.webkitDisplayingFullscreen === true;
+};
+
+const syncMarketingVideoState = (root, video, playToggle, muteToggle, fullscreenToggle) => {
+    const isPaused = video.paused;
+    const isMuted = video.muted;
+    const isFullscreen = isVideoFullscreen(video);
+    const playLabel = isPaused ? (root.dataset.labelPlay || 'Play video') : (root.dataset.labelPause || 'Pause video');
+    const muteLabel = isMuted ? (root.dataset.labelUnmute || 'Unmute video') : (root.dataset.labelMute || 'Mute video');
+    const fullscreenLabel = isFullscreen
+        ? (root.dataset.labelFullscreenExit || 'Exit fullscreen')
+        : (root.dataset.labelFullscreenEnter || 'Enter fullscreen');
+
+    root.classList.toggle('is-paused', isPaused);
+    root.classList.toggle('is-playing', !isPaused);
+    root.classList.toggle('is-muted', isMuted);
+    root.classList.toggle('is-fullscreen', isFullscreen);
+    video.controls = isFullscreen;
+    video.style.objectFit = isFullscreen ? 'contain' : '';
+    video.style.background = isFullscreen ? '#000' : '';
+    video.style.transform = isFullscreen ? 'none' : '';
+    video.style.filter = isFullscreen ? 'none' : '';
+
+    if (playToggle instanceof HTMLButtonElement) {
+        playToggle.setAttribute('aria-label', playLabel);
+        playToggle.setAttribute('title', playLabel);
+        const labelNode = playToggle.querySelector('[data-video-toggle-play-label]');
+        if (labelNode) {
+            labelNode.textContent = playLabel;
+        }
+    }
+
+    if (muteToggle instanceof HTMLButtonElement) {
+        muteToggle.setAttribute('aria-label', muteLabel);
+        muteToggle.setAttribute('title', muteLabel);
+        const labelNode = muteToggle.querySelector('[data-video-toggle-mute-label]');
+        if (labelNode) {
+            labelNode.textContent = muteLabel;
+        }
+    }
+
+    if (fullscreenToggle instanceof HTMLButtonElement) {
+        fullscreenToggle.setAttribute('aria-label', fullscreenLabel);
+        fullscreenToggle.setAttribute('title', fullscreenLabel);
+        const labelNode = fullscreenToggle.querySelector('[data-video-toggle-fullscreen-label]');
+        if (labelNode) {
+            labelNode.textContent = fullscreenLabel;
+        }
+    }
+};
+
+const initMarketingVideo = (root) => {
+    if (!(root instanceof Element) || root.dataset.marketingVideoReady === '1') {
+        return;
+    }
+
+    const video = root.querySelector('[data-marketing-video]');
+    if (!(video instanceof HTMLVideoElement)) {
+        return;
+    }
+
+    root.dataset.marketingVideoReady = '1';
+
+    const playToggle = root.querySelector('[data-video-toggle-play]');
+    const muteToggle = root.querySelector('[data-video-toggle-mute]');
+    const fullscreenToggle = root.querySelector('[data-video-toggle-fullscreen]');
+    const stage = root.querySelector('[data-marketing-video-stage]');
+    const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const autoplayEnabled = root.dataset.videoAutoplay !== 'false' && !prefersReducedMotion;
+
+    const playVideo = () => {
+        root.dataset.userPaused = '0';
+        const result = video.play();
+        if (result && typeof result.catch === 'function') {
+            result.catch(() => {
+                syncMarketingVideoState(root, video, playToggle, muteToggle, fullscreenToggle);
+            });
+        }
+    };
+
+    const pauseVideo = (userInitiated = false) => {
+        if (userInitiated) {
+            root.dataset.userPaused = '1';
+        }
+        video.pause();
+    };
+
+    const handleStageToggle = () => {
+        if (video.paused) {
+            playVideo();
+            return;
+        }
+
+        pauseVideo(true);
+    };
+
+    if (video.readyState >= 2) {
+        root.classList.add('is-ready');
+    }
+
+    video.addEventListener('loadeddata', () => {
+        root.classList.add('is-ready');
+        syncMarketingVideoState(root, video, playToggle, muteToggle, fullscreenToggle);
+    });
+
+    video.addEventListener('play', () => {
+        syncMarketingVideoState(root, video, playToggle, muteToggle, fullscreenToggle);
+    });
+
+    video.addEventListener('pause', () => {
+        syncMarketingVideoState(root, video, playToggle, muteToggle, fullscreenToggle);
+    });
+
+    video.addEventListener('volumechange', () => {
+        syncMarketingVideoState(root, video, playToggle, muteToggle, fullscreenToggle);
+    });
+
+    if (playToggle instanceof HTMLButtonElement) {
+        playToggle.addEventListener('click', (event) => {
+            event.preventDefault();
+            handleStageToggle();
+        });
+    }
+
+    if (muteToggle instanceof HTMLButtonElement) {
+        muteToggle.addEventListener('click', (event) => {
+            event.preventDefault();
+            video.muted = !video.muted;
+            syncMarketingVideoState(root, video, playToggle, muteToggle, fullscreenToggle);
+        });
+    }
+
+    const requestFullscreen = () => {
+        if (typeof video.requestFullscreen === 'function') {
+            return video.requestFullscreen();
+        }
+        if (typeof video.webkitEnterFullscreen === 'function') {
+            video.webkitEnterFullscreen();
+            return null;
+        }
+        if (typeof video.webkitRequestFullscreen === 'function') {
+            return video.webkitRequestFullscreen();
+        }
+        if (typeof video.msRequestFullscreen === 'function') {
+            return video.msRequestFullscreen();
+        }
+        return null;
+    };
+
+    const exitFullscreen = () => {
+        if (typeof video.webkitExitFullscreen === 'function' && video.webkitDisplayingFullscreen) {
+            video.webkitExitFullscreen();
+            return null;
+        }
+        if (typeof document.exitFullscreen === 'function') {
+            return document.exitFullscreen();
+        }
+        if (typeof document.webkitExitFullscreen === 'function') {
+            return document.webkitExitFullscreen();
+        }
+        if (typeof document.msExitFullscreen === 'function') {
+            return document.msExitFullscreen();
+        }
+        return null;
+    };
+
+    if (fullscreenToggle instanceof HTMLButtonElement) {
+        fullscreenToggle.addEventListener('click', async (event) => {
+            event.preventDefault();
+
+            try {
+                if (isVideoFullscreen(video)) {
+                    await exitFullscreen();
+                } else {
+                    await requestFullscreen();
+                }
+            } catch (_error) {
+                // Ignore rejected fullscreen requests and keep the current state.
+            } finally {
+                syncMarketingVideoState(root, video, playToggle, muteToggle, fullscreenToggle);
+            }
+        });
+    }
+
+    ['fullscreenchange', 'webkitfullscreenchange', 'msfullscreenchange'].forEach((eventName) => {
+        document.addEventListener(eventName, () => {
+            syncMarketingVideoState(root, video, playToggle, muteToggle, fullscreenToggle);
+        });
+    });
+
+    if (stage instanceof Element) {
+        stage.addEventListener('click', (event) => {
+            if (event.target instanceof Element && event.target.closest('button')) {
+                return;
+            }
+
+            handleStageToggle();
+        });
+    }
+
+    if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    if (autoplayEnabled && root.dataset.userPaused !== '1') {
+                        playVideo();
+                    }
+                    return;
+                }
+
+                if (!video.paused) {
+                    video.pause();
+                }
+            });
+        }, {
+            threshold: 0.45,
+        });
+
+        observer.observe(root);
+    } else if (autoplayEnabled) {
+        playVideo();
+    }
+
+    if (autoplayEnabled) {
+        playVideo();
+    }
+
+    syncMarketingVideoState(root, video, playToggle, muteToggle, fullscreenToggle);
+};
+
+const bindMarketingVideos = (root = document) => {
+    if (!(root instanceof Document || root instanceof Element)) {
+        return;
+    }
+
+    if (root instanceof Element && root.matches('[data-marketing-video-root]')) {
+        initMarketingVideo(root);
+    }
+
+    root.querySelectorAll('[data-marketing-video-root]').forEach(initMarketingVideo);
+};
+
+const bootMarketingVideos = () => {
+    bindMarketingVideos();
+
+    if (!document.body || typeof MutationObserver === 'undefined') {
+        return;
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node instanceof Element) {
+                    bindMarketingVideos(node);
+                }
+            });
+        });
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+    });
+};
+
 const bootFrontendEnhancements = () => {
     bootPhoneFormatter();
     bootDataTables();
     bootFlatpickr();
+    bootMarketingVideos();
 };
 
 if (document.readyState === 'loading') {

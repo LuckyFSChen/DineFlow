@@ -164,5 +164,12 @@ return [
     'full_intro_join_title' => 'Sẵn sàng nâng cấp vận hành cửa hàng theo hướng hệ thống?',
     'full_intro_join_desc' => 'Bắt đầu xây dựng quy trình DineFlow ngay hôm nay để quản lý đơn hàng và vận hành ổn định hơn.',
     'full_intro_join_button' => 'Tham Gia DineFlow Ngay',
+    'video_play' => 'Phát video',
+    'video_pause' => 'Tạm dừng video',
+    'video_mute' => 'Tắt tiếng',
+    'video_unmute' => 'Bật tiếng',
+    'video_fullscreen_enter' => 'Mở toàn màn hình',
+    'video_fullscreen_exit' => 'Thoát toàn màn hình',
+    'video_fallback' => 'Trình duyệt của bạn không hỗ trợ phát video nhúng.',
     'footer_subtitle' => 'Nền Tảng Trải Nghiệm Đặt Món Bằng QR Code',
 ];

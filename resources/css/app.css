@@ -18,6 +18,281 @@
 	--admin-card-border: rgba(140, 173, 189, 0.32);
 }
 
+.home-scroll-shell {
+	isolation: isolate;
+}
+
+.home-scroll-panel {
+	position: relative;
+	scroll-snap-align: start;
+	scroll-snap-stop: normal;
+	scroll-margin-top: calc(var(--public-nav-height, 4rem) + 0.5rem);
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	min-height: auto;
+	padding-top: clamp(2.75rem, 5vw, 4rem);
+	padding-bottom: clamp(3.75rem, 6vw, 5.25rem);
+}
+
+.home-scroll-panel > .mx-auto {
+	width: 100%;
+}
+
+.home-scroll-panel--hero {
+	align-items: center;
+	scroll-snap-stop: always;
+	min-height: calc(100svh - var(--public-nav-height, 4rem));
+	padding-top: clamp(2.25rem, 4vw, 3.5rem);
+	padding-bottom: clamp(3rem, 5vw, 4.5rem);
+}
+
+.home-scroll-panel--catalog {
+	align-items: flex-start;
+}
+
+@media (max-width: 1023px) {
+	.home-scroll-panel,
+	.home-scroll-panel--hero {
+		min-height: auto;
+		padding-block: clamp(3.5rem, 9vw, 5rem);
+	}
+}
+
+.marketing-video-root {
+	position: relative;
+}
+
+.marketing-video-shell {
+	position: relative;
+}
+
+.marketing-video-glow {
+	position: absolute;
+	inset: 14% 12% 8%;
+	border-radius: 2rem;
+	background:
+		radial-gradient(circle at top, rgba(255, 214, 112, 0.22), transparent 48%),
+		radial-gradient(circle at bottom, rgba(236, 144, 87, 0.24), transparent 55%);
+	filter: blur(28px);
+	opacity: 0.9;
+	pointer-events: none;
+}
+
+.marketing-video-device {
+	position: relative;
+	max-width: 22rem;
+	margin-inline: auto;
+	padding: 0.75rem;
+	border-radius: 2.1rem;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	background:
+		linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04)),
+		linear-gradient(150deg, rgba(12, 17, 24, 0.96), rgba(34, 39, 49, 0.92));
+	box-shadow:
+		0 30px 80px rgba(0, 0, 0, 0.36),
+		inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.marketing-video-device-top {
+	position: absolute;
+	top: 0.65rem;
+	left: 50%;
+	width: 34%;
+	height: 1.2rem;
+	transform: translateX(-50%);
+	border-radius: 999px;
+	background: rgba(10, 10, 12, 0.92);
+	z-index: 2;
+}
+
+.marketing-video-device-top::after {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 28%;
+	height: 0.22rem;
+	transform: translate(-50%, -50%);
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.18);
+}
+
+.marketing-video-screen {
+	position: relative;
+	overflow: hidden;
+	border-radius: 1.55rem;
+	background:
+		radial-gradient(circle at top, rgba(255, 214, 112, 0.16), transparent 38%),
+		linear-gradient(180deg, rgba(9, 10, 14, 0.96), rgba(16, 17, 24, 0.98));
+	isolation: isolate;
+}
+
+.marketing-video-screen::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: inherit;
+	pointer-events: none;
+}
+
+.marketing-video-media {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	background: #050608;
+	transition:
+		transform 420ms ease,
+		filter 280ms ease,
+		opacity 220ms ease;
+}
+
+.marketing-video-root.is-ready:hover .marketing-video-media {
+	transform: scale(1.022);
+}
+
+.marketing-video-root.is-paused .marketing-video-media {
+	filter: saturate(0.88) brightness(0.9);
+}
+
+.marketing-video-media:fullscreen,
+.marketing-video-media:-webkit-full-screen,
+.marketing-video-root.is-fullscreen .marketing-video-media {
+	object-fit: contain !important;
+	background: #000 !important;
+	transform: none !important;
+	filter: none !important;
+}
+
+.marketing-video-sheen {
+	position: absolute;
+	inset: 0;
+	background:
+		linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 22%, transparent 68%, rgba(0, 0, 0, 0.22)),
+		linear-gradient(135deg, rgba(255, 255, 255, 0.16), transparent 34%);
+	pointer-events: none;
+}
+
+.marketing-video-badge-wrap {
+	position: absolute;
+	top: 1rem;
+	left: 1rem;
+	z-index: 2;
+}
+
+.marketing-video-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45rem;
+	padding: 0.45rem 0.7rem;
+	border-radius: 999px;
+	border: 1px solid rgba(255, 255, 255, 0.18);
+	background: rgba(255, 255, 255, 0.12);
+	backdrop-filter: blur(12px);
+	font-size: 0.72rem;
+	font-weight: 700;
+	line-height: 1;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: #fff8d6;
+}
+
+.marketing-video-badge::before {
+	content: '';
+	width: 0.45rem;
+	height: 0.45rem;
+	border-radius: 999px;
+	background: #f6d05a;
+	box-shadow: 0 0 0 0.38rem rgba(246, 208, 90, 0.2);
+}
+
+.marketing-video-controls {
+	position: absolute;
+	right: 1rem;
+	bottom: 1rem;
+	display: flex;
+	gap: 0.65rem;
+	z-index: 2;
+}
+
+.marketing-video-control {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.85rem;
+	height: 2.85rem;
+	border-radius: 999px;
+	border: 1px solid rgba(255, 255, 255, 0.18);
+	background: rgba(7, 10, 17, 0.52);
+	color: #ffffff;
+	backdrop-filter: blur(10px);
+	box-shadow: 0 10px 26px rgba(0, 0, 0, 0.24);
+	transition:
+		transform 180ms ease,
+		background-color 180ms ease,
+		border-color 180ms ease;
+}
+
+.marketing-video-control:hover {
+	transform: translateY(-1px);
+	background: rgba(20, 26, 38, 0.72);
+	border-color: rgba(255, 255, 255, 0.28);
+}
+
+.marketing-video-control:focus-visible {
+	outline: 2px solid rgba(255, 214, 112, 0.9);
+	outline-offset: 3px;
+}
+
+.marketing-video-icon {
+	width: 1.2rem;
+	height: 1.2rem;
+}
+
+.marketing-video-icon--pause,
+.marketing-video-icon--unmute,
+.marketing-video-icon--fullscreen-exit {
+	display: none;
+}
+
+.marketing-video-root.is-playing [data-video-toggle-play] .marketing-video-icon--play,
+.marketing-video-root.is-muted [data-video-toggle-mute] .marketing-video-icon--mute {
+	display: none;
+}
+
+.marketing-video-root.is-playing [data-video-toggle-play] .marketing-video-icon--pause,
+.marketing-video-root.is-muted [data-video-toggle-mute] .marketing-video-icon--unmute {
+	display: block;
+}
+
+.marketing-video-root:not(.is-muted) [data-video-toggle-mute] .marketing-video-icon--mute {
+	display: block;
+}
+
+.marketing-video-root:not(.is-muted) [data-video-toggle-mute] .marketing-video-icon--unmute {
+	display: none;
+}
+
+.marketing-video-root.is-fullscreen [data-video-toggle-fullscreen] .marketing-video-icon--fullscreen-enter {
+	display: none;
+}
+
+.marketing-video-root.is-fullscreen [data-video-toggle-fullscreen] .marketing-video-icon--fullscreen-exit {
+	display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.marketing-video-media,
+	.marketing-video-control {
+		transition: none;
+	}
+
+	.marketing-video-root.is-ready:hover .marketing-video-media {
+		transform: none;
+	}
+}
+
 body.is-admin-area {
 	font-family: 'Plus Jakarta Sans', 'IBM Plex Sans TC', sans-serif;
 	color: var(--admin-ink);

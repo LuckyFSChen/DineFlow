@@ -277,46 +277,83 @@
         <div class="intro-hero-orb absolute -left-12 top-20 h-52 w-52 rounded-full bg-brand-highlight/20 blur-3xl"></div>
         <div class="intro-hero-orb intro-hero-orb--slow absolute -right-10 bottom-6 h-48 w-48 rounded-full bg-brand-soft/20 blur-3xl"></div>
 
-        <div class="relative mx-auto max-w-7xl px-6 py-16 lg:px-8 lg:py-24">
-            <span class="intro-reveal inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-semibold tracking-[0.2em] text-brand-highlight" data-reveal>
-                {{ __('home.full_intro_badge') }}
-            </span>
-            <h1 class="intro-reveal mt-6 max-w-4xl text-4xl font-bold tracking-tight sm:text-5xl" data-reveal style="--delay: 80ms;">
-                {{ __('home.full_intro_title') }}
-            </h1>
-            <p class="intro-reveal mt-5 max-w-3xl text-lg leading-8 text-white/80 sm:text-xl sm:leading-9" data-reveal style="--delay: 140ms;">
-                {{ __('home.full_intro_desc') }}
-            </p>
+        <div class="relative mx-auto max-w-[92rem] px-6 py-16 lg:px-8 lg:py-24 2xl:max-w-[98rem]">
+            <div class="grid gap-12 lg:grid-cols-[minmax(0,1.08fr)_minmax(30rem,0.92fr)] lg:items-center">
+                <div class="lg:pr-4">
+                    <span class="intro-reveal inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-sm font-semibold tracking-[0.2em] text-brand-highlight" data-reveal>
+                        {{ __('home.full_intro_badge') }}
+                    </span>
+                    <h1 class="intro-reveal mt-6 max-w-5xl text-4xl font-bold tracking-tight sm:text-5xl xl:text-[3.55rem] xl:leading-[1.08]" data-reveal style="--delay: 80ms;">
+                        {{ __('home.full_intro_title') }}
+                    </h1>
+                    <p class="intro-reveal mt-5 max-w-3xl text-lg leading-8 text-white/80 sm:text-xl sm:leading-9" data-reveal style="--delay: 140ms;">
+                        {{ __('home.full_intro_desc') }}
+                    </p>
 
-            <div class="intro-reveal mt-8 flex flex-wrap gap-4" data-reveal style="--delay: 220ms;">
-                @auth
-                    <a href="{{ auth()->user()?->role === 'customer' ? route('join.merchant.register') : route('dashboard') }}" class="intro-cta-pulse inline-flex items-center gap-2 rounded-2xl bg-brand-highlight px-5 py-3 text-base font-semibold text-brand-dark transition hover:-translate-y-0.5 hover:bg-brand-soft">
-                        {{ __('home.full_intro_join_button') }}
-                    </a>
-                @else
-                    <a href="{{ route('register', ['account_type' => 'merchant']) }}" class="intro-cta-pulse inline-flex items-center gap-2 rounded-2xl bg-brand-highlight px-5 py-3 text-base font-semibold text-brand-dark transition hover:-translate-y-0.5 hover:bg-brand-soft">
-                        {{ __('home.full_intro_join_button') }}
-                    </a>
-                @endauth
-                <a href="{{ route('home') }}" class="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-base font-semibold text-white transition hover:bg-white/15">
-                    {{ __('home.full_intro_back_home') }}
-                </a>
-            </div>
-
-            <div class="mt-10 grid max-w-5xl gap-4 md:grid-cols-3">
-                @foreach ($heroSnapshots as $snapshot)
-                    <div class="intro-reveal intro-hero-strip overflow-hidden rounded-2xl border border-white/15 bg-white/10 p-2 backdrop-blur" data-reveal style="--delay: {{ 280 + ($loop->index * 70) }}ms;">
-                        <div class="overflow-hidden rounded-xl border border-white/10 bg-black/20">
-                            <img
-                                src="{{ $snapshot['image'] }}"
-                                alt="{{ $snapshot['title'] }}"
-                                loading="lazy"
-                                class="h-32 w-full object-cover object-top"
-                            >
-                        </div>
-                        <p class="mt-2 text-xs font-semibold text-white/80">{{ $snapshot['title'] }}</p>
+                    <div class="intro-reveal mt-8 flex flex-wrap gap-4" data-reveal style="--delay: 220ms;">
+                        @auth
+                            <a href="{{ auth()->user()?->role === 'customer' ? route('join.merchant.register') : route('dashboard') }}" class="intro-cta-pulse inline-flex items-center gap-2 rounded-2xl bg-brand-highlight px-5 py-3 text-base font-semibold text-brand-dark transition hover:-translate-y-0.5 hover:bg-brand-soft">
+                                {{ __('home.full_intro_join_button') }}
+                            </a>
+                        @else
+                            <a href="{{ route('register', ['account_type' => 'merchant']) }}" class="intro-cta-pulse inline-flex items-center gap-2 rounded-2xl bg-brand-highlight px-5 py-3 text-base font-semibold text-brand-dark transition hover:-translate-y-0.5 hover:bg-brand-soft">
+                                {{ __('home.full_intro_join_button') }}
+                            </a>
+                        @endauth
+                        <a href="{{ route('home') }}" class="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-base font-semibold text-white transition hover:bg-white/15">
+                            {{ __('home.full_intro_back_home') }}
+                        </a>
                     </div>
-                @endforeach
+
+                    <div class="mt-10 grid max-w-5xl gap-4 md:grid-cols-3">
+                        @foreach ($heroSnapshots as $snapshot)
+                            <div class="intro-reveal intro-hero-strip overflow-hidden rounded-2xl border border-white/15 bg-white/10 p-2 backdrop-blur" data-reveal style="--delay: {{ 280 + ($loop->index * 70) }}ms;">
+                                <div class="overflow-hidden rounded-xl border border-white/10 bg-black/20">
+                                    <img
+                                        src="{{ $snapshot['image'] }}"
+                                        alt="{{ $snapshot['title'] }}"
+                                        loading="lazy"
+                                        class="h-32 w-full object-cover object-top"
+                                    >
+                                </div>
+                                <p class="mt-2 text-xs font-semibold text-white/80">{{ $snapshot['title'] }}</p>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="intro-reveal" data-reveal style="--delay: 180ms;">
+                    <div class="rounded-[2rem] border border-white/15 bg-white/10 p-5 shadow-[0_28px_80px_rgba(0,0,0,0.26)] backdrop-blur sm:p-6 xl:p-7">
+                        <div class="max-w-xl">
+                            <div class="text-xs font-semibold uppercase tracking-[0.22em] text-brand-highlight/80">
+                                {{ __('home.badge_qr_ordering') }}
+                            </div>
+                            <h2 class="mt-3 text-2xl font-bold text-white sm:text-[2rem]">
+                                {{ __('home.full_intro_flow_title') }}
+                            </h2>
+                            <p class="mt-3 text-base leading-7 text-white/75">
+                                {{ __('home.full_intro_flow_desc') }}
+                            </p>
+                        </div>
+
+                        <div class="mt-6 flex justify-center">
+                            <x-marketing-video
+                                class="mx-auto w-full max-w-[22rem] sm:max-w-[24rem]"
+                                :src="asset('video/dineflow_short_video_cta.mp4')"
+                                :badge="__('home.full_intro_badge')"
+                            />
+                        </div>
+
+                        <div class="mt-5 grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+                            @foreach ($kpiCards as $kpi)
+                                <div class="rounded-2xl border border-white/10 bg-white/10 p-4">
+                                    <div class="text-xs font-semibold uppercase tracking-[0.18em] text-brand-highlight/80">{{ $kpi['number'] }}</div>
+                                    <div class="mt-2 text-sm font-semibold leading-6 text-white">{{ $kpi['title'] }}</div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
