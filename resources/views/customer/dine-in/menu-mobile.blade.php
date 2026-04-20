@@ -177,7 +177,13 @@
                                         @endforeach
                                     </div>
                                 @endif
-                                <a href="{{ route('customer.dinein.cart.show', ['store' => $store, 'table' => $table]) }}" class="inline-flex items-center justify-center rounded-2xl bg-brand-highlight px-5 py-3 text-sm font-semibold text-brand-dark shadow-lg shadow-brand-highlight/30 transition hover:-translate-y-0.5 hover:bg-brand-soft">{{ __('customer.view_cart') }}</a>
+                                <div class="flex items-center gap-3">
+                                    <form method="POST" action="{{ route('customer.dinein.cart.clear', ['store' => $store, 'table' => $table]) }}" class="{{ $cartCount > 0 ? '' : 'hidden' }}" data-clear-cart-container onsubmit="return confirm(@js(__('customer.clear_cart_confirm')));">
+                                        @csrf
+                                        <button type="submit" class="inline-flex items-center justify-center rounded-2xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-white/20">{{ __('customer.clear_cart') }}</button>
+                                    </form>
+                                    <a href="{{ route('customer.dinein.cart.show', ['store' => $store, 'table' => $table]) }}" class="inline-flex items-center justify-center rounded-2xl bg-brand-highlight px-5 py-3 text-sm font-semibold text-brand-dark shadow-lg shadow-brand-highlight/30 transition hover:-translate-y-0.5 hover:bg-brand-soft">{{ __('customer.view_cart') }}</a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -284,18 +290,18 @@
                                                 @elseif($product->is_sold_out)
                                                     <div class="rounded-2xl bg-slate-100 px-3 py-3 text-center text-sm font-medium text-slate-500">{{ __('customer.item_not_available') }}</div>
                                                 @else
-                                                    <form method="POST" action="{{ route('customer.dinein.cart.items.store', ['store' => $store, 'table' => $table]) }}" class="flex items-center justify-between gap-3" data-add-to-cart-form>
+                                                    <form method="POST" action="{{ route('customer.dinein.cart.items.store', ['store' => $store, 'table' => $table]) }}" class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" data-add-to-cart-form>
                                                         @csrf
                                                         <input type="hidden" name="product_id" value="{{ $product->id }}">
                                                         <input type="hidden" name="option_payload" value="" data-option-payload>
                                                         <input type="hidden" name="item_note" value="" data-item-note>
-                                                        <div class="inline-flex h-12 items-center rounded-2xl border border-brand-soft bg-brand-soft/20 p-1 shadow-sm">
+                                                        <div class="inline-flex h-12 w-full items-center justify-center rounded-2xl border border-brand-soft bg-brand-soft/20 p-1 shadow-sm sm:w-auto sm:justify-start">
                                                             <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold text-brand-primary transition hover:bg-white" data-qty-decrement>-</button>
                                                             <input type="hidden" name="qty" value="1" data-qty-input>
                                                             <span class="flex min-w-[2.8rem] items-center justify-center text-sm font-semibold text-brand-dark" data-qty-display>1</span>
                                                             <button type="button" class="flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold text-brand-primary transition hover:bg-white" data-qty-increment>+</button>
                                                         </div>
-                                                        <button type="submit" class="inline-flex h-12 items-center justify-center rounded-2xl bg-brand-primary px-5 text-sm font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:-translate-y-0.5 hover:bg-brand-accent hover:text-brand-dark" data-add-to-cart-button data-option-groups='@json($product->option_groups ?? [])' data-allow-item-note="{{ $product->allow_item_note ? '1' : '0' }}" data-product-name="{{ $product->name }}">{{ __('customer.add_to_cart') }}</button>
+                                                        <button type="submit" class="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-brand-primary px-5 text-sm font-semibold text-white shadow-lg shadow-brand-primary/20 transition hover:-translate-y-0.5 hover:bg-brand-accent hover:text-brand-dark sm:w-auto sm:min-w-[132px]" data-add-to-cart-button data-option-groups='@json($product->option_groups ?? [])' data-allow-item-note="{{ $product->allow_item_note ? '1' : '0' }}" data-product-name="{{ $product->name }}">{{ __('customer.add_to_cart') }}</button>
                                                     </form>
                                                 @endif
                                             </div>
@@ -351,15 +357,21 @@
                 </div>
 
                 <div class="border-t border-brand-soft/60 p-4">
-                    <a href="{{ route('customer.dinein.cart.show', ['store' => $store, 'table' => $table]) }}" class="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-brand-highlight px-4 text-sm font-semibold text-brand-dark transition hover:bg-brand-soft" data-cart-preview-target>{{ __('customer.view_cart') }}{{ $cartCount > 0 ? ' (' . $cartCount . ')' : '' }}</a>
+                    <div class="flex items-center gap-3">
+                        <form method="POST" action="{{ route('customer.dinein.cart.clear', ['store' => $store, 'table' => $table]) }}" class="{{ $cartCount > 0 ? '' : 'hidden' }} flex-1" data-clear-cart-container onsubmit="return confirm(@js(__('customer.clear_cart_confirm')));">
+                            @csrf
+                            <button type="submit" class="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-brand-soft/70 bg-white px-4 text-sm font-semibold text-brand-primary transition hover:bg-brand-soft/40">{{ __('customer.clear_cart') }}</button>
+                        </form>
+                        <a href="{{ route('customer.dinein.cart.show', ['store' => $store, 'table' => $table]) }}" class="inline-flex h-11 flex-1 items-center justify-center rounded-2xl bg-brand-highlight px-4 text-sm font-semibold text-brand-dark transition hover:bg-brand-soft" data-cart-preview-target>{{ __('customer.view_cart') }}{{ $cartCount > 0 ? ' (' . $cartCount . ')' : '' }}</a>
+                    </div>
                 </div>
             </div>
         </aside>
         @endif
 
-        <div class="fixed inset-x-0 bottom-0 z-40 border-t border-brand-soft/60 bg-white/95 px-4 py-4 backdrop-blur">
-            <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-[1.75rem] bg-brand-dark px-4 py-3 text-white shadow-[0_18px_44px_rgba(90,30,14,0.24)] transition-transform duration-200" data-cart-bar>
-                <div>
+        <div class="fixed inset-x-0 bottom-0 z-40 border-t border-brand-soft/60 bg-white/95 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 backdrop-blur sm:py-4">
+            <div class="mx-auto flex max-w-7xl flex-col gap-3 rounded-[1.75rem] bg-brand-dark px-4 py-3 text-white shadow-[0_18px_44px_rgba(90,30,14,0.24)] transition-transform duration-200 sm:flex-row sm:items-center sm:justify-between" data-cart-bar>
+                <div class="min-w-0 flex-1">
                     <p class="text-xs uppercase tracking-[0.2em] text-brand-highlight/80">{{ __('customer.table_no') }} {{ $table->table_no }}</p>
                     <p class="text-sm font-semibold">{{ $orderingAvailable ? __('customer.cart_bar_ordering_available') : __('customer.cart_bar_not_available') }}</p>
                     <p class="mt-1 text-xs text-white/70" data-cart-bar-summary>{{ $cartCount > 0 ? __('customer.cart_bar_total', ['count' => $cartCount, 'currency' => $currencySymbol, 'total' => number_format($cartTotal)]) : __('customer.cart_bar_empty') }}</p>
@@ -371,7 +383,13 @@
                         </div>
                     @endif
                 </div>
-                <a href="{{ route('customer.dinein.cart.show', ['store' => $store, 'table' => $table]) }}" class="inline-flex h-11 items-center justify-center rounded-2xl bg-brand-highlight px-4 text-sm font-semibold text-brand-dark transition hover:bg-brand-soft" data-cart-target>{{ __('customer.view_cart') }}{{ $cartCount > 0 ? ' (' . $cartCount . ')' : '' }}</a>
+                <div class="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-3">
+                    <form method="POST" action="{{ route('customer.dinein.cart.clear', ['store' => $store, 'table' => $table]) }}" class="{{ $cartCount > 0 ? '' : 'hidden' }} sm:flex-none" data-clear-cart-container onsubmit="return confirm(@js(__('customer.clear_cart_confirm')));">
+                        @csrf
+                        <button type="submit" class="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-4 text-sm font-semibold text-white transition hover:bg-white/20 sm:min-w-[112px]">{{ __('customer.clear_cart') }}</button>
+                    </form>
+                    <a href="{{ route('customer.dinein.cart.show', ['store' => $store, 'table' => $table]) }}" class="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-brand-highlight px-4 text-sm font-semibold text-brand-dark transition hover:bg-brand-soft sm:min-w-[132px]" data-cart-target>{{ __('customer.view_cart') }}{{ $cartCount > 0 ? ' (' . $cartCount . ')' : '' }}</a>
+                </div>
             </div>
         </div>
 
@@ -398,9 +416,31 @@
         const cartBar = document.querySelector('[data-cart-bar]');
         const cartBarSummary = document.querySelector('[data-cart-bar-summary]');
         const cartPreviewSummary = document.querySelector('[data-cart-preview-summary]');
+        const clearCartContainers = document.querySelectorAll('[data-clear-cart-container]');
         const cartPreviewList = document.querySelector('[data-cart-preview-list]');
         const cartPreviewWindow = document.querySelector('[data-cart-preview-window]');
         const cartPreviewHandle = document.querySelector('[data-cart-preview-handle]');
+        const cartSyncUrl = @json(route('customer.dinein.cart.sync', ['store' => $store, 'table' => $table]));
+        const cartBroadcastChannel = @json('dinein-cart.' . $store->id . '.' . $table->qr_token);
+        const dineInClientStorageKey = 'dinein-realtime-client-id';
+        const currentClientId = (() => {
+            try {
+                const existing = window.sessionStorage.getItem(dineInClientStorageKey);
+                if (existing) {
+                    return existing;
+                }
+
+                const generated = typeof window.crypto?.randomUUID === 'function'
+                    ? window.crypto.randomUUID()
+                    : `dinein-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+                window.sessionStorage.setItem(dineInClientStorageKey, generated);
+
+                return generated;
+            } catch (_error) {
+                return `dinein-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+            }
+        })();
         const modal = document.getElementById('option-modal');
         const modalTitle = document.getElementById('option-modal-title');
         const modalBody = document.getElementById('option-modal-body');
@@ -446,6 +486,10 @@
                 cartPreviewTarget.textContent = cart.link_label || '';
             }
 
+            clearCartContainers.forEach((container) => {
+                container.classList.toggle('hidden', Number(cart.count || 0) <= 0);
+            });
+
             if (cartPreviewList && typeof cart.preview_html === 'string') {
                 cartPreviewList.innerHTML = cart.preview_html;
                 activeSwipeItem = null;
@@ -453,7 +497,50 @@
             }
         };
 
-        const sendAddToCartRequest = async (form) => {
+        const fetchSyncedCart = async () => {
+            if (!cartSyncUrl) {
+                return null;
+            }
+
+            const response = await fetch(cartSyncUrl, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Cart sync failed: ${response.status}`);
+            }
+
+            return response.json();
+        };
+
+        const subscribeToCartUpdates = () => {
+            if (!window.Echo || !cartBroadcastChannel) {
+                return;
+            }
+
+            window.Echo.channel(cartBroadcastChannel)
+                .listen('.dinein.cart.updated', (event) => {
+                    if ((event?.source_client_id || '') === currentClientId) {
+                        return;
+                    }
+
+                    fetchSyncedCart()
+                        .then((payload) => {
+                            return applyAuthoritativeCart(payload);
+                        })
+                        .then(() => {
+                            pulseCartPreview();
+                        })
+                        .catch(() => {});
+                });
+        };
+
+        const sendCartMutationRequest = async (form) => {
             const formData = new FormData(form);
             const csrf = form.querySelector('input[name="_token"]')?.value || '';
 
@@ -464,6 +551,7 @@
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
+                    'X-DineIn-Client-Id': currentClientId,
                     ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
                 },
             });
@@ -471,12 +559,26 @@
             const payload = await response.json().catch(() => ({}));
 
             if (!response.ok) {
-                const message = payload?.message || payload?.errors?.product_id?.[0] || `Add to cart failed: ${response.status}`;
+                const message = payload?.message || payload?.errors?.product_id?.[0] || `Cart request failed: ${response.status}`;
                 throw new Error(message);
             }
 
             return payload;
         };
+
+        const applyAuthoritativeCart = async (payload = null) => {
+            if (payload?.cart) {
+                updateCartSummary(payload.cart);
+                return payload.cart;
+            }
+
+            const syncedPayload = await fetchSyncedCart();
+            updateCartSummary(syncedPayload?.cart);
+
+            return syncedPayload?.cart ?? null;
+        };
+
+        const sendAddToCartRequest = (form) => sendCartMutationRequest(form);
 
         const getCartFlyTarget = () => {
             if (cartPreviewTarget && cartPreviewWindow && cartPreviewWindow.offsetParent !== null) {
@@ -560,33 +662,21 @@
                     shell?.style.setProperty('--swipe-progress', '1');
                     item.classList.add('is-removing');
 
-                    const requestDelete = async () => {
-                        const formData = new FormData(removeForm);
-                        const csrf = removeForm.querySelector('input[name="_token"]')?.value || '';
+                    sendCartMutationRequest(removeForm)
+                        .then((payload) => applyAuthoritativeCart(payload))
+                        .then(() => {
+                            pulseCartPreview();
+                        })
+                        .catch(async () => {
+                            item.classList.remove('is-removing');
+                            resetItem();
 
-                        const response = await fetch(removeForm.action, {
-                            method: 'POST',
-                            body: formData,
-                            credentials: 'same-origin',
-                            headers: {
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest',
-                                ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
-                            },
+                            try {
+                                await applyAuthoritativeCart();
+                            } catch (_error) {
+                                window.location.reload();
+                            }
                         });
-
-                        if (!response.ok) {
-                            throw new Error(`Remove request failed: ${response.status}`);
-                        }
-                    };
-
-                    window.setTimeout(() => {
-                        shell?.remove();
-
-                        requestDelete().catch(() => {
-                            window.location.reload();
-                        });
-                    }, 180);
                 };
 
                 item.addEventListener('pointerdown', (event) => {
@@ -1053,7 +1143,9 @@
                     cartBar?.classList.remove('scale-[1.02]');
                     sendAddToCartRequest(form)
                         .then((payload) => {
-                            updateCartSummary(payload?.cart);
+                            return applyAuthoritativeCart(payload);
+                        })
+                        .then(() => {
                             syncQty(1);
                             const payloadInput = form.querySelector('[data-option-payload]');
                             if (payloadInput) {
@@ -1075,6 +1167,7 @@
 
         initCartPreviewWindow();
         initCartPreviewSwipe();
+        subscribeToCartUpdates();
     })();
     </script>
 </body>

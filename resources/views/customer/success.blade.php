@@ -17,6 +17,10 @@
             'usd' => 'USD',
             default => 'NT$',
         };
+        $fullOrderNo = (string) $order->order_no;
+        $displayOrderNo = mb_strlen($fullOrderNo) > 18
+            ? mb_substr($fullOrderNo, 0, 8) . '...' . mb_substr($fullOrderNo, -6)
+            : $fullOrderNo;
         $prepTimeMinutes = $store->estimatePrepTimeMinutesForOrderItems($order->items);
         $estimatedReadyAt = ($prepTimeMinutes !== null && $order->created_at !== null)
             ? $order->created_at->copy()->setTimezone($store->businessTimezone())->addMinutes($prepTimeMinutes)
@@ -42,7 +46,12 @@
 
                     <div class="rounded-2xl border border-orange-100 bg-orange-50 px-4 py-3 text-left sm:min-w-[220px]">
                         <p class="text-xs font-medium uppercase tracking-wide text-orange-500">{{ __('customer.order_no') }}</p>
-                        <p class="mt-1 text-lg font-bold text-gray-900">{{ $order->order_no }}</p>
+                        <p
+                            class="mt-1 text-base font-bold tracking-tight text-gray-900 sm:text-lg"
+                            title="{{ $fullOrderNo }}"
+                        >
+                            {{ $displayOrderNo }}
+                        </p>
                     </div>
                 </div>
             </section>
@@ -216,7 +225,7 @@
         const prepTimeMinutes = @json($prepTimeMinutes);
         const estimatedPrepOnlyTemplate = @json(__('customer.estimated_prep_time_only', ['minutes' => '__minutes__']));
         const estimatedReadyUnknown = @json(__('customer.estimated_ready_time_unknown'));
-        const estimatedReadyNow = @json('已可取餐');
+        const estimatedReadyNow = @json(__('mail_orders.status.completed'));
 
         if (!statusLabel || !paymentLabel || !endpoint) {
             return;

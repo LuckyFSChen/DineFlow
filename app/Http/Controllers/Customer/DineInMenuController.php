@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DiningTable;
 use App\Models\Order;
 use App\Models\Store;
+use App\Support\DineInCartStore;
 
 class DineInMenuController extends Controller
 {
@@ -14,11 +15,6 @@ class DineInMenuController extends Controller
     private const CANCELLED_STATUSES = ['cancel', 'cancelled', 'canceled'];
 
     private const COMPLETED_STATUSES = ['complete', 'completed', 'ready', 'ready_for_pickup'];
-
-    protected function getDineInCartSessionKey(Store $store, DiningTable $table): string
-    {
-        return 'dinein_cart.' . $store->id . '.' . $table->id;
-    }
 
     protected function getDineInOrderHistorySessionKey(Store $store, DiningTable $table): string
     {
@@ -54,7 +50,7 @@ class DineInMenuController extends Controller
             ->get();
 
         $orderingAvailable = $store->isOrderingAvailable();
-        $cart = session()->get($this->getDineInCartSessionKey($store, $table), []);
+        $cart = DineInCartStore::getCart(request(), $store->id, $table->id);
         $cartCount = collect($cart)->sum('qty');
         $cartTotal = collect($cart)->sum('subtotal');
         $cartPreviewItems = collect($cart)->values();

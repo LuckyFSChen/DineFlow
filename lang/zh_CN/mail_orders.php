@@ -39,7 +39,7 @@ return [
         'pending' => '已送出',
         'accepted' => '已接单',
         'preparing' => '制作中',
-        'completed' => '餐点完成可取',
+        'completed' => '餐点完成',
         'picked_up' => '已取餐',
         'cancelled' => '订单已取消',
         'updating' => '订单状态更新中',

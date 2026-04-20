@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Events\DineInCartUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\Coupon;
 use App\Models\DiningTable;
@@ -12,14 +13,16 @@ use App\Models\Store;
 use App\Models\User;
 use App\Services\CustomerAccountService;
 use App\Services\LoyaltyService;
-use App\Support\PhoneFormatter;
+use App\Support\DineInCartStore;
 use App\Support\InvoiceFlow;
+use App\Support\PhoneFormatter;
 use App\Support\TakeoutCartSession;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class DineInOrderController extends Controller
 {
@@ -47,11 +50,6 @@ class DineInOrderController extends Controller
         private readonly LoyaltyService $loyaltyService
     )
     {
-    }
-
-    protected function getDineInCartSessionKey(Store $store, DiningTable $table): string
-    {
-        return 'dinein_cart.' . $store->id . '.' . $table->id;
     }
 
     public function addToCart(Request $request, Store $store, DiningTable $table)
@@ -83,8 +81,7 @@ class DineInOrderController extends Controller
             ->where('is_sold_out', false)
             ->firstOrFail();
 
-        $cartKey = $this->getDineInCartSessionKey($store, $table);
-        $cart = session()->get($cartKey, []);
+        $cart = DineInCartStore::getCart($request, $store->id, $table->id);
 
         $optionResult = $this->resolveSelectedOptions($product, $validated['option_payload'] ?? null);
         $itemNote = $this->sanitizeItemNote($validated['item_note'] ?? null, (bool) $product->allow_item_note);
@@ -114,7 +111,8 @@ class DineInOrderController extends Controller
         }
         unset($item);
 
-        session()->put($cartKey, $cart);
+        $cart = DineInCartStore::putCart($request, $store->id, $table->id, $cart);
+        $this->broadcastDineInCartUpdated($request, $store, $table);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -132,8 +130,7 @@ class DineInOrderController extends Controller
     {
         abort_unless($table->store_id === $store->id, 404);
 
-        $cartKey = $this->getDineInCartSessionKey($store, $table);
-        $cart = session()->get($cartKey, []);
+        $cart = DineInCartStore::getCart(request(), $store->id, $table->id);
         $cart = $this->hydrateEditableProductMeta($store, $cart);
         $total = collect($cart)->sum('subtotal');
         $orderingAvailable = $store->isOrderingAvailable();
@@ -185,6 +182,12 @@ class DineInOrderController extends Controller
                 'table' => $table,
                 'currencySymbol' => $currencySymbol,
             ])->render(),
+            'items' => $cartCollection->map(fn (array $item) => [
+                'line_key' => (string) ($item['line_key'] ?? ''),
+                'qty' => (int) ($item['qty'] ?? 0),
+                'subtotal' => (int) ($item['subtotal'] ?? 0),
+                'subtotal_display' => $currencySymbol . ' ' . number_format((int) ($item['subtotal'] ?? 0)),
+            ])->values()->all(),
         ];
     }
 
@@ -198,6 +201,31 @@ class DineInOrderController extends Controller
         };
     }
 
+    private function broadcastDineInCartUpdated(Request $request, Store $store, DiningTable $table): void
+    {
+        try {
+            event(new DineInCartUpdated(
+                storeId: (int) $store->id,
+                tableToken: (string) $table->qr_token,
+                sourceClientId: $request->header('X-DineIn-Client-Id'),
+            ));
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
+
+    public function syncCart(Request $request, Store $store, DiningTable $table): JsonResponse
+    {
+        abort_unless($table->store_id === $store->id, 404);
+
+        $cart = DineInCartStore::getCart($request, $store->id, $table->id);
+
+        return response()->json([
+            'ok' => true,
+            'cart' => $this->buildDineInCartPayload($store, $table, $cart),
+        ]);
+    }
+
     public function updateCartItem(Request $request, Store $store, DiningTable $table, string $lineKey)
     {
         abort_unless($table->store_id === $store->id, 404);
@@ -208,8 +236,7 @@ class DineInOrderController extends Controller
             'item_note' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $cartKey = $this->getDineInCartSessionKey($store, $table);
-        $cart = session()->get($cartKey, []);
+        $cart = DineInCartStore::getCart($request, $store->id, $table->id);
 
         if (! isset($cart[$lineKey])) {
             return redirect()
@@ -266,24 +293,62 @@ class DineInOrderController extends Controller
         }
         unset($item);
 
-        session()->put($cartKey, $cart);
+        DineInCartStore::putCart($request, $store->id, $table->id, $cart);
+        $this->broadcastDineInCartUpdated($request, $store, $table);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'cart' => $this->buildDineInCartPayload($store, $table, $cart),
+            ]);
+        }
 
         return redirect()->route('customer.dinein.cart.show', ['store' => $store, 'table' => $table]);
     }
 
-    public function removeCartItem(Store $store, DiningTable $table, string $lineKey)
+    public function removeCartItem(Request $request, Store $store, DiningTable $table, string $lineKey)
     {
         abort_unless($table->store_id === $store->id, 404);
 
-        $cartKey = $this->getDineInCartSessionKey($store, $table);
-        $cart = session()->get($cartKey, []);
+        $cart = DineInCartStore::getCart($request, $store->id, $table->id);
 
         if (isset($cart[$lineKey])) {
             unset($cart[$lineKey]);
-            session()->put($cartKey, $cart);
+            DineInCartStore::putCart($request, $store->id, $table->id, $cart);
+            $this->broadcastDineInCartUpdated($request, $store, $table);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'cart' => $this->buildDineInCartPayload($store, $table, $cart),
+            ]);
         }
 
         return redirect()->route('customer.dinein.cart.show', ['store' => $store, 'table' => $table]);
+    }
+
+    public function clearCart(Request $request, Store $store, DiningTable $table)
+    {
+        abort_unless($table->store_id === $store->id, 404);
+
+        $cart = DineInCartStore::getCart($request, $store->id, $table->id);
+
+        if (! empty($cart)) {
+            DineInCartStore::clearCart($request, $store->id, $table->id);
+            $this->broadcastDineInCartUpdated($request, $store, $table);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'cart' => $this->buildDineInCartPayload($store, $table, []),
+            ]);
+        }
+
+        return redirect()
+            ->route('customer.dinein.menu', ['store' => $store, 'table' => $table])
+            ->with('success', __('customer.cart_cleared'));
     }
 
     public function submit(Request $request, Store $store, DiningTable $table)
@@ -327,8 +392,7 @@ class DineInOrderController extends Controller
                 ->withInput();
         }
 
-        $cartKey = $this->getDineInCartSessionKey($store, $table);
-        $cart = session()->get($cartKey, []);
+        $cart = DineInCartStore::getCart($request, $store->id, $table->id);
 
         if (empty($cart)) {
             return redirect()
@@ -370,7 +434,7 @@ class DineInOrderController extends Controller
 
                 if ($couponError !== null) {
                     $message = $couponError === __('customer.coupon_not_found')
-                        ? 'Please enter a valid coupon code.'
+                        ? __('customer.coupon_invalid_code')
                         : $couponError;
 
                     throw ValidationException::withMessages([
@@ -521,7 +585,8 @@ class DineInOrderController extends Controller
             $request->session()->regenerate();
         }
 
-        session()->forget($cartKey);
+        DineInCartStore::clearCart($request, $store->id, $table->id);
+        $this->broadcastDineInCartUpdated($request, $store, $table);
         $this->pushDineInOrderToHistory($store, $table, $order);
         $this->pushOrderToGlobalHistory($order);
 
@@ -599,27 +664,27 @@ class DineInOrderController extends Controller
             'coupon_code' => ['nullable', 'string', 'max:64'],
         ]);
 
-        $cart = session()->get($this->getDineInCartSessionKey($store, $table), []);
+        $cart = DineInCartStore::getCart($request, $store->id, $table->id);
         $subtotal = (int) collect($cart)->sum('subtotal');
         $couponCode = $this->normalizeCouponCode($validated['coupon_code'] ?? null);
 
         if ($couponCode === null) {
             return response()->json([
                 'ok' => false,
-                'error' => 'Please enter a coupon code first.',
+                'error' => __('customer.coupon_enter_code_first'),
             ], 422);
         }
 
         $customerPhone = $this->normalizeCustomerPhone($validated['customer_phone'] ?? null, $store);
         $customerEmail = $this->normalizeOptionalText($validated['customer_email'] ?? null);
         $member = $this->findExistingMemberForCoupon($store, $customerEmail, $customerPhone);
-        $result = $this->loyaltyService->resolveCoupon($store, $couponCode, $subtotal, $member);
+        $result = $this->loyaltyService->resolveCoupon($store, $couponCode, $subtotal, $member, 'dine_in');
 
         $error = $result['error'] ?? null;
         if ($error !== null) {
             return response()->json([
                 'ok' => false,
-                'error' => $error === __('customer.coupon_not_found') ? 'Please enter a valid coupon code.' : $error,
+                'error' => $error === __('customer.coupon_not_found') ? __('customer.coupon_invalid_code') : $error,
             ], 422);
         }
 
@@ -628,7 +693,7 @@ class DineInOrderController extends Controller
         if (! $coupon) {
             return response()->json([
                 'ok' => false,
-                'error' => 'Please enter a valid coupon code.',
+                'error' => __('customer.coupon_invalid_code'),
             ], 422);
         }
 
@@ -864,8 +929,7 @@ class DineInOrderController extends Controller
                 ->with('error', __('customer.reorder_unavailable'));
         }
 
-        $cartKey = $this->getDineInCartSessionKey($store, $table);
-        $cart = session()->get($cartKey, []);
+        $cart = DineInCartStore::getCart($request, $store->id, $table->id);
 
         foreach ($orderItems as $orderItem) {
             $qty = max(1, (int) $orderItem->qty);
@@ -904,7 +968,8 @@ class DineInOrderController extends Controller
         }
         unset($item);
 
-        session()->put($cartKey, $cart);
+        DineInCartStore::putCart($request, $store->id, $table->id, $cart);
+        $this->broadcastDineInCartUpdated($request, $store, $table);
 
         if ($addedQty === 0) {
             return redirect()
@@ -930,19 +995,7 @@ class DineInOrderController extends Controller
 
     private function generateOrderNo(Store $store): string
     {
-        $storeToken = str_pad((string) $store->id, 2, '0', STR_PAD_LEFT);
-
-        for ($attempt = 0; $attempt < 8; $attempt++) {
-            $candidate = now()->format('mdHisv') . '-' . $storeToken . random_int(10, 99);
-
-            if (! Order::where('order_no', $candidate)->exists()) {
-                return $candidate;
-            }
-
-            usleep(10000);
-        }
-
-        return now()->format('mdHisv') . '-' . $storeToken . random_int(100, 999);
+        return Order::generateOrderNoForStore((int) $store->id);
     }
 
     private function cartLineKey(int $productId, array $selectedOptions, ?string $itemNote): string
@@ -1238,25 +1291,26 @@ class DineInOrderController extends Controller
     private function formatCouponSummary(Coupon $coupon, int $discount, string $currencySymbol): string
     {
         $summary = match ($coupon->normalizedDiscountType()) {
-            'percent' => sprintf(
-                'Discount %d%%, save %s',
-                (int) $coupon->discount_value,
-                $currencySymbol . ' ' . number_format($discount)
-            ),
-            'points_reward' => sprintf(
-                'Spend %s earn %d points',
-                $currencySymbol . ' ' . number_format(max((int) $coupon->reward_per_amount, 0)),
-                (int) $coupon->reward_points
-            ),
-            default => sprintf(
-                'Save %s',
-                $currencySymbol . ' ' . number_format($discount)
-            ),
+            'percent' => __('customer.coupon_summary_percent_with_amount', [
+                'value' => (int) $coupon->discount_value,
+                'amount' => $currencySymbol . ' ' . number_format($discount),
+            ]),
+            'points_reward' => __('customer.coupon_summary_points_reward', [
+                'amount' => $currencySymbol . ' ' . number_format(max((int) $coupon->reward_per_amount, 0)),
+                'points' => (int) $coupon->reward_points,
+            ]),
+            default => __('customer.coupon_summary_fixed', [
+                'amount' => $currencySymbol . ' ' . number_format($discount),
+            ]),
         };
+
         $minimum = max((int) $coupon->min_order_amount, 0);
         if ($minimum > 0) {
-            $summary .= ' | Min spend ' . $currencySymbol . ' ' . number_format($minimum);
+            $summary .= ' | ' . __('customer.coupon_summary_minimum', [
+                'amount' => $currencySymbol . ' ' . number_format($minimum),
+            ]);
         }
+
         return $summary;
     }
     private function canReorderOrder(User $user, Order $order): bool

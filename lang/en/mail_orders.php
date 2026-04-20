@@ -10,7 +10,7 @@ return [
     'completed' => [
         'subject' => '[:store] Order Completed #:order_no',
         'heading' => 'Your Order Is Ready',
-        'intro' => 'Your order at **:store** has been completed. Please come pick it up.',
+        'intro' => 'Your order at **:store** is complete.',
     ],
     'cancelled' => [
         'subject' => '[:store] Order Cancelled #:order_no',
@@ -39,7 +39,7 @@ return [
         'pending' => 'Submitted',
         'accepted' => 'Accepted',
         'preparing' => 'Preparing',
-        'completed' => 'Ready for Pickup',
+        'completed' => 'Order Complete',
         'picked_up' => 'Picked Up',
         'cancelled' => 'Cancelled',
         'updating' => 'Status Updating',

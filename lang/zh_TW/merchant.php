@@ -175,7 +175,7 @@ return [
     'order_status_complete' => '完成',
     'order_status_completed' => '已完成',
     'order_status_ready' => '已備妥',
-    'order_status_ready_for_pickup' => '可取餐',
+    'order_status_ready_for_pickup' => '餐點完成',
     'order_status_cancelled' => '已取消',
     'loyalty_title' => '會員與優惠管理',
     'loyalty_desc' => '集中查看會員成長、點數發放與兌換，以及優惠券使用狀況。',

@@ -10,7 +10,7 @@ return [
     'completed' => [
         'subject' => '[:store] Don hang da hoan thanh #:order_no',
         'heading' => 'Don Hang Cua Ban Da San Sang',
-        'intro' => 'Don hang cua ban tai **:store** da hoan thanh. Vui long den nhan mon.',
+        'intro' => 'Don hang cua ban tai **:store** da hoan thanh.',
     ],
     'cancelled' => [
         'subject' => '[:store] Don hang da bi huy #:order_no',
@@ -39,7 +39,7 @@ return [
         'pending' => 'Da gui',
         'accepted' => 'Da nhan don',
         'preparing' => 'Dang chuan bi',
-        'completed' => 'San sang nhan mon',
+        'completed' => 'Mon an da hoan thanh',
         'picked_up' => 'Da nhan mon',
         'cancelled' => 'Da huy',
         'updating' => 'Dang cap nhat trang thai',

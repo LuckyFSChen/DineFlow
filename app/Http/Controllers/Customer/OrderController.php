@@ -147,18 +147,6 @@ class OrderController extends Controller
 
     private function generateOrderNo(Store $store): string
     {
-        $storeToken = str_pad((string) $store->id, 2, '0', STR_PAD_LEFT);
-
-        for ($attempt = 0; $attempt < 8; $attempt++) {
-            $candidate = now()->format('mdHisv') . '-' . $storeToken . random_int(10, 99);
-
-            if (! Order::where('order_no', $candidate)->exists()) {
-                return $candidate;
-            }
-
-            usleep(10000);
-        }
-
-        return now()->format('mdHisv') . '-' . $storeToken . random_int(100, 999);
+        return Order::generateOrderNoForStore((int) $store->id);
     }
 }

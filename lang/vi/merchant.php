@@ -175,7 +175,7 @@ return [
     'order_status_complete' => 'Hoan tat',
     'order_status_completed' => 'Da hoan tat',
     'order_status_ready' => 'San sang',
-    'order_status_ready_for_pickup' => 'San sang de nhan',
+    'order_status_ready_for_pickup' => 'Mon an da hoan thanh',
     'order_status_cancelled' => 'Da huy',
     'loyalty_title' => 'Quan ly thanh vien va uu dai',
     'loyalty_desc' => 'Theo doi tang truong thanh vien, diem tich luy, diem da doi va tinh hinh su dung coupon.',

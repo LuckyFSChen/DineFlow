@@ -420,7 +420,7 @@ class TakeoutOrderingController extends Controller
 
                 if ($couponError !== null) {
                     $message = $couponError === __('customer.coupon_not_found')
-                        ? '請輸入正確優惠代碼'
+                        ? __('customer.coupon_invalid_code')
                         : $couponError;
 
                     throw ValidationException::withMessages([
@@ -567,7 +567,7 @@ class TakeoutOrderingController extends Controller
         if ($couponCode === null) {
             return response()->json([
                 'ok' => false,
-                'error' => '請先輸入優惠代碼',
+                'error' => __('customer.coupon_enter_code_first'),
             ], 422);
         }
 
@@ -580,7 +580,7 @@ class TakeoutOrderingController extends Controller
         if ($error !== null) {
             return response()->json([
                 'ok' => false,
-                'error' => $error === __('customer.coupon_not_found') ? '請輸入正確優惠代碼' : $error,
+                'error' => $error === __('customer.coupon_not_found') ? __('customer.coupon_invalid_code') : $error,
             ], 422);
         }
 
@@ -589,7 +589,7 @@ class TakeoutOrderingController extends Controller
         if (! $coupon) {
             return response()->json([
                 'ok' => false,
-                'error' => '請輸入正確優惠代碼',
+                'error' => __('customer.coupon_invalid_code'),
             ], 422);
         }
 
@@ -663,19 +663,7 @@ class TakeoutOrderingController extends Controller
 
     private function generateOrderNo(Store $store): string
     {
-        $storeToken = str_pad((string) $store->id, 2, '0', STR_PAD_LEFT);
-
-        for ($attempt = 0; $attempt < 8; $attempt++) {
-            $candidate = now()->format('mdHisv') . '-' . $storeToken . random_int(10, 99);
-
-            if (! Order::where('order_no', $candidate)->exists()) {
-                return $candidate;
-            }
-
-            usleep(10000);
-        }
-
-        return now()->format('mdHisv') . '-' . $storeToken . random_int(100, 999);
+        return Order::generateOrderNoForStore((int) $store->id);
     }
 
     private function ensureTakeoutEnabled(Store $store): void
@@ -998,25 +986,24 @@ class TakeoutOrderingController extends Controller
     private function formatCouponSummary(Coupon $coupon, int $discount, string $currencySymbol): string
     {
         $summary = match ($coupon->normalizedDiscountType()) {
-            'percent' => sprintf(
-                '折扣 %d%%（本單折抵 %s）',
-                (int) $coupon->discount_value,
-                $currencySymbol . ' ' . number_format($discount)
-            ),
-            'points_reward' => sprintf(
-                '每消費 %s 贈 %d 點',
-                $currencySymbol . ' ' . number_format(max((int) $coupon->reward_per_amount, 0)),
-                (int) $coupon->reward_points
-            ),
-            default => sprintf(
-                '本單折抵 %s',
-                $currencySymbol . ' ' . number_format($discount)
-            ),
+            'percent' => __('customer.coupon_summary_percent_with_amount', [
+                'value' => (int) $coupon->discount_value,
+                'amount' => $currencySymbol . ' ' . number_format($discount),
+            ]),
+            'points_reward' => __('customer.coupon_summary_points_reward', [
+                'amount' => $currencySymbol . ' ' . number_format(max((int) $coupon->reward_per_amount, 0)),
+                'points' => (int) $coupon->reward_points,
+            ]),
+            default => __('customer.coupon_summary_fixed', [
+                'amount' => $currencySymbol . ' ' . number_format($discount),
+            ]),
         };
 
         $minimum = max((int) $coupon->min_order_amount, 0);
         if ($minimum > 0) {
-            $summary .= '，最低消費 ' . $currencySymbol . ' ' . number_format($minimum);
+            $summary .= ' | ' . __('customer.coupon_summary_minimum', [
+                'amount' => $currencySymbol . ' ' . number_format($minimum),
+            ]);
         }
 
         return $summary;

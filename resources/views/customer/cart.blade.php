@@ -97,6 +97,10 @@
             </div>
         @endif
 
+        <div class="mb-6 hidden rounded-2xl border border-brand-accent/30 bg-brand-accent/10 px-4 py-3 text-sm text-brand-primary shadow-sm" data-cart-sync-notice>
+            {{ __('customer.cart_synced_notice') }}
+        </div>
+
         @if($errors->any())
             <div class="mb-6 rounded-2xl border border-brand-soft bg-brand-soft/30 px-4 py-4 text-sm text-brand-dark shadow-sm">
                 <div class="mb-2 font-semibold">{{ __('customer.confirm_fields') }}</div>
@@ -332,7 +336,7 @@
                                     </p>
                                     <div class="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700 {{ $hasOldAppliedCoupon ? '' : 'hidden' }}"
                                          data-coupon-applied-box>
-                                        已套用優惠券：<span class="font-semibold" data-coupon-applied-code>{{ $hasOldAppliedCoupon ? $oldAppliedCouponCode : '' }}</span>
+                                        {{ __('customer.coupon_applied_label') }} <span class="font-semibold" data-coupon-applied-code>{{ $hasOldAppliedCoupon ? $oldAppliedCouponCode : '' }}</span>
                                         <span data-coupon-applied-summary>{{ $hasOldAppliedCoupon ? $oldAppliedCouponSummary : '' }}</span>
                                     </div>
                                 </div>
@@ -431,6 +435,7 @@
     const cartPayableEl = document.querySelector('[data-cart-payable]');
     const couponDiscountEl = document.querySelector('[data-coupon-discount]');
     const couponDiscountHintEl = document.querySelector('[data-coupon-discount-hint]');
+    const cartSyncNotice = document.querySelector('[data-cart-sync-notice]');
     const optionEditModal = document.querySelector('[data-option-edit-modal]');
     const optionEditModalTitle = document.querySelector('[data-option-edit-modal-title]');
     const optionEditModalBody = document.querySelector('[data-option-edit-modal-body]');
@@ -438,6 +443,27 @@
     const optionEditModalCancel = document.querySelector('[data-option-edit-modal-cancel]');
     const optionEditModalConfirm = document.querySelector('[data-option-edit-modal-confirm]');
     const optionEditTriggers = document.querySelectorAll('[data-open-option-editor]');
+    const cartSyncUrl = @json($isDineIn ? route('customer.dinein.cart.sync', $routeParams) : null);
+    const cartBroadcastChannel = @json($isDineIn ? ('dinein-cart.' . $store->id . '.' . $table->qr_token) : null);
+    const dineInClientStorageKey = 'dinein-realtime-client-id';
+    const currentClientId = (() => {
+        try {
+            const existing = window.sessionStorage.getItem(dineInClientStorageKey);
+            if (existing) {
+                return existing;
+            }
+
+            const generated = typeof window.crypto?.randomUUID === 'function'
+                ? window.crypto.randomUUID()
+                : `dinein-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+            window.sessionStorage.setItem(dineInClientStorageKey, generated);
+
+            return generated;
+        } catch (_error) {
+            return `dinein-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        }
+    })();
     const currencySymbol = @json($currencySymbol);
     const optionEditI18n = {
         optionsTitle: @json(__('customer.select_options_title')),
@@ -450,11 +476,13 @@
         free: @json(__('customer.free')),
         currencySymbol: @json($currencySymbol),
     };
+    const couponReapplyMessage = @json(__('customer.coupon_reapply_after_cart_update'));
     let currentCartTotal = Number(@json((int) $total));
     let appliedCouponDiscount = Number(@json($isDineIn ? 0 : $oldAppliedCouponDiscount));
     let activeOptionEditForm = null;
     let activeOptionEditGroups = [];
     let activeOptionAllowItemNote = false;
+    let cartSyncNoticeTimer = null;
 
     const formatCurrency = (amount) => `${currencySymbol} ${Number(Math.max(Number(amount || 0), 0)).toLocaleString()}`;
 
@@ -474,6 +502,18 @@
         }
     };
 
+    const showCartSyncNotice = () => {
+        if (!cartSyncNotice) {
+            return;
+        }
+
+        cartSyncNotice.classList.remove('hidden');
+        window.clearTimeout(cartSyncNoticeTimer);
+        cartSyncNoticeTimer = window.setTimeout(() => {
+            cartSyncNotice.classList.add('hidden');
+        }, 4000);
+    };
+
     updateSummaryTotals();
 
     const sendCartRequest = async (form) => {
@@ -486,12 +526,34 @@
             headers: {
                 Accept: 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
+                ...(isDineIn ? { 'X-DineIn-Client-Id': currentClientId } : {}),
                 ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
             },
         });
 
         if (!response.ok) {
             throw new Error(`Cart request failed: ${response.status}`);
+        }
+
+        return response.json();
+    };
+
+    const fetchSyncedCart = async () => {
+        if (!cartSyncUrl) {
+            return null;
+        }
+
+        const response = await window.fetch(cartSyncUrl, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Cart sync failed: ${response.status}`);
         }
 
         return response.json();
@@ -508,17 +570,31 @@
             return;
         }
 
+        const existingRows = Array.from(cartItemsContainer.querySelectorAll('[data-cart-item]'));
+        const existingKeys = existingRows.map((row) => row.dataset.lineKey || '');
+        const nextItems = Array.isArray(cart.items) ? cart.items : [];
+        const nextKeys = nextItems.map((item) => item.line_key || '');
+
+        if (
+            existingRows.length !== nextItems.length
+            || existingKeys.some((key) => !nextKeys.includes(key))
+            || nextKeys.some((key) => !existingKeys.includes(key))
+        ) {
+            window.location.reload();
+            return;
+        }
+
         cartLineCount.textContent = `{{ __('customer.total_products_prefix') }} ${cart.line_count} {{ __('customer.total_products_suffix') }}`;
         currentCartTotal = Number(cart.total || 0);
         updateSummaryTotals();
 
-        const itemMap = new Map((cart.items || []).map((item) => [item.line_key, item]));
-        cartItemsContainer.querySelectorAll('[data-cart-item]').forEach((row) => {
+        const itemMap = new Map(nextItems.map((item) => [item.line_key, item]));
+        existingRows.forEach((row) => {
             const lineKey = row.dataset.lineKey || '';
             const item = itemMap.get(lineKey);
 
             if (!item) {
-                row.remove();
+                window.location.reload();
                 return;
             }
 
@@ -535,8 +611,30 @@
         const appliedCode = normalizeCouponCode(appliedCouponCodeInput?.value);
         if (appliedCode !== '') {
             clearAppliedCoupon();
-            setCouponError('購物車已更新，請重新套用優惠券。');
+            setCouponError(couponReapplyMessage);
         }
+    };
+
+    const subscribeToCartUpdates = () => {
+        if (!isDineIn || !window.Echo || !cartBroadcastChannel) {
+            return;
+        }
+
+        window.Echo.channel(cartBroadcastChannel)
+            .listen('.dinein.cart.updated', (event) => {
+                if ((event?.source_client_id || '') === currentClientId) {
+                    return;
+                }
+
+                fetchSyncedCart()
+                    .then((payload) => {
+                        syncCartPage(payload);
+                        showCartSyncNotice();
+                    })
+                    .catch(() => {
+                        window.location.reload();
+                    });
+            });
     };
 
     const closeOptionEditModal = () => {
@@ -749,32 +847,28 @@
         formToSubmit.submit();
     });
 
-    if (!isDineIn) {
-        document.querySelectorAll('[data-cart-update-form], [data-cart-remove-form]').forEach((form) => {
-            form.addEventListener('submit', async (event) => {
-                event.preventDefault();
+    document.querySelectorAll('[data-cart-update-form], [data-cart-remove-form]').forEach((form) => {
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
 
-                if (form.dataset.submitting === '1') {
-                    return;
-                }
+            if (form.dataset.submitting === '1') {
+                return;
+            }
 
-                form.dataset.submitting = '1';
+            form.dataset.submitting = '1';
 
-                try {
-                    const payload = await sendCartRequest(form);
-                    syncCartPage(payload);
-                } catch (_error) {
-                    form.submit();
-                } finally {
-                    form.dataset.submitting = '0';
-                }
-            });
+            try {
+                const payload = await sendCartRequest(form);
+                syncCartPage(payload);
+            } catch (_error) {
+                form.submit();
+            } finally {
+                form.dataset.submitting = '0';
+            }
         });
-    }
+    });
 
-    if (isDineIn) {
-        return;
-    }
+    subscribeToCartUpdates();
 
     const input = document.querySelector('input[name="customer_phone"]');
     const maxDigits = @json($phoneDigits);
@@ -828,6 +922,10 @@
     const appliedCouponDiscountInput = checkoutForm.querySelector('[data-applied-coupon-discount]');
     const promptMessage = @json(__('customer.guest_register_points_prompt'));
     const couponAfterSubmitHint = @json(__('customer.coupon_discount_after_submit'));
+    const couponApplyFirstMessage = @json(__('customer.coupon_apply_first'));
+    const couponEnterCodeMessage = @json(__('customer.coupon_enter_code'));
+    const couponCannotValidateMessage = @json(__('customer.coupon_cannot_validate'));
+    const couponValidateFailedMessage = @json(__('customer.coupon_validate_failed'));
 
     const normalizeCouponCode = (value) => String(value || '').trim().toUpperCase();
 
@@ -924,7 +1022,7 @@
             return true;
         }
 
-        setCouponError('請先套用優惠券。');
+        setCouponError(couponApplyFirstMessage);
         couponInput.focus();
 
         return false;
@@ -956,13 +1054,13 @@
             const code = normalizeCouponCode(couponInput.value);
             if (code === '') {
                 clearAppliedCoupon();
-                setCouponError('請輸入優惠券代碼。');
+                setCouponError(couponEnterCodeMessage);
                 couponInput.focus();
                 return;
             }
 
             if (!couponCheckUrl) {
-                setCouponError('目前無法驗證優惠券，請稍後再試。');
+                setCouponError(couponCannotValidateMessage);
                 return;
             }
 
@@ -995,7 +1093,7 @@
                 const payload = await response.json().catch(() => ({}));
                 if (!response.ok || !payload?.ok) {
                     clearAppliedCoupon();
-                    setCouponError(payload?.error || '優惠券驗證失敗，請確認後再試。');
+                    setCouponError(payload?.error || couponValidateFailedMessage);
                     return;
                 }
 
@@ -1005,7 +1103,7 @@
                 setCouponError('');
             } catch (_error) {
                 clearAppliedCoupon();
-                setCouponError('目前無法驗證優惠券，請稍後再試。');
+                setCouponError(couponCannotValidateMessage);
             } finally {
                 couponApplyButton.dataset.submitting = '0';
             }

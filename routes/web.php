@@ -272,9 +272,11 @@ Route::prefix('s/{store:slug}/t/{table:qr_token}')
         Route::get('/menu', [DineInMenuController::class, 'index'])->name('menu');
         Route::get('/phone/registered', [DineInOrderController::class, 'checkPhoneRegistered'])->name('phone.registered');
         Route::get('/coupon/check', [DineInOrderController::class, 'checkCoupon'])->name('coupon.check');
+        Route::get('/cart/sync', [DineInOrderController::class, 'syncCart'])->name('cart.sync');
         Route::post('/cart/items', [DineInOrderController::class, 'addToCart'])->name('cart.items.store');
         Route::patch('/cart/items/{lineKey}', [DineInOrderController::class, 'updateCartItem'])->name('cart.items.update');
         Route::delete('/cart/items/{lineKey}', [DineInOrderController::class, 'removeCartItem'])->name('cart.items.destroy');
+        Route::post('/cart/clear', [DineInOrderController::class, 'clearCart'])->name('cart.clear');
         Route::get('/cart', [DineInOrderController::class, 'cart'])->name('cart.show');
         Route::post('/checkout', [DineInOrderController::class, 'submit'])->name('cart.checkout');
         Route::post('/customer-info/clear', [DineInOrderController::class, 'clearRememberedCustomerInfo'])->name('customer-info.clear');

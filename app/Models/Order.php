@@ -294,4 +294,20 @@ class Order extends Model
             ? $fallback
             : 'zh_TW';
     }
+
+    public static function generateOrderNoForStore(int $storeId): string
+    {
+        $storeToken = strtoupper(str_pad(base_convert((string) max(0, $storeId), 10, 36), 2, '0', STR_PAD_LEFT));
+
+        for ($attempt = 0; $attempt < 8; $attempt++) {
+            $randomToken = strtoupper(str_pad(base_convert((string) random_int(0, 1679615), 10, 36), 4, '0', STR_PAD_LEFT));
+            $candidate = now()->format('ymd') . $storeToken . $randomToken;
+
+            if (! self::query()->where('order_no', $candidate)->exists()) {
+                return $candidate;
+            }
+        }
+
+        return now()->format('ymdHis') . strtoupper(str_pad(base_convert((string) max(0, $storeId), 10, 36), 2, '0', STR_PAD_LEFT));
+    }
 }
