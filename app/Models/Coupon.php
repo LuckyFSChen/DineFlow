@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Coupon extends Model
 {
+    private const DISCOUNT_TYPE_FIXED = 'fixed';
+    private const DISCOUNT_TYPE_PERCENT = 'percent';
+    private const DISCOUNT_TYPE_POINTS_REWARD = 'points_reward';
+
     protected $fillable = [
         'store_id',
         'code',
@@ -71,12 +75,13 @@ class Coupon extends Model
     public function calculateDiscountAmount(int $subtotal): int
     {
         $subtotal = max($subtotal, 0);
+        $discountType = $this->normalizedDiscountType();
 
-        if ($this->discount_type === 'points_reward') {
+        if ($discountType === self::DISCOUNT_TYPE_POINTS_REWARD) {
             return 0;
         }
 
-        if ($this->discount_type === 'percent') {
+        if ($discountType === self::DISCOUNT_TYPE_PERCENT) {
             $percent = max(0, min((int) $this->discount_value, 100));
             return (int) floor($subtotal * $percent / 100);
         }
@@ -86,7 +91,7 @@ class Coupon extends Model
 
     public function calculateBonusPoints(int $subtotal): int
     {
-        if ($this->discount_type !== 'points_reward') {
+        if (! $this->isPointsRewardType()) {
             return 0;
         }
 
@@ -100,5 +105,26 @@ class Coupon extends Model
 
         return (int) (floor($subtotal / $unitAmount) * $rewardPoints);
     }
-}
 
+    public function normalizedDiscountType(): string
+    {
+        $raw = strtolower(trim((string) $this->discount_type));
+
+        return match ($raw) {
+            self::DISCOUNT_TYPE_PERCENT, 'percentage', 'percent_discount' => self::DISCOUNT_TYPE_PERCENT,
+            self::DISCOUNT_TYPE_POINTS_REWARD, 'points', 'reward_points', 'point_reward' => self::DISCOUNT_TYPE_POINTS_REWARD,
+            self::DISCOUNT_TYPE_FIXED, 'fixed_amount', 'amount', '' => self::DISCOUNT_TYPE_FIXED,
+            default => self::DISCOUNT_TYPE_FIXED,
+        };
+    }
+
+    public function isPointsRewardType(): bool
+    {
+        return $this->normalizedDiscountType() === self::DISCOUNT_TYPE_POINTS_REWARD;
+    }
+
+    public function isPercentType(): bool
+    {
+        return $this->normalizedDiscountType() === self::DISCOUNT_TYPE_PERCENT;
+    }
+}

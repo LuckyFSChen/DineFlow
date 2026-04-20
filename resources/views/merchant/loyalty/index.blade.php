@@ -166,13 +166,20 @@
                         <label class="mb-1 block text-xs font-semibold text-slate-600">使用次數上限（選填）</label>
                         <input type="number" min="1" name="usage_limit" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                     </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-semibold text-slate-600">開始時間（選填）</label>
-                        <input type="datetime-local" data-flatpickr-datetime name="starts_at" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-xs font-semibold text-slate-600">結束時間（選填）</label>
-                        <input type="datetime-local" data-flatpickr-datetime name="ends_at" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                    <div class="sm:col-span-2">
+                        <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('merchant.range') }}</label>
+                        <input
+                            type="text"
+                            data-flatpickr-datetime-range
+                            data-range-start-name="starts_at"
+                            data-range-end-name="ends_at"
+                            value="{{ old('starts_at') && old('ends_at') ? old('starts_at') . ' ~ ' . old('ends_at') : '' }}"
+                            placeholder="{{ __('merchant.start_date') }} HH:mm ~ {{ __('merchant.end_date') }} HH:mm"
+                            autocomplete="off"
+                            class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm"
+                        >
+                        <input type="hidden" name="starts_at" value="{{ old('starts_at') }}">
+                        <input type="hidden" name="ends_at" value="{{ old('ends_at') }}">
                     </div>
                     <label class="sm:col-span-2 inline-flex items-center gap-2 text-sm text-slate-700">
                         <input type="checkbox" name="is_active" value="1" checked class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
@@ -299,8 +306,8 @@
                             <th class="px-3 py-2 text-left">折扣</th>
                             <th class="px-3 py-2 text-left">門檻/點數成本</th>
                             <th class="px-3 py-2 text-left">使用次數</th>
-                            <th class="px-3 py-2 text-left">????</th>
-                            <th class="px-3 py-2 text-left">????</th>
+                            <th class="px-3 py-2 text-left">{{ __('merchant.start_date') }}</th>
+                            <th class="px-3 py-2 text-left">{{ __('merchant.end_date') }}</th>
                             <th class="px-3 py-2 text-left">狀態</th>
                             <th class="px-3 py-2 text-right">操作</th>
                         </tr>
@@ -311,9 +318,9 @@
                                 <td class="px-3 py-2">{{ $coupon->name }}</td>
                                 <td class="px-3 py-2 font-semibold">{{ $coupon->code }}</td>
                                 <td class="px-3 py-2">
-                                    @if($coupon->discount_type === 'percent')
+                                    @if($coupon->isPercentType())
                                         {{ $coupon->discount_value }}%
-                                    @elseif($coupon->discount_type === 'points_reward')
+                                    @elseif($coupon->isPointsRewardType())
                                         滿額贈點
                                     @else
                                         {{ $currencySymbol }} {{ number_format((int) $coupon->discount_value) }}
@@ -322,7 +329,7 @@
                                 <td class="px-3 py-2">
                                     最低 {{ $currencySymbol }} {{ number_format((int) $coupon->min_order_amount) }}<br>
                                     點數成本 {{ number_format((int) $coupon->points_cost) }}
-                                    @if($coupon->discount_type === 'points_reward')
+                                    @if($coupon->isPointsRewardType())
                                         <br>每消費 {{ $currencySymbol }} {{ number_format((int) $coupon->reward_per_amount) }} 贈 {{ number_format((int) $coupon->reward_points) }} 點
                                     @endif
                                 </td>
@@ -349,7 +356,7 @@
                                                 data-coupon-id="{{ (int) $coupon->id }}"
                                                 data-coupon-name="{{ $coupon->name }}"
                                                 data-coupon-code="{{ $coupon->code }}"
-                                                data-coupon-discount-type="{{ $coupon->discount_type }}"
+                                                data-coupon-discount-type="{{ $coupon->normalizedDiscountType() }}"
                                                 data-coupon-discount-value="{{ (int) $coupon->discount_value }}"
                                                 data-coupon-reward-per-amount="{{ (int) $coupon->reward_per_amount }}"
                                                 data-coupon-reward-points="{{ (int) $coupon->reward_points }}"
@@ -398,7 +405,7 @@
                      @keydown.escape.window="closeEditModal()"
                      class="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/50 px-4 py-6"
                      style="display: none;">
-                    <div @click.outside="closeEditModal()" class="w-full max-w-2xl rounded-2xl bg-white p-5 shadow-2xl">
+                    <div @click.outside="if (!$event.target.closest('.flatpickr-calendar')) closeEditModal()" class="w-full max-w-2xl rounded-2xl bg-white p-5 shadow-2xl">
                         <div class="mb-4 flex items-center justify-between">
                             <h3 class="text-lg font-semibold text-slate-900">修改優惠券</h3>
                             <button type="button" @click="closeEditModal()" class="rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100">關閉</button>
@@ -448,13 +455,20 @@
                                 <label class="mb-1 block text-xs font-semibold text-slate-600">使用次數上限（選填）</label>
                                 <input type="number" min="1" name="usage_limit" x-model="form.usage_limit" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                             </div>
-                            <div>
-                                <label class="mb-1 block text-xs font-semibold text-slate-600">開始時間（選填）</label>
-                                <input type="datetime-local" data-flatpickr-datetime name="starts_at" x-model="form.starts_at" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
-                            </div>
-                            <div>
-                                <label class="mb-1 block text-xs font-semibold text-slate-600">結束時間（選填）</label>
-                                <input type="datetime-local" data-flatpickr-datetime name="ends_at" x-model="form.ends_at" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            <div class="sm:col-span-2">
+                                <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('merchant.range') }}</label>
+                                <input
+                                    type="text"
+                                    data-flatpickr-datetime-range
+                                    data-range-start-name="starts_at"
+                                    data-range-end-name="ends_at"
+                                    x-ref="editActiveAtRange"
+                                    autocomplete="off"
+                                    placeholder="{{ __('merchant.start_date') }} HH:mm ~ {{ __('merchant.end_date') }} HH:mm"
+                                    class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm"
+                                >
+                                <input type="hidden" name="starts_at" x-model="form.starts_at">
+                                <input type="hidden" name="ends_at" x-model="form.ends_at">
                             </div>
                             <label class="sm:col-span-2 inline-flex items-center gap-2 text-sm text-slate-700">
                                 <input type="checkbox" name="is_active" value="1" x-model="form.is_active" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
@@ -564,6 +578,36 @@
                 };
                 this.normalizeFieldsByDiscountType();
                 this.editModalOpen = true;
+                this.$nextTick(() => {
+                    this.syncEditActiveAtRange();
+                });
+            },
+            syncEditActiveAtRange() {
+                const rangeInput = this.$refs.editActiveAtRange;
+                if (!(rangeInput instanceof HTMLInputElement)) {
+                    return;
+                }
+
+                const picker = rangeInput._flatpickr;
+                if (!picker) {
+                    return;
+                }
+
+                const normalize = (value) => String(value || '').replace('T', ' ');
+                const selected = [];
+                if (this.form.starts_at) {
+                    selected.push(normalize(this.form.starts_at));
+                }
+                if (this.form.ends_at && this.form.ends_at !== this.form.starts_at) {
+                    selected.push(normalize(this.form.ends_at));
+                }
+
+                if (selected.length === 0) {
+                    picker.clear();
+                    return;
+                }
+
+                picker.setDate(selected, true);
             },
             normalizeFieldsByDiscountType() {
                 const isPointsReward = this.form.discount_type === 'points_reward';

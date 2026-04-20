@@ -622,7 +622,7 @@ class TakeoutOrderingController extends Controller
 
         return redirect()
             ->route('customer.takeout.cart.show', ['store' => $store])
-            ->with('success', '已清除記住的訂單資訊。');
+            ->with('success', '已清除記住的顧客資訊');
     }
 
     private function generateOrderNo(Store $store): string
@@ -681,7 +681,7 @@ class TakeoutOrderingController extends Controller
         }
 
         if ($itemNote !== null && trim($itemNote) !== '') {
-            $parts[] = '備註：' . trim($itemNote);
+            $parts[] = __('customer.item_note_prefix') . ' ' . trim($itemNote);
         }
 
         if (count($parts) === 0) {
@@ -961,14 +961,21 @@ class TakeoutOrderingController extends Controller
 
     private function formatCouponSummary(Coupon $coupon, int $discount, string $currencySymbol): string
     {
-        $summary = match ($coupon->discount_type) {
-            'percent' => sprintf('折扣 %d%%（本單折抵 %s）', (int) $coupon->discount_value, $currencySymbol . ' ' . number_format($discount)),
+        $summary = match ($coupon->normalizedDiscountType()) {
+            'percent' => sprintf(
+                '折扣 %d%%（本單折抵 %s）',
+                (int) $coupon->discount_value,
+                $currencySymbol . ' ' . number_format($discount)
+            ),
             'points_reward' => sprintf(
-                '每消費 %s 送 %d 點',
+                '每消費 %s 贈 %d 點',
                 $currencySymbol . ' ' . number_format(max((int) $coupon->reward_per_amount, 0)),
                 (int) $coupon->reward_points
             ),
-            default => sprintf('本單折抵 %s', $currencySymbol . ' ' . number_format($discount)),
+            default => sprintf(
+                '本單折抵 %s',
+                $currencySymbol . ' ' . number_format($discount)
+            ),
         };
 
         $minimum = max((int) $coupon->min_order_amount, 0);
@@ -1160,3 +1167,4 @@ class TakeoutOrderingController extends Controller
             ->values();
     }
 }
+

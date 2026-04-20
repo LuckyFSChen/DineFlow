@@ -359,21 +359,37 @@ const normalizeFlatpickrInputType = (input) => {
     }
 };
 
-const syncRangeHiddenFields = (selectedDates, instance, startInput, endInput) => {
+const setInputValue = (input, value) => {
+    if (!(input instanceof HTMLInputElement)) {
+        return;
+    }
+
+    const nextValue = String(value ?? '');
+    if (input.value === nextValue) {
+        return;
+    }
+
+    input.value = nextValue;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+};
+
+const syncRangeHiddenFields = (selectedDates, instance, startInput, endInput, outputFormat) => {
     if (!(startInput instanceof HTMLInputElement) || !(endInput instanceof HTMLInputElement)) {
         return;
     }
 
+    const format = outputFormat || 'Y-m-d';
     if (!Array.isArray(selectedDates) || selectedDates.length === 0) {
-        startInput.value = '';
-        endInput.value = '';
+        setInputValue(startInput, '');
+        setInputValue(endInput, '');
         return;
     }
 
     const startDate = selectedDates[0];
     const endDate = selectedDates.length > 1 ? selectedDates[1] : selectedDates[0];
-    startInput.value = instance.formatDate(startDate, 'Y-m-d');
-    endInput.value = instance.formatDate(endDate, 'Y-m-d');
+    setInputValue(startInput, instance.formatDate(startDate, format));
+    setInputValue(endInput, instance.formatDate(endDate, format));
 };
 
 const initRangeDateInput = (input) => {
@@ -407,13 +423,58 @@ const initRangeDateInput = (input) => {
         allowInput: true,
         defaultDate: defaultDates.length > 0 ? defaultDates : null,
         onReady: (selectedDates, _dateStr, instance) => {
-            syncRangeHiddenFields(selectedDates, instance, startInput, endInput);
+            syncRangeHiddenFields(selectedDates, instance, startInput, endInput, 'Y-m-d');
         },
         onChange: (selectedDates, _dateStr, instance) => {
-            syncRangeHiddenFields(selectedDates, instance, startInput, endInput);
+            syncRangeHiddenFields(selectedDates, instance, startInput, endInput, 'Y-m-d');
         },
         onClose: (selectedDates, _dateStr, instance) => {
-            syncRangeHiddenFields(selectedDates, instance, startInput, endInput);
+            syncRangeHiddenFields(selectedDates, instance, startInput, endInput, 'Y-m-d');
+        },
+    });
+};
+
+const initRangeDateTimeInput = (input) => {
+    if (!(input instanceof HTMLInputElement) || input.dataset.flatpickrReady === '1') {
+        return;
+    }
+
+    const startName = (input.dataset.rangeStartName || '').trim();
+    const endName = (input.dataset.rangeEndName || '').trim();
+    const startInput = findNamedInput(input, startName);
+    const endInput = findNamedInput(input, endName);
+    if (!startInput || !endInput) {
+        return;
+    }
+
+    input.dataset.flatpickrReady = '1';
+    normalizeFlatpickrInputType(input);
+
+    const normalizeDefaultDate = (value) => String(value || '').replace('T', ' ');
+    const defaultDates = [];
+    if (startInput.value) {
+        defaultDates.push(normalizeDefaultDate(startInput.value));
+    }
+    if (endInput.value && endInput.value !== startInput.value) {
+        defaultDates.push(normalizeDefaultDate(endInput.value));
+    }
+
+    flatpickr(input, {
+        mode: 'range',
+        enableTime: true,
+        time_24hr: true,
+        dateFormat: 'Y-m-d H:i',
+        locale: flatpickrLocale,
+        allowInput: true,
+        defaultDate: defaultDates.length > 0 ? defaultDates : null,
+        onReady: (selectedDates, _dateStr, instance) => {
+            syncRangeHiddenFields(selectedDates, instance, startInput, endInput, 'Y-m-d\\TH:i');
+        },
+        onChange: (selectedDates, _dateStr, instance) => {
+            syncRangeHiddenFields(selectedDates, instance, startInput, endInput, 'Y-m-d\\TH:i');
+        },
+        onClose: (selectedDates, _dateStr, instance) => {
+            syncRangeHiddenFields(selectedDates, instance, startInput, endInput, 'Y-m-d\\TH:i');
         },
     });
 };
@@ -462,6 +523,7 @@ const bindFlatpickrInputs = (root = document) => {
         root.querySelectorAll(selector).forEach(initializer);
     };
 
+    bindBySelector('input[data-flatpickr-datetime-range]', initRangeDateTimeInput);
     bindBySelector('input[data-flatpickr-range]', initRangeDateInput);
     bindBySelector('input[data-flatpickr-datetime], input[type="datetime-local"]', initDateTimeInput);
     bindBySelector('input[data-flatpickr-date], input[type="date"]', initDateInput);

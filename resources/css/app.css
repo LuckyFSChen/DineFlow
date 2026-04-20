@@ -238,6 +238,15 @@ body.is-admin-area .backend-hero textarea {
 	background-color: #ffffff;
 }
 
+body.is-admin-area .backend-hero select option,
+body.is-admin-area .backend-hero select optgroup,
+body.is-admin-area .backend-hero select option.text-slate-900,
+body.is-admin-area .backend-hero select option.text-slate-800,
+body.is-admin-area .backend-hero select option.text-slate-700 {
+	color: #0f172a !important;
+	background-color: #ffffff !important;
+}
+
 body.is-admin-area .backend-hero input.text-slate-900,
 body.is-admin-area .backend-hero input.text-slate-800,
 body.is-admin-area .backend-hero input.text-slate-700,
@@ -466,6 +475,7 @@ body.is-admin-area .board-store-select option:checked {
 }
 
 input[data-flatpickr-range],
+input[data-flatpickr-datetime-range],
 input[data-flatpickr-date],
 input[data-flatpickr-datetime] {
 	letter-spacing: 0.01em;
