@@ -136,7 +136,7 @@ class LoyaltyController extends Controller
                 'end_date' => $request->input('end_date'),
                 'keyword' => $request->input('keyword'),
             ])
-            ->with('status', '會員集點設定已更新');
+            ->with('status', __('loyalty.settings_updated'));
     }
 
     public function storeCoupon(Request $request)
@@ -167,23 +167,23 @@ class LoyaltyController extends Controller
                     $amount = (int) ($value ?? 0);
 
                     if ($type === 'fixed' && $amount < 1) {
-                        $fail('固定金額折扣必須至少為 1。');
+                        $fail(__('loyalty.fixed_discount_min'));
                     }
 
                     if ($type === 'percent' && ($amount < 1 || $amount > 100)) {
-                        $fail('百分比折扣必須介於 1 到 100。');
+                        $fail(__('loyalty.percent_discount_range'));
                     }
                 },
             ],
             'reward_per_amount' => [
-                Rule::requiredIf(fn () => $request->input('discount_type') === 'points_reward'),
-                'nullable',
+                Rule::excludeIf(fn () => $request->input('discount_type') !== 'points_reward'),
+                'required',
                 'integer',
                 'min:1',
             ],
             'reward_points' => [
-                Rule::requiredIf(fn () => $request->input('discount_type') === 'points_reward'),
-                'nullable',
+                Rule::excludeIf(fn () => $request->input('discount_type') !== 'points_reward'),
+                'required',
                 'integer',
                 'min:1',
             ],
@@ -216,7 +216,7 @@ class LoyaltyController extends Controller
             'is_active' => $request->boolean('is_active', true),
         ]);
 
-        return back()->with('status', '優惠券已建立');
+        return back()->with('status', __('loyalty.coupon_created'));
     }
 
     public function updateCoupon(Request $request, Coupon $coupon)
@@ -248,23 +248,23 @@ class LoyaltyController extends Controller
                     $amount = (int) ($value ?? 0);
 
                     if ($type === 'fixed' && $amount < 1) {
-                        $fail('固定金額折扣必須至少為 1。');
+                        $fail(__('loyalty.fixed_discount_min'));
                     }
 
                     if ($type === 'percent' && ($amount < 1 || $amount > 100)) {
-                        $fail('百分比折扣必須介於 1 到 100。');
+                        $fail(__('loyalty.percent_discount_range'));
                     }
                 },
             ],
             'reward_per_amount' => [
-                Rule::requiredIf(fn () => $request->input('discount_type') === 'points_reward'),
-                'nullable',
+                Rule::excludeIf(fn () => $request->input('discount_type') !== 'points_reward'),
+                'required',
                 'integer',
                 'min:1',
             ],
             'reward_points' => [
-                Rule::requiredIf(fn () => $request->input('discount_type') === 'points_reward'),
-                'nullable',
+                Rule::excludeIf(fn () => $request->input('discount_type') !== 'points_reward'),
+                'required',
                 'integer',
                 'min:1',
             ],
@@ -295,7 +295,7 @@ class LoyaltyController extends Controller
             $coupon->refresh();
 
             return response()->json([
-                'message' => '優惠券已更新',
+                'message' => __('loyalty.coupon_updated'),
                 'coupon' => [
                     'id' => (int) $coupon->id,
                     'name' => (string) $coupon->name,
@@ -315,7 +315,7 @@ class LoyaltyController extends Controller
             ]);
         }
 
-        return back()->with('status', '優惠券已更新');
+        return back()->with('status', __('loyalty.coupon_updated'));
     }
 
     public function destroyCoupon(Request $request, Coupon $coupon)
@@ -328,7 +328,7 @@ class LoyaltyController extends Controller
 
         $coupon->delete();
 
-        return back()->with('status', '優惠券已刪除');
+        return back()->with('status', __('loyalty.coupon_deleted'));
     }
 
     public function toggleCoupon(Request $request, Coupon $coupon)
@@ -342,7 +342,7 @@ class LoyaltyController extends Controller
         $coupon->is_active = ! $coupon->is_active;
         $coupon->save();
 
-        return back()->with('status', $coupon->is_active ? '優惠券已啟用' : '優惠券已停用');
+        return back()->with('status', $coupon->is_active ? __('loyalty.coupon_enabled') : __('loyalty.coupon_disabled'));
     }
 
     private function authorizeCoupon(Request $request, Coupon $coupon): void

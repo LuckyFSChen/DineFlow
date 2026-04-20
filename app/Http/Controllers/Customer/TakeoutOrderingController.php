@@ -409,7 +409,10 @@ class TakeoutOrderingController extends Controller
                     );
                 }
 
-                $member = $this->findExistingMemberForCoupon($store, $customerEmail, $customerPhone, true);
+                $member = $this->loyaltyService->resolveMember($store, $customerName, $customerEmail, $customerPhone);
+                if ($member !== null) {
+                    $member = Member::query()->lockForUpdate()->find($member->id);
+                }
                 $couponResult = $this->loyaltyService->resolveCoupon($store, $couponCode, $total, $member);
                 $couponError = $couponResult['error'] ?? null;
 
@@ -427,9 +430,14 @@ class TakeoutOrderingController extends Controller
                 $coupon = $couponResult['coupon'] ?? null;
                 $couponDiscount = max((int) ($couponResult['discount'] ?? 0), 0);
                 $finalTotal = max($total - $couponDiscount, 0);
+                $pointsUsed = max((int) ($couponResult['points_cost'] ?? 0), 0);
+                $baseEarnedPoints = $store->calculateEarnedPoints($finalTotal);
+                $bonusEarnedPoints = max((int) ($couponResult['bonus_points'] ?? 0), 0);
+                $pointsEarned = max($baseEarnedPoints + $bonusEarnedPoints, 0);
 
                 $order = Order::create([
                     'store_id' => $store->id,
+                    'member_id' => $member?->id,
                     'dining_table_id' => null,
                     'order_type' => 'takeout',
                     'cart_token' => $cartToken,
@@ -450,6 +458,8 @@ class TakeoutOrderingController extends Controller
                     'coupon_id' => $coupon?->id,
                     'coupon_code' => $coupon?->code,
                     'coupon_discount' => $couponDiscount,
+                    'points_used' => $pointsUsed,
+                    'points_earned' => $pointsEarned,
                     'subtotal' => $total,
                     'total' => $finalTotal,
                 ]);
@@ -468,6 +478,14 @@ class TakeoutOrderingController extends Controller
                 if ($coupon !== null) {
                     $coupon->increment('used_count');
                 }
+
+                $this->loyaltyService->finalizeOrderLoyalty(
+                    $order,
+                    $member,
+                    $coupon,
+                    $pointsUsed,
+                    $pointsEarned
+                );
 
                 $this->bindMemberCarrierCode(
                     $store,
