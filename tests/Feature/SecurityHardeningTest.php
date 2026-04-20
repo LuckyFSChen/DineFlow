@@ -307,4 +307,56 @@ class SecurityHardeningTest extends TestCase
         $response->assertDontSee('Other Card Store');
         $response->assertDontSee('555');
     }
+
+    public function test_points_card_page_hides_inactive_stores(): void
+    {
+        $customer = User::create([
+            'name' => 'Customer One',
+            'email' => 'customer.one@example.com',
+            'phone' => '0911222333',
+            'password' => Hash::make('password'),
+            'role' => 'customer',
+        ]);
+
+        $activeStore = Store::create([
+            'name' => 'Visible Card Store',
+            'slug' => 'visible-card-store',
+            'is_active' => true,
+        ]);
+
+        $inactiveStore = Store::create([
+            'name' => 'Hidden Card Store',
+            'slug' => 'hidden-card-store',
+            'is_active' => false,
+        ]);
+
+        Member::create([
+            'store_id' => $activeStore->id,
+            'name' => 'Customer One',
+            'email' => 'customer.one@example.com',
+            'phone' => '0911222333',
+            'points_balance' => 30,
+            'total_spent' => 800,
+            'total_orders' => 2,
+            'last_order_at' => now()->subDay(),
+        ]);
+
+        Member::create([
+            'store_id' => $inactiveStore->id,
+            'name' => 'Customer One',
+            'email' => 'customer.one@example.com',
+            'phone' => '0911222333',
+            'points_balance' => 99,
+            'total_spent' => 1600,
+            'total_orders' => 5,
+            'last_order_at' => now()->subHours(3),
+        ]);
+
+        $response = $this->actingAs($customer)->get(route('customer.points.index'));
+
+        $response->assertOk();
+        $response->assertSee('Visible Card Store');
+        $response->assertDontSee('Hidden Card Store');
+        $response->assertDontSee('99');
+    }
 }

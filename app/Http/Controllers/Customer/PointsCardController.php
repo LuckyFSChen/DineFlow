@@ -34,6 +34,7 @@ class PointsCardController extends Controller
                         $query->orWhere('phone', $phone);
                     }
                 })
+                ->whereHas('store', fn ($query) => $query->where('is_active', true))
                 ->with('store:id,slug,name,currency,banner_image,loyalty_enabled')
                 ->orderByDesc('points_balance')
                 ->orderByDesc('last_order_at')
