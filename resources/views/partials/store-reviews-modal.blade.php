@@ -68,7 +68,29 @@
 
     const ratingStars = (rating) => {
         const normalized = Math.max(0, Math.min(5, Number(rating) || 0));
-        return '\u2605'.repeat(normalized) + '\u2606'.repeat(5 - normalized);
+        const starPath = 'M12 3.75l2.67 5.41 5.97.87-4.32 4.21 1.02 5.95L12 17.41l-5.34 2.8 1.02-5.95-4.32-4.21 5.97-.87L12 3.75z';
+
+        return Array.from({ length: 5 }, (_, index) => {
+            const fill = Math.max(0, Math.min(1, normalized - index));
+
+            return `
+                <span class="relative inline-flex h-4 w-4 shrink-0">
+                    <svg class="h-4 w-4 text-amber-100" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="${starPath}" />
+                    </svg>
+                    ${fill > 0 ? `
+                        <span class="absolute inset-y-0 left-0 overflow-hidden" style="width: ${fill * 100}%">
+                            <svg class="h-4 w-4 text-amber-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="${starPath}" />
+                            </svg>
+                        </span>
+                    ` : ''}
+                    <svg class="pointer-events-none absolute inset-0 h-4 w-4 text-amber-500/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" aria-hidden="true">
+                        <path d="${starPath}" />
+                    </svg>
+                </span>
+            `;
+        }).join('');
     };
 
     const formatDate = (value) => {
@@ -109,7 +131,10 @@
                     return `
                         <article class="rounded-2xl border border-brand-soft/70 bg-brand-soft/10 p-4">
                             <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-                                <p class="text-base font-semibold tracking-wide text-amber-500">${escapeHtml(ratingStars(review.rating))}</p>
+                                <div class="inline-flex items-center gap-2">
+                                    <div class="inline-flex items-center gap-0.5">${ratingStars(review.rating)}</div>
+                                    <span class="text-sm font-semibold text-amber-600">${escapeHtml(Number(review.rating || 0).toFixed(1))}</span>
+                                </div>
                                 <p class="text-sm text-brand-primary/70">${escapeHtml(metaText)}</p>
                             </div>
                             <p class="text-base leading-7 text-brand-dark">${escapeHtml(review.comment || '')}</p>

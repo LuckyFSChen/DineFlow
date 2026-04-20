@@ -17,6 +17,7 @@ use App\Support\InvoiceFlow;
 use App\Support\TakeoutCartSession;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -336,9 +337,13 @@ class DineInOrderController extends Controller
         }
 
         $total = collect($cart)->sum('subtotal');
+        $customerPhone = $this->normalizeOptionalText($validated['customer_phone'] ?? null);
+        $phoneAlreadyRegistered = $this->customerAccountService->isPhoneRegistered($customerPhone);
+        $shouldCreateAccount = ! $request->user()
+            && ! $phoneAlreadyRegistered;
 
         try {
-            $order = DB::transaction(function () use ($store, $table, $validated, $cart, $total, $invoicePayload) {
+            $checkoutResult = DB::transaction(function () use ($store, $table, $validated, $cart, $total, $invoicePayload, $shouldCreateAccount) {
                 $this->assertCartItemsStillAvailable($store, $cart);
 
                 $customerName = $this->normalizeCustomerName($validated['customer_name'] ?? null);
@@ -346,6 +351,16 @@ class DineInOrderController extends Controller
                 $customerPhone = $this->normalizeOptionalText($validated['customer_phone'] ?? null);
                 $customerNote = $this->normalizeOptionalText($validated['note'] ?? null);
                 $couponCode = $this->normalizeCouponCode($validated['coupon_code'] ?? null);
+                $registeredCustomer = null;
+
+                if ($shouldCreateAccount) {
+                    $registeredCustomer = $this->customerAccountService->registerOrUpdateFromOrder(
+                        $customerPhone,
+                        $customerName,
+                        $customerEmail
+                    );
+                }
+
                 $member = $this->loyaltyService->resolveMember($store, $customerName, $customerEmail, $customerPhone);
                 if ($member !== null) {
                     $member = Member::query()->lockForUpdate()->find($member->id);
@@ -482,12 +497,28 @@ class DineInOrderController extends Controller
                     $invoicePayload
                 );
 
-                return $order;
+                return [
+                    'order' => $order,
+                    'registered_customer' => $registeredCustomer,
+                ];
             });
         } catch (ValidationException $exception) {
             return redirect()
                 ->route('customer.dinein.cart.show', ['store' => $store, 'table' => $table])
                 ->with('error', $exception->validator->errors()->first() ?: __('customer.item_not_available'));
+        }
+
+        /** @var Order $order */
+        $order = $checkoutResult['order'];
+        $registeredCustomer = $checkoutResult['registered_customer'] ?? null;
+
+        if (
+            $shouldCreateAccount
+            && $registeredCustomer instanceof User
+            && $registeredCustomer->isCustomer()
+        ) {
+            Auth::login($registeredCustomer);
+            $request->session()->regenerate();
         }
 
         session()->forget($cartKey);
@@ -644,6 +675,7 @@ class DineInOrderController extends Controller
         if ($user instanceof User) {
             $email = strtolower(trim((string) ($user->email ?? '')));
             $phone = PhoneFormatter::digitsOnly((string) ($user->phone ?? ''), 32);
+            $memberPointSummaries = collect();
 
             $orders = collect();
             if ($email !== '' || $phone !== null) {
@@ -661,10 +693,26 @@ class DineInOrderController extends Controller
                     ->orderByDesc('created_at')
                     ->limit(self::GLOBAL_ORDER_HISTORY_LIMIT)
                     ->get();
+
+                $memberPointSummaries = Member::query()
+                    ->where(function ($query) use ($email, $phone): void {
+                        if ($email !== '') {
+                            $query->orWhereRaw('LOWER(email) = ?', [$email]);
+                        }
+
+                        if ($phone !== null) {
+                            $query->orWhere('phone', $phone);
+                        }
+                    })
+                    ->with('store:id,slug,name,currency')
+                    ->orderByDesc('points_balance')
+                    ->orderByDesc('last_order_at')
+                    ->get();
             }
 
             return view('customer.history', [
                 'orders' => $orders,
+                'memberPointSummaries' => $memberPointSummaries,
             ]);
         }
 
@@ -699,6 +747,7 @@ class DineInOrderController extends Controller
 
         return view('customer.history', [
             'orders' => $orders,
+            'memberPointSummaries' => collect(),
         ]);
     }
 

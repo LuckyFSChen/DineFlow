@@ -21,6 +21,8 @@ class EnforcePasswordChange
             $request->routeIs('profile.edit')
             || $request->routeIs('profile.update')
             || $request->routeIs('password.update')
+            || $request->routeIs('customer.order.success')
+            || $request->routeIs('customer.order.status')
             || $request->routeIs('logout')
         ) {
             return $next($request);

@@ -19,6 +19,7 @@ return [
     'super_admin'        => 'Super Admin',
     'account_center'     => 'Account Center',
     'profile'            => 'Profile',
+    'points_card'        => 'Points Card',
     'order_history'      => 'Order History',
     'logout'             => 'Logout',
     'currently_logged_in'=> 'Logged In As',
@@ -30,6 +31,5 @@ return [
     'lang_en'            => 'English',
     'lang_vi'            => 'Tiếng Việt',
 ];
-
 
 

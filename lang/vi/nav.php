@@ -29,7 +29,7 @@ return [
     'lang_zh_CN'         => '简体中文',
     'lang_en'            => 'English',
     'lang_vi'            => 'Tiếng Việt',
+    'points_card'        => 'The diem',
 ];
-
 
 

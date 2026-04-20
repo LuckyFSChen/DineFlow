@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\Auth\AuthenticatedSessionController as AdminAuthe
 use App\Http\Controllers\Admin\ChefManagementController;
 use App\Http\Controllers\Customer\DineInMenuController;
 use App\Http\Controllers\Customer\DineInOrderController;
+use App\Http\Controllers\Customer\PointsCardController;
 use App\Http\Controllers\Customer\StoreReviewController;
 use App\Http\Controllers\Customer\TakeoutOrderingController;
 use App\Http\Controllers\HomeController;
@@ -338,6 +339,7 @@ Route::get('/admin', function (Request $request) {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/points-card', [PointsCardController::class, 'index'])->name('customer.points.index');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

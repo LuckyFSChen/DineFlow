@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Member;
 use App\Models\Order;
 use App\Models\Store;
 use App\Models\SubscriptionPayment;
@@ -88,6 +89,13 @@ class SecurityHardeningTest extends TestCase
         $response->assertRedirect(route('login'));
     }
 
+    public function test_guest_cannot_access_points_card_page(): void
+    {
+        $response = $this->get(route('customer.points.index'));
+
+        $response->assertRedirect(route('login'));
+    }
+
     public function test_order_history_only_shows_authenticated_customer_orders(): void
     {
         $customer = User::create([
@@ -154,5 +162,149 @@ class SecurityHardeningTest extends TestCase
         $response->assertSee('SAFE-001');
         $response->assertSee('SAFE-002');
         $response->assertDontSee('SAFE-003');
+    }
+
+    public function test_order_history_shows_only_authenticated_customer_store_point_balances(): void
+    {
+        $customer = User::create([
+            'name' => 'Customer One',
+            'email' => 'customer.one@example.com',
+            'phone' => '0911222333',
+            'password' => Hash::make('password'),
+            'role' => 'customer',
+        ]);
+
+        $storeA = Store::create([
+            'name' => 'Point Store A',
+            'slug' => 'point-store-a',
+            'is_active' => true,
+        ]);
+
+        $storeB = Store::create([
+            'name' => 'Point Store B',
+            'slug' => 'point-store-b',
+            'is_active' => true,
+        ]);
+
+        $otherStore = Store::create([
+            'name' => 'Other Customer Store',
+            'slug' => 'other-customer-store',
+            'is_active' => true,
+        ]);
+
+        Member::create([
+            'store_id' => $storeA->id,
+            'name' => 'Customer One',
+            'email' => 'customer.one@example.com',
+            'phone' => '0911222333',
+            'points_balance' => 35,
+            'total_spent' => 1200,
+            'total_orders' => 4,
+            'last_order_at' => now()->subDay(),
+        ]);
+
+        Member::create([
+            'store_id' => $storeB->id,
+            'name' => 'Customer One',
+            'email' => 'customer.one@example.com',
+            'phone' => '0000000000',
+            'points_balance' => 12,
+            'total_spent' => 500,
+            'total_orders' => 2,
+            'last_order_at' => now()->subDays(2),
+        ]);
+
+        Member::create([
+            'store_id' => $otherStore->id,
+            'name' => 'Other Customer',
+            'email' => 'other@example.com',
+            'phone' => '0999888777',
+            'points_balance' => 999,
+            'total_spent' => 9999,
+            'total_orders' => 9,
+            'last_order_at' => now(),
+        ]);
+
+        $response = $this->actingAs($customer)->get(route('customer.order.history'));
+
+        $response->assertOk();
+        $response->assertSee('Point Store A');
+        $response->assertSee('Point Store B');
+        $response->assertSee('35');
+        $response->assertSee('12');
+        $response->assertDontSee('Other Customer Store');
+        $response->assertDontSee('999');
+    }
+
+    public function test_points_card_page_shows_only_authenticated_customer_store_point_balances(): void
+    {
+        $customer = User::create([
+            'name' => 'Customer One',
+            'email' => 'customer.one@example.com',
+            'phone' => '0911222333',
+            'password' => Hash::make('password'),
+            'role' => 'customer',
+        ]);
+
+        $storeA = Store::create([
+            'name' => 'Card Store A',
+            'slug' => 'card-store-a',
+            'is_active' => true,
+        ]);
+
+        $storeB = Store::create([
+            'name' => 'Card Store B',
+            'slug' => 'card-store-b',
+            'is_active' => true,
+        ]);
+
+        $otherStore = Store::create([
+            'name' => 'Other Card Store',
+            'slug' => 'other-card-store',
+            'is_active' => true,
+        ]);
+
+        Member::create([
+            'store_id' => $storeA->id,
+            'name' => 'Customer One',
+            'email' => 'customer.one@example.com',
+            'phone' => '0911222333',
+            'points_balance' => 88,
+            'total_spent' => 2400,
+            'total_orders' => 6,
+            'last_order_at' => now()->subHours(6),
+        ]);
+
+        Member::create([
+            'store_id' => $storeB->id,
+            'name' => 'Customer One',
+            'email' => 'someone-else@example.com',
+            'phone' => '0911222333',
+            'points_balance' => 21,
+            'total_spent' => 900,
+            'total_orders' => 3,
+            'last_order_at' => now()->subDays(3),
+        ]);
+
+        Member::create([
+            'store_id' => $otherStore->id,
+            'name' => 'Other Customer',
+            'email' => 'other@example.com',
+            'phone' => '0999888777',
+            'points_balance' => 555,
+            'total_spent' => 5555,
+            'total_orders' => 5,
+            'last_order_at' => now(),
+        ]);
+
+        $response = $this->actingAs($customer)->get(route('customer.points.index'));
+
+        $response->assertOk();
+        $response->assertSee('Card Store A');
+        $response->assertSee('Card Store B');
+        $response->assertSee('88');
+        $response->assertSee('21');
+        $response->assertDontSee('Other Card Store');
+        $response->assertDontSee('555');
     }
 }

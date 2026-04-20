@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Order;
+use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -50,5 +52,39 @@ class AuthenticationTest extends TestCase
 
         $this->assertGuest();
         $response->assertRedirect('/');
+    }
+
+    public function test_users_required_to_change_password_can_still_view_order_success_page(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'customer',
+            'must_change_password' => true,
+            'phone' => '0912345678',
+        ]);
+
+        $store = Store::create([
+            'name' => 'Success Store',
+            'slug' => 'success-store',
+            'is_active' => true,
+        ]);
+
+        $order = Order::create([
+            'store_id' => $store->id,
+            'order_type' => 'takeout',
+            'order_no' => 'SUCCESS-001',
+            'status' => 'pending',
+            'payment_status' => 'unpaid',
+            'customer_phone' => '0912345678',
+            'subtotal' => 100,
+            'total' => 100,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('customer.order.success', [
+            'store' => $store->slug,
+            'order' => $order->uuid,
+        ]));
+
+        $response->assertOk();
+        $response->assertViewIs('customer.success');
     }
 }

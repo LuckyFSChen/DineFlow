@@ -115,6 +115,10 @@
                 <!-- Navigation Links -->
                 <div class="hidden space-x-3 sm:-my-px sm:ms-8 sm:flex sm:items-center">
                     @if(Auth::user()?->isCustomer())
+                        <x-nav-link :href="route('customer.points.index')" :active="request()->routeIs('customer.points.*')">
+                            {{ __('nav.points_card') }}
+                        </x-nav-link>
+
                         <x-nav-link :href="route('customer.order.history')" :active="request()->routeIs('customer.order.history')">
                             {{ __('nav.order_history') }}
                         </x-nav-link>
@@ -226,6 +230,10 @@
                             </x-dropdown-link>
 
                             @if(Auth::user()?->isCustomer())
+                                <x-dropdown-link :href="route('customer.points.index')">
+                                    {{ __('nav.points_card') }}
+                                </x-dropdown-link>
+
                                 <x-dropdown-link :href="route('customer.order.history')">
                                     {{ __('nav.order_history') }}
                                 </x-dropdown-link>
@@ -270,6 +278,10 @@
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
             @if(Auth::user()?->isCustomer())
+                <x-responsive-nav-link :href="route('customer.points.index')" :active="request()->routeIs('customer.points.*')">
+                    {{ __('nav.points_card') }}
+                </x-responsive-nav-link>
+
                 <x-responsive-nav-link :href="route('customer.order.history')" :active="request()->routeIs('customer.order.history')">
                     {{ __('nav.order_history') }}
                 </x-responsive-nav-link>
@@ -340,6 +352,10 @@
                     </x-responsive-nav-link>
 
                     @if(Auth::user()?->isCustomer())
+                        <x-responsive-nav-link :href="route('customer.points.index')">
+                            {{ __('nav.points_card') }}
+                        </x-responsive-nav-link>
+
                         <x-responsive-nav-link :href="route('customer.order.history')">
                             {{ __('nav.order_history') }}
                         </x-responsive-nav-link>

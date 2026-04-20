@@ -19,6 +19,7 @@ return [
     'super_admin'        => '超級管理',
     'account_center'     => '帳號中心',
     'profile'            => '個人資料',
+    'points_card'        => '點數卡',
     'order_history'      => '訂單紀錄',
     'logout'             => '登出',
     'currently_logged_in'=> '目前登入',

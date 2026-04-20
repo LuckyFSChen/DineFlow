@@ -41,6 +41,63 @@
                     </div>
                 @endif
 
+                @if ($memberPointSummaries->isNotEmpty())
+                    <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <h2 class="text-base font-bold text-gray-900">{{ __('customer.points_overview_title') }}</h2>
+                                <p class="mt-1 text-xs text-gray-600">{{ __('customer.points_overview_hint') }}</p>
+                            </div>
+                            <span class="rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-semibold text-amber-700">
+                                {{ __('customer.points_overview_store_count', ['count' => $memberPointSummaries->count()]) }}
+                            </span>
+                        </div>
+
+                        <div class="mt-4 grid gap-3 md:grid-cols-2">
+                            @foreach ($memberPointSummaries as $memberPointSummary)
+                                @php
+                                    $pointStore = $memberPointSummary->store;
+                                    $pointCurrencyCode = strtolower((string) ($pointStore->currency ?? 'twd'));
+                                    $pointCurrencySymbol = match ($pointCurrencyCode) {
+                                        'vnd' => 'VND',
+                                        'cny' => 'CNY',
+                                        'usd' => 'USD',
+                                        default => 'NT$',
+                                    };
+                                @endphp
+                                <article class="rounded-2xl border border-amber-100 bg-white px-4 py-4">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <p class="truncate text-sm font-bold text-gray-900">{{ $pointStore?->name ?? __('customer.store') }}</p>
+                                            <p class="mt-1 text-xs text-gray-500">
+                                                {{ __('customer.current_balance', ['balance' => number_format((int) $memberPointSummary->points_balance), 'unit' => __('customer.points_unit')]) }}
+                                            </p>
+                                        </div>
+                                        <div class="shrink-0 rounded-2xl bg-amber-50 px-3 py-2 text-right">
+                                            <p class="text-xs text-amber-700">{{ __('customer.points_balance_label') }}</p>
+                                            <p class="text-lg font-bold text-amber-800">{{ number_format((int) $memberPointSummary->points_balance) }}</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs text-gray-600">
+                                        <span class="rounded-full bg-amber-50 px-2.5 py-1">
+                                            {{ __('customer.points_total_spent', ['currency' => $pointCurrencySymbol, 'amount' => number_format((int) $memberPointSummary->total_spent)]) }}
+                                        </span>
+                                        <span class="rounded-full bg-amber-50 px-2.5 py-1">
+                                            {{ __('customer.points_total_orders', ['count' => number_format((int) $memberPointSummary->total_orders)]) }}
+                                        </span>
+                                        @if ($memberPointSummary->last_order_at)
+                                            <span class="rounded-full bg-amber-50 px-2.5 py-1">
+                                                {{ __('customer.points_last_order_at', ['date' => $memberPointSummary->last_order_at->format('Y-m-d H:i')]) }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                </article>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
                 @if ($orders->isEmpty())
                     <p class="text-sm text-gray-600">
                         目前沒有你的訂單紀錄。
@@ -145,8 +202,16 @@
                                         @if($review)
                                             <p class="text-xs font-semibold text-emerald-700">{{ __('customer.review_already_submitted') }}</p>
                                             <div class="mt-1 flex flex-wrap items-center gap-4 text-xs text-gray-700">
-                                                <span>{{ __('customer.review_store_rating_label') }}: <span class="text-amber-500">{{ str_repeat('*', $storeRating) }}{{ str_repeat('-', max(5 - $storeRating, 0)) }}</span></span>
-                                                <span>{{ __('customer.review_order_rating_label') }}: <span class="text-amber-500">{{ str_repeat('*', $orderRating) }}{{ str_repeat('-', max(5 - $orderRating, 0)) }}</span></span>
+                                                <span class="inline-flex items-center gap-2">
+                                                    <span>{{ __('customer.review_store_rating_label') }}:</span>
+                                                    <x-rating-stars :rating="$storeRating" size="h-3.5 w-3.5" />
+                                                    <span class="font-semibold text-amber-600">{{ $storeRating }}/5</span>
+                                                </span>
+                                                <span class="inline-flex items-center gap-2">
+                                                    <span>{{ __('customer.review_order_rating_label') }}:</span>
+                                                    <x-rating-stars :rating="$orderRating" size="h-3.5 w-3.5" />
+                                                    <span class="font-semibold text-amber-600">{{ $orderRating }}/5</span>
+                                                </span>
                                             </div>
                                             @if(!empty($review->comment))
                                                 <p class="mt-2 text-sm text-gray-700">{{ $review->comment }}</p>
@@ -161,7 +226,8 @@
                                                         @for($score = 5; $score >= 1; $score--)
                                                             <label class="inline-flex items-center gap-1 rounded-lg border border-orange-200 bg-orange-50 px-2 py-1 text-xs font-medium text-orange-700">
                                                                 <input type="radio" name="store_rating" value="{{ $score }}" class="h-3.5 w-3.5" {{ $score === 5 ? 'checked' : '' }}>
-                                                                <span>{{ str_repeat('*', $score) }}</span>
+                                                                <x-rating-stars :rating="$score" size="h-3.5 w-3.5" />
+                                                                <span>{{ $score }}</span>
                                                             </label>
                                                         @endfor
                                                     </div>
@@ -173,7 +239,8 @@
                                                         @for($score = 5; $score >= 1; $score--)
                                                             <label class="inline-flex items-center gap-1 rounded-lg border border-orange-200 bg-orange-50 px-2 py-1 text-xs font-medium text-orange-700">
                                                                 <input type="radio" name="order_rating" value="{{ $score }}" class="h-3.5 w-3.5" {{ $score === 5 ? 'checked' : '' }}>
-                                                                <span>{{ str_repeat('*', $score) }}</span>
+                                                                <x-rating-stars :rating="$score" size="h-3.5 w-3.5" />
+                                                                <span>{{ $score }}</span>
                                                             </label>
                                                         @endfor
                                                     </div>

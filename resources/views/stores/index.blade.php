@@ -146,7 +146,6 @@
                     @foreach($stores as $store)
                         @php
                             $avgRating = (float) ($store->reviews_avg_rating ?? 0);
-                            $roundedRating = (int) round($avgRating);
                             $ratingCount = (int) ($store->ratings_count ?? 0);
                             $commentCount = (int) ($store->comments_count ?? 0);
                             $ratingSummary = $commentCount > 0
@@ -207,13 +206,14 @@
                                         @if($ratingCount > 0)
                                             <button
                                                 type="button"
-                                                class="rounded-lg px-1 text-left underline decoration-brand-primary/35 underline-offset-4 transition hover:text-brand-primary hover:decoration-brand-primary"
+                                                class="inline-flex items-center gap-2 rounded-lg px-1 text-left underline decoration-brand-primary/35 underline-offset-4 transition hover:text-brand-primary hover:decoration-brand-primary"
                                                 data-store-review-trigger
                                                 data-store-review-url="{{ route('stores.reviews', ['store' => $store]) }}"
                                                 data-store-name="{{ $store->name }}"
                                                 data-review-count="{{ $commentCount }}"
                                             >
-                                                {{ str_repeat('★', $roundedRating) }}{{ str_repeat('☆', max(5 - $roundedRating, 0)) }} {{ number_format($avgRating, 1) }} {{ $ratingSummary }}
+                                                <x-rating-stars :rating="$avgRating" size="h-3.5 w-3.5" />
+                                                <span>{{ number_format($avgRating, 1) }} {{ $ratingSummary }}</span>
                                             </button>
                                         @else
                                             <span>{{ __('home.store_rating_empty') }}</span>

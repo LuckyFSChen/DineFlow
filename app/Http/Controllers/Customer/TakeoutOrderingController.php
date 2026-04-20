@@ -15,6 +15,7 @@ use App\Support\InvoiceFlow;
 use App\Support\TakeoutCartSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -393,16 +394,17 @@ class TakeoutOrderingController extends Controller
             && ! $phoneAlreadyRegistered;
 
         try {
-            $order = DB::transaction(function () use ($store, $validated, $cart, $total, $cartToken, $shouldCreateAccount, $invoicePayload) {
+            $checkoutResult = DB::transaction(function () use ($store, $validated, $cart, $total, $cartToken, $shouldCreateAccount, $invoicePayload) {
                 $this->assertCartItemsStillAvailable($store, $cart);
 
                 $customerName = $this->normalizeOptionalText($validated['customer_name'] ?? null);
                 $customerEmail = $this->normalizeOptionalText($validated['customer_email'] ?? null);
                 $customerPhone = $this->normalizeOptionalText($validated['customer_phone'] ?? null);
                 $couponCode = $this->normalizeCouponCode($validated['coupon_code'] ?? null);
+                $registeredCustomer = null;
 
                 if ($shouldCreateAccount) {
-                    $this->customerAccountService->registerOrUpdateFromOrder(
+                    $registeredCustomer = $this->customerAccountService->registerOrUpdateFromOrder(
                         $customerPhone,
                         $customerName,
                         $customerEmail
@@ -495,13 +497,29 @@ class TakeoutOrderingController extends Controller
                     $invoicePayload
                 );
 
-                return $order;
+                return [
+                    'order' => $order,
+                    'registered_customer' => $registeredCustomer,
+                ];
             });
         } catch (ValidationException $exception) {
             return redirect()
                 ->route('customer.takeout.cart.show', ['store' => $store])
                 ->withErrors($exception->validator)
                 ->withInput();
+        }
+
+        /** @var Order $order */
+        $order = $checkoutResult['order'];
+        $registeredCustomer = $checkoutResult['registered_customer'] ?? null;
+
+        if (
+            $shouldCreateAccount
+            && $registeredCustomer instanceof User
+            && $registeredCustomer->isCustomer()
+        ) {
+            Auth::login($registeredCustomer);
+            $request->session()->regenerate();
         }
 
         session()->forget($cartKey);
