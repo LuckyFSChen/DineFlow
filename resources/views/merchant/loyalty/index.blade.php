@@ -144,7 +144,10 @@
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-slate-600">折扣值</label>
-                        <input type="number" min="0" name="discount_value" x-ref="discountValue" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        <div class="relative">
+                            <input type="number" min="0" name="discount_value" x-ref="discountValue" class="w-full rounded-xl border border-slate-300 px-3 py-2 pr-8 text-sm">
+                            <span x-show="discountType === 'percent'" class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-slate-500">%</span>
+                        </div>
                     </div>
                     <div>
                         <label class="mb-1 block text-xs font-semibold text-slate-600">贈點門檻金額（X）</label>
@@ -433,7 +436,10 @@
                             </div>
                             <div>
                                 <label class="mb-1 block text-xs font-semibold text-slate-600">折扣值</label>
-                                <input type="number" min="0" name="discount_value" x-model="form.discount_value" x-ref="editDiscountValue" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                                <div class="relative">
+                                    <input type="number" min="0" name="discount_value" x-model="form.discount_value" x-ref="editDiscountValue" class="w-full rounded-xl border border-slate-300 px-3 py-2 pr-8 text-sm">
+                                    <span x-show="form.discount_type === 'percent'" class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-slate-500">%</span>
+                                </div>
                             </div>
                             <div>
                                 <label class="mb-1 block text-xs font-semibold text-slate-600">贈點門檻金額（X）</label>
