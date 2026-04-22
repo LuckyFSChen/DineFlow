@@ -13,25 +13,6 @@ trait BuildsMerchantOrderPageData
 {
     protected function merchantOrderPageViewData(Store $store): array
     {
-        $tables = DiningTable::query()
-            ->where('store_id', $store->id)
-            ->orderBy('table_no')
-            ->get(['id', 'store_id', 'table_no', 'status']);
-
-        $openOrders = Order::query()
-            ->where('store_id', $store->id)
-            ->where('order_type', 'dine_in')
-            ->whereNotIn('status', $this->nonAppendableOrderStatuses())
-            ->where(function ($query) {
-                $query->where('payment_status', 'unpaid')
-                    ->orWhereNull('payment_status');
-            })
-            ->withCount('items')
-            ->orderByDesc('id')
-            ->get(['id', 'dining_table_id', 'order_no', 'status', 'payment_status', 'total'])
-            ->unique('dining_table_id')
-            ->keyBy('dining_table_id');
-
         $categories = Category::query()
             ->where('store_id', $store->id)
             ->where('is_active', true)
@@ -45,26 +26,6 @@ trait BuildsMerchantOrderPageData
             ->orderBy('sort')
             ->orderBy('id')
             ->get();
-
-        $tablesPayload = $tables->map(function (DiningTable $table) use ($openOrders) {
-            $openOrder = $openOrders->get($table->id);
-
-            return [
-                'id' => (int) $table->id,
-                'table_no' => (string) $table->table_no,
-                'status' => (string) $table->status,
-                'status_label' => $table->status === 'inactive'
-                    ? __('merchant_order.table_status_inactive')
-                    : __('merchant_order.table_status_available'),
-                'open_order' => $openOrder ? [
-                    'order_no' => (string) $openOrder->order_no,
-                    'status' => (string) $openOrder->status,
-                    'payment_status' => (string) $openOrder->payment_status,
-                    'items_count' => (int) $openOrder->items_count,
-                    'total' => (int) $openOrder->total,
-                ] : null,
-            ];
-        })->values();
 
         $categoriesPayload = $categories->map(function (Category $category) {
             return [
@@ -108,9 +69,12 @@ trait BuildsMerchantOrderPageData
 
         return [
             'store' => $store,
-            'tables' => $tables,
+            'tables' => DiningTable::query()
+                ->where('store_id', $store->id)
+                ->orderBy('table_no')
+                ->get(['id', 'store_id', 'table_no', 'status']),
             'categories' => $categories,
-            'tablesPayload' => $tablesPayload,
+            'tablesPayload' => $this->merchantOrderTablesPayload($store),
             'categoriesPayload' => $categoriesPayload,
             'initialCartItems' => $this->buildInitialCartItemsFromOldInput($store),
             'currencySymbol' => $this->currencySymbol($store),
@@ -119,6 +83,48 @@ trait BuildsMerchantOrderPageData
             'defaultCustomerPhone' => (string) old('customer_phone', ''),
             'defaultNote' => (string) old('note', ''),
         ];
+    }
+
+    protected function merchantOrderTablesPayload(Store $store): array
+    {
+        $tables = DiningTable::query()
+            ->where('store_id', $store->id)
+            ->orderBy('table_no')
+            ->get(['id', 'store_id', 'table_no', 'status']);
+
+        $openOrders = Order::query()
+            ->where('store_id', $store->id)
+            ->where('order_type', 'dine_in')
+            ->whereNotIn('status', $this->nonAppendableOrderStatuses())
+            ->where(function ($query) {
+                $query->where('payment_status', 'unpaid')
+                    ->orWhereNull('payment_status');
+            })
+            ->withCount('items')
+            ->orderByDesc('id')
+            ->get(['id', 'dining_table_id', 'order_no', 'status', 'payment_status', 'total'])
+            ->unique('dining_table_id')
+            ->keyBy('dining_table_id');
+
+        return $tables->map(function (DiningTable $table) use ($openOrders) {
+            $openOrder = $openOrders->get($table->id);
+
+            return [
+                'id' => (int) $table->id,
+                'table_no' => (string) $table->table_no,
+                'status' => (string) $table->status,
+                'status_label' => $table->status === 'inactive'
+                    ? __('merchant_order.table_status_inactive')
+                    : __('merchant_order.table_status_available'),
+                'open_order' => $openOrder ? [
+                    'order_no' => (string) $openOrder->order_no,
+                    'status' => (string) $openOrder->status,
+                    'payment_status' => (string) $openOrder->payment_status,
+                    'items_count' => (int) $openOrder->items_count,
+                    'total' => (int) $openOrder->total,
+                ] : null,
+            ];
+        })->values()->all();
     }
 
     protected function resolveOrderItems(Store $store, array $items): array

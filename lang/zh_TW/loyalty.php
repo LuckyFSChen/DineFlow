@@ -28,6 +28,9 @@ return [
     'fixed' => '固定金額',
     'percent' => '百分比',
     'points_reward_type' => '滿額贈點',
+    'bonus_points_toggle' => '加碼贈點',
+    'bonus_points_hint' => '開啟後，這張優惠券可在折價之外再贈送會員點數；若只想贈點，可改選「滿額贈點」。',
+    'bonus_points_enabled' => '含贈點',
     'discount_value' => '折扣值',
     'reward_per_amount' => '滿額門檻',
     'reward_points' => '贈送點數',
@@ -90,5 +93,6 @@ return [
     'coupon_disabled' => '優惠券已停用。',
     'fixed_discount_min' => '固定金額折扣至少需為 1。',
     'percent_discount_range' => '百分比折扣需介於 1 到 100 之間。',
+    'reward_pair_required' => '若要啟用贈點，請同時填寫滿額門檻與贈送點數。',
     'order_type_required' => '請至少選擇一種適用訂單類型。',
 ];

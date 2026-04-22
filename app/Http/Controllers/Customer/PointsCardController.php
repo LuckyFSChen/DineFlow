@@ -132,18 +132,31 @@ class PointsCardController extends Controller
 
     private function formatCouponSummary(Coupon $coupon, string $currencySymbol): string
     {
-        $summary = match ($coupon->normalizedDiscountType()) {
-            'percent' => __('customer.coupon_summary_percent', [
+        $parts = [];
+
+        if ($coupon->normalizedDiscountType() === 'percent') {
+            $parts[] = __('customer.coupon_summary_percent', [
                 'value' => (int) $coupon->discount_value,
-            ]),
-            'points_reward' => __('customer.coupon_summary_points_reward', [
+            ]);
+        } elseif ($coupon->hasDiscount()) {
+            $parts[] = __('customer.coupon_summary_fixed', [
+                'amount' => $currencySymbol . ' ' . number_format(max((int) $coupon->discount_value, 0)),
+            ]);
+        }
+
+        if ($coupon->hasBonusPointsReward()) {
+            $parts[] = __('customer.coupon_summary_points_reward', [
                 'amount' => $currencySymbol . ' ' . number_format(max((int) $coupon->reward_per_amount, 0)),
                 'points' => number_format((int) $coupon->reward_points),
-            ]),
-            default => __('customer.coupon_summary_fixed', [
+            ]);
+        }
+
+        $summary = implode(' | ', array_filter($parts));
+        if ($summary === '') {
+            $summary = __('customer.coupon_summary_fixed', [
                 'amount' => $currencySymbol . ' ' . number_format(max((int) $coupon->discount_value, 0)),
-            ]),
-        };
+            ]);
+        }
 
         $minimum = max((int) $coupon->min_order_amount, 0);
         if ($minimum > 0) {

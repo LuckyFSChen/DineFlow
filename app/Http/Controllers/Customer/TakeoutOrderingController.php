@@ -986,19 +986,32 @@ class TakeoutOrderingController extends Controller
 
     private function formatCouponSummary(Coupon $coupon, int $discount, string $currencySymbol): string
     {
-        $summary = match ($coupon->normalizedDiscountType()) {
-            'percent' => __('customer.coupon_summary_percent_with_amount', [
+        $parts = [];
+
+        if ($coupon->normalizedDiscountType() === 'percent') {
+            $parts[] = __('customer.coupon_summary_percent_with_amount', [
                 'value' => (int) $coupon->discount_value,
                 'amount' => $currencySymbol . ' ' . number_format($discount),
-            ]),
-            'points_reward' => __('customer.coupon_summary_points_reward', [
+            ]);
+        } elseif ($coupon->hasDiscount()) {
+            $parts[] = __('customer.coupon_summary_fixed', [
+                'amount' => $currencySymbol . ' ' . number_format($discount),
+            ]);
+        }
+
+        if ($coupon->hasBonusPointsReward()) {
+            $parts[] = __('customer.coupon_summary_points_reward', [
                 'amount' => $currencySymbol . ' ' . number_format(max((int) $coupon->reward_per_amount, 0)),
                 'points' => (int) $coupon->reward_points,
-            ]),
-            default => __('customer.coupon_summary_fixed', [
+            ]);
+        }
+
+        $summary = implode(' | ', array_filter($parts));
+        if ($summary === '') {
+            $summary = __('customer.coupon_summary_fixed', [
                 'amount' => $currencySymbol . ' ' . number_format($discount),
-            ]),
-        };
+            ]);
+        }
 
         $minimum = max((int) $coupon->min_order_amount, 0);
         if ($minimum > 0) {

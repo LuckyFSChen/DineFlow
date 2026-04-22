@@ -28,6 +28,9 @@ return [
     'fixed' => 'Fixed Amount',
     'percent' => 'Percent',
     'points_reward_type' => 'Spend & Earn Points',
+    'bonus_points_toggle' => 'Add bonus points',
+    'bonus_points_hint' => 'Enable this to let the coupon award extra points on top of any discount. Use "Spend & Earn Points" for reward-only coupons.',
+    'bonus_points_enabled' => 'Includes bonus points',
     'discount_value' => 'Discount Value',
     'reward_per_amount' => 'Spend Amount',
     'reward_points' => 'Reward Points',
@@ -90,6 +93,6 @@ return [
     'coupon_disabled' => 'Coupon disabled.',
     'fixed_discount_min' => 'Fixed discount must be at least 1.',
     'percent_discount_range' => 'Percent discount must be between 1 and 100.',
+    'reward_pair_required' => 'Enter both the spend threshold and bonus points to enable bonus-point rewards.',
     'order_type_required' => 'Select at least one order type.',
 ];
-

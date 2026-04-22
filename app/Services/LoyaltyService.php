@@ -115,7 +115,7 @@ class LoyaltyService
         ];
     }
 
-    public function finalizeOrderLoyalty(Order $order, ?Member $member, ?Coupon $coupon, int $pointsUsed, int $pointsEarned): void
+    public function finalizeOrderLoyalty(Order $order, ?Member $member, ?Coupon $coupon, int $pointsUsed, int $pointsEarned, ?int $spentAmount = null): void
     {
         if (! $member) {
             return;
@@ -152,7 +152,7 @@ class LoyaltyService
 
         $member->points_balance = $balance;
         $member->total_orders = (int) $member->total_orders + 1;
-        $member->total_spent = (int) $member->total_spent + (int) $order->total;
+        $member->total_spent = (int) $member->total_spent + max((int) ($spentAmount ?? $order->total), 0);
         $member->last_order_at = $order->created_at ?? now();
         $member->save();
     }

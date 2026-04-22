@@ -47,6 +47,8 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin', 'merchant.subscrip
     Route::patch('stores/{store}/activate', [AdminStoreController::class, 'activate'])->name('stores.activate');
     Route::patch('stores/{store}/deactivate', [AdminStoreController::class, 'deactivate'])->name('stores.deactivate');
     Route::get('stores/{store}/orders/create', [MerchantOrderController::class, 'create'])->name('stores.orders.create');
+    Route::get('stores/{store}/orders/tables', [MerchantOrderController::class, 'tables'])->name('stores.orders.tables');
+    Route::get('stores/{store}/orders/coupons', [MerchantOrderController::class, 'coupons'])->name('stores.orders.coupons');
     Route::post('stores/{store}/orders', [MerchantOrderController::class, 'store'])->name('stores.orders.store');
     Route::post('stores/{store}/categories', [ProductManagementController::class, 'storeCategory'])->name('stores.categories.store');
     Route::get('stores/{store}/categories/{category}/edit', [ProductManagementController::class, 'editCategory'])->name('stores.categories.edit');

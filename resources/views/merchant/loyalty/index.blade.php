@@ -9,6 +9,9 @@
         'usd' => 'USD',
         default => 'NT$',
     };
+    $oldRewardEnabled = old('discount_type') === 'points_reward'
+        || (int) old('reward_per_amount', 0) > 0
+        || (int) old('reward_points', 0) > 0;
 @endphp
 <div class="min-h-screen bg-slate-50 py-8">
     <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
@@ -130,8 +133,11 @@
                 <form method="POST"
                       action="{{ route('merchant.loyalty.coupons.store') }}"
                       class="mt-4 grid gap-3 sm:grid-cols-2"
-                      x-data="couponCreateForm(@js(old('discount_type', 'fixed')))"
-                      x-init="onDiscountTypeChange()">
+                      x-data="couponCreateForm({
+                          discountType: @js(old('discount_type', 'fixed')),
+                          rewardEnabled: @js($oldRewardEnabled),
+                      })"
+                      x-init="init()">
                     @csrf
                     <input type="hidden" name="store_id" value="{{ $selectedStore->id }}">
                     <div class="sm:col-span-2">
@@ -166,11 +172,22 @@
                             <span x-show="discountType === 'percent'" class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-slate-500">%</span>
                         </div>
                     </div>
-                    <div>
+                    <div class="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                        <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+                            <input type="checkbox"
+                                   x-model="rewardEnabled"
+                                   @change="onRewardToggleChange()"
+                                   :disabled="discountType === 'points_reward'"
+                                   class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                            {{ __('loyalty.bonus_points_toggle') }}
+                        </label>
+                        <p class="mt-1 text-xs text-slate-500">{{ __('loyalty.bonus_points_hint') }}</p>
+                    </div>
+                    <div x-show="rewardEnabled || discountType === 'points_reward'" x-cloak>
                         <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('loyalty.reward_per_amount') }}</label>
                         <input type="number" min="0" name="reward_per_amount" value="{{ old('reward_per_amount') }}" x-ref="rewardPerAmount" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                     </div>
-                    <div>
+                    <div x-show="rewardEnabled || discountType === 'points_reward'" x-cloak>
                         <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('loyalty.reward_points') }}</label>
                         <input type="number" min="0" name="reward_points" value="{{ old('reward_points') }}" x-ref="rewardPoints" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                     </div>
@@ -355,18 +372,24 @@
                                 <td class="px-3 py-2">{{ $coupon->name }}</td>
                                 <td class="px-3 py-2 font-semibold">{{ $coupon->code }}</td>
                                 <td class="px-3 py-2">
-                                    @if($coupon->isPercentType())
+                                    @if($coupon->isPercentType() && $coupon->hasDiscount())
                                         {{ $coupon->discount_value }}%
-                                    @elseif($coupon->isPointsRewardType())
+                                    @elseif($coupon->hasDiscount())
+                                        {{ $currencySymbol }} {{ number_format((int) $coupon->discount_value) }}
+                                    @elseif($coupon->hasBonusPointsReward())
                                         {{ __('loyalty.points_reward_type') }}
                                     @else
-                                        {{ $currencySymbol }} {{ number_format((int) $coupon->discount_value) }}
+                                        <span class="text-slate-400">-</span>
+                                    @endif
+                                    @if($coupon->hasDiscount() && $coupon->hasBonusPointsReward())
+                                        <br>
+                                        <span class="text-xs font-semibold text-emerald-700">{{ __('loyalty.bonus_points_enabled') }}</span>
                                     @endif
                                 </td>
                                 <td class="px-3 py-2">
                                     {{ __('loyalty.min_spend', ['currency' => $currencySymbol, 'amount' => number_format((int) $coupon->min_order_amount)]) }}<br>
                                     {{ __('loyalty.redeem_points', ['points' => number_format((int) $coupon->points_cost)]) }}
-                                    @if($coupon->isPointsRewardType())
+                                    @if($coupon->hasBonusPointsReward())
                                         <br>{{ __('loyalty.reward_rule', ['currency' => $currencySymbol, 'amount' => number_format((int) $coupon->reward_per_amount), 'points' => number_format((int) $coupon->reward_points)]) }}
                                     @endif
                                 </td>
@@ -499,11 +522,22 @@
                                     <span x-show="form.discount_type === 'percent'" class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-slate-500">%</span>
                                 </div>
                             </div>
-                            <div>
+                            <div class="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                    <input type="checkbox"
+                                           x-model="rewardEnabled"
+                                           @change="onRewardToggleChange()"
+                                           :disabled="form.discount_type === 'points_reward'"
+                                           class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                    {{ __('loyalty.bonus_points_toggle') }}
+                                </label>
+                                <p class="mt-1 text-xs text-slate-500">{{ __('loyalty.bonus_points_hint') }}</p>
+                            </div>
+                            <div x-show="rewardEnabled || form.discount_type === 'points_reward'" x-cloak>
                                 <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('loyalty.reward_per_amount') }}</label>
                                 <input type="number" min="0" name="reward_per_amount" x-model="form.reward_per_amount" x-ref="editRewardPerAmount" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                             </div>
-                            <div>
+                            <div x-show="rewardEnabled || form.discount_type === 'points_reward'" x-cloak>
                                 <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('loyalty.reward_points') }}</label>
                                 <input type="number" min="0" name="reward_points" x-model="form.reward_points" x-ref="editRewardPoints" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
                             </div>
@@ -566,19 +600,38 @@
     </div>
 </div>
 <script>
-    function couponCreateForm(initialType = 'fixed') {
+    function couponCreateForm(config = {}) {
         return {
-            discountType: initialType || 'fixed',
+            discountType: config.discountType || 'fixed',
+            rewardEnabled: Boolean(config.rewardEnabled),
+            init() {
+                this.syncFormState();
+            },
             onDiscountTypeChange() {
-                const isPointsReward = this.discountType === 'points_reward';
-                this.toggleFieldGroup(this.$refs.discountValue, !isPointsReward);
-                this.toggleFieldGroup(this.$refs.rewardPerAmount, isPointsReward);
-                this.toggleFieldGroup(this.$refs.rewardPoints, isPointsReward);
-
-                if (isPointsReward && this.$refs.discountValue) {
-                    this.$refs.discountValue.value = '0';
+                if (this.discountType === 'points_reward') {
+                    this.rewardEnabled = true;
                 }
-                if (!isPointsReward) {
+
+                this.syncFormState();
+            },
+            onRewardToggleChange() {
+                if (this.discountType === 'points_reward') {
+                    this.rewardEnabled = true;
+                }
+
+                this.syncFormState();
+            },
+            syncFormState() {
+                const isPointsReward = this.discountType === 'points_reward';
+
+                if (isPointsReward) {
+                    this.rewardEnabled = true;
+                    if (this.$refs.discountValue) {
+                        this.$refs.discountValue.value = '0';
+                    }
+                }
+
+                if (!isPointsReward && !this.rewardEnabled) {
                     if (this.$refs.rewardPerAmount) {
                         this.$refs.rewardPerAmount.value = '0';
                     }
@@ -587,14 +640,6 @@
                     }
                 }
             },
-            toggleFieldGroup(field, shouldShow) {
-                const group = field?.closest('div');
-                if (!group) {
-                    return;
-                }
-
-                group.style.display = shouldShow ? '' : 'none';
-            },
         };
     }
 
@@ -602,6 +647,7 @@
         return {
             editModalOpen: false,
             updateAction: '',
+            rewardEnabled: false,
             form: {
                 id: null,
                 name: '',
@@ -662,6 +708,9 @@
                     ends_at: coupon.ends_at || '',
                     is_active: Boolean(coupon.is_active),
                 };
+                this.rewardEnabled = this.form.discount_type === 'points_reward'
+                    || Number(this.form.reward_per_amount || 0) > 0
+                    || Number(this.form.reward_points || 0) > 0;
                 this.normalizeFieldsByDiscountType();
                 this.editModalOpen = true;
                 this.$nextTick(() => {
@@ -697,25 +746,24 @@
             },
             normalizeFieldsByDiscountType() {
                 const isPointsReward = this.form.discount_type === 'points_reward';
-                this.toggleFieldGroup(this.$refs.editDiscountValue, !isPointsReward);
-                this.toggleFieldGroup(this.$refs.editRewardPerAmount, isPointsReward);
-                this.toggleFieldGroup(this.$refs.editRewardPoints, isPointsReward);
 
                 if (isPointsReward) {
+                    this.rewardEnabled = true;
                     this.form.discount_value = 0;
                     return;
                 }
 
-                this.form.reward_per_amount = 0;
-                this.form.reward_points = 0;
+                if (!this.rewardEnabled) {
+                    this.form.reward_per_amount = 0;
+                    this.form.reward_points = 0;
+                }
             },
-            toggleFieldGroup(field, shouldShow) {
-                const group = field?.closest('div');
-                if (!group) {
-                    return;
+            onRewardToggleChange() {
+                if (this.form.discount_type === 'points_reward') {
+                    this.rewardEnabled = true;
                 }
 
-                group.style.display = shouldShow ? '' : 'none';
+                this.normalizeFieldsByDiscountType();
             },
             closeEditModal() {
                 this.editModalOpen = false;
@@ -724,6 +772,3 @@
     }
 </script>
 @endsection
-
-
-

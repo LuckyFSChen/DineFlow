@@ -28,6 +28,9 @@ return [
     'fixed' => 'Giam co dinh',
     'percent' => 'Phan tram',
     'points_reward_type' => 'Mua hang tang diem',
+    'bonus_points_toggle' => 'Tang them diem',
+    'bonus_points_hint' => 'Bat tuy chon nay neu muon coupon vua giam gia vua tang them diem. Neu chi muon tang diem, hay chon loai "Mua hang tang diem".',
+    'bonus_points_enabled' => 'Co tang diem',
     'discount_value' => 'Gia tri giam',
     'reward_per_amount' => 'Muc chi tieu',
     'reward_points' => 'Diem tang',
@@ -90,6 +93,6 @@ return [
     'coupon_disabled' => 'Da tat coupon.',
     'fixed_discount_min' => 'Giam gia co dinh phai tu 1 tro len.',
     'percent_discount_range' => 'Giam theo phan tram phai trong khoang 1 den 100.',
+    'reward_pair_required' => 'Hay nhap day du muc chi tieu va so diem tang neu muon bat tinh nang tang diem.',
     'order_type_required' => 'Hay chon it nhat mot loai don ap dung.',
 ];
-

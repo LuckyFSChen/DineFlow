@@ -555,13 +555,13 @@ function allBoards() {
         },
 
         boardEmptyTitle() {
-            return this.boardFilter === 'kitchen'
+            return this.boardFilter === 'all'
                 ? @js(__('admin.board_empty_preparing'))
                 : @js(__('admin.board_empty_pending'));
         },
 
         boardEmptyDescription() {
-            return this.boardFilter === 'kitchen'
+            return this.boardFilter === 'all'
                 ? this.i18n.empty_preparing_description
                 : this.i18n.empty_pending_description;
         },
@@ -730,6 +730,7 @@ function allBoards() {
                     this.summary = payload.summary;
                 }
                 this.lastUpdatedAt = Date.now();
+                window.dispatchEvent(new CustomEvent('board-orders-updated'));
 
                 if (hasNew) {
                     this.showAlert();

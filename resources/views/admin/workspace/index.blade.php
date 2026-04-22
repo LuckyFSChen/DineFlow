@@ -54,17 +54,22 @@
                         @if(($availableStores ?? collect())->count() > 1)
                             <label class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
                                 <span class="font-semibold text-slate-500">{{ __('admin.board_store') }}</span>
-                                <select
-                                    class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 focus:border-cyan-500 focus:outline-none"
-                                    @change="goToStore($event.target.value)"
-                                >
-                                    @foreach($availableStores as $availableStore)
-                                        @php($availableStoreRoute = $storeRouteValue($availableStore))
-                                        <option value="{{ $storeUrls[(string) $availableStoreRoute] ?? '' }}" @selected((string) $availableStoreRoute === (string) $storeRoute)>
-                                            {{ $availableStore->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <div class="relative">
+                                    <select
+                                        class="appearance-none rounded-xl border border-slate-300 bg-white px-3 py-2 pr-10 text-sm font-semibold text-slate-800 focus:border-cyan-500 focus:outline-none"
+                                        @change="goToStore($event.target.value)"
+                                    >
+                                        @foreach($availableStores as $availableStore)
+                                            @php($availableStoreRoute = $storeRouteValue($availableStore))
+                                            <option value="{{ $storeUrls[(string) $availableStoreRoute] ?? '' }}" @selected((string) $availableStoreRoute === (string) $storeRoute)>
+                                                {{ $availableStore->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <svg class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                        <path d="m6 8 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
                             </label>
                         @endif
 
@@ -162,6 +167,9 @@
             activate(tab, syncUrl = true) {
                 const safeTab = tab === 'boards' ? 'boards' : 'orders';
                 this.activeTab = safeTab;
+                window.dispatchEvent(new CustomEvent('merchant-workspace-tab-changed', {
+                    detail: { tab: safeTab },
+                }));
 
                 if (!syncUrl) {
                     return;

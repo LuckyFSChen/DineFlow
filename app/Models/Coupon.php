@@ -95,7 +95,7 @@ class Coupon extends Model
 
     public function calculateBonusPoints(int $subtotal): int
     {
-        if (! $this->isPointsRewardType()) {
+        if (! $this->hasBonusPointsReward()) {
             return 0;
         }
 
@@ -108,6 +108,18 @@ class Coupon extends Model
         }
 
         return (int) (floor($subtotal / $unitAmount) * $rewardPoints);
+    }
+
+    public function hasDiscount(): bool
+    {
+        return max((int) $this->discount_value, 0) > 0
+            && $this->normalizedDiscountType() !== self::DISCOUNT_TYPE_POINTS_REWARD;
+    }
+
+    public function hasBonusPointsReward(): bool
+    {
+        return max((int) $this->reward_per_amount, 0) > 0
+            && max((int) $this->reward_points, 0) > 0;
     }
 
     public function normalizedDiscountType(): string

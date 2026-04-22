@@ -16,6 +16,10 @@
     $activeTableCount = $tables->where('status', '!=', 'inactive')->count();
     $phoneDigits = strtolower((string) ($store->country_code ?? 'tw')) === 'cn' ? 11 : 10;
     $numberLocale = str_replace('_', '-', app()->getLocale());
+    $oldCouponCode = strtoupper(trim((string) old('coupon_code', '')));
+    $oldAppliedCouponSummary = trim((string) old('applied_coupon_summary', ''));
+    $oldAppliedCouponDiscount = max((int) old('applied_coupon_discount', 0), 0);
+    $oldAppliedCouponName = trim((string) old('applied_coupon_name', ''));
     $ui = [
         'selectedTableNone' => __('merchant_order.selected_table_none'),
         'selectedTablePrefix' => __('merchant_order.selected_table_prefix'),
@@ -37,6 +41,18 @@
         'modalFreeChoice' => __('merchant_order.modal_free_choice'),
         'modalExtraPricePrefix' => __('merchant_order.modal_extra_price_prefix'),
         'validationRequiredGroupAlert' => __('merchant_order.validation_required_group_alert', ['group' => ':group']),
+        'couponLookupButton' => __('merchant_order.coupon_lookup_button'),
+        'couponLookupLoading' => __('merchant_order.coupon_lookup_loading'),
+        'couponPhoneRequired' => __('merchant_order.coupon_phone_required'),
+        'couponAddItemsFirst' => __('merchant_order.coupon_add_items_first'),
+        'couponNoAvailable' => __('merchant_order.coupon_no_available'),
+        'couponLookupFailed' => __('merchant_order.coupon_lookup_failed'),
+        'couponSelectionStale' => __('merchant_order.coupon_selection_stale'),
+        'couponAppliedLabel' => __('merchant_order.coupon_applied_label'),
+        'couponAppliedState' => __('merchant_order.coupon_applied_state'),
+        'couponMemberPoints' => __('merchant_order.coupon_member_points', ['points' => ':points']),
+        'couponApplyButton' => __('merchant_order.coupon_apply_button'),
+        'couponRemoveButton' => __('merchant_order.coupon_remove_button'),
     ];
 @endphp
 
@@ -45,12 +61,21 @@
     x-data="merchantOrderPage({
         categories: @js($categoriesPayload),
         tables: @js($tablesPayload),
+        tablesRefreshUrl: @js(route('admin.stores.orders.tables', ['store' => $store])),
+        couponLookupUrl: @js(route('admin.stores.orders.coupons', ['store' => $store])),
         initialCartItems: @js($initialCartItems),
         currencySymbol: @js($currencySymbol),
         defaultTableId: @js($defaultTableId),
+        defaultCustomerPhone: @js($defaultCustomerPhone),
+        initialCouponCode: @js($oldCouponCode),
+        initialCouponSummary: @js($oldAppliedCouponSummary),
+        initialCouponDiscount: @js($oldAppliedCouponDiscount),
+        initialCouponName: @js($oldAppliedCouponName),
+        initialCouponError: @js($errors->first('coupon_code')),
         locale: @js($numberLocale),
         ui: @js($ui),
     })"
+    x-init="init()"
 >
     <div class="w-full px-4 py-6 sm:px-6 lg:px-8">
         <div class="admin-hero mb-6 rounded-3xl px-5 py-5 md:px-7">
@@ -188,12 +213,87 @@
                                 id="customer_phone"
                                 name="customer_phone"
                                 type="tel"
+                                x-model="customerPhone"
+                                @input="handleCustomerPhoneInput()"
                                 inputmode="numeric"
                                 data-phone-digits="{{ $phoneDigits }}"
                                 value="{{ $defaultCustomerPhone }}"
                                 placeholder="{{ __('merchant_order.customer_phone_placeholder', ['digits' => $phoneDigits]) }}"
                                 class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100"
                             >
+                        </div>
+
+                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <h3 class="text-sm font-semibold text-slate-900">{{ __('merchant_order.coupon_section_title') }}</h3>
+                                    <p class="mt-1 text-xs text-slate-500">{{ __('merchant_order.coupon_section_desc') }}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    @click="lookupAvailableCoupons()"
+                                    :disabled="couponLookupLoading"
+                                    class="inline-flex items-center justify-center rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-700 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                    x-text="couponLookupLoading ? text('couponLookupLoading') : text('couponLookupButton')"
+                                ></button>
+                            </div>
+
+                            <input type="hidden" name="coupon_code" :value="selectedCouponCode || ''">
+                            <input type="hidden" name="applied_coupon_summary" :value="selectedCouponSummary || ''">
+                            <input type="hidden" name="applied_coupon_discount" :value="selectedCouponDiscount || 0">
+                            <input type="hidden" name="applied_coupon_name" :value="selectedCouponName || ''">
+
+                            <div x-show="couponLookupError" x-cloak class="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700" x-text="couponLookupError"></div>
+
+                            <template x-if="couponMember">
+                                <div class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-800">
+                                    <div class="font-semibold" x-text="couponMember.name"></div>
+                                    <div class="mt-1 text-xs" x-text="text('couponMemberPoints', { points: formatNumber(couponMember.points_balance || 0) })"></div>
+                                </div>
+                            </template>
+
+                            <div x-show="selectedCouponCode" x-cloak class="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-800">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="font-semibold">
+                                            <span>{{ __('merchant_order.coupon_applied_label') }}</span>
+                                            <span x-text="selectedCouponCode"></span>
+                                        </p>
+                                        <p class="mt-1 text-xs leading-5 text-emerald-700" x-text="selectedCouponSummary"></p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        @click="clearAppliedCoupon()"
+                                        class="shrink-0 rounded-lg border border-emerald-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                                        x-text="text('couponRemoveButton')"
+                                    ></button>
+                                </div>
+                            </div>
+
+                            <div x-show="availableCoupons.length > 0" x-cloak class="mt-3 space-y-2">
+                                <template x-for="coupon in availableCoupons" :key="coupon.code">
+                                    <div class="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div class="min-w-0">
+                                                <div class="flex items-center gap-2">
+                                                    <p class="text-sm font-semibold text-slate-900" x-text="coupon.name || coupon.code"></p>
+                                                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600" x-text="coupon.code"></span>
+                                                </div>
+                                                <p class="mt-2 text-xs leading-5 text-slate-500" x-text="coupon.summary"></p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                @click="applyCoupon(coupon)"
+                                                class="shrink-0 rounded-lg border px-3 py-2 text-xs font-semibold transition"
+                                                :class="selectedCouponCode === coupon.code
+                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'"
+                                                x-text="selectedCouponCode === coupon.code ? text('couponAppliedState') : text('couponApplyButton')"
+                                            ></button>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
                         </div>
 
                         <div>
@@ -299,6 +399,14 @@
                         <div class="mt-2 flex items-center justify-between text-lg font-bold">
                             <span>{{ __('merchant_order.total_amount') }}</span>
                             <span x-text="money(cartTotal)"></span>
+                        </div>
+                        <div x-show="selectedCouponCode && selectedCouponDiscount > 0" x-cloak class="mt-2 flex items-center justify-between text-sm text-emerald-300">
+                            <span>{{ __('merchant_order.coupon_discount_label') }}</span>
+                            <span x-text="'- ' + money(selectedCouponDiscount)"></span>
+                        </div>
+                        <div x-show="selectedCouponCode" x-cloak class="mt-2 flex items-center justify-between border-t border-slate-700 pt-2 text-sm font-semibold text-white">
+                            <span>{{ __('merchant_order.estimated_payable_amount') }}</span>
+                            <span x-text="money(estimatedPayable)"></span>
                         </div>
                     </div>
 
@@ -569,6 +677,9 @@
             currencySymbol: config.currencySymbol || 'NT$',
             locale: config.locale || undefined,
             ui: config.ui || {},
+            tablesRefreshUrl: config.tablesRefreshUrl || null,
+            couponLookupUrl: config.couponLookupUrl || null,
+            customerPhone: config.defaultCustomerPhone || '',
             selectedTableId: Number(config.defaultTableId || 0) || null,
             activeCategoryId: (config.categories || [])[0]?.id || null,
             modalOpen: false,
@@ -576,6 +687,18 @@
             modalSelections: {},
             modalQty: 1,
             modalItemNote: '',
+            availableCoupons: [],
+            couponMember: null,
+            couponLookupLoading: false,
+            couponLookupError: config.initialCouponError || '',
+            couponLookupAttempted: false,
+            selectedCouponCode: config.initialCouponCode || '',
+            selectedCouponSummary: config.initialCouponSummary || '',
+            selectedCouponDiscount: Number(config.initialCouponDiscount || 0),
+            selectedCouponName: config.initialCouponName || '',
+            _tablesPollTimer: null,
+            _workspaceTabHandler: null,
+            _boardSyncHandler: null,
 
             get selectedTable() {
                 return this.tables.find((table) => Number(table.id) === Number(this.selectedTableId)) || null;
@@ -587,6 +710,65 @@
 
             get totalQty() {
                 return this.cartItems.reduce((sum, item) => sum + Number(item.qty || 0), 0);
+            },
+
+            get estimatedPayable() {
+                return Math.max(this.cartTotal - Number(this.selectedCouponDiscount || 0), 0);
+            },
+
+            init() {
+                if (this.tablesRefreshUrl) {
+                    this.refreshTables({ preserveSelection: true });
+                    clearInterval(this._tablesPollTimer);
+                    this._tablesPollTimer = setInterval(() => {
+                        if (document.hidden) {
+                            return;
+                        }
+
+                        this.refreshTables({ preserveSelection: true });
+                    }, 15000);
+                }
+
+                this._workspaceTabHandler = (event) => {
+                    if (event?.detail?.tab === 'orders') {
+                        this.refreshTables({ preserveSelection: true });
+                    }
+                };
+                window.addEventListener('merchant-workspace-tab-changed', this._workspaceTabHandler);
+
+                this._boardSyncHandler = () => {
+                    this.refreshTables({ preserveSelection: true });
+                };
+                window.addEventListener('board-orders-updated', this._boardSyncHandler);
+            },
+
+            async refreshTables({ preserveSelection = true } = {}) {
+                if (!this.tablesRefreshUrl) {
+                    return;
+                }
+
+                try {
+                    const selectedTableId = this.selectedTableId;
+                    const res = await fetch(this.tablesRefreshUrl, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    });
+
+                    if (!res.ok) {
+                        return;
+                    }
+
+                    const payload = await res.json();
+                    const nextTables = Array.isArray(payload?.tables) ? payload.tables : [];
+                    this.tables = nextTables;
+
+                    if (preserveSelection && selectedTableId !== null) {
+                        const selected = nextTables.find((table) => Number(table.id) === Number(selectedTableId));
+                        this.selectedTableId = selected ? Number(selected.id) : null;
+                    }
+                } catch {}
             },
 
             text(key, replacements = {}) {
@@ -626,6 +808,126 @@
 
             formatNumber(value) {
                 return Number(value || 0).toLocaleString(this.locale || undefined);
+            },
+
+            handleCustomerPhoneInput() {
+                this.invalidateCouponSelection(true);
+            },
+
+            clearAppliedCoupon(clearError = true) {
+                this.selectedCouponCode = '';
+                this.selectedCouponSummary = '';
+                this.selectedCouponDiscount = 0;
+                this.selectedCouponName = '';
+
+                if (clearError) {
+                    this.couponLookupError = '';
+                }
+            },
+
+            invalidateCouponSelection(clearMember = false) {
+                const hasCouponState = this.selectedCouponCode !== ''
+                    || this.availableCoupons.length > 0
+                    || this.couponLookupAttempted;
+
+                if (clearMember) {
+                    this.couponMember = null;
+                }
+
+                if (!hasCouponState) {
+                    return;
+                }
+
+                this.clearAppliedCoupon(false);
+                this.availableCoupons = [];
+                this.couponLookupAttempted = false;
+                this.couponLookupError = this.text('couponSelectionStale');
+            },
+
+            async lookupAvailableCoupons() {
+                if (this.couponLookupLoading) {
+                    return;
+                }
+
+                const phone = String(this.customerPhone || '').trim();
+                if (phone === '') {
+                    this.couponLookupError = this.text('couponPhoneRequired');
+                    this.availableCoupons = [];
+                    this.clearAppliedCoupon(false);
+                    return;
+                }
+
+                if (this.cartItems.length === 0 || this.cartTotal <= 0) {
+                    this.couponLookupError = this.text('couponAddItemsFirst');
+                    this.availableCoupons = [];
+                    this.clearAppliedCoupon(false);
+                    return;
+                }
+
+                if (!this.couponLookupUrl) {
+                    this.couponLookupError = this.text('couponLookupFailed');
+                    return;
+                }
+
+                this.couponLookupLoading = true;
+                this.couponLookupError = '';
+                this.couponLookupAttempted = true;
+
+                try {
+                    const endpoint = new URL(this.couponLookupUrl, window.location.origin);
+                    endpoint.searchParams.set('customer_phone', phone);
+                    endpoint.searchParams.set('subtotal', String(this.cartTotal));
+
+                    const response = await fetch(endpoint.toString(), {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    });
+
+                    const payload = await response.json().catch(() => ({}));
+                    if (!response.ok) {
+                        const errorMessage = payload?.errors?.customer_phone?.[0]
+                            || payload?.errors?.subtotal?.[0]
+                            || payload?.message
+                            || payload?.error
+                            || this.text('couponLookupFailed');
+
+                        this.availableCoupons = [];
+                        this.couponMember = null;
+                        this.clearAppliedCoupon(false);
+                        this.couponLookupError = errorMessage;
+                        return;
+                    }
+
+                    this.couponMember = payload?.member || null;
+                    this.availableCoupons = Array.isArray(payload?.coupons) ? payload.coupons : [];
+
+                    if (this.availableCoupons.length === 0) {
+                        this.clearAppliedCoupon(false);
+                        this.couponLookupError = this.text('couponNoAvailable');
+                        return;
+                    }
+
+                    if (this.selectedCouponCode !== '' && !this.availableCoupons.some((coupon) => coupon.code === this.selectedCouponCode)) {
+                        this.clearAppliedCoupon(false);
+                    }
+                } catch {
+                    this.availableCoupons = [];
+                    this.couponMember = null;
+                    this.clearAppliedCoupon(false);
+                    this.couponLookupError = this.text('couponLookupFailed');
+                } finally {
+                    this.couponLookupLoading = false;
+                }
+            },
+
+            applyCoupon(coupon) {
+                this.selectedCouponCode = String(coupon?.code || '').trim();
+                this.selectedCouponSummary = String(coupon?.summary || '').trim();
+                this.selectedCouponDiscount = Number(coupon?.discount || 0);
+                this.selectedCouponName = String(coupon?.name || '').trim();
+                this.couponLookupError = '';
             },
 
             productDescription(product) {
@@ -858,6 +1160,7 @@
                     itemNote,
                 });
 
+                this.invalidateCouponSelection();
                 this.closeModal();
             },
 
@@ -869,6 +1172,7 @@
 
                 item.qty += 1;
                 item.subtotal = item.price * item.qty;
+                this.invalidateCouponSelection();
             },
 
             decreaseQty(index) {
@@ -879,14 +1183,17 @@
 
                 item.qty = Math.max(1, item.qty - 1);
                 item.subtotal = item.price * item.qty;
+                this.invalidateCouponSelection();
             },
 
             removeItem(index) {
                 this.cartItems.splice(index, 1);
+                this.invalidateCouponSelection();
             },
 
             clearCart() {
                 this.cartItems = [];
+                this.invalidateCouponSelection();
             },
         };
     }

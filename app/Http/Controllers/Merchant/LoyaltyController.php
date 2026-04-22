@@ -18,6 +18,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Closure;
 
@@ -143,56 +144,7 @@ class LoyaltyController extends Controller
             return $redirect;
         }
 
-        $storeId = (int) $request->input('store_id');
-        $validated = $request->validate([
-            'store_id' => ['required', 'integer'],
-            'name' => ['required', 'string', 'max:255'],
-            'code' => [
-                'required',
-                'string',
-                'max:64',
-                Rule::unique('coupons', 'code')->where(fn ($query) => $query->where('store_id', $storeId)),
-            ],
-            'discount_type' => ['required', 'in:fixed,percent,points_reward'],
-            'discount_value' => [
-                Rule::requiredIf(fn () => in_array($request->input('discount_type'), ['fixed', 'percent'], true)),
-                'nullable',
-                'integer',
-                'min:0',
-                function (string $attribute, mixed $value, Closure $fail) use ($request): void {
-                    $type = (string) $request->input('discount_type');
-                    $amount = (int) ($value ?? 0);
-
-                    if ($type === 'fixed' && $amount < 1) {
-                        $fail(__('loyalty.fixed_discount_min'));
-                    }
-
-                    if ($type === 'percent' && ($amount < 1 || $amount > 100)) {
-                        $fail(__('loyalty.percent_discount_range'));
-                    }
-                },
-            ],
-            'reward_per_amount' => [
-                Rule::excludeIf(fn () => $request->input('discount_type') !== 'points_reward'),
-                'required',
-                'integer',
-                'min:1',
-            ],
-            'reward_points' => [
-                Rule::excludeIf(fn () => $request->input('discount_type') !== 'points_reward'),
-                'required',
-                'integer',
-                'min:1',
-            ],
-            'min_order_amount' => ['nullable', 'integer', 'min:0'],
-            'points_cost' => ['nullable', 'integer', 'min:0'],
-            'usage_limit' => ['nullable', 'integer', 'min:1'],
-            'starts_at' => ['nullable', 'date'],
-            'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
-            'allow_dine_in' => ['nullable', 'boolean'],
-            'allow_takeout' => ['nullable', 'boolean'],
-            'is_active' => ['nullable', 'boolean'],
-        ]);
+        $validated = $this->validateCouponRequest($request);
 
         if (! $request->boolean('allow_dine_in') && ! $request->boolean('allow_takeout')) {
             return back()
@@ -204,20 +156,7 @@ class LoyaltyController extends Controller
 
         Coupon::query()->create([
             'store_id' => $store->id,
-            'name' => $validated['name'],
-            'code' => strtoupper(trim((string) $validated['code'])),
-            'discount_type' => $validated['discount_type'],
-            'discount_value' => $validated['discount_type'] === 'points_reward' ? 0 : (int) ($validated['discount_value'] ?? 0),
-            'min_order_amount' => (int) ($validated['min_order_amount'] ?? 0),
-            'points_cost' => (int) ($validated['points_cost'] ?? 0),
-            'reward_per_amount' => (int) ($validated['reward_per_amount'] ?? 0),
-            'reward_points' => (int) ($validated['reward_points'] ?? 0),
-            'usage_limit' => isset($validated['usage_limit']) ? (int) $validated['usage_limit'] : null,
-            'starts_at' => $validated['starts_at'] ?? null,
-            'ends_at' => $validated['ends_at'] ?? null,
-            'allow_dine_in' => $request->boolean('allow_dine_in', true),
-            'allow_takeout' => $request->boolean('allow_takeout', true),
-            'is_active' => $request->boolean('is_active', true),
+            ...$this->buildCouponAttributes($request, $validated),
         ]);
 
         return back()->with('status', __('loyalty.coupon_created'));
@@ -231,56 +170,7 @@ class LoyaltyController extends Controller
 
         $this->authorizeCoupon($request, $coupon);
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'code' => [
-                'required',
-                'string',
-                'max:64',
-                Rule::unique('coupons', 'code')
-                    ->where(fn ($query) => $query->where('store_id', $coupon->store_id))
-                    ->ignore($coupon->id),
-            ],
-            'discount_type' => ['required', 'in:fixed,percent,points_reward'],
-            'discount_value' => [
-                Rule::requiredIf(fn () => in_array($request->input('discount_type'), ['fixed', 'percent'], true)),
-                'nullable',
-                'integer',
-                'min:0',
-                function (string $attribute, mixed $value, Closure $fail) use ($request): void {
-                    $type = (string) $request->input('discount_type');
-                    $amount = (int) ($value ?? 0);
-
-                    if ($type === 'fixed' && $amount < 1) {
-                        $fail(__('loyalty.fixed_discount_min'));
-                    }
-
-                    if ($type === 'percent' && ($amount < 1 || $amount > 100)) {
-                        $fail(__('loyalty.percent_discount_range'));
-                    }
-                },
-            ],
-            'reward_per_amount' => [
-                Rule::excludeIf(fn () => $request->input('discount_type') !== 'points_reward'),
-                'required',
-                'integer',
-                'min:1',
-            ],
-            'reward_points' => [
-                Rule::excludeIf(fn () => $request->input('discount_type') !== 'points_reward'),
-                'required',
-                'integer',
-                'min:1',
-            ],
-            'min_order_amount' => ['nullable', 'integer', 'min:0'],
-            'points_cost' => ['nullable', 'integer', 'min:0'],
-            'usage_limit' => ['nullable', 'integer', 'min:1'],
-            'starts_at' => ['nullable', 'date'],
-            'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
-            'allow_dine_in' => ['nullable', 'boolean'],
-            'allow_takeout' => ['nullable', 'boolean'],
-            'is_active' => ['nullable', 'boolean'],
-        ]);
+        $validated = $this->validateCouponRequest($request, $coupon);
 
         if (! $request->boolean('allow_dine_in') && ! $request->boolean('allow_takeout')) {
             $message = __('loyalty.order_type_required');
@@ -294,22 +184,7 @@ class LoyaltyController extends Controller
                 ->withInput();
         }
 
-        $coupon->update([
-            'name' => $validated['name'],
-            'code' => strtoupper(trim((string) $validated['code'])),
-            'discount_type' => $validated['discount_type'],
-            'discount_value' => $validated['discount_type'] === 'points_reward' ? 0 : (int) ($validated['discount_value'] ?? 0),
-            'min_order_amount' => (int) ($validated['min_order_amount'] ?? 0),
-            'points_cost' => (int) ($validated['points_cost'] ?? 0),
-            'reward_per_amount' => (int) ($validated['reward_per_amount'] ?? 0),
-            'reward_points' => (int) ($validated['reward_points'] ?? 0),
-            'usage_limit' => isset($validated['usage_limit']) ? (int) $validated['usage_limit'] : null,
-            'starts_at' => $validated['starts_at'] ?? null,
-            'ends_at' => $validated['ends_at'] ?? null,
-            'allow_dine_in' => $request->boolean('allow_dine_in'),
-            'allow_takeout' => $request->boolean('allow_takeout'),
-            'is_active' => $request->boolean('is_active'),
-        ]);
+        $coupon->update($this->buildCouponAttributes($request, $validated));
 
         if ($request->expectsJson()) {
             $coupon->refresh();
@@ -374,6 +249,122 @@ class LoyaltyController extends Controller
             ->first();
 
         abort_unless($store !== null, 403);
+    }
+
+    private function validateCouponRequest(Request $request, ?Coupon $coupon = null): array
+    {
+        $storeId = $coupon?->store_id ?? (int) $request->input('store_id');
+
+        $validated = $request->validate([
+            'store_id' => $coupon ? ['sometimes', 'integer'] : ['required', 'integer'],
+            'name' => ['required', 'string', 'max:255'],
+            'code' => [
+                'required',
+                'string',
+                'max:64',
+                Rule::unique('coupons', 'code')
+                    ->where(fn ($query) => $query->where('store_id', $storeId))
+                    ->when($coupon !== null, fn ($rule) => $rule->ignore($coupon->id)),
+            ],
+            'discount_type' => ['required', 'in:fixed,percent,points_reward'],
+            'discount_value' => [
+                Rule::requiredIf(fn () => in_array($request->input('discount_type'), ['fixed', 'percent'], true)),
+                'nullable',
+                'integer',
+                'min:0',
+                function (string $attribute, mixed $value, Closure $fail) use ($request): void {
+                    $type = (string) $request->input('discount_type');
+                    $amount = (int) ($value ?? 0);
+
+                    if ($type === 'fixed' && $amount < 1) {
+                        $fail(__('loyalty.fixed_discount_min'));
+                    }
+
+                    if ($type === 'percent' && ($amount < 1 || $amount > 100)) {
+                        $fail(__('loyalty.percent_discount_range'));
+                    }
+                },
+            ],
+            'reward_per_amount' => [
+                Rule::requiredIf(fn () => $request->input('discount_type') === 'points_reward' || (int) $request->input('reward_points') > 0),
+                'nullable',
+                'integer',
+                'min:0',
+            ],
+            'reward_points' => [
+                Rule::requiredIf(fn () => $request->input('discount_type') === 'points_reward' || (int) $request->input('reward_per_amount') > 0),
+                'nullable',
+                'integer',
+                'min:0',
+            ],
+            'min_order_amount' => ['nullable', 'integer', 'min:0'],
+            'points_cost' => ['nullable', 'integer', 'min:0'],
+            'usage_limit' => ['nullable', 'integer', 'min:1'],
+            'starts_at' => ['nullable', 'date'],
+            'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
+            'allow_dine_in' => ['nullable', 'boolean'],
+            'allow_takeout' => ['nullable', 'boolean'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        $this->validateRewardConfiguration(
+            (string) ($validated['discount_type'] ?? 'fixed'),
+            max((int) ($validated['reward_per_amount'] ?? 0), 0),
+            max((int) ($validated['reward_points'] ?? 0), 0)
+        );
+
+        return $validated;
+    }
+
+    private function validateRewardConfiguration(string $discountType, int $rewardPerAmount, int $rewardPoints): void
+    {
+        $hasRewardConfiguration = $discountType === 'points_reward'
+            || $rewardPerAmount > 0
+            || $rewardPoints > 0;
+
+        if (! $hasRewardConfiguration) {
+            return;
+        }
+
+        if ($rewardPerAmount > 0 && $rewardPoints > 0) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'reward_per_amount' => __('loyalty.reward_pair_required'),
+            'reward_points' => __('loyalty.reward_pair_required'),
+        ]);
+    }
+
+    private function buildCouponAttributes(Request $request, array $validated): array
+    {
+        $discountType = (string) ($validated['discount_type'] ?? 'fixed');
+        $rewardPerAmount = max((int) ($validated['reward_per_amount'] ?? 0), 0);
+        $rewardPoints = max((int) ($validated['reward_points'] ?? 0), 0);
+
+        if ($discountType !== 'points_reward' && ($rewardPerAmount === 0 || $rewardPoints === 0)) {
+            $rewardPerAmount = 0;
+            $rewardPoints = 0;
+        }
+
+        return [
+            'name' => $validated['name'],
+            'code' => strtoupper(trim((string) $validated['code'])),
+            'discount_type' => $discountType,
+            'discount_value' => $discountType === 'points_reward' ? 0 : (int) ($validated['discount_value'] ?? 0),
+            'min_order_amount' => (int) ($validated['min_order_amount'] ?? 0),
+            'points_cost' => (int) ($validated['points_cost'] ?? 0),
+            'reward_per_amount' => $rewardPerAmount,
+            'reward_points' => $rewardPoints,
+            'usage_limit' => isset($validated['usage_limit']) ? (int) $validated['usage_limit'] : null,
+            'starts_at' => $validated['starts_at'] ?? null,
+            'ends_at' => $validated['ends_at'] ?? null,
+            'allow_dine_in' => $request->boolean('allow_dine_in', true),
+            'allow_takeout' => $request->boolean('allow_takeout', true),
+            'is_active' => array_key_exists('is_active', $validated)
+                ? $request->boolean('is_active')
+                : false,
+        ];
     }
 
     private function ensureHasAccessibleStore(Request $request): ?RedirectResponse

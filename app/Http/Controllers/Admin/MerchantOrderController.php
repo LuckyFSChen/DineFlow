@@ -5,11 +5,16 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Concerns\BuildsMerchantOrderPageData;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Coupon;
 use App\Models\DiningTable;
+use App\Models\Member;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Store;
+use App\Services\CustomerAccountService;
+use App\Services\LoyaltyService;
 use App\Support\InvoiceFlow;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +45,40 @@ class MerchantOrderController extends Controller
         return view('admin.orders.create', $this->merchantOrderPageViewData($store));
     }
 
+    public function tables(Request $request, Store $store): JsonResponse
+    {
+        $this->authorize('update', $store);
+
+        return response()->json([
+            'tables' => $this->merchantOrderTablesPayload($store),
+        ]);
+    }
+
+    public function coupons(Request $request, Store $store): JsonResponse
+    {
+        $this->authorize('update', $store);
+
+        $validated = $request->validate([
+            'customer_phone' => ['required', ...$this->customerPhoneValidationRules($store)],
+            'subtotal' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $customerPhone = $this->normalizeCustomerPhone($validated['customer_phone'] ?? null, $store);
+        $subtotal = max((int) ($validated['subtotal'] ?? 0), 0);
+        $member = $this->findExistingMemberForCoupon($store, null, $customerPhone);
+
+        return response()->json([
+            'ok' => true,
+            'member' => $member ? [
+                'id' => (int) $member->id,
+                'name' => $member->displayName(),
+                'phone' => (string) ($member->phone ?? ''),
+                'points_balance' => (int) ($member->points_balance ?? 0),
+            ] : null,
+            'coupons' => $this->buildAvailableCouponsPayload($store, $subtotal, $member),
+        ]);
+    }
+
     public function store(Request $request, Store $store): RedirectResponse
     {
         $this->authorize('update', $store);
@@ -54,6 +93,7 @@ class MerchantOrderController extends Controller
             'dining_table_id' => ['required', 'integer', 'exists:dining_tables,id'],
             'customer_name' => ['nullable', 'string', 'max:255'],
             'customer_phone' => $this->customerPhoneValidationRules($store),
+            'coupon_code' => ['nullable', 'string', 'max:64'],
             'note' => ['nullable', 'string', 'max:1000'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
@@ -78,6 +118,7 @@ class MerchantOrderController extends Controller
 
         $normalizedCustomerName = $this->normalizeOptionalText($validated['customer_name'] ?? null);
         $normalizedCustomerPhone = $this->normalizeCustomerPhone($validated['customer_phone'] ?? null, $store);
+        $couponCode = $this->normalizeCouponCode($validated['coupon_code'] ?? null);
         $normalizedOrderNote = $this->normalizeOptionalText($validated['note'] ?? null);
 
         try {
@@ -87,10 +128,51 @@ class MerchantOrderController extends Controller
                 $validated,
                 $normalizedCustomerName,
                 $normalizedCustomerPhone,
+                $couponCode,
                 $normalizedOrderNote
             ) {
                 $lineItems = $this->resolveOrderItems($store, $validated['items']);
                 $lineSubtotal = (int) collect($lineItems)->sum('subtotal');
+                if ($normalizedCustomerPhone !== null) {
+                    app(CustomerAccountService::class)->registerOrUpdateFromOrder(
+                        $normalizedCustomerPhone,
+                        $normalizedCustomerName,
+                        null
+                    );
+                }
+
+                $member = app(LoyaltyService::class)->resolveMember(
+                    $store,
+                    $normalizedCustomerName,
+                    null,
+                    $normalizedCustomerPhone
+                );
+
+                if ($member !== null) {
+                    $member = Member::query()->lockForUpdate()->find($member->id);
+                }
+
+                $couponResult = app(LoyaltyService::class)->resolveCoupon($store, $couponCode, $lineSubtotal, $member, 'dine_in');
+                $couponError = $couponResult['error'] ?? null;
+
+                if ($couponError !== null) {
+                    $message = $couponError === __('customer.coupon_not_found')
+                        ? __('customer.coupon_invalid_code')
+                        : $couponError;
+
+                    throw ValidationException::withMessages([
+                        'coupon_code' => $message,
+                    ]);
+                }
+
+                /** @var Coupon|null $coupon */
+                $coupon = $couponResult['coupon'] ?? null;
+                $couponDiscount = max((int) ($couponResult['discount'] ?? 0), 0);
+                $finalTotal = max($lineSubtotal - $couponDiscount, 0);
+                $pointsUsed = max((int) ($couponResult['points_cost'] ?? 0), 0);
+                $baseEarnedPoints = $store->calculateEarnedPoints($finalTotal);
+                $bonusEarnedPoints = max((int) ($couponResult['bonus_points'] ?? 0), 0);
+                $pointsEarned = max($baseEarnedPoints + $bonusEarnedPoints, 0);
 
                 $order = $this->findAppendableDineInOrder($store, $table);
 
@@ -107,6 +189,12 @@ class MerchantOrderController extends Controller
                         'customer_name' => $normalizedCustomerName ?: __('merchant_order.default_customer_name'),
                         'customer_phone' => $normalizedCustomerPhone,
                         'customer_email' => null,
+                        'member_id' => $member?->id,
+                        'coupon_id' => $coupon?->id,
+                        'coupon_code' => $coupon?->code,
+                        'coupon_discount' => $couponDiscount,
+                        'points_used' => $pointsUsed,
+                        'points_earned' => $pointsEarned,
                         'note' => $normalizedOrderNote,
                         'subtotal' => 0,
                         'total' => 0,
@@ -115,12 +203,21 @@ class MerchantOrderController extends Controller
                     $order->status = 'preparing';
                 }
 
+                if ($order->member_id === null && $member !== null) {
+                    $order->member_id = $member->id;
+                }
+
                 if ($order->customer_name === null && $normalizedCustomerName !== null) {
                     $order->customer_name = $normalizedCustomerName;
                 }
 
                 if ($order->getRawOriginal('customer_phone') === null && $normalizedCustomerPhone !== null) {
                     $order->customer_phone = $normalizedCustomerPhone;
+                }
+
+                if ($coupon !== null) {
+                    $order->coupon_id = $coupon->id;
+                    $order->coupon_code = $coupon->code;
                 }
 
                 if ($normalizedOrderNote !== null) {
@@ -142,8 +239,24 @@ class MerchantOrderController extends Controller
                 }
 
                 $order->subtotal = (int) $order->subtotal + $lineSubtotal;
-                $order->total = (int) $order->total + $lineSubtotal;
+                $order->coupon_discount = (int) $order->coupon_discount + $couponDiscount;
+                $order->points_used = (int) $order->points_used + $pointsUsed;
+                $order->points_earned = (int) $order->points_earned + $pointsEarned;
+                $order->total = (int) $order->total + $finalTotal;
                 $order->save();
+
+                if ($coupon !== null) {
+                    $coupon->increment('used_count');
+                }
+
+                app(LoyaltyService::class)->finalizeOrderLoyalty(
+                    $order,
+                    $member,
+                    $coupon,
+                    $pointsUsed,
+                    $pointsEarned,
+                    $finalTotal
+                );
 
                 return $order;
             });
@@ -496,6 +609,118 @@ class MerchantOrderController extends Controller
         $normalized = trim($value);
 
         return $normalized === '' ? null : $normalized;
+    }
+
+    private function normalizeCouponCode(?string $couponCode): ?string
+    {
+        if ($couponCode === null) {
+            return null;
+        }
+
+        $normalized = strtoupper(trim($couponCode));
+
+        return $normalized === '' ? null : $normalized;
+    }
+
+    private function findExistingMemberForCoupon(Store $store, ?string $email, ?string $phone, bool $lockForUpdate = false): ?Member
+    {
+        if ($email === null && $phone === null) {
+            return null;
+        }
+
+        $query = Member::query()
+            ->where('store_id', $store->id)
+            ->where(function ($nested) use ($email, $phone) {
+                if ($email !== null) {
+                    $nested->orWhere('email', $email);
+                }
+
+                if ($phone !== null) {
+                    $nested->orWhere('phone', $phone);
+                }
+            });
+
+        if ($lockForUpdate) {
+            $query->lockForUpdate();
+        }
+
+        return $query->first();
+    }
+
+    private function buildAvailableCouponsPayload(Store $store, int $subtotal, ?Member $member): array
+    {
+        $currencySymbol = $this->currencySymbol($store);
+
+        return Coupon::query()
+            ->where('store_id', $store->id)
+            ->orderByDesc('id')
+            ->get()
+            ->map(function (Coupon $coupon) use ($store, $subtotal, $member, $currencySymbol) {
+                $result = app(LoyaltyService::class)->resolveCoupon($store, $coupon->code, $subtotal, $member, 'dine_in');
+                if (($result['error'] ?? null) !== null) {
+                    return null;
+                }
+
+                $discount = max((int) ($result['discount'] ?? 0), 0);
+
+                return [
+                    'id' => (int) $coupon->id,
+                    'code' => (string) $coupon->code,
+                    'name' => (string) ($coupon->name ?? ''),
+                    'discount' => $discount,
+                    'discount_display' => $currencySymbol . ' ' . number_format($discount),
+                    'summary' => $this->formatCouponSummary($coupon, $discount, $currencySymbol),
+                    'points_cost' => max((int) ($result['points_cost'] ?? 0), 0),
+                    'bonus_points' => max((int) ($result['bonus_points'] ?? 0), 0),
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function formatCouponSummary(Coupon $coupon, int $discount, string $currencySymbol): string
+    {
+        $parts = [];
+
+        if ($coupon->normalizedDiscountType() === 'percent') {
+            $parts[] = __('customer.coupon_summary_percent_with_amount', [
+                'value' => (int) $coupon->discount_value,
+                'amount' => $currencySymbol . ' ' . number_format($discount),
+            ]);
+        } elseif ($coupon->hasDiscount()) {
+            $parts[] = __('customer.coupon_summary_fixed', [
+                'amount' => $currencySymbol . ' ' . number_format($discount),
+            ]);
+        }
+
+        if ($coupon->hasBonusPointsReward()) {
+            $parts[] = __('customer.coupon_summary_points_reward', [
+                'amount' => $currencySymbol . ' ' . number_format(max((int) $coupon->reward_per_amount, 0)),
+                'points' => (int) $coupon->reward_points,
+            ]);
+        }
+
+        $summary = implode(' | ', array_filter($parts));
+        if ($summary === '') {
+            $summary = __('customer.coupon_summary_fixed', [
+                'amount' => $currencySymbol . ' ' . number_format($discount),
+            ]);
+        }
+
+        $minimum = max((int) $coupon->min_order_amount, 0);
+        if ($minimum > 0) {
+            $summary .= ' | ' . __('customer.coupon_summary_minimum', [
+                'amount' => $currencySymbol . ' ' . number_format($minimum),
+            ]);
+        }
+
+        $pointsCost = max((int) $coupon->points_cost, 0);
+        if ($pointsCost > 0) {
+            $summary .= ' | ' . __('merchant_order.coupon_points_cost', ['points' => $pointsCost]);
+        }
+
+        return $summary;
     }
 
     private function findAppendableDineInOrder(Store $store, DiningTable $table): ?Order
