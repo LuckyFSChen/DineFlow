@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Merchant;
 
+use App\Http\Controllers\Concerns\ResolvesAccessibleStores;
 use App\Http\Controllers\Controller;
 use App\Jobs\IssueOrderInvoiceJob;
 use App\Jobs\IssueStoreInvoiceAllowanceJob;
@@ -19,12 +20,13 @@ use Illuminate\Http\Request;
 
 class InvoiceCenterController extends Controller
 {
+    use ResolvesAccessibleStores;
+
     public function index(Request $request): View
     {
         $user = $request->user();
 
-        $stores = Store::query()
-            ->where('user_id', $user->id)
+        $stores = $this->accessibleStoresQuery($user)
             ->orderBy('name')
             ->orderBy('id')
             ->get(['id', 'name', 'currency']);
@@ -127,7 +129,7 @@ class InvoiceCenterController extends Controller
 
     public function updateWizard(Request $request): RedirectResponse
     {
-        $store = $this->resolveMerchantStore($request, (int) $request->input('store_id'));
+        $store = $this->resolveAccessibleStore($request, (int) $request->input('store_id'));
 
         $validated = $request->validate([
             'wizard_step' => ['nullable', 'integer', 'min:1', 'max:6'],
@@ -224,7 +226,7 @@ class InvoiceCenterController extends Controller
 
     public function runTestIssue(Request $request, InvoiceGatewayService $gateway): RedirectResponse
     {
-        $store = $this->resolveMerchantStore($request, (int) $request->input('store_id'));
+        $store = $this->resolveAccessibleStore($request, (int) $request->input('store_id'));
 
         $setting = StoreInvoiceSetting::query()->firstOrCreate(['store_id' => $store->id]);
 
@@ -250,7 +252,7 @@ class InvoiceCenterController extends Controller
 
     public function retryIssue(Request $request, StoreInvoice $invoice): RedirectResponse
     {
-        $store = $this->resolveMerchantStore($request, $invoice->store_id);
+        $store = $this->resolveAccessibleStore($request, $invoice->store_id);
         $this->ensureInvoiceBelongsToStore($invoice, $store);
 
         IssueOrderInvoiceJob::dispatch($invoice->order_id);
@@ -262,7 +264,7 @@ class InvoiceCenterController extends Controller
 
     public function retryOrderIssue(Request $request, Order $order): RedirectResponse
     {
-        $store = $this->resolveMerchantStore($request, $order->store_id);
+        $store = $this->resolveAccessibleStore($request, $order->store_id);
 
         if ($order->store_id !== $store->id) {
             abort(404);
@@ -277,7 +279,7 @@ class InvoiceCenterController extends Controller
 
     public function retryUpload(Request $request, StoreInvoice $invoice): RedirectResponse
     {
-        $store = $this->resolveMerchantStore($request, $invoice->store_id);
+        $store = $this->resolveAccessibleStore($request, $invoice->store_id);
         $this->ensureInvoiceBelongsToStore($invoice, $store);
 
         UploadStoreInvoiceJob::dispatch($invoice->id);
@@ -289,7 +291,7 @@ class InvoiceCenterController extends Controller
 
     public function retryVoid(Request $request, StoreInvoice $invoice): RedirectResponse
     {
-        $store = $this->resolveMerchantStore($request, $invoice->store_id);
+        $store = $this->resolveAccessibleStore($request, $invoice->store_id);
         $this->ensureInvoiceBelongsToStore($invoice, $store);
 
         VoidStoreInvoiceJob::dispatch($invoice->id);
@@ -301,7 +303,7 @@ class InvoiceCenterController extends Controller
 
     public function createAllowance(Request $request, StoreInvoice $invoice): RedirectResponse
     {
-        $store = $this->resolveMerchantStore($request, $invoice->store_id);
+        $store = $this->resolveAccessibleStore($request, $invoice->store_id);
         $this->ensureInvoiceBelongsToStore($invoice, $store);
 
         $validated = $request->validate([
@@ -340,7 +342,7 @@ class InvoiceCenterController extends Controller
 
     public function retryAllowance(Request $request, StoreInvoiceAllowance $allowance): RedirectResponse
     {
-        $store = $this->resolveMerchantStore($request, $allowance->store_id);
+        $store = $this->resolveAccessibleStore($request, $allowance->store_id);
 
         if ($allowance->store_id !== $store->id) {
             abort(404);
@@ -351,20 +353,6 @@ class InvoiceCenterController extends Controller
         return redirect()
             ->route('merchant.invoices.index', ['store_id' => $store->id])
             ->with('status', '已加入折讓補開佇列。');
-    }
-
-    private function resolveMerchantStore(Request $request, int $storeId): Store
-    {
-        $store = Store::query()
-            ->where('id', $storeId)
-            ->where('user_id', $request->user()->id)
-            ->first();
-
-        if (! $store) {
-            abort(404);
-        }
-
-        return $store;
     }
 
     private function ensureInvoiceBelongsToStore(StoreInvoice $invoice, Store $store): void

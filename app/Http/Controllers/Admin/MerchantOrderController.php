@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\BuildsMerchantOrderPageData;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\DiningTable;
@@ -17,6 +18,8 @@ use Illuminate\View\View;
 
 class MerchantOrderController extends Controller
 {
+    use BuildsMerchantOrderPageData;
+
     private const NON_APPENDABLE_ORDER_STATUSES = [
         'cancel',
         'cancelled',
@@ -34,112 +37,7 @@ class MerchantOrderController extends Controller
     {
         $this->authorize('update', $store);
 
-        $tables = DiningTable::query()
-            ->where('store_id', $store->id)
-            ->orderBy('table_no')
-            ->get(['id', 'store_id', 'table_no', 'status']);
-
-        $openOrders = Order::query()
-            ->where('store_id', $store->id)
-            ->where('order_type', 'dine_in')
-            ->whereNotIn('status', self::NON_APPENDABLE_ORDER_STATUSES)
-            ->where(function ($query) {
-                $query->where('payment_status', 'unpaid')
-                    ->orWhereNull('payment_status');
-            })
-            ->withCount('items')
-            ->orderByDesc('id')
-            ->get(['id', 'dining_table_id', 'order_no', 'status', 'payment_status', 'total'])
-            ->unique('dining_table_id')
-            ->keyBy('dining_table_id');
-
-        $categories = Category::query()
-            ->where('store_id', $store->id)
-            ->where('is_active', true)
-            ->with(['products' => function ($query) use ($store) {
-                $query->where('store_id', $store->id)
-                    ->where('is_active', true)
-                    ->where('is_sold_out', false)
-                    ->orderBy('sort')
-                    ->orderBy('id');
-            }])
-            ->orderBy('sort')
-            ->orderBy('id')
-            ->get();
-
-        $tablesPayload = $tables->map(function (DiningTable $table) use ($openOrders) {
-            $openOrder = $openOrders->get($table->id);
-
-            return [
-                'id' => (int) $table->id,
-                'table_no' => (string) $table->table_no,
-                'status' => (string) $table->status,
-                'status_label' => $table->status === 'inactive' ? '停用中' : '可點餐',
-                'open_order' => $openOrder ? [
-                    'order_no' => (string) $openOrder->order_no,
-                    'status' => (string) $openOrder->status,
-                    'payment_status' => (string) $openOrder->payment_status,
-                    'items_count' => (int) $openOrder->items_count,
-                    'total' => (int) $openOrder->total,
-                ] : null,
-            ];
-        })->values();
-
-        $categoriesPayload = $categories->map(function (Category $category) use ($store) {
-            return [
-                'id' => (int) $category->id,
-                'name' => (string) $category->name,
-                'prep_time_minutes' => $category->prep_time_minutes ? (int) $category->prep_time_minutes : null,
-                'product_count' => $category->products->count(),
-                'products' => $category->products->map(function (Product $product) use ($store, $category) {
-                    $optionGroups = is_array($product->option_groups) ? $product->option_groups : [];
-                    $optionCount = collect($optionGroups)
-                        ->sum(fn ($group) => is_array($group['choices'] ?? null) ? count($group['choices']) : 0);
-
-                    $requiredGroupCount = collect($optionGroups)
-                        ->filter(fn ($group) => is_array($group) && (bool) ($group['required'] ?? false))
-                        ->count();
-
-                    $imageUrl = null;
-                    if (filled($product->image)) {
-                        $imageUrl = str_starts_with((string) $product->image, 'http')
-                            ? (string) $product->image
-                            : asset('storage/'.ltrim((string) $product->image, '/'));
-                    }
-
-                    return [
-                        'id' => (int) $product->id,
-                        'name' => (string) $product->name,
-                        'description' => (string) ($product->description ?? ''),
-                        'price' => (int) $product->price,
-                        'price_display' => $this->currencySymbol($store).' '.number_format((int) $product->price),
-                        'image_url' => $imageUrl,
-                        'option_groups' => $optionGroups,
-                        'option_group_count' => count($optionGroups),
-                        'option_count' => (int) $optionCount,
-                        'required_group_count' => (int) $requiredGroupCount,
-                        'allow_item_note' => (bool) $product->allow_item_note,
-                        'category_name' => (string) $category->name,
-                    ];
-                })->values()->all(),
-            ];
-        })->values();
-
-        $initialCartItems = $this->buildInitialCartItemsFromOldInput($store);
-
-        return view('admin.orders.create', [
-            'store' => $store,
-            'tables' => $tables,
-            'categories' => $categories,
-            'tablesPayload' => $tablesPayload,
-            'categoriesPayload' => $categoriesPayload,
-            'initialCartItems' => $initialCartItems,
-            'currencySymbol' => $this->currencySymbol($store),
-            'defaultTableId' => (int) old('dining_table_id', 0),
-            'defaultCustomerName' => (string) old('customer_name', ''),
-            'defaultCustomerPhone' => (string) old('customer_phone', ''),
-            'defaultNote' => (string) old('note', ''),
-        ]);
+        return view('admin.orders.create', $this->merchantOrderPageViewData($store));
     }
 
     public function store(Request $request, Store $store): RedirectResponse
@@ -147,8 +45,7 @@ class MerchantOrderController extends Controller
         $this->authorize('update', $store);
 
         if (! $store->isOrderingAvailable()) {
-            return redirect()
-                ->route('admin.stores.orders.create', $store)
+            return $this->merchantOrderPageRedirect($request, $store)
                 ->withInput()
                 ->with('error', $store->orderingClosedMessage());
         }
@@ -164,9 +61,9 @@ class MerchantOrderController extends Controller
             'items.*.option_payload' => ['nullable', 'string'],
             'items.*.item_note' => ['nullable', 'string', 'max:255'],
         ], [
-            'dining_table_id.required' => '請先選擇桌次。',
-            'items.required' => '請先加入至少一個品項。',
-            'items.min' => '請先加入至少一個品項。',
+            'dining_table_id.required' => __('merchant_order.validation_dining_table_required'),
+            'items.required' => __('merchant_order.validation_items_required'),
+            'items.min' => __('merchant_order.validation_items_required'),
         ]);
 
         $table = DiningTable::query()
@@ -175,7 +72,7 @@ class MerchantOrderController extends Controller
 
         if ((string) $table->status === 'inactive') {
             throw ValidationException::withMessages([
-                'dining_table_id' => '此桌次目前停用中，請改選其他桌次。',
+                'dining_table_id' => __('merchant_order.validation_table_inactive'),
             ]);
         }
 
@@ -207,7 +104,7 @@ class MerchantOrderController extends Controller
                         'status' => 'pending',
                         'payment_status' => 'unpaid',
                         'invoice_flow' => InvoiceFlow::NONE,
-                        'customer_name' => $normalizedCustomerName ?: '現場口頭點餐',
+                        'customer_name' => $normalizedCustomerName ?: __('merchant_order.default_customer_name'),
                         'customer_phone' => $normalizedCustomerPhone,
                         'customer_email' => null,
                         'note' => $normalizedOrderNote,
@@ -251,15 +148,13 @@ class MerchantOrderController extends Controller
                 return $order;
             });
         } catch (ValidationException $exception) {
-            return redirect()
-                ->route('admin.stores.orders.create', $store)
+            return $this->merchantOrderPageRedirect($request, $store)
                 ->withInput()
                 ->withErrors($exception->errors());
         }
 
-        return redirect()
-            ->route('admin.stores.orders.create', $store)
-            ->with('success', '商家點餐已建立，訂單編號 #'.$order->order_no.'。');
+        return $this->merchantOrderPageRedirect($request, $store)
+            ->with('success', __('merchant_order.success_order_saved', ['order_no' => $order->order_no]));
     }
 
     private function resolveOrderItems(Store $store, array $items): array
@@ -288,7 +183,7 @@ class MerchantOrderController extends Controller
             $product = $products->get($productId);
 
             if (! $product instanceof Product) {
-                $unavailableNames[] = '已下架商品';
+                $unavailableNames[] = __('merchant_order.unavailable_product_fallback');
 
                 continue;
             }
@@ -310,13 +205,13 @@ class MerchantOrderController extends Controller
 
         if ($unavailableNames !== []) {
             throw ValidationException::withMessages([
-                'items' => '部分商品目前無法點餐，請重新確認品項。',
+                'items' => __('merchant_order.error_unavailable_items'),
             ]);
         }
 
         if ($resolved === []) {
             throw ValidationException::withMessages([
-                'items' => '請先加入至少一個品項。',
+                'items' => __('merchant_order.validation_items_required'),
             ]);
         }
 
@@ -406,7 +301,7 @@ class MerchantOrderController extends Controller
 
             if (! is_array($decoded)) {
                 throw ValidationException::withMessages([
-                    'items' => '商品選項格式錯誤，請重新選擇。',
+                    'items' => __('merchant_order.error_invalid_option_payload'),
                 ]);
             }
 
@@ -446,13 +341,13 @@ class MerchantOrderController extends Controller
 
             if ($required && $rawSelection === []) {
                 throw ValidationException::withMessages([
-                    'items' => '請完成「'.$groupName.'」的必選項。',
+                    'items' => __('merchant_order.error_required_group', ['group' => $groupName]),
                 ]);
             }
 
             if ($type === 'multiple' && count($rawSelection) > $maxSelect) {
                 throw ValidationException::withMessages([
-                    'items' => '「'.$groupName.'」最多只能選 '.$maxSelect.' 項。',
+                    'items' => __('merchant_order.error_group_max_select', ['group' => $groupName, 'count' => $maxSelect]),
                 ]);
             }
 
@@ -494,7 +389,7 @@ class MerchantOrderController extends Controller
 
             if ($required && $groupSelected === []) {
                 throw ValidationException::withMessages([
-                    'items' => '請完成「'.$groupName.'」的必選項。',
+                    'items' => __('merchant_order.error_required_group', ['group' => $groupName]),
                 ]);
             }
 
@@ -518,11 +413,7 @@ class MerchantOrderController extends Controller
 
     private function sanitizeItemNote(?string $note, bool $allowItemNote): ?string
     {
-        if (! $allowItemNote) {
-            return null;
-        }
-
-        if ($note === null) {
+        if (! $allowItemNote || $note === null) {
             return null;
         }
 
@@ -540,7 +431,7 @@ class MerchantOrderController extends Controller
         }
 
         if ($itemNote !== null && trim($itemNote) !== '') {
-            $parts[] = '備註 '.trim($itemNote);
+            $parts[] = __('merchant_order.item_note_prefix').trim($itemNote);
         }
 
         return $parts === [] ? null : implode(' | ', $parts);
@@ -562,7 +453,7 @@ class MerchantOrderController extends Controller
 
                 $digits = preg_replace('/\D+/', '', $raw);
                 if (! is_string($digits) || strlen($digits) !== $expectedLength) {
-                    $fail('電話需要輸入 '.$expectedLength.' 碼數字。');
+                    $fail(__('merchant_order.validation_customer_phone_length', ['digits' => $expectedLength]));
                 }
             },
         ];
@@ -631,5 +522,25 @@ class MerchantOrderController extends Controller
             'usd' => 'USD',
             default => 'NT$',
         };
+    }
+
+    private function orderCreateRouteParams(Store $store, Request $request): array
+    {
+        $params = ['store' => $store];
+
+        if ($request->boolean('embedded')) {
+            $params['embedded'] = 1;
+        }
+
+        return $params;
+    }
+
+    private function merchantOrderPageRedirect(Request $request, Store $store): RedirectResponse
+    {
+        if ($request->boolean('workspace')) {
+            return redirect()->route('admin.stores.workspace', ['store' => $store, 'tab' => 'orders']);
+        }
+
+        return redirect()->route('admin.stores.orders.create', $this->orderCreateRouteParams($store, $request));
     }
 }

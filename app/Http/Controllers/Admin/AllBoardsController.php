@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\BuildsAllBoardsPageData;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Store;
@@ -11,6 +12,8 @@ use Illuminate\Support\Collection;
 
 class AllBoardsController extends Controller
 {
+    use BuildsAllBoardsPageData;
+
     private const CASHIER_PENDING_STATUSES = ['pending', 'accepted', 'confirmed', 'received'];
 
     private const CASHIER_COMPLETED_STATUSES = ['complete', 'completed', 'ready', 'ready_for_pickup'];
@@ -27,25 +30,7 @@ class AllBoardsController extends Controller
     {
         $this->authorize('viewBoards', $store);
 
-        $availableStores = $this->resolveAccessibleStores($request);
-        $ordersData = $this->buildOrdersPayload($store)->values()->all();
-        $boardSummary = $this->buildBoardSummary($store);
-
-        $checkoutTiming = $store->checkout_timing ?? 'postpay';
-        $user = $request->user();
-
-        $canCashierActions = $user->isAdmin() || $user->isMerchant() || $user->isCashier();
-        $canKitchenActions = $user->isAdmin() || $user->isMerchant();
-
-        return view('admin.boards.index', [
-            'store' => $store,
-            'availableStores' => $availableStores,
-            'ordersData' => $ordersData,
-            'boardSummary' => $boardSummary,
-            'checkoutTiming' => $checkoutTiming,
-            'canCashierActions' => $canCashierActions,
-            'canKitchenActions' => $canKitchenActions,
-        ]);
+        return view('admin.boards.index', $this->allBoardsPageViewData($request, $store));
     }
 
     public function orders(Request $request, Store $store): JsonResponse
@@ -53,7 +38,7 @@ class AllBoardsController extends Controller
         $this->authorize('viewBoards', $store);
 
         return response()->json([
-            'orders' => $this->buildOrdersPayload($store)->values()->all(),
+            'orders' => $this->buildBoardOrdersPayload($store)->values()->all(),
             'summary' => $this->buildBoardSummary($store),
         ]);
     }

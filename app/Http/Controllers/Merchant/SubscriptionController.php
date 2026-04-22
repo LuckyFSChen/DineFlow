@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SubscriptionPayment;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
+use App\Support\SubscriptionPlanCatalog;
 use App\Support\EcpayService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,14 +30,12 @@ class SubscriptionController extends Controller
         'vnd' => 'VND',
     ];
 
-    public function index(Request $request): View
+    public function index(Request $request, SubscriptionPlanCatalog $catalog): View
     {
         $user = $request->user();
         $currencyProfile = $this->resolveCurrencyProfile($user);
 
-        $plans = SubscriptionPlan::query()
-            ->where('is_active', true)
-            ->get();
+        $plans = $catalog->activePlans();
 
         $planPricing = $plans
             ->mapWithKeys(function (SubscriptionPlan $plan) use ($user, $currencyProfile): array {
@@ -44,24 +43,7 @@ class SubscriptionController extends Controller
             })
             ->all();
 
-        $categoryOrder = ['basic' => 1, 'growth' => 2, 'pro' => 3];
-
-        $plansByTier = $plans
-            ->sortBy(function (SubscriptionPlan $plan) use ($categoryOrder): array {
-                $categoryKey = strtolower(trim((string) ($plan->category ?: strtok($plan->slug, '-'))));
-
-                return [
-                    $categoryOrder[$categoryKey] ?? 99,
-                    $categoryKey,
-                    $plan->duration_days,
-                    $plan->price_twd,
-                ];
-            })
-            ->groupBy(function (SubscriptionPlan $plan): string {
-                $category = trim((string) $plan->category);
-
-                return $category !== '' ? $category : (string) strtok($plan->slug, '-');
-            });
+        $plansByTier = $catalog->groupByTier($plans);
 
         return view('merchant.subscription.index', [
             'plansByTier' => $plansByTier,
@@ -186,8 +168,15 @@ class SubscriptionController extends Controller
         }
 
         $trialPlan = SubscriptionPlan::query()
-            ->where('slug', 'basic-monthly')
             ->where('is_active', true)
+            ->get()
+            ->filter(fn (SubscriptionPlan $plan) => $this->planTierKey($plan) === 'basic')
+            ->sortBy(fn (SubscriptionPlan $plan) => sprintf(
+                '%05d-%010d-%010d',
+                max((int) $plan->duration_days, 0),
+                max((int) $plan->price_twd, 0),
+                (int) $plan->id
+            ))
             ->first();
 
         if (! $trialPlan) {
@@ -378,9 +367,20 @@ class SubscriptionController extends Controller
         return $isPaid;
     }
 
-    private function tierRankFromSlug(string $slug): int
+    private function planTierKey(SubscriptionPlan $plan): string
     {
-        $tier = strtolower((string) strtok($slug, '-'));
+        $category = strtolower(trim((string) ($plan->category ?? '')));
+
+        if ($category !== '') {
+            return $category;
+        }
+
+        return strtolower((string) strtok((string) $plan->slug, '-'));
+    }
+
+    private function tierRankForPlan(SubscriptionPlan $plan): int
+    {
+        $tier = $this->planTierKey($plan);
 
         return match ($tier) {
             'basic' => 1,
@@ -421,8 +421,8 @@ class SubscriptionController extends Controller
             return $preview;
         }
 
-        $currentTierRank = $this->tierRankFromSlug((string) $currentPlan->slug);
-        $targetTierRank = $this->tierRankFromSlug((string) $targetPlan->slug);
+        $currentTierRank = $this->tierRankForPlan($currentPlan);
+        $targetTierRank = $this->tierRankForPlan($targetPlan);
 
         if ($targetTierRank < $currentTierRank) {
             $preview['is_purchase_allowed'] = false;
@@ -448,8 +448,9 @@ class SubscriptionController extends Controller
             $preview['upgrade_credit_twd'] = $upgradeCredit;
             $preview['payable_amount_twd'] = $payableAmount;
             $preview['is_upgrade_proration_applied'] = $upgradeCredit > 0;
-            $preview['show_reset_time_warning'] = (string) $currentPlan->slug === 'basic-yearly'
-                && in_array((string) strtok($targetPlan->slug, '-'), ['growth', 'pro'], true);
+            $preview['show_reset_time_warning'] = $this->planTierKey($currentPlan) === 'basic'
+                && (int) $currentPlan->duration_days >= 365
+                && in_array($this->planTierKey($targetPlan), ['growth', 'pro'], true);
         }
 
         $preview['display_original_amount'] = $this->convertFromTwd($preview['original_price_twd'], $currencyProfile['currency_code']);

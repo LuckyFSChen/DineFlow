@@ -1,59 +1,93 @@
 @extends('layouts.app')
 
-@section('title', '商家點餐')
+@section('title', __('merchant_order.page_title'))
 
 @section('content')
 @php
+    $embedded = (bool) ($embedded ?? request()->boolean('embedded'));
+    $workspace = (bool) ($workspace ?? false);
+    $orderFormRouteParameters = ['store' => $store];
+    if ($workspace) {
+        $orderFormRouteParameters['workspace'] = 1;
+    } elseif (request()->boolean('embedded')) {
+        $orderFormRouteParameters['embedded'] = 1;
+    }
     $totalProducts = $categories->sum(fn ($category) => $category->products->count());
     $activeTableCount = $tables->where('status', '!=', 'inactive')->count();
+    $phoneDigits = strtolower((string) ($store->country_code ?? 'tw')) === 'cn' ? 11 : 10;
+    $numberLocale = str_replace('_', '-', app()->getLocale());
+    $ui = [
+        'selectedTableNone' => __('merchant_order.selected_table_none'),
+        'selectedTablePrefix' => __('merchant_order.selected_table_prefix'),
+        'tableOpenOrderBadge' => __('merchant_order.table_open_order_badge'),
+        'tableNewOrderBadge' => __('merchant_order.table_new_order_badge'),
+        'openOrderPrefix' => __('merchant_order.open_order_prefix'),
+        'itemNoteLabel' => __('merchant_order.item_note_label'),
+        'noDescription' => __('merchant_order.no_description'),
+        'optionGroupsLabel' => __('merchant_order.option_groups_label', ['count' => ':count']),
+        'noOptionsLabel' => __('merchant_order.no_options_label'),
+        'requiredGroupsLabel' => __('merchant_order.required_groups_label', ['count' => ':count']),
+        'noRequiredGroupsLabel' => __('merchant_order.no_required_groups_label'),
+        'allowItemNote' => __('merchant_order.allow_item_note'),
+        'modalGroupFallback' => __('merchant_order.modal_group_fallback'),
+        'modalSingleChoice' => __('merchant_order.modal_single_choice'),
+        'modalMultipleChoice' => __('merchant_order.modal_multiple_choice', ['count' => ':count']),
+        'modalRequiredTag' => __('merchant_order.modal_required_tag'),
+        'modalOptionalTag' => __('merchant_order.modal_optional_tag'),
+        'modalFreeChoice' => __('merchant_order.modal_free_choice'),
+        'modalExtraPricePrefix' => __('merchant_order.modal_extra_price_prefix'),
+        'validationRequiredGroupAlert' => __('merchant_order.validation_required_group_alert', ['group' => ':group']),
+    ];
 @endphp
 
 <div
-    class="min-h-screen bg-slate-50"
+    class="{{ $workspace ? '' : 'min-h-screen ' }}bg-slate-50"
     x-data="merchantOrderPage({
         categories: @js($categoriesPayload),
         tables: @js($tablesPayload),
         initialCartItems: @js($initialCartItems),
         currencySymbol: @js($currencySymbol),
         defaultTableId: @js($defaultTableId),
+        locale: @js($numberLocale),
+        ui: @js($ui),
     })"
 >
     <div class="mx-auto max-w-7xl px-6 py-10 lg:px-8">
         <div class="admin-hero mb-6 rounded-3xl px-5 py-5 md:px-7">
             <div class="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                    <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Backend Dine-In</p>
-                    <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-900">商家點餐</h1>
-                    <p class="mt-2 text-slate-600">
-                        {{ $store->name }} 的後台口頭點餐介面，可直接選桌次、選類別、查看品項詳細資料並建立內用訂單。
-                    </p>
+                    <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('merchant_order.hero_badge') }}</p>
+                    <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-900">{{ __('merchant_order.hero_title') }}</h1>
+                    <p class="mt-2 text-slate-600">{{ __('merchant_order.hero_description', ['store' => $store->name]) }}</p>
                 </div>
 
-                <div class="flex flex-wrap gap-2">
-                    <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center justify-center rounded-2xl border border-slate-900 bg-slate-800 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700">
-                        返回店家列表
-                    </a>
-                    <a href="{{ route('admin.stores.boards', $store) }}" class="inline-flex items-center justify-center rounded-2xl border border-orange-300 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">
-                        查看看板
-                    </a>
-                </div>
+                @if (! $embedded)
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center justify-center rounded-2xl border border-slate-900 bg-slate-800 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700">
+                            {{ __('merchant_order.back_to_stores') }}
+                        </a>
+                        <a href="{{ route('admin.stores.workspace', ['store' => $store, 'tab' => 'boards']) }}" class="inline-flex items-center justify-center rounded-2xl border border-orange-300 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">
+                            {{ __('merchant_order.all_boards') }}
+                        </a>
+                    </div>
+                @endif
             </div>
 
             <div class="grid gap-4 md:grid-cols-4">
                 <div class="admin-kpi rounded-2xl p-4 shadow-sm">
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">桌次</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ __('merchant_order.kpi_total_tables') }}</p>
                     <p class="value mt-2 text-slate-900">{{ $tables->count() }}</p>
                 </div>
                 <div class="admin-kpi rounded-2xl p-4 shadow-sm">
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">可點桌次</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ __('merchant_order.kpi_active_tables') }}</p>
                     <p class="value mt-2 text-emerald-700">{{ $activeTableCount }}</p>
                 </div>
                 <div class="admin-kpi rounded-2xl p-4 shadow-sm">
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">類別</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ __('merchant_order.kpi_categories') }}</p>
                     <p class="value mt-2 text-cyan-700">{{ $categories->count() }}</p>
                 </div>
                 <div class="admin-kpi rounded-2xl p-4 shadow-sm">
-                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">可點品項</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{{ __('merchant_order.kpi_products') }}</p>
                     <p class="value mt-2 text-indigo-700">{{ $totalProducts }}</p>
                 </div>
             </div>
@@ -79,15 +113,15 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('admin.stores.orders.store', $store) }}" class="grid gap-6 xl:grid-cols-[380px,minmax(0,1fr)]">
+        <form method="POST" action="{{ route('admin.stores.orders.store', $orderFormRouteParameters) }}" class="grid gap-6 xl:grid-cols-[380px,minmax(0,1fr)]">
             @csrf
 
             <aside class="space-y-6 xl:sticky xl:top-24 xl:self-start">
                 <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div class="flex items-center justify-between gap-3">
                         <div>
-                            <h2 class="text-lg font-bold text-slate-900">桌次選擇</h2>
-                            <p class="mt-1 text-sm text-slate-500">先選桌號，再把口頭點餐內容加入訂單。</p>
+                            <h2 class="text-lg font-bold text-slate-900">{{ __('merchant_order.table_picker_title') }}</h2>
+                            <p class="mt-1 text-sm text-slate-500">{{ __('merchant_order.table_picker_desc') }}</p>
                         </div>
                         <span class="rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700" x-text="selectedTableLabel()"></span>
                     </div>
@@ -108,24 +142,22 @@
                             >
                                 <div class="flex items-start justify-between gap-3">
                                     <div>
-                                        <p class="text-sm font-semibold text-slate-900" :class="table.status === 'inactive' ? 'text-slate-400' : 'text-slate-900'">
-                                            桌號 <span x-text="table.table_no"></span>
+                                        <p class="text-sm font-semibold" :class="table.status === 'inactive' ? 'text-slate-400' : 'text-slate-900'">
+                                            {{ __('merchant_order.table_label') }} <span x-text="table.table_no"></span>
                                         </p>
                                         <p class="mt-1 text-xs" :class="table.status === 'inactive' ? 'text-slate-400' : 'text-slate-500'" x-text="table.status_label"></p>
                                     </div>
                                     <span
                                         class="rounded-full px-2.5 py-1 text-[11px] font-semibold"
-                                        :class="table.open_order
-                                            ? 'bg-amber-100 text-amber-700'
-                                            : 'bg-emerald-100 text-emerald-700'"
-                                        x-text="table.open_order ? '未結單' : '新單'"
+                                        :class="table.open_order ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'"
+                                        x-text="table.open_order ? ui.tableOpenOrderBadge : ui.tableNewOrderBadge"
                                     ></span>
                                 </div>
 
                                 <template x-if="table.open_order">
                                     <div class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                                        <div>訂單 #<span x-text="table.open_order.order_no"></span></div>
-                                        <div class="mt-1">目前 {{ $currencySymbol }} <span x-text="formatNumber(table.open_order.total)"></span> / <span x-text="table.open_order.items_count"></span> 項</div>
+                                        <div><span x-text="ui.openOrderPrefix"></span><span x-text="table.open_order.order_no"></span></div>
+                                        <div class="mt-1" x-text="openOrderSummary(table.open_order)"></div>
                                     </div>
                                 </template>
                             </button>
@@ -134,43 +166,43 @@
                 </section>
 
                 <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <h2 class="text-lg font-bold text-slate-900">訂單資料</h2>
-                    <p class="mt-1 text-sm text-slate-500">可填客人稱呼或電話，方便櫃台與現場辨識。</p>
+                    <h2 class="text-lg font-bold text-slate-900">{{ __('merchant_order.customer_info_title') }}</h2>
+                    <p class="mt-1 text-sm text-slate-500">{{ __('merchant_order.customer_info_desc') }}</p>
 
                     <div class="mt-4 space-y-4">
                         <div>
-                            <label for="customer_name" class="mb-1 block text-xs font-semibold text-slate-600">客人名稱</label>
+                            <label for="customer_name" class="mb-1 block text-xs font-semibold text-slate-600">{{ __('merchant_order.customer_name') }}</label>
                             <input
                                 id="customer_name"
                                 name="customer_name"
                                 type="text"
                                 value="{{ $defaultCustomerName }}"
-                                placeholder="例如：王小姐 / 兩位內用"
+                                placeholder="{{ __('merchant_order.customer_name_placeholder') }}"
                                 class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100"
                             >
                         </div>
 
                         <div>
-                            <label for="customer_phone" class="mb-1 block text-xs font-semibold text-slate-600">客人電話</label>
+                            <label for="customer_phone" class="mb-1 block text-xs font-semibold text-slate-600">{{ __('merchant_order.customer_phone') }}</label>
                             <input
                                 id="customer_phone"
                                 name="customer_phone"
                                 type="tel"
                                 inputmode="numeric"
-                                data-phone-digits="{{ strtolower((string) ($store->country_code ?? 'tw')) === 'cn' ? 11 : 10 }}"
+                                data-phone-digits="{{ $phoneDigits }}"
                                 value="{{ $defaultCustomerPhone }}"
-                                placeholder="可不填"
+                                placeholder="{{ __('merchant_order.customer_phone_placeholder', ['digits' => $phoneDigits]) }}"
                                 class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100"
                             >
                         </div>
 
                         <div>
-                            <label for="note" class="mb-1 block text-xs font-semibold text-slate-600">整筆訂單備註</label>
+                            <label for="note" class="mb-1 block text-xs font-semibold text-slate-600">{{ __('merchant_order.order_note') }}</label>
                             <textarea
                                 id="note"
                                 name="note"
                                 rows="3"
-                                placeholder="例如：先上兒童餐、需要兒童餐具"
+                                placeholder="{{ __('merchant_order.order_note_placeholder') }}"
                                 class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100"
                             >{{ $defaultNote }}</textarea>
                         </div>
@@ -180,8 +212,8 @@
                 <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div class="flex items-center justify-between gap-3">
                         <div>
-                            <h2 class="text-lg font-bold text-slate-900">本次點餐明細</h2>
-                            <p class="mt-1 text-sm text-slate-500">左側確認桌次，右側加入品項。</p>
+                            <h2 class="text-lg font-bold text-slate-900">{{ __('merchant_order.cart_title') }}</h2>
+                            <p class="mt-1 text-sm text-slate-500">{{ __('merchant_order.cart_desc') }}</p>
                         </div>
                         <button
                             type="button"
@@ -189,7 +221,7 @@
                             class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
                             x-show="cartItems.length > 0"
                         >
-                            清空
+                            {{ __('merchant_order.clear_cart') }}
                         </button>
                     </div>
 
@@ -198,13 +230,18 @@
                              :class="selectedTable.open_order ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'">
                             <template x-if="selectedTable.open_order">
                                 <div>
-                                    桌號 <span class="font-semibold" x-text="selectedTable.table_no"></span> 目前已有未結單，
-                                    這次加入的品項會直接併入訂單 #<span class="font-semibold" x-text="selectedTable.open_order.order_no"></span>。
+                                    {{ __('merchant_order.existing_order_notice_before') }}
+                                    <span class="font-semibold" x-text="selectedTable.table_no"></span>
+                                    {{ __('merchant_order.existing_order_notice_after_table') }}
+                                    {{ __('merchant_order.existing_order_notice_append') }}
+                                    <span class="font-semibold" x-text="selectedTable.open_order.order_no"></span>
                                 </div>
                             </template>
                             <template x-if="!selectedTable.open_order">
                                 <div>
-                                    目前選擇桌號 <span class="font-semibold" x-text="selectedTable.table_no"></span>，送出後會建立新訂單。
+                                    {{ __('merchant_order.new_order_notice_before') }}
+                                    <span class="font-semibold" x-text="selectedTable.table_no"></span>
+                                    {{ __('merchant_order.new_order_notice_after_table') }}
                                 </div>
                             </template>
                         </div>
@@ -221,11 +258,11 @@
                                             <p class="mt-2 text-xs text-cyan-700" x-text="item.optionLabel"></p>
                                         </template>
                                         <template x-if="item.itemNote">
-                                            <p class="mt-1 text-xs text-amber-700">備註：<span x-text="item.itemNote"></span></p>
+                                            <p class="mt-1 text-xs text-amber-700"><span x-text="ui.itemNoteLabel"></span><span x-text="item.itemNote"></span></p>
                                         </template>
                                     </div>
                                     <button type="button" @click="removeItem(index)" class="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100">
-                                        刪除
+                                        {{ __('merchant_order.remove_item') }}
                                     </button>
                                 </div>
 
@@ -237,7 +274,7 @@
                                     </div>
 
                                     <div class="text-right">
-                                        <p class="text-xs text-slate-500">單價 <span x-text="money(item.price)"></span></p>
+                                        <p class="text-xs text-slate-500">{{ __('merchant_order.unit_price') }} <span x-text="money(item.price)"></span></p>
                                         <p class="text-sm font-semibold text-slate-900" x-text="money(item.subtotal)"></p>
                                     </div>
                                 </div>
@@ -251,16 +288,16 @@
                     </div>
 
                     <div x-show="cartItems.length === 0" class="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-                        目前還沒有加入任何品項。
+                        {{ __('merchant_order.empty_cart') }}
                     </div>
 
                     <div class="mt-5 rounded-2xl border border-slate-200 bg-slate-900 px-4 py-4 text-white">
                         <div class="flex items-center justify-between text-sm text-slate-300">
-                            <span>品項數量</span>
+                            <span>{{ __('merchant_order.total_items') }}</span>
                             <span x-text="totalQty"></span>
                         </div>
                         <div class="mt-2 flex items-center justify-between text-lg font-bold">
-                            <span>本次合計</span>
+                            <span>{{ __('merchant_order.total_amount') }}</span>
                             <span x-text="money(cartTotal)"></span>
                         </div>
                     </div>
@@ -270,7 +307,7 @@
                         class="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:bg-slate-300"
                         :disabled="!selectedTableId || cartItems.length === 0"
                     >
-                        送出商家點餐
+                        {{ __('merchant_order.submit_order') }}
                     </button>
                 </section>
             </aside>
@@ -279,12 +316,12 @@
                 <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div>
-                            <h2 class="text-lg font-bold text-slate-900">分類與品項</h2>
-                            <p class="mt-1 text-sm text-slate-500">從類別快速找到菜單，點開後可查看選項、備註欄與價格細節。</p>
+                            <h2 class="text-lg font-bold text-slate-900">{{ __('merchant_order.catalog_title') }}</h2>
+                            <p class="mt-1 text-sm text-slate-500">{{ __('merchant_order.catalog_desc') }}</p>
                         </div>
                         <div class="admin-pill-nav inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-slate-700">
-                            <span class="rounded-full bg-cyan-100 px-2 py-1 text-cyan-700">即時組單</span>
-                            <span>點一下品項即可開啟詳細設定</span>
+                            <span class="rounded-full bg-cyan-100 px-2 py-1 text-cyan-700">{{ __('merchant_order.catalog_hint_badge') }}</span>
+                            <span>{{ __('merchant_order.catalog_hint_text') }}</span>
                         </div>
                     </div>
 
@@ -311,9 +348,9 @@
                             <div>
                                 <h3 class="text-xl font-bold text-slate-900" x-text="category.name"></h3>
                                 <p class="mt-1 text-sm text-slate-500">
-                                    <span x-text="category.product_count"></span> 個品項
+                                    <span x-text="category.product_count"></span> {{ __('merchant_order.products_count_suffix') }}
                                     <template x-if="category.prep_time_minutes">
-                                        <span> / 預估製作 <span x-text="category.prep_time_minutes"></span> 分鐘</span>
+                                        <span> / {{ __('merchant_order.prep_time_prefix') }} <span x-text="category.prep_time_minutes"></span> {{ __('merchant_order.minutes_unit') }}</span>
                                     </template>
                                 </p>
                             </div>
@@ -322,7 +359,7 @@
                                 class="w-fit rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
                                 @click="activeCategoryId = category.id; window.location.hash = `category-${category.id}`"
                             >
-                                定位此分類
+                                {{ __('merchant_order.back_to_category') }}
                             </button>
                         </div>
 
@@ -338,35 +375,33 @@
                                             <div class="flex items-start justify-between gap-3">
                                                 <div>
                                                     <h4 class="text-base font-semibold text-slate-900" x-text="product.name"></h4>
-                                                    <p class="mt-1 text-sm font-semibold text-cyan-700" x-text="product.price_display"></p>
+                                                    <p class="mt-1 text-sm font-semibold text-cyan-700" x-text="money(product.price)"></p>
                                                 </div>
                                                 <span class="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200" x-text="product.category_name"></span>
                                             </div>
 
-                                            <p class="mt-3 line-clamp-3 text-sm leading-6 text-slate-600" x-text="product.description || '此品項目前沒有補充說明。'"></p>
+                                            <p class="mt-3 line-clamp-3 text-sm leading-6 text-slate-600" x-text="productDescription(product)"></p>
 
                                             <div class="mt-3 flex flex-wrap gap-2 text-xs font-medium">
-                                                <span class="rounded-full bg-indigo-50 px-2.5 py-1 text-indigo-700" x-text="product.option_group_count > 0 ? `${product.option_group_count} 組選項` : '無加購選項'"></span>
+                                                <span class="rounded-full bg-indigo-50 px-2.5 py-1 text-indigo-700" x-text="productOptionGroupsLabel(product)"></span>
                                                 <template x-if="product.option_group_count > 0">
-                                                    <span class="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700" x-text="product.required_group_count > 0 ? `${product.required_group_count} 組必選` : '可直接加入'"></span>
+                                                    <span class="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700" x-text="productRequiredGroupsLabel(product)"></span>
                                                 </template>
                                                 <template x-if="product.allow_item_note">
-                                                    <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">可填單品備註</span>
+                                                    <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">{{ __('merchant_order.allow_item_note') }}</span>
                                                 </template>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div class="mt-5 flex items-center justify-between gap-3">
-                                        <div class="text-xs text-slate-500">
-                                            詳細資料包含選項、加價與備註欄位
-                                        </div>
+                                        <div class="text-xs text-slate-500">{{ __('merchant_order.product_card_hint') }}</div>
                                         <button
                                             type="button"
                                             @click="openProduct(product)"
                                             class="inline-flex items-center justify-center rounded-2xl bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-500"
                                         >
-                                            加入訂單
+                                            {{ __('merchant_order.add_to_order') }}
                                         </button>
                                     </div>
                                 </article>
@@ -390,7 +425,7 @@
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700" x-text="modalProduct?.category_name || ''"></p>
                     <h3 class="mt-2 text-2xl font-bold text-slate-900" x-text="modalProduct?.name || ''"></h3>
-                    <p class="mt-2 text-sm text-slate-500" x-text="modalProduct?.description || '此品項目前沒有補充說明。'"></p>
+                    <p class="mt-2 text-sm text-slate-500" x-text="productDescription(modalProduct)"></p>
                 </div>
                 <button type="button" @click="closeModal()" class="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-100">
                     <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -403,7 +438,7 @@
                 <div class="space-y-5">
                     <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                         <div class="flex items-center justify-between gap-3">
-                            <span class="text-sm text-slate-500">基本價格</span>
+                            <span class="text-sm text-slate-500">{{ __('merchant_order.modal_base_price') }}</span>
                             <span class="text-lg font-bold text-cyan-700" x-text="modalProduct ? money(modalProduct.price) : ''"></span>
                         </div>
                     </div>
@@ -414,17 +449,17 @@
                                 <section class="rounded-2xl border border-slate-200 bg-white p-4">
                                     <div class="flex items-start justify-between gap-3">
                                         <div>
-                                            <h4 class="text-sm font-semibold text-slate-900" x-text="group.name || '選項'"></h4>
+                                            <h4 class="text-sm font-semibold text-slate-900" x-text="group.name || ui.modalGroupFallback"></h4>
                                             <p class="mt-1 text-xs text-slate-500">
-                                                <span x-text="group.type === 'multiple' ? `可複選，最多 ${group.max_select || 99} 項` : '單選'"></span>
+                                                <span x-text="groupTypeLabel(group)"></span>
                                                 <template x-if="group.required">
-                                                    <span> / 必選</span>
+                                                    <span> / {{ __('merchant_order.modal_required_tag') }}</span>
                                                 </template>
                                             </p>
                                         </div>
                                         <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold"
                                               :class="group.required ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'"
-                                              x-text="group.required ? '必選' : '選填'"></span>
+                                              x-text="group.required ? ui.modalRequiredTag : ui.modalOptionalTag"></span>
                                     </div>
 
                                     <div class="mt-4 grid gap-3 sm:grid-cols-2">
@@ -450,7 +485,7 @@
 
                                                 <div class="min-w-0">
                                                     <p class="text-sm font-semibold text-slate-900" x-text="choice.name"></p>
-                                                    <p class="mt-1 text-xs text-slate-500" x-text="(Number(choice.price || 0) > 0) ? `加價 ${money(Number(choice.price || 0))}` : '不加價'"></p>
+                                                    <p class="mt-1 text-xs text-slate-500" x-text="choicePriceLabel(choice)"></p>
                                                 </div>
                                             </label>
                                         </template>
@@ -462,12 +497,12 @@
 
                     <template x-if="modalProduct && modalProduct.allow_item_note">
                         <div>
-                            <label for="modal-item-note" class="mb-1 block text-xs font-semibold text-slate-600">單品備註</label>
+                            <label for="modal-item-note" class="mb-1 block text-xs font-semibold text-slate-600">{{ __('merchant_order.modal_item_note_label') }}</label>
                             <textarea
                                 id="modal-item-note"
                                 rows="3"
                                 x-model="modalItemNote"
-                                placeholder="例如：不要蔥、醬分開放"
+                                placeholder="{{ __('merchant_order.modal_item_note_placeholder') }}"
                                 class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100"
                             ></textarea>
                         </div>
@@ -476,12 +511,12 @@
 
                 <div class="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">即時計算</p>
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('merchant_order.modal_summary_title') }}</p>
                         <p class="mt-2 text-2xl font-bold text-slate-900" x-text="money(modalSubtotal())"></p>
                     </div>
 
                     <div>
-                        <p class="text-xs font-semibold text-slate-500">數量</p>
+                        <p class="text-xs font-semibold text-slate-500">{{ __('merchant_order.modal_quantity_label') }}</p>
                         <div class="mt-2 inline-flex items-center rounded-full border border-slate-300 bg-white">
                             <button type="button" @click="modalQty = Math.max(1, modalQty - 1)" class="px-4 py-2 text-sm font-semibold text-slate-700">-</button>
                             <span class="min-w-12 px-2 text-center text-sm font-semibold text-slate-900" x-text="modalQty"></span>
@@ -491,21 +526,21 @@
 
                     <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
                         <div class="flex items-center justify-between gap-3">
-                            <span>加價小計</span>
+                            <span>{{ __('merchant_order.modal_extra_price') }}</span>
                             <span class="font-semibold text-slate-900" x-text="money(selectedExtraPrice())"></span>
                         </div>
                         <div class="mt-2 flex items-center justify-between gap-3">
-                            <span>單價</span>
+                            <span>{{ __('merchant_order.modal_unit_price') }}</span>
                             <span class="font-semibold text-slate-900" x-text="modalUnitPriceLabel()"></span>
                         </div>
                     </div>
 
                     <button type="button" @click="addModalItem()" class="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-cyan-500">
-                        加入本次點餐
+                        {{ __('merchant_order.modal_add') }}
                     </button>
 
                     <button type="button" @click="closeModal()" class="inline-flex w-full items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-                        取消
+                        {{ __('merchant_order.modal_cancel') }}
                     </button>
                 </div>
             </div>
@@ -532,6 +567,8 @@
                 itemNote: item.itemNote || item.item_note || '',
             })),
             currencySymbol: config.currencySymbol || 'NT$',
+            locale: config.locale || undefined,
+            ui: config.ui || {},
             selectedTableId: Number(config.defaultTableId || 0) || null,
             activeCategoryId: (config.categories || [])[0]?.id || null,
             modalOpen: false,
@@ -552,6 +589,16 @@
                 return this.cartItems.reduce((sum, item) => sum + Number(item.qty || 0), 0);
             },
 
+            text(key, replacements = {}) {
+                let template = this.ui[key] || '';
+
+                Object.entries(replacements).forEach(([name, value]) => {
+                    template = template.replace(new RegExp(`:${name}`, 'g'), String(value));
+                });
+
+                return template;
+            },
+
             selectTable(tableId) {
                 const target = this.tables.find((table) => Number(table.id) === Number(tableId));
                 if (!target || target.status === 'inactive') {
@@ -563,10 +610,14 @@
 
             selectedTableLabel() {
                 if (!this.selectedTable) {
-                    return '尚未選桌';
+                    return this.text('selectedTableNone');
                 }
 
-                return `桌號 ${this.selectedTable.table_no}`;
+                return `${this.text('selectedTablePrefix')}${this.selectedTable.table_no}`;
+            },
+
+            openOrderSummary(order) {
+                return this.text('openOrderPrefix') + order.order_no + ' · ' + this.money(order.total) + ` / ${this.formatNumber(order.items_count)}`;
             },
 
             money(value) {
@@ -574,7 +625,47 @@
             },
 
             formatNumber(value) {
-                return Number(value || 0).toLocaleString('zh-TW');
+                return Number(value || 0).toLocaleString(this.locale || undefined);
+            },
+
+            productDescription(product) {
+                if (!product) {
+                    return this.text('noDescription');
+                }
+
+                return product.description || this.text('noDescription');
+            },
+
+            productOptionGroupsLabel(product) {
+                const count = Number(product?.option_group_count || 0);
+
+                return count > 0
+                    ? this.text('optionGroupsLabel', { count })
+                    : this.text('noOptionsLabel');
+            },
+
+            productRequiredGroupsLabel(product) {
+                const count = Number(product?.required_group_count || 0);
+
+                return count > 0
+                    ? this.text('requiredGroupsLabel', { count })
+                    : this.text('noRequiredGroupsLabel');
+            },
+
+            groupTypeLabel(group) {
+                if ((group?.type || 'single') === 'multiple') {
+                    return this.text('modalMultipleChoice', { count: Number(group?.max_select || 99) });
+                }
+
+                return this.text('modalSingleChoice');
+            },
+
+            choicePriceLabel(choice) {
+                const price = Number(choice?.price || 0);
+
+                return price > 0
+                    ? `${this.text('modalExtraPricePrefix')} ${this.money(price)}`
+                    : this.text('modalFreeChoice');
             },
 
             openProduct(product) {
@@ -620,8 +711,7 @@
                         current.splice(0, current.length - maxSelect);
                     }
                 } else {
-                    const next = current.filter((value) => value !== choiceId);
-                    this.modalSelections[group.id] = next;
+                    this.modalSelections[group.id] = current.filter((value) => value !== choiceId);
                     return;
                 }
 
@@ -732,7 +822,9 @@
                     const isEmpty = Array.isArray(selected) ? selected.length === 0 : !selected;
 
                     if (isEmpty) {
-                        window.alert(`請先選擇「${group.name || '必選項'}」`);
+                        window.alert(this.text('validationRequiredGroupAlert', {
+                            group: group.name || this.text('modalRequiredTag'),
+                        }));
                         return false;
                     }
                 }

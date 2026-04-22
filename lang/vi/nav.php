@@ -6,9 +6,12 @@ return [
     'login'              => 'Đăng Nhập',
     'register'           => 'Đăng Ký',
     'subscription'       => 'Gói Đăng Ký',
+    'pricing_contact'    => 'Bảng Giá & Liên Hệ',
     'financial_report'   => 'Báo Cáo Tài Chính',
     'loyalty'            => 'Thành Viên Và Ưu Đãi',
     'store_backend'      => 'Quản Lý Cửa Hàng',
+    'merchant_order'     => 'Tạo Đơn',
+    'merchant_order_short' => 'Đặt Món',
     'stores_short'       => 'Cửa Hàng',
     'kitchen'            => 'Bảng Bếp',
     'kitchen_short'      => 'Bếp',
@@ -30,6 +33,5 @@ return [
     'lang_en'            => 'English',
     'lang_vi'            => 'Tiếng Việt',
     'points_card'        => 'The diem',
+    'invoice_center'     => 'Trung Tam Hoa Don',
 ];
-
-

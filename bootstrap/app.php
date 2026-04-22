@@ -39,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureUserRole::class,
             'merchant.subscription' => \App\Http\Middleware\EnsureActiveMerchantSubscription::class,
+            'nav.feature' => \App\Http\Middleware\EnsureNavFeatureEnabled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

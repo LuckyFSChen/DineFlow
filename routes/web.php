@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ProductManagementController;
 use App\Http\Controllers\Admin\DiningTableManagementController;
 use App\Http\Controllers\Admin\KitchenController;
 use App\Http\Controllers\Admin\MerchantOrderController;
+use App\Http\Controllers\Admin\MerchantWorkspaceController;
 use App\Http\Controllers\Admin\CashierController;
 use App\Http\Controllers\Admin\AllBoardsController;
 use App\Http\Controllers\Admin\Auth\AuthenticatedSessionController as AdminAuthenticatedSessionController;
@@ -22,8 +23,10 @@ use App\Http\Controllers\Merchant\InvoiceCenterController;
 use App\Http\Controllers\Merchant\LoyaltyController;
 use App\Http\Controllers\Merchant\OrderHistoryController;
 use App\Http\Controllers\Merchant\SubscriptionController as MerchantSubscriptionController;
+use App\Http\Controllers\ProductIntroController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StoreController;
+use App\Support\NavFeature;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -39,7 +42,7 @@ Route::middleware('guest')->prefix('admin')->name('admin.')->group(function () {
     Route::post('login', [AdminAuthenticatedSessionController::class, 'store'])->name('login.store');
 });
 
-Route::middleware(['auth', 'verified', 'role:merchant,admin', 'merchant.subscription'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:merchant,admin', 'merchant.subscription', 'nav.feature:store_backend'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('stores', AdminStoreController::class)->except(['show']);
     Route::patch('stores/{store}/activate', [AdminStoreController::class, 'activate'])->name('stores.activate');
     Route::patch('stores/{store}/deactivate', [AdminStoreController::class, 'deactivate'])->name('stores.deactivate');
@@ -66,7 +69,15 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin', 'merchant.subscrip
     Route::delete('stores/{store}/chefs/{chef}', [ChefManagementController::class, 'destroy'])->name('stores.chefs.destroy');
 });
 
-Route::middleware(['auth', 'verified', 'role:merchant,admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:merchant,admin', 'merchant.subscription', 'nav.feature:store_backend', 'nav.feature:boards'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('stores/{store}/workspace', [MerchantWorkspaceController::class, 'index'])
+        ->name('stores.workspace')
+        ->missing(function () {
+            return redirect()->route('dashboard')->with('error', __('admin.error_store_not_found'));
+        });
+});
+
+Route::middleware(['auth', 'verified', 'role:merchant,admin', 'nav.feature:boards'])->prefix('admin')->name('admin.')->group(function () {
     // Kitchen display
     Route::get('stores/{store}/kitchen', [KitchenController::class, 'index'])
         ->name('stores.kitchen')
@@ -96,7 +107,7 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin'])->prefix('admin')-
 
 });
 
-Route::middleware(['auth', 'verified', 'role:merchant,admin,cashier'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:merchant,admin,cashier', 'nav.feature:boards'])->prefix('admin')->name('admin.')->group(function () {
     // Cashier display
     Route::get('stores/{store}/cashier', [CashierController::class, 'index'])
         ->name('stores.cashier')
@@ -125,7 +136,7 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin,cashier'])->prefix('
         });
 });
 
-Route::middleware(['auth', 'verified', 'role:merchant,admin,chef,cashier'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:merchant,admin,chef,cashier', 'nav.feature:boards'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('stores/{store}/boards', [AllBoardsController::class, 'index'])
         ->name('stores.boards')
         ->missing(function () {
@@ -143,12 +154,18 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin,chef,cashier'])->pre
         });
 });
 
-Route::middleware(['auth', 'verified', 'role:merchant'])->prefix('merchant')->name('merchant.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:merchant', 'nav.feature:subscription'])->prefix('merchant')->name('merchant.')->group(function () {
     Route::get('/subscription', [MerchantSubscriptionController::class, 'index'])->name('subscription.index');
     Route::post('/subscription', [MerchantSubscriptionController::class, 'subscribe'])->name('subscription.subscribe');
     Route::post('/subscription/trial', [MerchantSubscriptionController::class, 'startTrial'])->name('subscription.trial');
     Route::get('/subscription/success', [MerchantSubscriptionController::class, 'success'])->name('subscription.success');
+});
+
+Route::middleware(['auth', 'verified', 'role:merchant,admin', 'nav.feature:order_history'])->prefix('merchant')->name('merchant.')->group(function () {
     Route::get('/orders', [OrderHistoryController::class, 'index'])->name('orders.index');
+});
+
+Route::middleware(['auth', 'verified', 'role:merchant,admin', 'nav.feature:invoice_center'])->prefix('merchant')->name('merchant.')->group(function () {
     Route::get('/invoices', [InvoiceCenterController::class, 'index'])->name('invoices.index');
     Route::post('/invoices/wizard', [InvoiceCenterController::class, 'updateWizard'])->name('invoices.wizard.update');
     Route::post('/invoices/test-issue', [InvoiceCenterController::class, 'runTestIssue'])->name('invoices.test-issue');
@@ -158,8 +175,14 @@ Route::middleware(['auth', 'verified', 'role:merchant'])->prefix('merchant')->na
     Route::post('/invoices/{invoice}/retry-void', [InvoiceCenterController::class, 'retryVoid'])->name('invoices.retry-void');
     Route::post('/invoices/{invoice}/allowances', [InvoiceCenterController::class, 'createAllowance'])->name('invoices.allowances.store');
     Route::post('/invoice-allowances/{allowance}/retry', [InvoiceCenterController::class, 'retryAllowance'])->name('invoices.allowances.retry');
+});
+
+Route::middleware(['auth', 'verified', 'role:merchant,admin', 'nav.feature:financial_report'])->prefix('merchant')->name('merchant.')->group(function () {
     Route::get('/reports/financial', [FinancialReportController::class, 'index'])->name('reports.financial');
     Route::post('/reports/financial/monthly-target', [FinancialReportController::class, 'updateMonthlyTarget'])->name('reports.financial.monthly-target');
+});
+
+Route::middleware(['auth', 'verified', 'role:merchant,admin', 'nav.feature:loyalty'])->prefix('merchant')->name('merchant.')->group(function () {
     Route::get('/loyalty', [LoyaltyController::class, 'index'])->name('loyalty.index');
     Route::post('/loyalty/settings', [LoyaltyController::class, 'updateSettings'])->name('loyalty.settings.update');
     Route::post('/loyalty/coupons', [LoyaltyController::class, 'storeCoupon'])->name('loyalty.coupons.store');
@@ -173,8 +196,11 @@ Route::post('/ecpay/subscription/result', [MerchantSubscriptionController::class
 
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('super-admin')->name('super-admin.')->group(function () {
     Route::get('/subscriptions', [UserSubscriptionController::class, 'index'])->name('subscriptions.index');
+    Route::post('/subscription-plans', [UserSubscriptionController::class, 'storePlan'])->name('subscriptions.plans.store');
     Route::patch('/subscription-plans/{plan}', [UserSubscriptionController::class, 'updatePlan'])->name('subscriptions.plans.update');
+    Route::delete('/subscription-plans/{plan}', [UserSubscriptionController::class, 'destroyPlan'])->name('subscriptions.plans.destroy');
     Route::patch('/subscriptions/{user}', [UserSubscriptionController::class, 'update'])->name('subscriptions.update');
+    Route::patch('/nav-features', [UserSubscriptionController::class, 'updateNavFeatures'])->name('subscriptions.features.update');
 });
 
 /*
@@ -194,7 +220,9 @@ Route::get('/join-dineflow', function (Request $request) {
 
     return redirect()->route('register', ['account_type' => 'merchant']);
 })->name('join.merchant.register');
-Route::view('/product-intro', 'product-intro')->name('product.intro');
+Route::get('/product-intro', [ProductIntroController::class, 'show'])->name('product.intro');
+Route::get('/pricing-contact', [ProductIntroController::class, 'showPricingContact'])->name('product.pricing-contact');
+Route::post('/product-intro/merchant-inquiry', [ProductIntroController::class, 'submitMerchantInquiry'])->name('product.intro.inquiry.submit');
 Route::view('/privacy-policy', 'privacy-policy')->name('privacy.policy');
 Route::get('/stores', [HomeController::class, 'stores'])->name('stores.list');
 Route::get('/stores/{store:slug}/reviews', [HomeController::class, 'reviews'])->name('stores.reviews');
@@ -212,6 +240,12 @@ Route::get('/sitemap.xml', function () {
         ],
         [
             'loc' => route('product.intro'),
+            'priority' => '0.8',
+            'changefreq' => 'weekly',
+            'lastmod' => $siteLastmod,
+        ],
+        [
+            'loc' => route('product.pricing-contact'),
             'priority' => '0.8',
             'changefreq' => 'weekly',
             'lastmod' => $siteLastmod,
@@ -330,14 +364,47 @@ Route::get('/admin', function (Request $request) {
     }
 
     if ($user->isMerchant()) {
-        return redirect()->route('merchant.subscription.index');
+        if (NavFeature::enabled(NavFeature::SUBSCRIPTION)) {
+            return redirect()->route('merchant.subscription.index');
+        }
+
+        if (NavFeature::enabled(NavFeature::STORE_BACKEND) && $user->hasActiveSubscription()) {
+            return redirect()->route('admin.stores.index');
+        }
+
+        $merchantBoardStore = $user->stores()
+            ->where('is_active', true)
+            ->orderBy('id')
+            ->first();
+
+        if (NavFeature::enabled(NavFeature::BOARDS) && $user->hasActiveSubscription() && $merchantBoardStore) {
+            return redirect()->route('admin.stores.boards', $merchantBoardStore);
+        }
+
+        if (NavFeature::enabled(NavFeature::FINANCIAL_REPORT)) {
+            return redirect()->route('merchant.reports.financial');
+        }
+
+        if (NavFeature::enabled(NavFeature::ORDER_HISTORY)) {
+            return redirect()->route('merchant.orders.index');
+        }
+
+        if (NavFeature::enabled(NavFeature::INVOICE_CENTER)) {
+            return redirect()->route('merchant.invoices.index');
+        }
+
+        if (NavFeature::enabled(NavFeature::LOYALTY)) {
+            return redirect()->route('merchant.loyalty.index');
+        }
+
+        return redirect()->route('home');
     }
 
     if ($user->isAdmin()) {
-        return redirect()->route('super-admin.subscriptions.index');
+        return redirect()->route('super-admin.subscriptions.index', ['tab' => 'features']);
     }
 
-    if (($user->isChef() || $user->isCashier()) && $user->store) {
+    if (($user->isChef() || $user->isCashier()) && $user->store && NavFeature::enabled(NavFeature::BOARDS)) {
         return redirect()->route('admin.stores.boards', $user->store);
     }
 

@@ -1,11 +1,30 @@
 @php
     $isAdminArea = request()->routeIs('admin.*') || request()->routeIs('super-admin.*') || request()->routeIs('merchant.*');
     $isDineInCartPage = request()->routeIs('customer.dinein.cart.*');
+    $isWorkspacePage = request()->routeIs('admin.stores.workspace');
+    $workspaceTab = request()->query('tab') === 'boards' ? 'boards' : 'orders';
     $isBoardPage = request()->routeIs('admin.stores.boards*')
         || request()->routeIs('admin.stores.kitchen*')
-        || request()->routeIs('admin.stores.cashier*');
+        || request()->routeIs('admin.stores.cashier*')
+        || ($isWorkspacePage && $workspaceTab === 'boards');
+    $isMerchantOrderPage = request()->routeIs('admin.stores.orders.*')
+        || ($isWorkspacePage && $workspaceTab === 'orders');
+    $isStoreBackendPage = request()->routeIs('admin.stores.*')
+        && ! $isBoardPage
+        && ! $isMerchantOrderPage
+        && ! $isWorkspacePage;
 
     $navUser = Auth::user();
+    $navFeatures = \App\Support\NavFeature::all();
+    $subscriptionFeatureEnabled = $navUser?->isAdmin()
+        ? true
+        : ($navFeatures[\App\Support\NavFeature::SUBSCRIPTION] ?? true);
+    $financialReportFeatureEnabled = $navFeatures[\App\Support\NavFeature::FINANCIAL_REPORT] ?? true;
+    $orderHistoryFeatureEnabled = $navFeatures[\App\Support\NavFeature::ORDER_HISTORY] ?? true;
+    $invoiceCenterFeatureEnabled = $navFeatures[\App\Support\NavFeature::INVOICE_CENTER] ?? true;
+    $loyaltyFeatureEnabled = $navFeatures[\App\Support\NavFeature::LOYALTY] ?? true;
+    $storeBackendFeatureEnabled = $navFeatures[\App\Support\NavFeature::STORE_BACKEND] ?? true;
+    $boardsFeatureEnabled = $navFeatures[\App\Support\NavFeature::BOARDS] ?? true;
     $routeStoreParam = request()->route('store');
 
     $resolvedRouteStore = null;
@@ -14,6 +33,8 @@
     } elseif (is_numeric($routeStoreParam)) {
         $resolvedRouteStore = \App\Models\Store::query()->find((int) $routeStoreParam);
     }
+
+    $resolvedMerchantOrderStore = $resolvedRouteStore;
 
     if ($resolvedRouteStore && ! $resolvedRouteStore->is_active) {
         $resolvedRouteStore = null;
@@ -35,10 +56,18 @@
         return null;
     };
 
+    $firstStore = fn () => \App\Models\Store::query()
+        ->orderBy('id')
+        ->first();
+
     $firstOpenStore = fn () => \App\Models\Store::query()
         ->where('is_active', true)
         ->orderBy('id')
         ->first();
+
+    $merchantFirstStore = $navUser?->isMerchant()
+        ? $navUser->stores()->orderBy('id')->first()
+        : null;
 
     $merchantOpenStore = $navUser?->isMerchant()
         ? $navUser->stores()->where('is_active', true)->orderBy('id')->first()
@@ -63,7 +92,8 @@
         $boardNavStore = $resolvedRouteStore ?: $firstOpenStore();
     }
 
-    $showBoardNav = $boardNavStore
+    $showBoardNav = $boardsFeatureEnabled
+        && $boardNavStore
         && ($navUser?->isAdmin()
             || $navUser?->hasActiveSubscription()
             || $navUser?->isChef()
@@ -71,9 +101,157 @@
 
     $boardNavStoreRoute = $storeRouteValue($boardNavStore);
 
-    $merchantHasStores = $navUser?->isMerchant()
-        ? $navUser->stores()->exists()
-        : true;
+    $merchantOrderNavStore = null;
+    if ($navUser?->isMerchant()) {
+        $merchantOrderNavStore = $resolvedMerchantOrderStore;
+
+        if ($merchantOrderNavStore && (int) $merchantOrderNavStore->user_id !== (int) $navUser->id) {
+            $merchantOrderNavStore = null;
+        }
+
+        $merchantOrderNavStore = $merchantOrderNavStore ?: $merchantFirstStore;
+    } elseif ($navUser?->isAdmin()) {
+        $merchantOrderNavStore = $resolvedMerchantOrderStore ?: $firstStore();
+    }
+
+    $showStoreBackendNav = $storeBackendFeatureEnabled
+        && ($navUser?->isAdmin() || $navUser?->hasActiveSubscription());
+    $showMerchantOrderNav = $showStoreBackendNav && $merchantOrderNavStore;
+    $merchantOrderNavStoreRoute = $storeRouteValue($merchantOrderNavStore);
+    $useMerchantWorkspaceNav = $boardsFeatureEnabled
+        && $showMerchantOrderNav
+        && $showBoardNav
+        && ($navUser?->isAdmin() || $navUser?->isMerchant());
+    $merchantOrderNavHref = $showMerchantOrderNav && $merchantOrderNavStoreRoute
+        ? ($useMerchantWorkspaceNav
+            ? route('admin.stores.workspace', ['store' => $merchantOrderNavStoreRoute, 'tab' => 'orders'])
+            : route('admin.stores.orders.create', ['store' => $merchantOrderNavStoreRoute]))
+        : null;
+    $boardNavHref = $showBoardNav && $boardNavStoreRoute
+        ? ($useMerchantWorkspaceNav
+            ? route('admin.stores.workspace', ['store' => $boardNavStoreRoute, 'tab' => 'boards'])
+            : route('admin.stores.boards', ['store' => $boardNavStoreRoute]))
+        : null;
+
+    $canAccessMerchantConsole = $navUser?->isMerchant() || $navUser?->isAdmin();
+    $subscriptionNavHref = null;
+    $subscriptionNavActive = false;
+
+    if ($navUser?->isAdmin()) {
+        $subscriptionNavHref = route('super-admin.subscriptions.index', ['tab' => 'features']);
+        $subscriptionNavActive = request()->routeIs('super-admin.subscriptions.*');
+    } elseif ($navUser?->isMerchant()) {
+        $subscriptionNavHref = route('merchant.subscription.index');
+        $subscriptionNavActive = request()->routeIs('merchant.subscription.*');
+    }
+
+    $merchantConsoleStoresQuery = null;
+    if ($navUser?->isAdmin()) {
+        $merchantConsoleStoresQuery = \App\Models\Store::query();
+    } elseif ($navUser?->isMerchant()) {
+        $merchantConsoleStoresQuery = $navUser->stores();
+    }
+
+    $merchantConsoleHasStores = $merchantConsoleStoresQuery
+        ? (clone $merchantConsoleStoresQuery)->exists()
+        : false;
+    $settingsDropdownActiveClasses = 'bg-slate-100 font-semibold text-slate-900';
+
+    $navFeatureConfigurations = \App\Support\NavFeature::configurations();
+    $defaultNavFeatureLayouts = \App\Support\NavFeature::defaultLayouts();
+
+    $featurePlacement = static function (string $feature) use ($navFeatureConfigurations, $defaultNavFeatureLayouts): string {
+        return (string) ($navFeatureConfigurations[$feature]['placement']
+            ?? $defaultNavFeatureLayouts[$feature]['placement']
+            ?? \App\Support\NavFeature::PLACEMENT_DROPDOWN);
+    };
+
+    $featureOrder = static function (string $feature) use ($navFeatureConfigurations, $defaultNavFeatureLayouts): int {
+        return (int) ($navFeatureConfigurations[$feature]['order']
+            ?? $defaultNavFeatureLayouts[$feature]['order']
+            ?? 999);
+    };
+
+    $featureNavItems = [
+        \App\Support\NavFeature::STORE_BACKEND => [
+            'label' => __('nav.store_backend'),
+            'href' => $showStoreBackendNav ? route('admin.stores.index') : null,
+            'active' => $isStoreBackendPage,
+            'enabled' => $showStoreBackendNav,
+            'requires_dropdown_disabled_state' => false,
+            'disabled_reason' => null,
+        ],
+        \App\Support\NavFeature::ORDER_HISTORY => [
+            'label' => __('nav.order_history'),
+            'href' => $orderHistoryFeatureEnabled ? route('merchant.orders.index') : null,
+            'active' => request()->routeIs('merchant.orders.*'),
+            'enabled' => $canAccessMerchantConsole && $orderHistoryFeatureEnabled,
+            'requires_dropdown_disabled_state' => false,
+            'disabled_reason' => null,
+        ],
+        \App\Support\NavFeature::LOYALTY => [
+            'label' => __('nav.loyalty'),
+            'href' => ($loyaltyFeatureEnabled && $merchantConsoleHasStores) ? route('merchant.loyalty.index') : null,
+            'active' => request()->routeIs('merchant.loyalty.*'),
+            'enabled' => $canAccessMerchantConsole && $loyaltyFeatureEnabled,
+            'requires_dropdown_disabled_state' => true,
+            'disabled_reason' => __('merchant.error_store_required_for_loyalty'),
+        ],
+        \App\Support\NavFeature::INVOICE_CENTER => [
+            'label' => __('nav.invoice_center'),
+            'href' => $invoiceCenterFeatureEnabled ? route('merchant.invoices.index') : null,
+            'active' => request()->routeIs('merchant.invoices.*'),
+            'enabled' => $canAccessMerchantConsole && $invoiceCenterFeatureEnabled,
+            'requires_dropdown_disabled_state' => false,
+            'disabled_reason' => null,
+        ],
+        \App\Support\NavFeature::SUBSCRIPTION => [
+            'label' => __('nav.subscription'),
+            'href' => ($subscriptionFeatureEnabled && $subscriptionNavHref) ? $subscriptionNavHref : null,
+            'active' => $subscriptionNavActive,
+            'enabled' => $canAccessMerchantConsole && $subscriptionFeatureEnabled && (bool) $subscriptionNavHref,
+            'requires_dropdown_disabled_state' => false,
+            'disabled_reason' => null,
+        ],
+        \App\Support\NavFeature::FINANCIAL_REPORT => [
+            'label' => __('nav.financial_report'),
+            'href' => $financialReportFeatureEnabled ? route('merchant.reports.financial') : null,
+            'active' => request()->routeIs('merchant.reports.*'),
+            'enabled' => $canAccessMerchantConsole && $financialReportFeatureEnabled,
+            'requires_dropdown_disabled_state' => false,
+            'disabled_reason' => null,
+        ],
+        \App\Support\NavFeature::BOARDS => [
+            'label' => __('admin.board_all_title'),
+            'href' => $boardNavHref,
+            'active' => $isBoardPage,
+            'enabled' => $showBoardNav && (bool) $boardNavHref,
+            'requires_dropdown_disabled_state' => false,
+            'disabled_reason' => null,
+        ],
+    ];
+
+    $featureNavItems = collect($featureNavItems)
+        ->map(function (array $item, string $feature) use ($featurePlacement, $featureOrder): array {
+            $placement = $featurePlacement($feature);
+            $item['feature'] = $feature;
+            $item['placement'] = $placement;
+            $item['order'] = $featureOrder($feature);
+            $item['show_as_link'] = $item['enabled'] && $placement === \App\Support\NavFeature::PLACEMENT_LINKS && (bool) $item['href'];
+            $item['show_in_dropdown'] = $item['enabled'] && $placement === \App\Support\NavFeature::PLACEMENT_DROPDOWN;
+
+            return $item;
+        })
+        ->sortBy(fn (array $item): string => sprintf('%03d-%s', (int) $item['order'], (string) $item['feature']))
+        ->values();
+
+    $primaryFeatureNavItems = $featureNavItems
+        ->filter(fn (array $item): bool => $item['show_as_link'])
+        ->values();
+
+    $dropdownFeatureNavItems = $featureNavItems
+        ->filter(fn (array $item): bool => $item['show_in_dropdown'])
+        ->values();
 
 @endphp
 
@@ -114,61 +292,35 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-3 sm:-my-px sm:ms-8 sm:flex sm:items-center">
+                    @guest
+                        @unless($isAdminArea)
+                            <x-nav-link :href="route('product.pricing-contact')" :active="request()->routeIs('product.pricing-contact')">
+                                {{ __('nav.pricing_contact') }}
+                            </x-nav-link>
+                        @endunless
+                    @endguest
+
                     @if(Auth::user()?->isCustomer())
                         <x-nav-link :href="route('customer.points.index')" :active="request()->routeIs('customer.points.*')">
                             {{ __('nav.points_card') }}
                         </x-nav-link>
-
                         <x-nav-link :href="route('customer.order.history')" :active="request()->routeIs('customer.order.history')">
                             {{ __('nav.order_history') }}
                         </x-nav-link>
                     @endif
 
-                    @if(Auth::user()?->isMerchant())
-                        <x-nav-link :href="route('merchant.subscription.index')" :active="request()->routeIs('merchant.subscription.*')">
-                            {{ __('nav.subscription') }}
-                        </x-nav-link>
-
-                        <x-nav-link :href="route('merchant.reports.financial')" :active="request()->routeIs('merchant.reports.*')">
-                            {{ __('nav.financial_report') }}
-                        </x-nav-link>
-
-                        <x-nav-link :href="route('merchant.orders.index')" :active="request()->routeIs('merchant.orders.*')">
-                            {{ __('nav.order_history') }}
-                        </x-nav-link>
-
-                        <x-nav-link :href="route('merchant.invoices.index')" :active="request()->routeIs('merchant.invoices.*')">
-                            發票中心
-                        </x-nav-link>
-
-                        @if($merchantHasStores)
-                            <x-nav-link :href="route('merchant.loyalty.index')" :active="request()->routeIs('merchant.loyalty.*')">
-                                {{ __('nav.loyalty') }}
-                            </x-nav-link>
-                        @else
-                            <span class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-400 cursor-not-allowed" title="請先建立商店">
-                                {{ __('nav.loyalty') }}
-                            </span>
-                        @endif
-                    @endif
-
-                    @if(Auth::user()?->isAdmin() || Auth::user()?->hasActiveSubscription())
-                        <x-nav-link :href="route('admin.stores.index')" :active="request()->routeIs('admin.stores.*') && !request()->routeIs('admin.stores.kitchen*') && !request()->routeIs('admin.stores.cashier*') && !request()->routeIs('admin.stores.boards*')">
-                            {{ __('nav.store_backend') }}
+                    @if($showMerchantOrderNav && $merchantOrderNavHref)
+                        <x-nav-link :href="$merchantOrderNavHref" :active="$isMerchantOrderPage">
+                            {{ __('nav.merchant_order') }}
                         </x-nav-link>
                     @endif
 
-                    @if($showBoardNav && $boardNavStoreRoute)
-                        <x-nav-link :href="route('admin.stores.boards', ['store' => $boardNavStoreRoute])" :active="$isBoardPage">
-                            {{ __('admin.board_all_title') }}
+                    @foreach($primaryFeatureNavItems as $navItem)
+                        <x-nav-link :href="$navItem['href']" :active="$navItem['active']">
+                            {{ $navItem['label'] }}
                         </x-nav-link>
-                    @endif
+                    @endforeach
 
-                    @if(Auth::user()?->isAdmin())
-                        <x-nav-link :href="route('super-admin.subscriptions.index')" :active="request()->routeIs('super-admin.subscriptions.*')">
-                            {{ __('nav.super_admin') }}
-                        </x-nav-link>
-                    @endif
                 </div>
             </div>
 
@@ -225,16 +377,30 @@
 
                             <div class="my-2 border-t border-slate-200"></div>
 
-                            <x-dropdown-link :href="route('profile.edit')">
+                            <x-dropdown-link :href="route('profile.edit')" class="{{ request()->routeIs('profile.*') ? $settingsDropdownActiveClasses : '' }}">
                                 {{ __('nav.profile') }}
                             </x-dropdown-link>
 
+                            @if($canAccessMerchantConsole)
+                                @foreach($dropdownFeatureNavItems as $navItem)
+                                    @if($navItem['href'])
+                                        <x-dropdown-link :href="$navItem['href']" class="{{ $navItem['active'] ? $settingsDropdownActiveClasses : '' }}">
+                                            {{ $navItem['label'] }}
+                                        </x-dropdown-link>
+                                    @elseif($navItem['requires_dropdown_disabled_state'])
+                                        <span class="block w-full cursor-not-allowed px-4 py-2 text-left text-sm leading-5 text-gray-400" title="{{ $navItem['disabled_reason'] }}">
+                                            {{ $navItem['label'] }}
+                                        </span>
+                                    @endif
+                                @endforeach
+                            @endif
+
                             @if(Auth::user()?->isCustomer())
-                                <x-dropdown-link :href="route('customer.points.index')">
+                                <x-dropdown-link :href="route('customer.points.index')" class="{{ request()->routeIs('customer.points.*') ? $settingsDropdownActiveClasses : '' }}">
                                     {{ __('nav.points_card') }}
                                 </x-dropdown-link>
 
-                                <x-dropdown-link :href="route('customer.order.history')">
+                                <x-dropdown-link :href="route('customer.order.history')" class="{{ request()->routeIs('customer.order.history') ? $settingsDropdownActiveClasses : '' }}">
                                     {{ __('nav.order_history') }}
                                 </x-dropdown-link>
                             @endif
@@ -277,6 +443,14 @@
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
+            @guest
+                @unless($isAdminArea)
+                    <x-responsive-nav-link :href="route('product.pricing-contact')" :active="request()->routeIs('product.pricing-contact')">
+                        {{ __('nav.pricing_contact') }}
+                    </x-responsive-nav-link>
+                @endunless
+            @endguest
+
             @if(Auth::user()?->isCustomer())
                 <x-responsive-nav-link :href="route('customer.points.index')" :active="request()->routeIs('customer.points.*')">
                     {{ __('nav.points_card') }}
@@ -287,51 +461,18 @@
                 </x-responsive-nav-link>
             @endif
 
-            @if(Auth::user()?->isMerchant())
-                <x-responsive-nav-link :href="route('merchant.subscription.index')" :active="request()->routeIs('merchant.subscription.*')">
-                    {{ __('nav.subscription') }}
-                </x-responsive-nav-link>
-
-                <x-responsive-nav-link :href="route('merchant.reports.financial')" :active="request()->routeIs('merchant.reports.*')">
-                    {{ __('nav.financial_report') }}
-                </x-responsive-nav-link>
-
-                <x-responsive-nav-link :href="route('merchant.orders.index')" :active="request()->routeIs('merchant.orders.*')">
-                    {{ __('nav.order_history') }}
-                </x-responsive-nav-link>
-
-                <x-responsive-nav-link :href="route('merchant.invoices.index')" :active="request()->routeIs('merchant.invoices.*')">
-                    發票中心
-                </x-responsive-nav-link>
-
-                @if($merchantHasStores)
-                    <x-responsive-nav-link :href="route('merchant.loyalty.index')" :active="request()->routeIs('merchant.loyalty.*')">
-                        {{ __('nav.loyalty') }}
-                    </x-responsive-nav-link>
-                @else
-                    <span class="block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-medium text-gray-400 cursor-not-allowed">
-                        {{ __('nav.loyalty') }}
-                    </span>
-                @endif
-            @endif
-
-            @if(Auth::user()?->isAdmin() || Auth::user()?->hasActiveSubscription())
-                <x-responsive-nav-link :href="route('admin.stores.index')" :active="request()->routeIs('admin.stores.*') && !request()->routeIs('admin.stores.kitchen*') && !request()->routeIs('admin.stores.cashier*') && !request()->routeIs('admin.stores.boards*')">
-                    {{ __('nav.store_backend') }}
+            @if($showMerchantOrderNav && $merchantOrderNavHref)
+                <x-responsive-nav-link :href="$merchantOrderNavHref" :active="$isMerchantOrderPage">
+                    {{ __('nav.merchant_order') }}
                 </x-responsive-nav-link>
             @endif
 
-            @if($showBoardNav && $boardNavStoreRoute)
-                <x-responsive-nav-link :href="route('admin.stores.boards', ['store' => $boardNavStoreRoute])" :active="$isBoardPage">
-                    {{ __('admin.board_all_title') }}
+            @foreach($primaryFeatureNavItems as $navItem)
+                <x-responsive-nav-link :href="$navItem['href']" :active="$navItem['active']">
+                    {{ $navItem['label'] }}
                 </x-responsive-nav-link>
-            @endif
+            @endforeach
 
-            @if(Auth::user()?->isAdmin())
-                <x-responsive-nav-link :href="route('super-admin.subscriptions.index')" :active="request()->routeIs('super-admin.subscriptions.*')">
-                    {{ __('nav.super_admin') }}
-                </x-responsive-nav-link>
-            @endif
         </div>
 
         <!-- Responsive Settings Options -->
@@ -347,16 +488,30 @@
                 </div>
 
                 <div class="mt-3 space-y-1">
-                    <x-responsive-nav-link :href="route('profile.edit')">
+                    <x-responsive-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.*')">
                         {{ __('nav.profile') }}
                     </x-responsive-nav-link>
 
+                    @if($canAccessMerchantConsole)
+                        @foreach($dropdownFeatureNavItems as $navItem)
+                            @if($navItem['href'])
+                                <x-responsive-nav-link :href="$navItem['href']" :active="$navItem['active']">
+                                    {{ $navItem['label'] }}
+                                </x-responsive-nav-link>
+                            @elseif($navItem['requires_dropdown_disabled_state'])
+                                <span class="block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-medium text-gray-400 cursor-not-allowed" title="{{ $navItem['disabled_reason'] }}">
+                                    {{ $navItem['label'] }}
+                                </span>
+                            @endif
+                        @endforeach
+                    @endif
+
                     @if(Auth::user()?->isCustomer())
-                        <x-responsive-nav-link :href="route('customer.points.index')">
+                        <x-responsive-nav-link :href="route('customer.points.index')" :active="request()->routeIs('customer.points.*')">
                             {{ __('nav.points_card') }}
                         </x-responsive-nav-link>
 
-                        <x-responsive-nav-link :href="route('customer.order.history')">
+                        <x-responsive-nav-link :href="route('customer.order.history')" :active="request()->routeIs('customer.order.history')">
                             {{ __('nav.order_history') }}
                         </x-responsive-nav-link>
                     @endif
@@ -399,16 +554,22 @@
 @auth
     @if($isAdminArea)
         <div class="mobile-admin-dock">
-            <a href="{{ route('admin.stores.index') }}" class="{{ request()->routeIs('admin.stores.index') ? 'active' : '' }}">{{ __('nav.stores_short') }}</a>
-
-            @if($showBoardNav && $boardNavStoreRoute)
-                <a href="{{ route('admin.stores.boards', ['store' => $boardNavStoreRoute]) }}" class="{{ $isBoardPage ? 'active' : '' }}">{{ __('admin.board_all_title') }}</a>
+            @if($showStoreBackendNav)
+                <a href="{{ route('admin.stores.index') }}" class="{{ $isStoreBackendPage ? 'active' : '' }}">{{ __('nav.stores_short') }}</a>
             @endif
 
-            @if(Auth::user()?->isMerchant())
+            @if($showMerchantOrderNav && $merchantOrderNavHref)
+                <a href="{{ $merchantOrderNavHref }}" class="{{ $isMerchantOrderPage ? 'active' : '' }}">{{ __('nav.merchant_order_short') }}</a>
+            @endif
+
+            @if($showBoardNav && $boardNavHref)
+                <a href="{{ $boardNavHref }}" class="{{ $isBoardPage ? 'active' : '' }}">{{ __('admin.board_all_title') }}</a>
+            @endif
+
+            @if(Auth::user()?->isMerchant() && $subscriptionFeatureEnabled)
                 <a href="{{ route('merchant.subscription.index') }}" class="{{ request()->routeIs('merchant.subscription.*') ? 'active' : '' }}">{{ __('nav.plan_short') }}</a>
             @elseif(Auth::user()?->isAdmin())
-                <a href="{{ route('super-admin.subscriptions.index') }}" class="{{ request()->routeIs('super-admin.subscriptions.*') ? 'active' : '' }}">{{ __('nav.subscription_short') }}</a>
+                <a href="{{ route('super-admin.subscriptions.index', ['tab' => 'features']) }}" class="{{ request()->routeIs('super-admin.subscriptions.*') ? 'active' : '' }}">{{ __('nav.subscription_short') }}</a>
             @endif
         </div>
     @endif

@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Merchant;
 
+use App\Http\Controllers\Concerns\ResolvesAccessibleStores;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Models\Store;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -12,12 +12,13 @@ use Illuminate\Http\Request;
 
 class OrderHistoryController extends Controller
 {
+    use ResolvesAccessibleStores;
+
     public function index(Request $request): View
     {
         $user = $request->user();
 
-        $stores = Store::query()
-            ->where('user_id', $user->id)
+        $stores = $this->accessibleStoresQuery($user)
             ->orderBy('name')
             ->orderBy('id')
             ->get(['id', 'name', 'currency']);

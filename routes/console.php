@@ -1,8 +1,11 @@
 <?php
 
+use App\Models\Order;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\FakeMenuSeeder;
 use App\Services\MicrosoftGraphMailer;
+use App\Support\StoreFakeOrderGenerator;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Mail;
@@ -158,6 +161,115 @@ Artisan::command('admin:create {email : Admin email address} {--name= : Admin di
 
     return self::SUCCESS;
 })->purpose('Create or promote a user account to admin with the default password "password".');
+
+Artisan::command('stores:fake-menu {store : Store id, slug, exact name, or merchant email} {--replace : Delete the store\'s existing categories and products before seeding}', function (string $store) {
+    /** @var FakeMenuSeeder $fakeMenuSeeder */
+    $fakeMenuSeeder = app(FakeMenuSeeder::class);
+    $resolved = $fakeMenuSeeder->findStore($store);
+    $targetStore = $resolved['store'] ?? null;
+    $error = $resolved['error'] ?? null;
+
+    if (! $targetStore instanceof Store) {
+        $this->error((string) $error);
+
+        return self::FAILURE;
+    }
+
+    $replace = (bool) $this->option('replace');
+    $summary = $fakeMenuSeeder->seed($targetStore, $replace);
+
+    $this->info('Fake menu seeded successfully.');
+    $this->line('mode: '.($replace ? 'replace' : 'upsert'));
+    $this->line('store: '.$targetStore->name.' (#'.$targetStore->id.', '.$targetStore->slug.')');
+    $this->line('categories_created: '.(int) ($summary['categories_created'] ?? 0));
+    $this->line('categories_updated: '.(int) ($summary['categories_updated'] ?? 0));
+    $this->line('products_created: '.(int) ($summary['products_created'] ?? 0));
+    $this->line('products_updated: '.(int) ($summary['products_updated'] ?? 0));
+
+    return self::SUCCESS;
+})->purpose('Seed a reusable fake menu for a specific store.');
+
+Artisan::command('stores:fake-orders
+    {store : Store id, slug, or exact name}
+    {--count=20 : Number of fake orders to create}
+    {--days=7 : Spread the generated orders across recent days}
+    {--clear : Delete the target store\'s existing orders before generating}', function (string $store) {
+    $storeKey = trim($store);
+    $count = max(1, (int) $this->option('count'));
+    $days = max(1, (int) $this->option('days'));
+    $clearExisting = (bool) $this->option('clear');
+
+    if ($storeKey === '') {
+        $this->error('Please provide a store id, slug, or exact name.');
+
+        return self::FAILURE;
+    }
+
+    $matches = Store::query()
+        ->where(function ($query) use ($storeKey): void {
+            if (ctype_digit($storeKey)) {
+                $query->whereKey((int) $storeKey)
+                    ->orWhere('slug', $storeKey)
+                    ->orWhere('name', $storeKey);
+
+                return;
+            }
+
+            $query->where('slug', $storeKey)
+                ->orWhere('name', $storeKey);
+        })
+        ->orderBy('id')
+        ->get(['id', 'name', 'slug']);
+
+    if ($matches->isEmpty()) {
+        $this->error(sprintf('Store not found for [%s].', $storeKey));
+
+        return self::FAILURE;
+    }
+
+    if ($matches->count() > 1) {
+        $this->error('Multiple stores matched that value. Please use a unique store id or slug.');
+
+        foreach ($matches as $candidate) {
+            $this->line(sprintf('- #%d %s (%s)', $candidate->id, $candidate->name, $candidate->slug));
+        }
+
+        return self::FAILURE;
+    }
+
+    $targetStore = $matches->first();
+
+    try {
+        $summary = app(StoreFakeOrderGenerator::class)->generate(
+            $targetStore,
+            $count,
+            $days,
+            $clearExisting
+        );
+    } catch (\Throwable $e) {
+        $this->error('Fake order generation failed: '.$e->getMessage());
+
+        return self::FAILURE;
+    }
+
+    $latestOrder = Order::query()
+        ->where('store_id', $targetStore->id)
+        ->latest('id')
+        ->first(['order_no']);
+
+    $this->info('Fake orders generated successfully.');
+    $this->line('store: '.$targetStore->name.' (#'.$targetStore->id.', '.$targetStore->slug.')');
+    $this->line('created_orders: '.(int) ($summary['created_orders'] ?? 0));
+    $this->line('cleared_orders: '.(int) ($summary['cleared_orders'] ?? 0));
+    $this->line('status_counts: '.collect($summary['status_counts'] ?? [])->map(fn ($value, $key) => $key.'='.$value)->implode(', '));
+    $this->line('order_type_counts: '.collect($summary['order_type_counts'] ?? [])->map(fn ($value, $key) => $key.'='.$value)->implode(', '));
+
+    if ($latestOrder) {
+        $this->line('latest_order_no: '.$latestOrder->order_no);
+    }
+
+    return self::SUCCESS;
+})->purpose('Generate fake test orders for one store without triggering customer mail or invoice side effects.');
 
 Schedule::command('stores:enforce-merchant-quota')
     ->dailyAt('00:30')

@@ -2,6 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 @php
     $isAdminArea = request()->routeIs('admin.*') || request()->routeIs('super-admin.*') || request()->routeIs('merchant.*');
+    $isEmbedded = request()->boolean('embedded');
 @endphp
 <head>
     @php
@@ -66,9 +67,11 @@
 </head>
 <body class="font-sans antialiased bg-light {{ $isAdminArea ? 'is-admin-area' : '' }}">
     <div class="min-h-screen flex flex-col app-shell">
-        @include('layouts.navigation')
+        @if (! $isEmbedded)
+            @include('layouts.navigation')
+        @endif
 
-        <main class="app-main flex-1 {{ $isAdminArea ? 'admin-stage' : '' }}">
+        <main class="app-main flex-1 {{ $isAdminArea && ! $isEmbedded ? 'admin-stage' : '' }}">
             {{-- For extends/section templates --}}
             @hasSection('content')
                 @yield('content')
@@ -78,7 +81,9 @@
             @endif
         </main>
 
-        @include('partials.public-footer')
+        @if (! $isEmbedded)
+            @include('partials.public-footer')
+        @endif
     </div>
 </body>
 </html>

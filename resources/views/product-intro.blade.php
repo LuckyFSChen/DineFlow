@@ -1832,6 +1832,8 @@
         </div>
     </section>
 
+    @include('partials.product-intro-pricing-contact', ['plansByTier' => $plansByTier ?? collect()])
+
     <section class="border-t border-brand-soft/60 bg-brand-dark py-16 text-white">
         <div class="intro-reveal mx-auto max-w-5xl px-6 text-center lg:px-8" data-reveal>
             <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">{{ __('home.full_intro_join_title') }}</h2>

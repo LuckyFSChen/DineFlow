@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Merchant;
 
+use App\Http\Controllers\Concerns\ResolvesAccessibleStores;
 use App\Http\Controllers\Controller;
 use App\Models\Coupon;
 use App\Models\Member;
@@ -22,17 +23,18 @@ use Closure;
 
 class LoyaltyController extends Controller
 {
+    use ResolvesAccessibleStores;
+
     private const CACHE_TTL_SECONDS = 120;
 
     public function index(Request $request): View|RedirectResponse
     {
-        if ($redirect = $this->ensureHasOwnedStore($request)) {
+        if ($redirect = $this->ensureHasAccessibleStore($request)) {
             return $redirect;
         }
 
         $user = $request->user();
-        $stores = Store::query()
-            ->where('user_id', $user->id)
+        $stores = $this->accessibleStoresQuery($user)
             ->orderBy('name')
             ->get(['id', 'name', 'currency', 'loyalty_enabled', 'points_per_amount', 'points_reward']);
 
@@ -106,11 +108,10 @@ class LoyaltyController extends Controller
 
     public function updateSettings(Request $request)
     {
-        if ($redirect = $this->ensureHasOwnedStore($request)) {
+        if ($redirect = $this->ensureHasAccessibleStore($request)) {
             return $redirect;
         }
 
-        $user = $request->user();
         $validated = $request->validate([
             'store_id' => ['required', 'integer'],
             'loyalty_enabled' => ['nullable', 'boolean'],
@@ -118,10 +119,7 @@ class LoyaltyController extends Controller
             'points_reward' => ['required', 'integer', 'min:1', 'max:1000'],
         ]);
 
-        $store = Store::query()
-            ->where('user_id', $user->id)
-            ->where('id', (int) $validated['store_id'])
-            ->firstOrFail();
+        $store = $this->resolveAccessibleStore($request, (int) $validated['store_id']);
 
         $store->update([
             'loyalty_enabled' => $request->boolean('loyalty_enabled'),
@@ -141,11 +139,10 @@ class LoyaltyController extends Controller
 
     public function storeCoupon(Request $request)
     {
-        if ($redirect = $this->ensureHasOwnedStore($request)) {
+        if ($redirect = $this->ensureHasAccessibleStore($request)) {
             return $redirect;
         }
 
-        $user = $request->user();
         $storeId = (int) $request->input('store_id');
         $validated = $request->validate([
             'store_id' => ['required', 'integer'],
@@ -203,10 +200,7 @@ class LoyaltyController extends Controller
                 ->withInput();
         }
 
-        $store = Store::query()
-            ->where('user_id', $user->id)
-            ->where('id', (int) $validated['store_id'])
-            ->firstOrFail();
+        $store = $this->resolveAccessibleStore($request, (int) $validated['store_id']);
 
         Coupon::query()->create([
             'store_id' => $store->id,
@@ -231,7 +225,7 @@ class LoyaltyController extends Controller
 
     public function updateCoupon(Request $request, Coupon $coupon)
     {
-        if ($redirect = $this->ensureHasOwnedStore($request)) {
+        if ($redirect = $this->ensureHasAccessibleStore($request)) {
             return $redirect;
         }
 
@@ -348,7 +342,7 @@ class LoyaltyController extends Controller
 
     public function destroyCoupon(Request $request, Coupon $coupon)
     {
-        if ($redirect = $this->ensureHasOwnedStore($request)) {
+        if ($redirect = $this->ensureHasAccessibleStore($request)) {
             return $redirect;
         }
 
@@ -361,7 +355,7 @@ class LoyaltyController extends Controller
 
     public function toggleCoupon(Request $request, Coupon $coupon)
     {
-        if ($redirect = $this->ensureHasOwnedStore($request)) {
+        if ($redirect = $this->ensureHasAccessibleStore($request)) {
             return $redirect;
         }
 
@@ -375,23 +369,21 @@ class LoyaltyController extends Controller
 
     private function authorizeCoupon(Request $request, Coupon $coupon): void
     {
-        $user = $request->user();
-        $store = Store::query()
-            ->where('id', $coupon->store_id)
-            ->where('user_id', $user->id)
+        $store = $this->accessibleStoresQuery($request->user())
+            ->whereKey($coupon->store_id)
             ->first();
 
         abort_unless($store !== null, 403);
     }
 
-    private function ensureHasOwnedStore(Request $request): ?RedirectResponse
+    private function ensureHasAccessibleStore(Request $request): ?RedirectResponse
     {
         $user = $request->user();
-        if (! $user || ! $user->isMerchant()) {
+        if (! $user) {
             return null;
         }
 
-        if ($user->stores()->exists()) {
+        if ($this->accessibleStoresQuery($user)->exists()) {
             return null;
         }
 

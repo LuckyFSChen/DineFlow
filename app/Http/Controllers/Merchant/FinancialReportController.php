@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Merchant;
 
+use App\Http\Controllers\Concerns\ResolvesAccessibleStores;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Store;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -14,6 +16,8 @@ use Illuminate\View\View;
 
 class FinancialReportController extends Controller
 {
+    use ResolvesAccessibleStores;
+
     private const REPORT_CACHE_TTL_SECONDS = 120;
 
     public function index(Request $request): View
@@ -50,8 +54,7 @@ class FinancialReportController extends Controller
         $start = Carbon::parse($startDate)->startOfDay();
         $end = Carbon::parse($endDate)->endOfDay();
 
-        $stores = Store::query()
-            ->where('user_id', $user->id)
+        $stores = $this->accessibleStoresQuery($user)
             ->orderBy('name')
             ->get(['id', 'name', 'currency', 'monthly_revenue_target']);
 
@@ -68,7 +71,7 @@ class FinancialReportController extends Controller
 
         $trendColors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16', '#06b6d4', '#e11d48'];
         $report = $this->getCachedReport(
-            userId: (int) $user->id,
+            user: $user,
             start: $start,
             end: $end,
             selectedStoreId: $selectedStoreId,
@@ -143,10 +146,7 @@ class FinancialReportController extends Controller
             'monthly_revenue_target' => ['required', 'integer', 'min:0'],
         ]);
 
-        $store = Store::query()
-            ->where('user_id', $user->id)
-            ->where('id', (int) $validated['store_id'])
-            ->firstOrFail();
+        $store = $this->resolveAccessibleStore($request, (int) $validated['store_id']);
 
         $store->monthly_revenue_target = (int) $validated['monthly_revenue_target'];
         $store->save();
@@ -165,7 +165,7 @@ class FinancialReportController extends Controller
     }
 
     private function getCachedReport(
-        int $userId,
+        User $user,
         Carbon $start,
         Carbon $end,
         ?int $selectedStoreId,
@@ -177,7 +177,8 @@ class FinancialReportController extends Controller
         array $trendColors,
     ): array {
         $cacheKey = 'financial-report:' . md5(json_encode([
-            'user_id' => $userId,
+            'user_id' => $user->id,
+            'role' => $user->role,
             'start' => $start->toIso8601String(),
             'end' => $end->toIso8601String(),
             'store_id' => $selectedStoreId,
@@ -188,7 +189,7 @@ class FinancialReportController extends Controller
         ], JSON_UNESCAPED_SLASHES));
 
         return Cache::remember($cacheKey, now()->addSeconds(self::REPORT_CACHE_TTL_SECONDS), function () use (
-            $userId,
+            $user,
             $start,
             $end,
             $selectedStoreId,
@@ -199,31 +200,31 @@ class FinancialReportController extends Controller
             $hasMultipleStores,
             $trendColors,
         ): array {
-            $summary = $this->buildSummarySnapshot($userId, $start, $end, $selectedStoreId);
-            $topProducts = $this->buildTopProducts($userId, $start, $end, $selectedStoreId, $hasMultipleStores);
-            $trendSeries = $this->buildTrendSeries($userId, $start, $end, $selectedStoreId, $trendGranularity, $hourStep);
-            $comparison = $this->buildComparisonSnapshot($userId, $selectedStoreId, $compareStartDate, $compareEndDate, $summary);
+            $summary = $this->buildSummarySnapshot($user, $start, $end, $selectedStoreId);
+            $topProducts = $this->buildTopProducts($user, $start, $end, $selectedStoreId, $hasMultipleStores);
+            $trendSeries = $this->buildTrendSeries($user, $start, $end, $selectedStoreId, $trendGranularity, $hourStep);
+            $comparison = $this->buildComparisonSnapshot($user, $selectedStoreId, $compareStartDate, $compareEndDate, $summary);
 
             $monthStart = now()->copy()->startOfMonth()->startOfDay();
             $monthEnd = now()->copy()->endOfMonth()->endOfDay();
-            $currentMonthRevenue = (int) ((clone $this->buildBaseOrdersQuery($userId, $monthStart, $monthEnd, $selectedStoreId))
+            $currentMonthRevenue = (int) ((clone $this->buildBaseOrdersQuery($user, $monthStart, $monthEnd, $selectedStoreId))
                 ->sum('orders.total'));
 
             return array_merge($summary, [
                 'isMultiStoreView' => $selectedStoreId === null && $hasMultipleStores,
                 'comparison' => $comparison,
                 'topProducts' => $topProducts,
-                'storeRevenue' => $this->buildStoreRevenue($userId, $start, $end, $selectedStoreId),
+                'storeRevenue' => $this->buildStoreRevenue($user, $start, $end, $selectedStoreId),
                 'labels' => $trendSeries['labels'],
                 'dailyRevenue' => $trendSeries['dailyRevenue'],
                 'dailyOrderCount' => $trendSeries['dailyOrderCount'],
-                'productTrendDatasets' => $this->buildProductTrendDatasets($userId, $start, $end, $selectedStoreId, $topProducts, $trendColors),
+                'productTrendDatasets' => $this->buildProductTrendDatasets($user, $start, $end, $selectedStoreId, $topProducts, $trendColors),
                 'currentMonthRevenue' => $currentMonthRevenue,
             ]);
         });
     }
 
-    private function buildSummarySnapshot(int $userId, Carbon $start, Carbon $end, ?int $selectedStoreId): array
+    private function buildSummarySnapshot(User $user, Carbon $start, Carbon $end, ?int $selectedStoreId): array
     {
         $itemTotalsByOrder = Order::query()
             ->from('order_items')
@@ -233,7 +234,7 @@ class FinancialReportController extends Controller
             ->selectRaw('COALESCE(SUM(order_items.qty * COALESCE(products.cost, 0)), 0) as total_cost')
             ->groupBy('order_items.order_id');
 
-        $summary = $this->buildBaseOrdersQuery($userId, $start, $end, $selectedStoreId)
+        $summary = $this->buildBaseOrdersQuery($user, $start, $end, $selectedStoreId)
             ->leftJoinSub($itemTotalsByOrder, 'item_totals', function ($join) {
                 $join->on('item_totals.order_id', '=', 'orders.id');
             })
@@ -280,7 +281,7 @@ class FinancialReportController extends Controller
     }
 
     private function buildComparisonSnapshot(
-        int $userId,
+        User $user,
         ?int $selectedStoreId,
         ?string $compareStartDate,
         ?string $compareEndDate,
@@ -292,7 +293,7 @@ class FinancialReportController extends Controller
 
         $compareStart = Carbon::parse($compareStartDate)->startOfDay();
         $compareEnd = Carbon::parse($compareEndDate)->endOfDay();
-        $compareSummary = $this->buildSummarySnapshot($userId, $compareStart, $compareEnd, $selectedStoreId);
+        $compareSummary = $this->buildSummarySnapshot($user, $compareStart, $compareEnd, $selectedStoreId);
 
         return [
             'start_date' => $compareStart->toDateString(),
@@ -317,11 +318,11 @@ class FinancialReportController extends Controller
         ];
     }
 
-    private function buildTopProducts(int $userId, Carbon $start, Carbon $end, ?int $selectedStoreId, bool $hasMultipleStores): Collection
+    private function buildTopProducts(User $user, Carbon $start, Carbon $end, ?int $selectedStoreId, bool $hasMultipleStores): Collection
     {
         $isMultiStoreView = $selectedStoreId === null && $hasMultipleStores;
 
-        return (clone $this->buildBaseOrdersQuery($userId, $start, $end, $selectedStoreId))
+        return (clone $this->buildBaseOrdersQuery($user, $start, $end, $selectedStoreId))
             ->join('order_items', 'order_items.order_id', '=', 'orders.id')
             ->selectRaw('orders.store_id, stores.name as store_name, order_items.product_id, order_items.product_name, SUM(order_items.qty) as sold_qty, COALESCE(SUM(order_items.subtotal), 0) as sold_amount')
             ->groupBy('orders.store_id', 'stores.name', 'order_items.product_id', 'order_items.product_name')
@@ -339,18 +340,18 @@ class FinancialReportController extends Controller
             ->values();
     }
 
-    private function buildStoreRevenue(int $userId, Carbon $start, Carbon $end, ?int $selectedStoreId): Collection
+    private function buildStoreRevenue(User $user, Carbon $start, Carbon $end, ?int $selectedStoreId): Collection
     {
-        return (clone $this->buildBaseOrdersQuery($userId, $start, $end, $selectedStoreId))
+        return (clone $this->buildBaseOrdersQuery($user, $start, $end, $selectedStoreId))
             ->selectRaw('orders.store_id, stores.name as store_name, COUNT(*) as order_count, COALESCE(SUM(orders.total), 0) as revenue')
             ->groupBy('orders.store_id', 'stores.name')
             ->orderByDesc('revenue')
             ->get();
     }
 
-    private function buildTrendSeries(int $userId, Carbon $start, Carbon $end, ?int $selectedStoreId, string $trendGranularity, int $hourStep): array
+    private function buildTrendSeries(User $user, Carbon $start, Carbon $end, ?int $selectedStoreId, string $trendGranularity, int $hourStep): array
     {
-        $baseOrders = $this->buildBaseOrdersQuery($userId, $start, $end, $selectedStoreId);
+        $baseOrders = $this->buildBaseOrdersQuery($user, $start, $end, $selectedStoreId);
         $labels = [];
         $dailyRevenue = [];
         $dailyOrderCount = [];
@@ -417,7 +418,7 @@ class FinancialReportController extends Controller
     }
 
     private function buildProductTrendDatasets(
-        int $userId,
+        User $user,
         Carbon $start,
         Carbon $end,
         ?int $selectedStoreId,
@@ -428,7 +429,7 @@ class FinancialReportController extends Controller
             return [];
         }
 
-        $productTrendRows = (clone $this->buildBaseOrdersQuery($userId, $start, $end, $selectedStoreId))
+        $productTrendRows = (clone $this->buildBaseOrdersQuery($user, $start, $end, $selectedStoreId))
             ->join('order_items', 'order_items.order_id', '=', 'orders.id')
             ->whereIn('order_items.product_id', $topProducts->pluck('product_id')->all())
             ->selectRaw('DATE(orders.created_at) as day, order_items.product_id, SUM(order_items.qty) as sold_qty')
@@ -462,16 +463,19 @@ class FinancialReportController extends Controller
         })->all();
     }
 
-    private function buildBaseOrdersQuery(int $userId, Carbon $start, Carbon $end, ?int $selectedStoreId)
+    private function buildBaseOrdersQuery(User $user, Carbon $start, Carbon $end, ?int $selectedStoreId)
     {
         $query = Order::query()
             ->join('stores', 'stores.id', '=', 'orders.store_id')
-            ->where('stores.user_id', $userId)
             ->whereBetween('orders.created_at', [$start, $end])
             ->where(function ($builder) {
                 $builder->whereNull('orders.status')
                     ->orWhereNotIn(DB::raw('LOWER(orders.status)'), ['cancel', 'cancelled', 'canceled']);
             });
+
+        if (! $user->isAdmin()) {
+            $query->where('stores.user_id', $user->id);
+        }
 
         if ($selectedStoreId !== null) {
             $query->where('orders.store_id', $selectedStoreId);

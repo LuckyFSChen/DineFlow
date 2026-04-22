@@ -201,11 +201,6 @@
                                                     {{ __('admin.tables_qr') }}
                                                 </a>
 
-                                                <a href="{{ route('admin.stores.orders.create', $store) }}"
-                                                   class="inline-flex items-center rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">
-                                                    商家點餐
-                                                </a>
-
                                                 @if($store->is_active)
                                                     <a href="{{ route('admin.stores.boards', $store) }}"
                                                        class="inline-flex items-center rounded-xl border border-orange-300 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">

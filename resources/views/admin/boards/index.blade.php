@@ -33,49 +33,6 @@ $storeCancelQuickReasons = collect(is_array($store->cancel_quick_reasons) ? $sto
     ->values()
     ->all();
 
-/*
-
-$boardDeckCopy = match (app()->getLocale()) {
-    'en' => [
-        'summary_orders_today' => 'Orders Today',
-        'summary_orders_today_hint' => 'Includes dine-in and takeout',
-        'summary_avg_prep' => 'Avg. Prep Speed',
-        'summary_avg_prep_hint' => 'Recent 30 completed orders',
-        'summary_repeat_rate' => 'Repeat Rate',
-        'summary_repeat_rate_hint' => 'Last 30 days',
-        'summary_empty_value' => '--',
-        'summary_prep_unit' => ' min',
-        'empty_pending_description' => 'Guests are still browsing, so the team does not need to take orders manually yet.',
-        'empty_preparing_description' => 'As soon as a new order is submitted, cashier and kitchen cards will appear here automatically.',
-    ],
-    'vi' => [
-        'summary_orders_today' => 'Don hom nay',
-        'summary_orders_today_hint' => 'Bao gom tai ban va mang di',
-        'summary_avg_prep' => 'Toc do che bien TB',
-        'summary_avg_prep_hint' => '30 don hoan tat gan nhat',
-        'summary_repeat_rate' => 'Ty le quay lai',
-        'summary_repeat_rate_hint' => '30 ngay qua',
-        'summary_empty_value' => '--',
-        'summary_prep_unit' => ' phut',
-        'empty_pending_description' => 'Khach dang chon mon, nhan vien khong can ghi don thu cong hay gioi thieu tung mon.',
-        'empty_preparing_description' => 'Ngay khi co don moi, the thu ngan va bep se tu dong hien thi tai day.',
-    ],
-    default => [
-        'summary_orders_today' => '??謑蹇?',
-        'summary_orders_today_hint' => '??荒?????????,
-        'summary_avg_prep' => '???蝎??賹撞',
-        'summary_avg_prep_hint' => '擗?30 ????????,
-        'summary_repeat_rate' => '?豯扯竣??,
-        'summary_repeat_rate_hint' => '擗?30 ??,
-        'summary_empty_value' => '--',
-        'summary_prep_unit' => ' ??,
-        'empty_pending_description' => '?踵?亦??謓?鞈????皜舐????????剔?璆????謖????????,
-        'empty_preparing_description' => '????獢????????????頦對???拙???賂????祗?謕???,
-    ],
-};
-
-*/
-
 $boardDeckCopy = match (app()->getLocale()) {
     'en' => [
         'summary_orders_today' => 'Orders Today',
@@ -158,21 +115,35 @@ $allBoardsI18n = array_merge([
     'minutes_ago' => __('admin.board_time_minutes_ago'),
     'hours_ago' => __('admin.board_time_hours_ago'),
 ], $boardDeckCopy);
+$embedded = (bool) ($embedded ?? request()->boolean('embedded'));
+$workspace = (bool) ($workspace ?? false);
+$navFeatures = \App\Support\NavFeature::all();
+$canOpenMerchantWorkspace = ($navFeatures[\App\Support\NavFeature::STORE_BACKEND] ?? true)
+    && ($navFeatures[\App\Support\NavFeature::BOARDS] ?? true)
+    && (auth()->user()?->isAdmin() || auth()->user()?->hasActiveSubscription());
 @endphp
 
 @section('content')
-<div class="min-h-screen bg-slate-900 text-white" x-data="allBoards()" x-init="init()">
+<div class="{{ $workspace ? '' : 'min-h-screen ' }}bg-slate-900 text-white" x-data="allBoards()" x-init="init()">
 
     <div class="sticky top-0 z-20 border-b border-slate-700 bg-slate-900/95 px-4 py-3 backdrop-blur sm:px-6">
         <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div class="flex items-center gap-4">
-            <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700">
-                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                    <path d="M8 5 3 10l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M4 10h13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                </svg>
-                {{ __('admin.board_back_to_stores') }}
-            </a>
+            @if (! $embedded)
+                <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700">
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <path d="M8 5 3 10l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M4 10h13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                    {{ __('admin.board_back_to_stores') }}
+                </a>
+
+                @if($canOpenMerchantWorkspace)
+                    <a href="{{ route('admin.stores.workspace', ['store' => $storeRoute, 'tab' => 'orders']) }}" class="inline-flex items-center gap-1.5 rounded-lg border border-orange-400/40 bg-orange-500/10 px-3 py-1.5 text-xs font-semibold text-orange-200 transition hover:bg-orange-500/20">
+                        {{ __('nav.merchant_order') }}
+                    </a>
+                @endif
+            @endif
         </div>
 
         <div class="flex flex-wrap items-center gap-2 xl:justify-end">
@@ -180,7 +151,7 @@ $allBoardsI18n = array_merge([
                 <span class="px-3 py-1.5 bg-indigo-600 text-white">{{ $store->name }}</span>
             </div>
 
-            @if(($availableStores ?? collect())->count() > 1)
+            @if(! $embedded && ($availableStores ?? collect())->count() > 1)
                 <div class="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs">
                     <span class="text-slate-400">{{ __('admin.board_store') }}</span>
                     <select

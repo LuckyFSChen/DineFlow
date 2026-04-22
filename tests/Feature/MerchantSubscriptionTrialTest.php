@@ -22,8 +22,9 @@ class MerchantSubscriptionTrialTest extends TestCase
         ]);
 
         $plan = SubscriptionPlan::create([
-            'name' => 'Basic Monthly',
-            'slug' => 'basic-monthly',
+            'name' => 'Starter Trial',
+            'slug' => 'basic-starter-trial',
+            'category' => 'basic',
             'price_twd' => 999,
             'duration_days' => 30,
             'max_stores' => 1,

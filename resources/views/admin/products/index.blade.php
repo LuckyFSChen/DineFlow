@@ -382,13 +382,18 @@
         dragShort: @json(__('admin.products_drag_short')),
         groupLabel: @json(__('admin.products_group_label')),
         removeGroup: @json(__('admin.products_group_delete')),
+        groupNameLabel: @json(__('admin.products_group_name')),
         groupNamePlaceholder: @json(__('admin.products_group_name_placeholder')),
+        groupTypeLabel: @json(__('admin.products_group_type')),
         singleChoice: @json(__('admin.products_group_type_single')),
         multipleChoice: @json(__('admin.products_group_type_multiple')),
+        groupMaxSelectLabel: @json(__('admin.products_group_max_select')),
         requiredGroup: @json(__('admin.products_group_required')),
         optionsLabel: @json(__('admin.products_group_choices_list')),
         addChoice: @json(__('admin.products_group_add_choice')),
+        choiceNameLabel: @json(__('admin.products_choice_name')),
         choiceName: @json(__('admin.products_choice_name')),
+        choicePriceLabel: @json(__('admin.products_choice_price')),
         choicePrice: @json(__('admin.products_choice_price')),
         delete: @json(__('admin.products_btn_delete')),
         fallbackProduct: @json(__('admin.products_fallback_product')),
@@ -535,6 +540,38 @@
         price: 0,
     });
 
+    const getGroupDisplayName = (group, groupIndex) => (group.name || '').trim() || `${i18n.groupLabel} #${groupIndex + 1}`;
+
+    const getGroupTypeSummary = (group) => {
+        const typeLabel = group.type === 'multiple' ? i18n.multipleChoice : i18n.singleChoice;
+        const maxSelectText = group.type === 'multiple' ? ` / max ${Math.max(Number(group.max_select || 1), 1)}` : '';
+
+        return `${typeLabel}${maxSelectText}`;
+    };
+
+    const refreshGroupPreview = (groupCardElement, groupIndex) => {
+        const group = optionGroups[groupIndex];
+        if (!groupCardElement || !group) {
+            return;
+        }
+
+        const title = groupCardElement.querySelector('[data-group-title]');
+        const typeBadge = groupCardElement.querySelector('[data-group-type-badge]');
+        const requiredBadge = groupCardElement.querySelector('[data-group-required-badge]');
+
+        if (title) {
+            title.textContent = getGroupDisplayName(group, groupIndex);
+        }
+
+        if (typeBadge) {
+            typeBadge.textContent = getGroupTypeSummary(group);
+        }
+
+        if (requiredBadge) {
+            requiredBadge.classList.toggle('hidden', !group.required);
+        }
+    };
+
     const normalizeOptionGroups = () => {
         optionGroups = optionGroups
             .filter((group) => group && typeof group === 'object')
@@ -584,21 +621,19 @@
             wrapper.className = 'rounded-2xl border border-slate-200 bg-white p-3';
             wrapper.dataset.groupIndex = String(groupIndex);
 
-            const groupName = (group.name || '').trim() || `${i18n.groupLabel} #${groupIndex + 1}`;
+            const groupName = getGroupDisplayName(group, groupIndex);
             const choicesCount = Array.isArray(group.choices) ? group.choices.length : 0;
-            const typeLabel = group.type === 'multiple' ? i18n.multipleChoice : i18n.singleChoice;
             const isCollapsed = !!group.collapsed;
-            const maxSelectText = group.type === 'multiple' ? ` / max ${Math.max(Number(group.max_select || 1), 1)}` : '';
-            const requiredBadge = group.required ? '<span class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">Required</span>' : '';
+            const typeSummary = getGroupTypeSummary(group);
 
             wrapper.innerHTML = `
                 <div class="mb-3 flex items-center justify-between">
-                    <div class="flex min-w-0 flex-1 items-center gap-2">
+                    <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                         <button type="button" data-toggle-group class="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100">${isCollapsed ? 'Expand' : 'Collapse'}</button>
-                        <p class="truncate text-xs font-semibold text-slate-800">${esc(groupName)}</p>
-                        <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">${esc(typeLabel)}${esc(maxSelectText)}</span>
+                        <p data-group-title class="truncate text-xs font-semibold text-slate-800">${esc(groupName)}</p>
+                        <span data-group-type-badge class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">${esc(typeSummary)}</span>
                         <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">${choicesCount} choices</span>
-                        ${requiredBadge}
+                        <span data-group-required-badge class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 ${group.required ? '' : 'hidden'}">${esc(i18n.requiredGroup)}</span>
                     </div>
                     <div class="ml-2 flex items-center gap-1">
                         <button type="button" data-move-group-up class="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100">Up</button>
@@ -607,25 +642,39 @@
                     </div>
                 </div>
                 <div data-group-body class="${isCollapsed ? 'hidden ' : ''}space-y-3">
-                    <div class="grid gap-2 md:grid-cols-2">
-                    <input type="text" value="${esc(group.name || '')}" data-group-field="name" placeholder="${esc(i18n.groupNamePlaceholder)}" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                    <select data-group-field="type" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                        <option value="single" ${group.type === 'single' ? 'selected' : ''}>${i18n.singleChoice}</option>
-                        <option value="multiple" ${group.type === 'multiple' ? 'selected' : ''}>${i18n.multipleChoice}</option>
-                    </select>
-                    <input type="number" min="1" value="${group.max_select || 1}" data-group-field="max_select" ${group.type === 'single' ? 'disabled' : ''} class="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100">
-                </div>
-                <label class="mt-2 inline-flex items-center gap-2 text-xs text-slate-700">
-                    <input type="checkbox" data-group-field="required" ${group.required ? 'checked' : ''} class="h-4 w-4 rounded border-slate-300 text-indigo-600">
-                    ${i18n.requiredGroup}
-                </label>
-                <div class="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-2">
-                    <div class="mb-2 flex items-center justify-between">
-                        <p class="text-xs font-semibold text-slate-600">${i18n.optionsLabel}</p>
-                        <button type="button" data-add-choice class="rounded-md bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white hover:bg-slate-800">${i18n.addChoice}</button>
+                    <div class="grid gap-3 md:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">${i18n.groupNameLabel}</label>
+                            <input type="text" value="${esc(group.name || '')}" data-group-field="name" placeholder="${esc(i18n.groupNamePlaceholder)}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">${i18n.groupTypeLabel}</label>
+                            <select data-group-field="type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                                <option value="single" ${group.type === 'single' ? 'selected' : ''}>${i18n.singleChoice}</option>
+                                <option value="multiple" ${group.type === 'multiple' ? 'selected' : ''}>${i18n.multipleChoice}</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">${i18n.groupMaxSelectLabel}</label>
+                            <input type="number" min="1" value="${group.max_select || 1}" data-group-field="max_select" ${group.type === 'single' ? 'disabled' : ''} class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100">
+                        </div>
                     </div>
-                    <div class="space-y-2" data-choices-list="1"></div>
-                </div>
+                    <label class="mt-2 inline-flex items-center gap-2 text-xs text-slate-700">
+                        <input type="checkbox" data-group-field="required" ${group.required ? 'checked' : ''} class="h-4 w-4 rounded border-slate-300 text-indigo-600">
+                        ${i18n.requiredGroup}
+                    </label>
+                    <div class="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-2">
+                        <div class="mb-2 flex items-center justify-between">
+                            <p class="text-xs font-semibold text-slate-600">${i18n.optionsLabel}</p>
+                            <button type="button" data-add-choice class="rounded-md bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white hover:bg-slate-800">${i18n.addChoice}</button>
+                        </div>
+                        <div class="mb-2 hidden grid-cols-[1fr,130px,auto] gap-2 px-1 text-[11px] font-semibold text-slate-500 md:grid">
+                            <p>${i18n.choiceNameLabel}</p>
+                            <p>${i18n.choicePriceLabel}</p>
+                            <span class="sr-only">${i18n.delete}</span>
+                        </div>
+                        <div class="space-y-2" data-choices-list="1"></div>
+                    </div>
                 </div>
             `;
 
@@ -2028,6 +2077,7 @@
             }
 
             syncOptionGroups();
+            refreshGroupPreview(groupCard, groupIndex);
             return;
         }
 
@@ -2069,6 +2119,7 @@
         if (event.target.getAttribute('data-group-field') === 'required') {
             optionGroups[groupIndex].required = !!event.target.checked;
             syncOptionGroups();
+            refreshGroupPreview(groupCard, groupIndex);
         }
     });
 

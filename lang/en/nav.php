@@ -6,9 +6,13 @@ return [
     'login'              => 'Login',
     'register'           => 'Register',
     'subscription'       => 'Subscription',
+    'pricing_contact'    => 'Pricing & Contact',
     'financial_report'   => 'Financial Report',
+    'invoice_center'     => 'Invoice Center',
     'loyalty'            => 'Loyalty',
     'store_backend'      => 'Store Management',
+    'merchant_order'     => 'Merchant Order',
+    'merchant_order_short' => 'Order',
     'stores_short'       => 'Stores',
     'kitchen'            => 'Kitchen Board',
     'kitchen_short'      => 'Kitchen',
@@ -31,5 +35,3 @@ return [
     'lang_en'            => 'English',
     'lang_vi'            => 'Tiếng Việt',
 ];
-
-
