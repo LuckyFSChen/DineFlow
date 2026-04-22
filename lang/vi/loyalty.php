@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 return [
     'title' => 'Quan ly thanh vien va uu dai',

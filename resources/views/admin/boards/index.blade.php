@@ -124,7 +124,7 @@ $canOpenMerchantWorkspace = ($navFeatures[\App\Support\NavFeature::STORE_BACKEND
 @endphp
 
 @section('content')
-<div class="{{ $workspace ? '' : 'min-h-screen ' }}bg-slate-900 text-white" x-data="allBoards()" x-init="init()">
+<div class="{{ $workspace ? 'flex-1 h-full min-h-full ' : 'min-h-screen ' }}bg-slate-900 text-white flex flex-col" x-data="allBoards()" x-init="init()">
 
     <div class="sticky top-0 z-20 border-b border-slate-700 bg-slate-900/95 px-4 py-3 backdrop-blur sm:px-6">
         <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
@@ -221,8 +221,8 @@ $canOpenMerchantWorkspace = ($navFeatures[\App\Support\NavFeature::STORE_BACKEND
         </div>
     </div>
 
-    <div x-show="filteredOrders.length === 0 && !loading" class="px-4 pb-6 pt-2 sm:px-6">
-        <div class="mx-auto flex min-h-[19rem] w-full max-w-4xl flex-col items-center justify-center rounded-[2rem] border border-dashed border-slate-700 bg-[radial-gradient(circle_at_top,_rgba(30,41,59,0.6),_rgba(15,23,42,0.96))] px-8 py-16 text-center shadow-[0_24px_60px_rgba(2,6,23,0.26)]">
+    <div x-show="filteredOrders.length === 0 && !loading" class="flex flex-1 items-center justify-center px-4 pb-6 pt-2 sm:px-6">
+        <div class="mx-auto flex w-full max-w-2xl min-h-[16rem] flex-col items-center justify-center rounded-[2rem] border border-dashed border-slate-700 bg-[radial-gradient(circle_at_top,_rgba(30,41,59,0.6),_rgba(15,23,42,0.96))] px-8 py-12 text-center shadow-[0_24px_60px_rgba(2,6,23,0.26)] sm:px-10 sm:py-14">
             <p class="text-3xl font-bold tracking-tight text-slate-100" x-text="boardEmptyTitle()"></p>
             <p class="mt-5 max-w-2xl text-lg leading-9 text-slate-400" x-text="boardEmptyDescription()"></p>
         </div>

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 return [
     'title' => '會員與優惠管理',

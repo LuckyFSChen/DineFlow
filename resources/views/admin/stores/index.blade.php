@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('content')
 @php
@@ -202,9 +202,9 @@
                                                 </a>
 
                                                 @if($store->is_active)
-                                                    <a href="{{ route('admin.stores.boards', $store) }}"
+                                                    <a href="{{ route('admin.stores.workspace', ['store' => $store, 'tab' => 'boards']) }}"
                                                        class="inline-flex items-center rounded-xl border border-orange-300 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">
-                                                        {{ __('admin.board_all_title') }}
+                                                        {{ __('nav.merchant_order') }}/{{ __('admin.board_all_title') }}
                                                     </a>
 
                                                     <a href="{{ route('admin.stores.chefs.index', $store) }}"
@@ -968,7 +968,7 @@
             ? store.weekly_business_hours
             : {};
         Object.entries(businessWeekdayMap).forEach(([weekday, storageKey]) => {
-            const slot = weeklyBusinessHours[storageKey] || {};
+            const slot = weeklyBusinessHours[weekday] || weeklyBusinessHours[storageKey] || {};
             const startField = modalForm.elements[`business_hours[${weekday}][start]`];
             const endField = modalForm.elements[`business_hours[${weekday}][end]`];
             if (startField) startField.value = String(slot.start || '').slice(0, 5);
@@ -1253,5 +1253,4 @@
 })();
 </script>
 @endsection
-
 

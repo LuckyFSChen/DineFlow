@@ -127,6 +127,12 @@
             ? route('admin.stores.workspace', ['store' => $merchantOrderNavStoreRoute, 'tab' => 'orders'])
             : route('admin.stores.orders.create', ['store' => $merchantOrderNavStoreRoute]))
         : null;
+    $showCombinedMerchantWorkspaceNav = $useMerchantWorkspaceNav && (bool) $merchantOrderNavStoreRoute;
+    $combinedMerchantWorkspaceTab = $isBoardPage ? 'boards' : 'orders';
+    $combinedMerchantWorkspaceHref = $showCombinedMerchantWorkspaceNav
+        ? route('admin.stores.workspace', ['store' => $merchantOrderNavStoreRoute, 'tab' => $combinedMerchantWorkspaceTab])
+        : null;
+    $isCombinedMerchantWorkspacePage = $isMerchantOrderPage || $isBoardPage;
     $boardNavHref = $showBoardNav && $boardNavStoreRoute
         ? ($useMerchantWorkspaceNav
             ? route('admin.stores.workspace', ['store' => $boardNavStoreRoute, 'tab' => 'boards'])
@@ -225,7 +231,7 @@
             'label' => __('admin.board_all_title'),
             'href' => $boardNavHref,
             'active' => $isBoardPage,
-            'enabled' => $showBoardNav && (bool) $boardNavHref,
+            'enabled' => $showBoardNav && (bool) $boardNavHref && ! $showCombinedMerchantWorkspaceNav,
             'requires_dropdown_disabled_state' => false,
             'disabled_reason' => null,
         ],
@@ -309,7 +315,11 @@
                         </x-nav-link>
                     @endif
 
-                    @if($showMerchantOrderNav && $merchantOrderNavHref)
+                    @if($showCombinedMerchantWorkspaceNav && $combinedMerchantWorkspaceHref)
+                        <x-nav-link :href="$combinedMerchantWorkspaceHref" :active="$isCombinedMerchantWorkspacePage">
+                            {{ __('nav.merchant_order') }} / {{ __('admin.board_all_title') }}
+                        </x-nav-link>
+                    @elseif($showMerchantOrderNav && $merchantOrderNavHref)
                         <x-nav-link :href="$merchantOrderNavHref" :active="$isMerchantOrderPage">
                             {{ __('nav.merchant_order') }}
                         </x-nav-link>
@@ -461,7 +471,11 @@
                 </x-responsive-nav-link>
             @endif
 
-            @if($showMerchantOrderNav && $merchantOrderNavHref)
+            @if($showCombinedMerchantWorkspaceNav && $combinedMerchantWorkspaceHref)
+                <x-responsive-nav-link :href="$combinedMerchantWorkspaceHref" :active="$isCombinedMerchantWorkspacePage">
+                    {{ __('nav.merchant_order') }} / {{ __('admin.board_all_title') }}
+                </x-responsive-nav-link>
+            @elseif($showMerchantOrderNav && $merchantOrderNavHref)
                 <x-responsive-nav-link :href="$merchantOrderNavHref" :active="$isMerchantOrderPage">
                     {{ __('nav.merchant_order') }}
                 </x-responsive-nav-link>
@@ -558,12 +572,16 @@
                 <a href="{{ route('admin.stores.index') }}" class="{{ $isStoreBackendPage ? 'active' : '' }}">{{ __('nav.stores_short') }}</a>
             @endif
 
-            @if($showMerchantOrderNav && $merchantOrderNavHref)
-                <a href="{{ $merchantOrderNavHref }}" class="{{ $isMerchantOrderPage ? 'active' : '' }}">{{ __('nav.merchant_order_short') }}</a>
-            @endif
+            @if($showCombinedMerchantWorkspaceNav && $combinedMerchantWorkspaceHref)
+                <a href="{{ $combinedMerchantWorkspaceHref }}" class="{{ $isCombinedMerchantWorkspacePage ? 'active' : '' }}">{{ __('nav.merchant_order_short') }}/{{ __('admin.board_all_title') }}</a>
+            @else
+                @if($showMerchantOrderNav && $merchantOrderNavHref)
+                    <a href="{{ $merchantOrderNavHref }}" class="{{ $isMerchantOrderPage ? 'active' : '' }}">{{ __('nav.merchant_order_short') }}</a>
+                @endif
 
-            @if($showBoardNav && $boardNavHref)
-                <a href="{{ $boardNavHref }}" class="{{ $isBoardPage ? 'active' : '' }}">{{ __('admin.board_all_title') }}</a>
+                @if($showBoardNav && $boardNavHref)
+                    <a href="{{ $boardNavHref }}" class="{{ $isBoardPage ? 'active' : '' }}">{{ __('admin.board_all_title') }}</a>
+                @endif
             @endif
 
             @if(Auth::user()?->isMerchant() && $subscriptionFeatureEnabled)

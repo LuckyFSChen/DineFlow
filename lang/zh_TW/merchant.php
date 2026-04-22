@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 return [
     'plan_tier_basic' => '基礎版',

@@ -2,7 +2,7 @@
 @php
     $selectedCountryCode = strtolower((string) old('country_code', $store->country_code ?? 'tw'));
     $phoneDigits = $selectedCountryCode === 'cn' ? 11 : 10;
-    $breakWeekdays = [
+    $weekdays = [
         'monday',
         'tuesday',
         'wednesday',
@@ -11,7 +11,7 @@
         'saturday',
         'sunday',
     ];
-    $breakHoursStorageMap = [
+    $weekdayStorageMap = [
         'monday' => 'mon',
         'tuesday' => 'tue',
         'wednesday' => 'wed',
@@ -20,6 +20,7 @@
         'saturday' => 'sat',
         'sunday' => 'sun',
     ];
+    $storedWeeklyBusinessHours = is_array($store->weekly_business_hours ?? null) ? $store->weekly_business_hours : [];
     $storedWeeklyBreakHours = is_array($store->weekly_break_hours ?? null) ? $store->weekly_break_hours : [];
 @endphp
 
@@ -119,13 +120,52 @@
     </div>
 
     <div class="lg:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+        <h3 class="text-sm font-semibold text-slate-800">{{ __('admin.business_hours_weekly_title') }}</h3>
+        <p class="mt-1 text-xs text-slate-500">{{ __('admin.business_hours_weekly_hint') }}</p>
+
+        <div class="mt-4 grid gap-3">
+            @foreach ($weekdays as $weekday)
+                @php
+                    $storageKey = $weekdayStorageMap[$weekday];
+                    $storedSlot = is_array($storedWeeklyBusinessHours[$storageKey] ?? null) ? $storedWeeklyBusinessHours[$storageKey] : [];
+                    $businessStartValue = old("business_hours.$weekday.start", isset($storedSlot['start']) ? substr((string) $storedSlot['start'], 0, 5) : '');
+                    $businessEndValue = old("business_hours.$weekday.end", isset($storedSlot['end']) ? substr((string) $storedSlot['end'], 0, 5) : '');
+                @endphp
+                <div class="grid items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 md:grid-cols-[120px_1fr_1fr]">
+                    <p class="pt-2 text-sm font-semibold text-slate-700">{{ __('admin.weekday_' . $weekday) }}</p>
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.business_start_time') }}</label>
+                        <input type="time"
+                               name="business_hours[{{ $weekday }}][start]"
+                               value="{{ $businessStartValue }}"
+                               class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                        @error("business_hours.$weekday.start")
+                            <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('admin.business_end_time') }}</label>
+                        <input type="time"
+                               name="business_hours[{{ $weekday }}][end]"
+                               value="{{ $businessEndValue }}"
+                               class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                        @error("business_hours.$weekday.end")
+                            <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
+    <div class="lg:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
         <h3 class="text-sm font-semibold text-slate-800">{{ __('admin.break_hours_title') }}</h3>
         <p class="mt-1 text-xs text-slate-500">{{ __('admin.break_hours_hint') }}</p>
 
         <div class="mt-4 grid gap-3">
-            @foreach ($breakWeekdays as $weekday)
+            @foreach ($weekdays as $weekday)
                 @php
-                    $storageKey = $breakHoursStorageMap[$weekday];
+                    $storageKey = $weekdayStorageMap[$weekday];
                     $storedSlot = is_array($storedWeeklyBreakHours[$storageKey] ?? null) ? $storedWeeklyBreakHours[$storageKey] : [];
                     $breakStartValue = old("break_hours.$weekday.start", isset($storedSlot['start']) ? substr((string) $storedSlot['start'], 0, 5) : '');
                     $breakEndValue = old("break_hours.$weekday.end", isset($storedSlot['end']) ? substr((string) $storedSlot['end'], 0, 5) : '');

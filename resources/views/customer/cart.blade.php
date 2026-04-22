@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', __('customer.cart_title') . ' | ' . config('app.name', 'DineFlow'))
 @section('meta_description', __('customer.cart_title'))

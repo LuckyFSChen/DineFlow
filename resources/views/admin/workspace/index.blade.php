@@ -31,8 +31,8 @@
     })"
     x-init="init()"
 >
-    <div class="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
-        <div class="overflow-hidden rounded-[2rem] border border-slate-200 bg-white/90 shadow-[0_30px_80px_rgba(15,23,42,0.14)] backdrop-blur">
+    <div class="w-full px-0 py-0 min-h-screen flex flex-col">
+        <div class="w-full flex-1 flex flex-col">
             <div class="border-b border-slate-200 bg-white/80 px-4 py-4 sm:px-6">
                 <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div class="flex items-start gap-3">
@@ -90,12 +90,12 @@
                 </div>
             </div>
 
-            <div class="space-y-4 p-3 sm:p-4">
+            <div class="space-y-0 flex-1 flex flex-col">
                 <div
                     x-cloak
                     x-show="isActive('orders')"
                     style="{{ $initialTab === 'orders' ? '' : 'display: none;' }}"
-                    class="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white/90 shadow-inner"
+                    class="overflow-hidden flex-1"
                 >
                     {!! $ordersPanelHtml !!}
                 </div>
@@ -104,7 +104,7 @@
                     x-cloak
                     x-show="isActive('boards')"
                     style="{{ $initialTab === 'boards' ? '' : 'display: none;' }}"
-                    class="overflow-hidden rounded-[1.75rem] border border-slate-900/80 bg-slate-950 shadow-inner"
+                    class="flex flex-1 flex-col overflow-hidden bg-slate-950"
                 >
                     {!! $boardsPanelHtml !!}
                 </div>

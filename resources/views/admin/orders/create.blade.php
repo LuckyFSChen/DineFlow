@@ -52,7 +52,7 @@
         ui: @js($ui),
     })"
 >
-    <div class="mx-auto max-w-7xl px-6 py-10 lg:px-8">
+    <div class="w-full px-4 py-6 sm:px-6 lg:px-8">
         <div class="admin-hero mb-6 rounded-3xl px-5 py-5 md:px-7">
             <div class="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>

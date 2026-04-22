@@ -13,9 +13,9 @@
                     {{ __('admin.back_to_stores') }}
                 </a>
                 @if($store->is_active)
-                    <a href="{{ route('admin.stores.boards', $store) }}"
-                       class="inline-flex items-center justify-center rounded-2xl border border-orange-300/70 bg-orange-500/20 px-5 py-3 text-sm font-semibold text-orange-100 transition hover:bg-orange-500/30">
-                        {{ __('admin.board_all_title') }}
+                        <a href="{{ route('admin.stores.workspace', ['store' => $store, 'tab' => 'boards']) }}"
+                           class="inline-flex items-center rounded-xl border border-orange-300 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">
+                            {{ __('nav.merchant_order') }}/{{ __('admin.board_all_title') }}
                     </a>
                 @endif
             </x-slot>
