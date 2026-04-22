@@ -501,6 +501,8 @@ function allBoards() {
         _countdownTimer: null,
         _alertTimer: null,
         _errorTimer: null,
+        _audioContext: null,
+        _audioUnlockHandler: null,
         cancelModalOpen: false,
         cancelTargetOrder: null,
         cancelQuickReasons: [],
@@ -572,11 +574,36 @@ function allBoards() {
             this.cancelQuickReasons = Array.isArray(this.i18n.cancel_quick_reasons)
                 ? this.i18n.cancel_quick_reasons
                 : [];
+            this.initAudio();
             this.loadWaitConfig();
             this.lastUpdatedAt = Date.now();
             this.nextRefreshIn = this.pollSeconds;
             this._pollTimer = setInterval(() => this.poll(), this.pollSeconds * 1000);
             this._countdownTimer = setInterval(() => this.tickCountdown(), 1000);
+        },
+
+        initAudio() {
+            if (this._audioContext) {
+                return;
+            }
+
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) {
+                return;
+            }
+
+            this._audioContext = new AudioCtx();
+            this._audioUnlockHandler = () => {
+                if (this._audioContext?.state === 'suspended') {
+                    this._audioContext.resume().catch(() => {});
+                }
+
+                window.removeEventListener('click', this._audioUnlockHandler);
+                window.removeEventListener('keydown', this._audioUnlockHandler);
+            };
+
+            window.addEventListener('click', this._audioUnlockHandler, { once: true });
+            window.addEventListener('keydown', this._audioUnlockHandler, { once: true });
         },
 
         tickCountdown() {
@@ -1039,7 +1066,38 @@ function allBoards() {
         showAlert() {
             clearTimeout(this._alertTimer);
             this.newOrderAlert = true;
+            this.playAlertSound();
             this._alertTimer = setTimeout(() => { this.newOrderAlert = false; }, 4000);
+        },
+
+        playAlertSound() {
+            if (!this._audioContext) {
+                return;
+            }
+
+            const now = this._audioContext.currentTime;
+            const playBeep = (start, frequency, duration) => {
+                const osc = this._audioContext.createOscillator();
+                const gain = this._audioContext.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.value = frequency;
+                gain.gain.setValueAtTime(0.0001, start);
+                gain.gain.exponentialRampToValueAtTime(0.12, start + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+                osc.connect(gain);
+                gain.connect(this._audioContext.destination);
+                osc.start(start);
+                osc.stop(start + duration);
+            };
+
+            if (this._audioContext.state === 'suspended') {
+                this._audioContext.resume().catch(() => {});
+            }
+
+            playBeep(now, 880, 0.16);
+            playBeep(now + 0.22, 1175, 0.2);
         },
 
         showError(message) {
