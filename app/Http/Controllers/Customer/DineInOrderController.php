@@ -140,8 +140,9 @@ class DineInOrderController extends Controller
         $customerEmail = $this->normalizeOptionalText((string) old('customer_email', $rememberedCustomerInfo['customer_email'] ?? ''));
         $customerPhone = $this->normalizeCustomerPhone((string) old('customer_phone', $rememberedCustomerInfo['customer_phone'] ?? ''), $store);
         $member = $this->loyaltyService->resolveMember($store, $customerName, $customerEmail, $customerPhone);
+        $estimatedReadyTime = $store->estimateCustomerReadyTimeForOrderItems($cart);
 
-        return view('customer.cart', compact('store', 'table', 'cart', 'total', 'orderingAvailable', 'rememberedCustomerInfo', 'orderHistory', 'member'));
+        return view('customer.cart', compact('store', 'table', 'cart', 'total', 'orderingAvailable', 'rememberedCustomerInfo', 'orderHistory', 'member', 'estimatedReadyTime'));
     }
 
     private function resolvePrefilledCustomerInfo(): array
@@ -167,6 +168,7 @@ class DineInOrderController extends Controller
         $cartCount = (int) $cartCollection->sum('qty');
         $cartTotal = (int) $cartCollection->sum('subtotal');
         $currencySymbol = $this->currencySymbol($store);
+        $estimatedReadyTime = $store->estimateCustomerReadyTimeForOrderItems($cartCollection->all());
 
         return [
             'count' => $cartCount,
@@ -182,6 +184,10 @@ class DineInOrderController extends Controller
                 'table' => $table,
                 'currencySymbol' => $currencySymbol,
             ])->render(),
+            'estimated_ready' => [
+                'minutes' => (int) ($estimatedReadyTime['minutes'] ?? 0),
+                'label' => $store->customerReadyTimeLabel($estimatedReadyTime['minutes'] ?? null),
+            ],
             'items' => $cartCollection->map(fn (array $item) => [
                 'line_key' => (string) ($item['line_key'] ?? ''),
                 'qty' => (int) ($item['qty'] ?? 0),
@@ -725,12 +731,23 @@ class DineInOrderController extends Controller
     {
         abort_unless($order->store_id === $store->id, 404);
 
+        $order->loadMissing(['items:id,order_id,product_id,qty,item_status,completed_at']);
+        $estimatedReadyTime = $store->estimateCustomerReadyTimeForOrder($order);
+        $normalizedStatus = strtolower((string) $order->status);
+        $estimatedReadyLabel = match (true) {
+            in_array($normalizedStatus, ['cancel', 'cancelled', 'canceled'], true) => __('customer.estimated_ready_time_unknown'),
+            in_array($normalizedStatus, ['complete', 'completed', 'ready', 'ready_for_pickup', 'picked_up', 'collected', 'served'], true) => __('mail_orders.status.completed'),
+            default => $store->customerReadyTimeLabel($estimatedReadyTime['minutes'] ?? null),
+        };
+
         return response()->json([
             'ok' => true,
             'status' => $order->status,
             'payment_status' => $order->payment_status,
             'customer_status_label' => $order->customer_status_label,
             'cancel_reasons' => $order->resolvedCancelReasons(),
+            'estimated_ready_minutes' => (int) ($estimatedReadyTime['minutes'] ?? 0),
+            'estimated_ready_label' => $estimatedReadyLabel,
         ]);
     }
 

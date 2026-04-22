@@ -159,4 +159,122 @@ class OrderEstimatedReadyTimeTest extends TestCase
 
         $this->assertSame(18, $estimatedMinutes);
     }
+
+    public function test_customer_ready_time_adds_queue_delay_from_active_orders_and_item_volume(): void
+    {
+        $store = Store::create([
+            'name' => 'Queue Store',
+            'slug' => 'queue-store',
+            'is_active' => true,
+            'prep_time_minutes' => 20,
+        ]);
+
+        $category = Category::create([
+            'store_id' => $store->id,
+            'name' => 'Meals',
+            'sort' => 1,
+            'prep_time_minutes' => 20,
+            'is_active' => true,
+        ]);
+
+        $product = Product::create([
+            'store_id' => $store->id,
+            'category_id' => $category->id,
+            'name' => 'Fried Rice',
+            'price' => 120,
+            'is_active' => true,
+            'is_sold_out' => false,
+        ]);
+
+        foreach (range(1, 3) as $index) {
+            $activeOrder = Order::create([
+                'store_id' => $store->id,
+                'order_type' => 'takeout',
+                'order_no' => 'QUEUE-00'.$index,
+                'status' => 'pending',
+                'payment_status' => 'unpaid',
+                'subtotal' => 240,
+                'total' => 240,
+            ]);
+
+            OrderItem::create([
+                'order_id' => $activeOrder->id,
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'price' => 120,
+                'qty' => 2,
+                'subtotal' => 240,
+            ]);
+        }
+
+        $estimate = $store->estimateCustomerReadyTimeForOrderItems([
+            ['product_id' => $product->id, 'qty' => 1],
+        ]);
+
+        $this->assertSame(20, $estimate['base_minutes']);
+        $this->assertSame(10, $estimate['queue_delay_minutes']);
+        $this->assertSame(30, $estimate['minutes']);
+    }
+
+    public function test_customer_ready_time_uses_recent_store_average_prep_speed(): void
+    {
+        $store = Store::create([
+            'name' => 'Speed Store',
+            'slug' => 'speed-store',
+            'is_active' => true,
+            'prep_time_minutes' => 20,
+        ]);
+
+        $category = Category::create([
+            'store_id' => $store->id,
+            'name' => 'Meals',
+            'sort' => 1,
+            'prep_time_minutes' => 20,
+            'is_active' => true,
+        ]);
+
+        $product = Product::create([
+            'store_id' => $store->id,
+            'category_id' => $category->id,
+            'name' => 'Beef Bowl',
+            'price' => 160,
+            'is_active' => true,
+            'is_sold_out' => false,
+        ]);
+
+        $completedOrder = Order::create([
+            'store_id' => $store->id,
+            'order_type' => 'takeout',
+            'order_no' => 'SPEED-001',
+            'status' => 'completed',
+            'payment_status' => 'paid',
+            'subtotal' => 160,
+            'total' => 160,
+        ]);
+
+        $completedOrder->forceFill([
+            'created_at' => now()->subMinutes(30),
+            'updated_at' => now(),
+        ])->saveQuietly();
+
+        OrderItem::create([
+            'order_id' => $completedOrder->id,
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'price' => 160,
+            'qty' => 1,
+            'subtotal' => 160,
+            'item_status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        $estimate = $store->estimateCustomerReadyTimeForOrderItems([
+            ['product_id' => $product->id, 'qty' => 1],
+        ]);
+
+        $this->assertSame(20, $estimate['base_minutes']);
+        $this->assertSame(30.0, $estimate['average_prep_minutes']);
+        $this->assertSame(1.5, $estimate['speed_factor']);
+        $this->assertSame(30, $estimate['minutes']);
+    }
 }

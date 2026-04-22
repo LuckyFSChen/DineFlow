@@ -257,21 +257,21 @@
 }
 
 .marketing-video-root.is-playing [data-video-toggle-play] .marketing-video-icon--play,
-.marketing-video-root.is-muted [data-video-toggle-mute] .marketing-video-icon--mute {
+.marketing-video-root.is-muted [data-video-toggle-mute] .marketing-video-icon--unmute {
 	display: none;
 }
 
 .marketing-video-root.is-playing [data-video-toggle-play] .marketing-video-icon--pause,
-.marketing-video-root.is-muted [data-video-toggle-mute] .marketing-video-icon--unmute {
+.marketing-video-root.is-muted [data-video-toggle-mute] .marketing-video-icon--mute {
 	display: block;
 }
 
 .marketing-video-root:not(.is-muted) [data-video-toggle-mute] .marketing-video-icon--mute {
-	display: block;
+	display: none;
 }
 
 .marketing-video-root:not(.is-muted) [data-video-toggle-mute] .marketing-video-icon--unmute {
-	display: none;
+	display: block;
 }
 
 .marketing-video-root.is-fullscreen [data-video-toggle-fullscreen] .marketing-video-icon--fullscreen-enter {

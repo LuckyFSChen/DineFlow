@@ -43,6 +43,10 @@
         && $oldAppliedCouponCode !== ''
         && $oldCouponCode === $oldAppliedCouponCode
         && $oldAppliedCouponSummary !== '';
+    $estimatedReadyMinutes = (int) ($estimatedReadyTime['minutes'] ?? 0);
+    $estimatedReadyLabel = $estimatedReadyMinutes > 0
+        ? __('customer.estimated_prep_time_only', ['minutes' => $estimatedReadyMinutes])
+        : __('customer.estimated_ready_time_unknown');
 @endphp
 <div class="min-h-screen bg-brand-soft/20">
     <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -228,6 +232,13 @@
                                     <span>{{ __('customer.coupon_discount') }}</span>
                                     <span class="font-semibold text-emerald-700" data-coupon-discount>
                                         - {{ $currencySymbol }} {{ number_format($oldAppliedCouponDiscount) }}
+                                    </span>
+                                </div>
+
+                                <div class="flex items-center justify-between text-brand-primary/80">
+                                    <span>{{ __('customer.estimated_ready_time') }}</span>
+                                    <span class="font-semibold text-brand-dark" data-cart-estimated-ready>
+                                        {{ $estimatedReadyLabel }}
                                     </span>
                                 </div>
 
@@ -433,6 +444,7 @@
     const cartLineCount = document.querySelector('[data-cart-line-count]');
     const cartSubtotalEl = document.querySelector('[data-cart-subtotal]');
     const cartPayableEl = document.querySelector('[data-cart-payable]');
+    const cartEstimatedReadyEl = document.querySelector('[data-cart-estimated-ready]');
     const couponDiscountEl = document.querySelector('[data-coupon-discount]');
     const couponDiscountHintEl = document.querySelector('[data-coupon-discount-hint]');
     const cartSyncNotice = document.querySelector('[data-cart-sync-notice]');
@@ -479,6 +491,7 @@
     const couponReapplyMessage = @json(__('customer.coupon_reapply_after_cart_update'));
     let currentCartTotal = Number(@json((int) $total));
     let appliedCouponDiscount = Number(@json($isDineIn ? 0 : $oldAppliedCouponDiscount));
+    let currentEstimatedReadyLabel = @json($estimatedReadyLabel);
     let activeOptionEditForm = null;
     let activeOptionEditGroups = [];
     let activeOptionAllowItemNote = false;
@@ -499,6 +512,10 @@
 
         if (cartPayableEl) {
             cartPayableEl.textContent = formatCurrency(payable);
+        }
+
+        if (cartEstimatedReadyEl) {
+            cartEstimatedReadyEl.textContent = currentEstimatedReadyLabel;
         }
     };
 
@@ -586,6 +603,7 @@
 
         cartLineCount.textContent = `{{ __('customer.total_products_prefix') }} ${cart.line_count} {{ __('customer.total_products_suffix') }}`;
         currentCartTotal = Number(cart.total || 0);
+        currentEstimatedReadyLabel = String(cart?.estimated_ready?.label || @json(__('customer.estimated_ready_time_unknown')));
         updateSummaryTotals();
 
         const itemMap = new Map(nextItems.map((item) => [item.line_key, item]));

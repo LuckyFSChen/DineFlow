@@ -7,11 +7,11 @@ use App\Models\SubscriptionPayment;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Support\EcpayService;
-use Illuminate\Http\Response;
-use Illuminate\Support\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -25,8 +25,8 @@ class SubscriptionController extends Controller
 
     private const CURRENCY_SYMBOLS = [
         'twd' => 'NT$',
-        'cny' => 'CNY ¥',
-        'vnd' => 'VND ₫',
+        'cny' => 'CNY',
+        'vnd' => 'VND',
     ];
 
     public function index(Request $request): View
@@ -44,21 +44,23 @@ class SubscriptionController extends Controller
             })
             ->all();
 
-        $tierOrder = ['basic' => 1, 'growth' => 2, 'pro' => 3];
-        $cycleOrder = ['monthly' => 1, 'quarterly' => 2, 'yearly' => 3];
+        $categoryOrder = ['basic' => 1, 'growth' => 2, 'pro' => 3];
 
         $plansByTier = $plans
-            ->sortBy(function (SubscriptionPlan $plan) use ($tierOrder, $cycleOrder): array {
-                [$tier, $cycle] = array_pad(explode('-', $plan->slug, 2), 2, '');
+            ->sortBy(function (SubscriptionPlan $plan) use ($categoryOrder): array {
+                $categoryKey = strtolower(trim((string) ($plan->category ?: strtok($plan->slug, '-'))));
 
                 return [
-                    $tierOrder[$tier] ?? 99,
-                    $cycleOrder[$cycle] ?? 99,
+                    $categoryOrder[$categoryKey] ?? 99,
+                    $categoryKey,
+                    $plan->duration_days,
                     $plan->price_twd,
                 ];
             })
             ->groupBy(function (SubscriptionPlan $plan): string {
-                return (string) strtok($plan->slug, '-');
+                $category = trim((string) $plan->category);
+
+                return $category !== '' ? $category : (string) strtok($plan->slug, '-');
             });
 
         return view('merchant.subscription.index', [
@@ -109,7 +111,7 @@ class SubscriptionController extends Controller
         }
 
         $merchantTradeNo = $this->generateMerchantTradeNo();
-        $itemName = 'DineFlow ' . $plan->name . ' 訂閱方案';
+        $itemName = 'DineFlow ' . $plan->name . ' Subscription';
 
         $payload = [
             'MerchantID' => $merchantId,
@@ -144,7 +146,7 @@ class SubscriptionController extends Controller
                 'payload' => [
                     'request' => $payload,
                     'pricing' => [
-                        'original_price_twd' => (int) $plan->price_twd,
+                        'original_price_twd' => (int) $pricing['original_price_twd'],
                         'upgrade_credit_twd' => $upgradeCredit,
                         'payable_amount_twd' => $payableAmount,
                         'is_upgrade_proration_applied' => $isUpgradeProrationApplied,
@@ -167,7 +169,46 @@ class SubscriptionController extends Controller
     {
         return redirect()
             ->route('merchant.subscription.index')
-            ->with('success', '已返回 DineFlow，付款結果同步中，請稍候重新整理查看狀態。');
+            ->with('success', '已返回 DineFlow 訂閱頁面，付款結果會在完成後自動同步。');
+    }
+
+    public function startTrial(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        if (! $user || ! $user->isMerchant()) {
+            abort(403, __('merchant.error_only_merchant_can_subscribe'));
+        }
+
+        if (! $user->canStartTrial()) {
+            return redirect()
+                ->route('merchant.subscription.index')
+                ->with('error', '目前無法啟用試用。');
+        }
+
+        $trialPlan = SubscriptionPlan::query()
+            ->where('slug', 'basic-monthly')
+            ->where('is_active', true)
+            ->first();
+
+        if (! $trialPlan) {
+            return redirect()
+                ->route('merchant.subscription.index')
+                ->with('error', '試用方案尚未設定完成。');
+        }
+
+        $startsAt = now();
+
+        $user->update([
+            'subscription_plan_id' => $trialPlan->id,
+            'subscription_ends_at' => $startsAt->copy()->addDays(7),
+            'trial_started_at' => $startsAt,
+            'trial_ends_at' => $startsAt->copy()->addDays(7),
+            'trial_used_at' => $startsAt,
+        ]);
+
+        return redirect()
+            ->route('merchant.subscription.index')
+            ->with('success', '已啟用 7 天免費試用。');
     }
 
     public function notify(Request $request): Response
@@ -351,18 +392,23 @@ class SubscriptionController extends Controller
 
     private function buildPricingPreview(?User $user, SubscriptionPlan $targetPlan, array $currencyProfile): array
     {
-        $originalPrice = (int) $targetPlan->price_twd;
+        $planPrice = (int) $targetPlan->price_twd;
+        $planDiscount = max((int) ($targetPlan->discount_twd ?? 0), 0);
+        $originalPrice = $planPrice + $planDiscount;
 
         $preview = [
             'original_price_twd' => $originalPrice,
             'upgrade_credit_twd' => 0,
-            'payable_amount_twd' => $originalPrice,
+            'payable_amount_twd' => $planPrice,
             'is_upgrade_proration_applied' => false,
             'is_purchase_allowed' => true,
             'blocked_reason' => null,
             'show_reset_time_warning' => false,
             'display_currency' => $currencyProfile['currency_code'],
             'display_symbol' => $currencyProfile['symbol'],
+            'display_original_amount' => $this->convertFromTwd($originalPrice, $currencyProfile['currency_code']),
+            'display_upgrade_credit' => 0,
+            'display_payable_amount' => $this->convertFromTwd($planPrice, $currencyProfile['currency_code']),
         ];
 
         if (! $user) {
@@ -397,7 +443,7 @@ class SubscriptionController extends Controller
             $remainingDays = (int) ceil($remainingSeconds / 86400);
             $dailyRate = (float) $currentPlan->price_twd / max((int) $currentPlan->duration_days, 1);
             $upgradeCredit = (int) floor($remainingDays * $dailyRate);
-            $payableAmount = max(1, $originalPrice - $upgradeCredit);
+            $payableAmount = max(1, $planPrice - $upgradeCredit);
 
             $preview['upgrade_credit_twd'] = $upgradeCredit;
             $preview['payable_amount_twd'] = $payableAmount;

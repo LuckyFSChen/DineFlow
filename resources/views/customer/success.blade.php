@@ -21,11 +21,14 @@
         $displayOrderNo = mb_strlen($fullOrderNo) > 18
             ? mb_substr($fullOrderNo, 0, 8) . '...' . mb_substr($fullOrderNo, -6)
             : $fullOrderNo;
-        $prepTimeMinutes = $store->estimatePrepTimeMinutesForOrderItems($order->items);
-        $estimatedReadyAt = ($prepTimeMinutes !== null && $order->created_at !== null)
-            ? $order->created_at->copy()->setTimezone($store->businessTimezone())->addMinutes($prepTimeMinutes)
-            : null;
-        $estimatedReadyAtUnixMs = $estimatedReadyAt?->valueOf();
+        $estimatedReadyTime = $store->estimateCustomerReadyTimeForOrder($order);
+        $estimatedReadyMinutes = (int) ($estimatedReadyTime['minutes'] ?? 0);
+        $normalizedOrderStatus = strtolower((string) $order->status);
+        $estimatedReadyLabel = match (true) {
+            in_array($normalizedOrderStatus, ['cancel', 'cancelled', 'canceled'], true) => __('customer.estimated_ready_time_unknown'),
+            in_array($normalizedOrderStatus, ['complete', 'completed', 'ready', 'ready_for_pickup', 'picked_up', 'collected', 'served'], true) => __('mail_orders.status.completed'),
+            default => $store->customerReadyTimeLabel($estimatedReadyMinutes),
+        };
     @endphp
     <div class="min-h-screen">
         <main class="mx-auto max-w-3xl px-4 py-8 sm:py-12">
@@ -122,11 +125,7 @@
                     <div class="rounded-2xl bg-orange-50 px-4 py-4">
                         <p class="text-sm text-gray-500">{{ __('customer.estimated_ready_time') }}</p>
                         <p id="customer-estimated-ready-label" class="mt-1 font-semibold text-gray-900">
-                            @if($prepTimeMinutes !== null)
-                                {{ __('customer.estimated_prep_time_only', ['minutes' => $prepTimeMinutes]) }}
-                            @else
-                                {{ __('customer.estimated_ready_time_unknown') }}
-                            @endif
+                            {{ $estimatedReadyLabel }}
                         </p>
                     </div>
                 </div>
@@ -221,9 +220,7 @@
         const endpoint = @json(route('customer.order.status', ['store' => $store, 'order' => $order]));
         const paidLabel = @json(__('customer.payment_status_paid'));
         const unpaidLabel = @json(__('customer.payment_status_unpaid'));
-        const estimatedReadyAtUnixMs = @json($estimatedReadyAtUnixMs);
-        const prepTimeMinutes = @json($prepTimeMinutes);
-        const estimatedPrepOnlyTemplate = @json(__('customer.estimated_prep_time_only', ['minutes' => '__minutes__']));
+        const initialEstimatedReadyLabel = @json($estimatedReadyLabel);
         const estimatedReadyUnknown = @json(__('customer.estimated_ready_time_unknown'));
         const estimatedReadyNow = @json(__('mail_orders.status.completed'));
 
@@ -236,18 +233,9 @@
         let audioContext = null;
 
         const isCancelledStatus = (status) => ['cancel', 'cancelled', 'canceled'].includes(String(status || '').toLowerCase());
-        const isFinalStatus = (status) => ['complete', 'completed', 'ready', 'ready_for_pickup', 'picked_up', 'collected', 'served', 'cancel', 'cancelled', 'canceled'].includes(String(status || '').toLowerCase());
         const isCompletedStatus = (status) => ['complete', 'completed', 'ready', 'ready_for_pickup', 'picked_up', 'collected', 'served'].includes(String(status || '').toLowerCase());
 
-        const displayMinutesByRule = (remainingMinutes) => {
-            if (remainingMinutes > 5) {
-                return Math.ceil(remainingMinutes / 5) * 5;
-            }
-
-            return remainingMinutes;
-        };
-
-        const renderEstimatedReady = (status) => {
+        const renderEstimatedReady = (status, label = initialEstimatedReadyLabel) => {
             if (!estimatedReadyLabel) {
                 return;
             }
@@ -262,20 +250,12 @@
                 return;
             }
 
-            if (!estimatedReadyAtUnixMs || !prepTimeMinutes) {
+            if (!label) {
                 estimatedReadyLabel.textContent = estimatedReadyUnknown;
                 return;
             }
 
-            const nowMs = Date.now();
-            const remainingMinutes = Math.max(0, Math.ceil((Number(estimatedReadyAtUnixMs) - nowMs) / 60000));
-            if (remainingMinutes <= 0) {
-                estimatedReadyLabel.textContent = estimatedReadyNow;
-                return;
-            }
-
-            const displayMinutes = displayMinutesByRule(remainingMinutes);
-            estimatedReadyLabel.textContent = estimatedPrepOnlyTemplate.replace('__minutes__', String(displayMinutes));
+            estimatedReadyLabel.textContent = label;
         };
 
         const renderCancelReasons = (status, reasons) => {
@@ -396,7 +376,7 @@
                 statusLabel.textContent = data.customer_status_label || statusLabel.textContent;
                 paymentLabel.textContent = nextPaymentStatus === 'paid' ? paidLabel : unpaidLabel;
                 renderCancelReasons(nextStatus, data.cancel_reasons || []);
-                renderEstimatedReady(nextStatus);
+                renderEstimatedReady(nextStatus, data.estimated_ready_label || '');
 
                 if (changed) {
                     playSound();
@@ -409,12 +389,6 @@
         };
 
         initAudio();
-        const estimatedTimer = setInterval(() => {
-            renderEstimatedReady(lastStatus);
-            if (isFinalStatus(lastStatus)) {
-                clearInterval(estimatedTimer);
-            }
-        }, 30000);
         setInterval(poll, 10000);
     })();
     </script>

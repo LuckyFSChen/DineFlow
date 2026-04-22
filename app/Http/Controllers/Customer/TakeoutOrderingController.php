@@ -171,8 +171,9 @@ class TakeoutOrderingController extends Controller
         $orderingAvailable = $store->isOrderingAvailable();
         $rememberedCustomerInfo = $this->resolvePrefilledCustomerInfo();
         $orderHistory = $this->getTakeoutOrderHistory($store);
+        $estimatedReadyTime = $store->estimateCustomerReadyTimeForOrderItems($cart);
 
-        return view('customer.cart', compact('store', 'cart', 'total', 'orderingAvailable', 'rememberedCustomerInfo', 'orderHistory'));
+        return view('customer.cart', compact('store', 'cart', 'total', 'orderingAvailable', 'rememberedCustomerInfo', 'orderHistory', 'estimatedReadyTime'));
     }
 
     private function resolvePrefilledCustomerInfo(): array
@@ -1049,6 +1050,7 @@ class TakeoutOrderingController extends Controller
         $count = (int) $items->sum('qty');
         $lineCount = $items->count();
         $total = (int) $items->sum('subtotal');
+        $estimatedReadyTime = $store->estimateCustomerReadyTimeForOrderItems($cart);
 
         return [
             'ok' => true,
@@ -1073,6 +1075,10 @@ class TakeoutOrderingController extends Controller
                     : null,
                 'empty_preview_text' => __('customer.no_products_available'),
                 'cart_url' => route('customer.takeout.cart.show', ['store' => $store]),
+                'estimated_ready' => [
+                    'minutes' => (int) ($estimatedReadyTime['minutes'] ?? 0),
+                    'label' => $store->customerReadyTimeLabel($estimatedReadyTime['minutes'] ?? null),
+                ],
                 'items' => $items->all(),
             ],
         ];

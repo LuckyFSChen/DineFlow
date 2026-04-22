@@ -84,9 +84,9 @@
                         aria-label="{{ __('home.video_unmute') }}"
                         title="{{ __('home.video_unmute') }}"
                     >
-                        <svg class="marketing-video-icon marketing-video-icon--mute" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                            <path d="M14.88 4.3a1 1 0 0 1 1.62.78v13.84a1 1 0 0 1-1.62.78l-4.76-3.8H7A3 3 0 0 1 4 12.9v-1.8a3 3 0 0 1 3-3h3.12l4.76-3.8Z" />
-                            <path d="M19.78 8.22a.75.75 0 0 1 0 1.06L17.06 12l2.72 2.72a.75.75 0 1 1-1.06 1.06L16 13.06l-2.72 2.72a.75.75 0 1 1-1.06-1.06L14.94 12l-2.72-2.72a.75.75 0 0 1 1.06-1.06L16 10.94l2.72-2.72a.75.75 0 0 1 1.06 0Z" />
+                        <svg class="marketing-video-icon marketing-video-icon--mute" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path d="M11.596 3.644a.75.75 0 0 1 1.154.632v11.448a.75.75 0 0 1-1.154.632L8.353 14.33a.75.75 0 0 0-.398-.114H6.5A2.5 2.5 0 0 1 4 11.716V8.284a2.5 2.5 0 0 1 2.5-2.5h1.455a.75.75 0 0 0 .398-.114l3.243-2.026Z" />
+                            <path d="M15.53 7.97a.75.75 0 0 1 1.06 0L18 9.379l1.409-1.408a.75.75 0 1 1 1.06 1.06L19.061 10.44l1.408 1.409a.75.75 0 0 1-1.06 1.06L18 11.5l-1.409 1.409a.75.75 0 0 1-1.06-1.06l1.408-1.409L15.53 9.03a.75.75 0 0 1 0-1.06Z" />
                         </svg>
                         <svg class="marketing-video-icon marketing-video-icon--unmute" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                             <path d="M14.88 4.3a1 1 0 0 1 1.62.78v13.84a1 1 0 0 1-1.62.78l-4.76-3.8H7A3 3 0 0 1 4 12.9v-1.8a3 3 0 0 1 3-3h3.12l4.76-3.8Z" />

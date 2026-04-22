@@ -1,6 +1,22 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $formatPlanCategory = function (?string $category) {
+        $value = trim((string) $category);
+
+        if ($value === '') {
+            return '-';
+        }
+
+        return match (strtolower($value)) {
+            'basic' => __('merchant.plan_tier_basic'),
+            'growth' => __('merchant.plan_tier_growth'),
+            'pro' => __('merchant.plan_tier_pro'),
+            default => $value,
+        };
+    };
+@endphp
 <div class="min-h-screen bg-slate-50 py-10">
     <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <x-backend-header
@@ -20,28 +36,23 @@
             </div>
         @endif
 
-        @php
-            $tierLabels = [
-                'basic' => __('merchant.plan_tier_basic'),
-                'growth' => __('merchant.plan_tier_growth'),
-                'pro' => __('merchant.plan_tier_pro'),
-            ];
-            $cycleLabels = [
-                'monthly' => __('merchant.plan_cycle_monthly'),
-                'quarterly' => __('merchant.plan_cycle_quarterly'),
-                'yearly' => __('merchant.plan_cycle_yearly'),
-            ];
-        @endphp
-
         <div class="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="text-lg font-semibold text-slate-900">{{ __('merchant.current_status') }}</h2>
             <div class="mt-3 space-y-2 text-sm text-slate-700">
-                <p>{{ __('merchant.plan') }}: {{ $user->subscriptionPlan ? ($tierLabels[strtok($user->subscriptionPlan->slug, '-')] ?? ucfirst(strtok($user->subscriptionPlan->slug, '-'))) : __('merchant.not_activated') }}</p>
+                <p>
+                    {{ __('merchant.plan') }}:
+                    @if($user->subscriptionPlan)
+                        {{ $user->subscriptionPlan->name }}
+                        <span class="text-slate-500">({{ $formatPlanCategory($user->subscriptionPlan->category) }})</span>
+                    @else
+                        {{ __('merchant.not_activated') }}
+                    @endif
+                </p>
                 <p>{{ __('merchant.expires_at') }}: {{ $user->subscription_ends_at ? $user->subscription_ends_at->format('Y-m-d H:i') : __('merchant.not_activated') }}</p>
                 <p>{{ __('merchant.status') }}: {{ $user->hasActiveSubscription() ? __('merchant.active') : __('merchant.inactive') }}</p>
-                <p>試用狀態: {{ $user->trial_used_at ? '已使用' : '未使用' }}</p>
+                <p>試用狀態：{{ $user->trial_used_at ? '已使用' : '未使用' }}</p>
                 @if($user->trial_started_at && $user->trial_ends_at)
-                    <p>試用期間: {{ $user->trial_started_at->format('Y-m-d H:i') }} ~ {{ $user->trial_ends_at->format('Y-m-d H:i') }}</p>
+                    <p>試用期間：{{ $user->trial_started_at->format('Y-m-d H:i') }} ~ {{ $user->trial_ends_at->format('Y-m-d H:i') }}</p>
                 @endif
                 <p>{{ __('merchant.pricing_currency') }}: {{ strtoupper($currencyProfile['currency_code'] ?? 'twd') }}</p>
                 <p>
@@ -58,9 +69,9 @@
                 <form method="POST" action="{{ route('merchant.subscription.trial') }}" class="mt-4">
                     @csrf
                     <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-500">
-                        啟用 30 天免費試用
+                        試用 7 天體驗
                     </button>
-                    <p class="mt-2 text-xs text-slate-500">每個商家帳號僅可使用一次試用資格。</p>
+                    <p class="mt-2 text-xs text-slate-500">試用僅能啟用一次，開通後可先建立門店與商品內容。</p>
                 </form>
             @endif
         </div>
@@ -68,22 +79,38 @@
         <div class="space-y-8">
             @foreach($plansByTier as $tier => $tierPlans)
                 <section class="space-y-4">
-                    <h2 class="text-2xl font-bold tracking-tight text-slate-900">{{ $tierLabels[$tier] ?? ucfirst($tier) }}</h2>
+                    <h2 class="text-2xl font-bold tracking-tight text-slate-900">{{ $formatPlanCategory($tier) }}</h2>
                     <div class="grid gap-5 md:grid-cols-3">
                         @foreach($tierPlans as $plan)
-                            @php($pricing = $planPricing[$plan->id] ?? ['original_price_twd' => $plan->price_twd, 'payable_amount_twd' => $plan->price_twd, 'upgrade_credit_twd' => 0, 'is_upgrade_proration_applied' => false, 'is_purchase_allowed' => true, 'blocked_reason' => null, 'show_reset_time_warning' => false])
-                            @php([$planTier, $planCycle] = array_pad(explode('-', $plan->slug, 2), 2, ''))
+                            @php($pricing = $planPricing[$plan->id] ?? ['original_price_twd' => $plan->price_twd + ($plan->discount_twd ?? 0), 'payable_amount_twd' => $plan->price_twd, 'upgrade_credit_twd' => 0, 'is_upgrade_proration_applied' => false, 'is_purchase_allowed' => true, 'blocked_reason' => null, 'show_reset_time_warning' => false])
                             <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                                <h3 class="text-xl font-bold text-slate-900">{{ $cycleLabels[$planCycle] ?? ucfirst($planCycle) }}</h3>
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <h3 class="text-xl font-bold text-slate-900">{{ $plan->name }}</h3>
+                                        <p class="mt-1 text-sm text-slate-500">{{ __('merchant.days', ['days' => $plan->duration_days]) }}</p>
+                                    </div>
+                                    @if(($plan->discount_twd ?? 0) > 0)
+                                        <span class="inline-flex rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-600">
+                                            折價 NT$ {{ number_format($plan->discount_twd ?? 0) }}
+                                        </span>
+                                    @endif
+                                </div>
+
                                 @if(($pricing['payable_amount_twd'] ?? $plan->price_twd) < ($pricing['original_price_twd'] ?? $plan->price_twd))
-                                    <p class="mt-2 text-sm font-semibold text-slate-400 line-through">{{ __('merchant.original_price') }} {{ $pricing['display_symbol'] ?? 'NT$' }} {{ number_format($pricing['display_original_amount'] ?? $pricing['original_price_twd']) }}</p>
+                                    <p class="mt-3 text-sm font-semibold text-slate-400 line-through">{{ __('merchant.original_price') }} {{ $pricing['display_symbol'] ?? 'NT$' }} {{ number_format($pricing['display_original_amount'] ?? $pricing['original_price_twd']) }}</p>
                                     <p class="mt-1 text-3xl font-extrabold text-rose-600">{{ $pricing['display_symbol'] ?? 'NT$' }} {{ number_format($pricing['display_payable_amount'] ?? $pricing['payable_amount_twd']) }}</p>
-                                    <p class="mt-1 text-xs font-medium text-emerald-600">{{ __('merchant.upgrade_credit') }} {{ $pricing['display_symbol'] ?? 'NT$' }} {{ number_format($pricing['display_upgrade_credit'] ?? ($pricing['upgrade_credit_twd'] ?? 0)) }}</p>
+                                    @if(($pricing['upgrade_credit_twd'] ?? 0) > 0)
+                                        <p class="mt-1 text-xs font-medium text-emerald-600">{{ __('merchant.upgrade_credit') }} {{ $pricing['display_symbol'] ?? 'NT$' }} {{ number_format($pricing['display_upgrade_credit'] ?? ($pricing['upgrade_credit_twd'] ?? 0)) }}</p>
+                                    @endif
                                 @else
-                                    <p class="mt-2 text-3xl font-extrabold text-brand-primary">{{ $pricing['display_symbol'] ?? 'NT$' }} {{ number_format($pricing['display_original_amount'] ?? $plan->price_twd) }}</p>
+                                    <p class="mt-3 text-3xl font-extrabold text-brand-primary">{{ $pricing['display_symbol'] ?? 'NT$' }} {{ number_format($pricing['display_original_amount'] ?? $plan->price_twd) }}</p>
                                 @endif
-                                <p class="mt-1 text-sm text-slate-500">{{ __('merchant.days', ['days' => $plan->duration_days]) }}</p>
+
                                 <p class="mt-1 text-sm text-slate-500">{{ __('merchant.store_count_label', ['count' => $plan->max_stores === null ? __('merchant.unlimited') : __('merchant.store_count_max', ['count' => $plan->max_stores])]) }}</p>
+
+                                @if(filled($plan->description))
+                                    <p class="mt-4 text-sm leading-6 text-slate-600">{{ $plan->description }}</p>
+                                @endif
 
                                 <ul class="mt-4 space-y-2 text-sm text-slate-700">
                                     @foreach(($plan->features ?? []) as $feature)

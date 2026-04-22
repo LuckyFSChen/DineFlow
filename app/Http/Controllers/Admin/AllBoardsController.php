@@ -17,12 +17,19 @@ class AllBoardsController extends Controller
 
     private const KITCHEN_PREPARING_STATUSES = ['preparing', 'processing', 'cooking', 'in_progress'];
 
+    private const CANCELLED_STATUSES = ['cancel', 'cancelled', 'canceled'];
+
+    private const SUMMARY_COMPLETED_SAMPLE_LIMIT = 30;
+
+    private const SUMMARY_REPEAT_LOOKBACK_DAYS = 30;
+
     public function index(Request $request, Store $store)
     {
         $this->authorize('viewBoards', $store);
 
         $availableStores = $this->resolveAccessibleStores($request);
-        $ordersData = $this->buildOrdersPayload($store);
+        $ordersData = $this->buildOrdersPayload($store)->values()->all();
+        $boardSummary = $this->buildBoardSummary($store);
 
         $checkoutTiming = $store->checkout_timing ?? 'postpay';
         $user = $request->user();
@@ -34,6 +41,7 @@ class AllBoardsController extends Controller
             'store' => $store,
             'availableStores' => $availableStores,
             'ordersData' => $ordersData,
+            'boardSummary' => $boardSummary,
             'checkoutTiming' => $checkoutTiming,
             'canCashierActions' => $canCashierActions,
             'canKitchenActions' => $canKitchenActions,
@@ -44,7 +52,10 @@ class AllBoardsController extends Controller
     {
         $this->authorize('viewBoards', $store);
 
-        return response()->json($this->buildOrdersPayload($store)->values());
+        return response()->json([
+            'orders' => $this->buildOrdersPayload($store)->values()->all(),
+            'summary' => $this->buildBoardSummary($store),
+        ]);
     }
 
     private function fetchCashierOrders(Store $store): Collection
@@ -190,5 +201,60 @@ class AllBoardsController extends Controller
         }
 
         return Store::query()->whereRaw('1 = 0')->get(['id', 'name', 'slug']);
+    }
+
+    private function buildBoardSummary(Store $store): array
+    {
+        $ordersToday = Order::query()
+            ->where('store_id', $store->id)
+            ->where('created_at', '>=', now()->startOfDay())
+            ->whereNotIn('status', self::CANCELLED_STATUSES)
+            ->count();
+
+        $avgPrepMinutes = $store->averageCompletedPrepTimeMinutes(self::SUMMARY_COMPLETED_SAMPLE_LIMIT);
+
+        $repeatIdentityCounts = Order::query()
+            ->select(['customer_name', 'customer_phone'])
+            ->where('store_id', $store->id)
+            ->where('created_at', '>=', now()->subDays(self::SUMMARY_REPEAT_LOOKBACK_DAYS))
+            ->whereNotIn('status', self::CANCELLED_STATUSES)
+            ->get()
+            ->map(fn (Order $order) => $this->resolveCustomerIdentity(
+                (string) ($order->customer_name ?? ''),
+                (string) ($order->customer_phone ?? ''),
+            ))
+            ->filter()
+            ->countBy();
+
+        $repeatRate = $repeatIdentityCounts->isNotEmpty()
+            ? (int) round(
+                $repeatIdentityCounts
+                    ->filter(fn (int $count) => $count > 1)
+                    ->count() / $repeatIdentityCounts->count() * 100
+            )
+            : null;
+
+        return [
+            'orders_today' => (int) $ordersToday,
+            'avg_prep_minutes' => $avgPrepMinutes === null ? null : round((float) $avgPrepMinutes, 1),
+            'repeat_rate' => $repeatRate,
+        ];
+    }
+
+    private function resolveCustomerIdentity(string $name, string $phone): ?string
+    {
+        $digits = preg_replace('/\D+/', '', $phone);
+
+        if ($digits !== '') {
+            return 'phone:'.$digits;
+        }
+
+        $normalizedName = mb_strtolower(trim($name));
+
+        if ($normalizedName === '' || in_array($normalizedName, ['dineflow guest', 'guest', 'walk-in', '現場口頭點餐', '現場點餐'], true)) {
+            return null;
+        }
+
+        return 'name:'.$normalizedName;
     }
 }

@@ -33,7 +33,89 @@ $storeCancelQuickReasons = collect(is_array($store->cancel_quick_reasons) ? $sto
     ->values()
     ->all();
 
-$allBoardsI18n = [
+/*
+
+$boardDeckCopy = match (app()->getLocale()) {
+    'en' => [
+        'summary_orders_today' => 'Orders Today',
+        'summary_orders_today_hint' => 'Includes dine-in and takeout',
+        'summary_avg_prep' => 'Avg. Prep Speed',
+        'summary_avg_prep_hint' => 'Recent 30 completed orders',
+        'summary_repeat_rate' => 'Repeat Rate',
+        'summary_repeat_rate_hint' => 'Last 30 days',
+        'summary_empty_value' => '--',
+        'summary_prep_unit' => ' min',
+        'empty_pending_description' => 'Guests are still browsing, so the team does not need to take orders manually yet.',
+        'empty_preparing_description' => 'As soon as a new order is submitted, cashier and kitchen cards will appear here automatically.',
+    ],
+    'vi' => [
+        'summary_orders_today' => 'Don hom nay',
+        'summary_orders_today_hint' => 'Bao gom tai ban va mang di',
+        'summary_avg_prep' => 'Toc do che bien TB',
+        'summary_avg_prep_hint' => '30 don hoan tat gan nhat',
+        'summary_repeat_rate' => 'Ty le quay lai',
+        'summary_repeat_rate_hint' => '30 ngay qua',
+        'summary_empty_value' => '--',
+        'summary_prep_unit' => ' phut',
+        'empty_pending_description' => 'Khach dang chon mon, nhan vien khong can ghi don thu cong hay gioi thieu tung mon.',
+        'empty_preparing_description' => 'Ngay khi co don moi, the thu ngan va bep se tu dong hien thi tai day.',
+    ],
+    default => [
+        'summary_orders_today' => '??謑蹇?',
+        'summary_orders_today_hint' => '??荒?????????,
+        'summary_avg_prep' => '???蝎??賹撞',
+        'summary_avg_prep_hint' => '擗?30 ????????,
+        'summary_repeat_rate' => '?豯扯竣??,
+        'summary_repeat_rate_hint' => '擗?30 ??,
+        'summary_empty_value' => '--',
+        'summary_prep_unit' => ' ??,
+        'empty_pending_description' => '?踵?亦??謓?鞈????皜舐????????剔?璆????謖????????,
+        'empty_preparing_description' => '????獢????????????頦對???拙???賂????祗?謕???,
+    ],
+};
+
+*/
+
+$boardDeckCopy = match (app()->getLocale()) {
+    'en' => [
+        'summary_orders_today' => 'Orders Today',
+        'summary_orders_today_hint' => 'Includes dine-in and takeout',
+        'summary_avg_prep' => 'Avg. Prep Speed',
+        'summary_avg_prep_hint' => 'Recent 30 completed orders',
+        'summary_repeat_rate' => 'Repeat Rate',
+        'summary_repeat_rate_hint' => 'Last 30 days',
+        'summary_empty_value' => '--',
+        'summary_prep_unit' => ' min',
+        'empty_pending_description' => 'Guests are still browsing, so the team does not need to take orders manually yet.',
+        'empty_preparing_description' => 'As soon as a new order is submitted, cashier and kitchen cards will appear here automatically.',
+    ],
+    'vi' => [
+        'summary_orders_today' => 'Don hom nay',
+        'summary_orders_today_hint' => 'Bao gom tai ban va mang di',
+        'summary_avg_prep' => 'Toc do che bien TB',
+        'summary_avg_prep_hint' => '30 don hoan tat gan nhat',
+        'summary_repeat_rate' => 'Ty le quay lai',
+        'summary_repeat_rate_hint' => '30 ngay qua',
+        'summary_empty_value' => '--',
+        'summary_prep_unit' => ' phut',
+        'empty_pending_description' => 'Khach dang chon mon, nhan vien khong can ghi don thu cong hay gioi thieu tung mon.',
+        'empty_preparing_description' => 'Ngay khi co don moi, the thu ngan va bep se tu dong hien thi tai day.',
+    ],
+    default => [
+        'summary_orders_today' => '今日訂單',
+        'summary_orders_today_hint' => '內用與外帶合計',
+        'summary_avg_prep' => '平均出餐速度',
+        'summary_avg_prep_hint' => '近 30 筆已完成訂單',
+        'summary_repeat_rate' => '回訪率',
+        'summary_repeat_rate_hint' => '近 30 天',
+        'summary_empty_value' => '--',
+        'summary_prep_unit' => ' 分鐘',
+        'empty_pending_description' => '客人仍在瀏覽菜單，現場目前不需要人工抄單。',
+        'empty_preparing_description' => '只要有新訂單送出，收銀與廚房卡片會自動出現在這裡。',
+    ],
+};
+
+$allBoardsI18n = array_merge([
     'order_unit' => __('admin.board_order_unit'),
     'next_refresh' => __('admin.board_next_refresh'),
     'not_updated_yet' => __('admin.board_not_updated_yet'),
@@ -75,7 +157,7 @@ $allBoardsI18n = [
     'seconds_ago' => __('admin.board_time_seconds_ago'),
     'minutes_ago' => __('admin.board_time_minutes_ago'),
     'hours_ago' => __('admin.board_time_hours_ago'),
-];
+], $boardDeckCopy);
 @endphp
 
 @section('content')
@@ -134,19 +216,52 @@ $allBoardsI18n = [
         </div>
     </div>
 
-    <div x-show="filteredOrders.length === 0 && !loading" class="flex flex-col items-center justify-center py-32 text-slate-500">
-        <svg class="mb-4 h-16 w-16 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-        </svg>
-        <p class="text-xl font-semibold">{{ __('admin.board_empty_pending') }}</p>
-        <p class="mt-1 text-sm">{{ __('admin.board_empty_auto') }}</p>
+    <div class="px-4 py-4 sm:px-6">
+        <div class="grid grid-cols-1 gap-3 lg:grid-cols-3">
+            <div class="rounded-2xl border border-slate-700 bg-slate-800/70 px-4 py-4 shadow-[0_18px_40px_rgba(2,6,23,0.16)]">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400" x-text="i18n.summary_orders_today"></p>
+                        <p class="mt-2 text-3xl font-bold text-white" x-text="summaryOrdersTodayLabel()"></p>
+                    </div>
+                    <span class="rounded-full bg-indigo-500/15 px-2.5 py-1 text-[11px] font-semibold text-indigo-200" x-text="i18n.summary_orders_today_hint"></span>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-700 bg-slate-800/70 px-4 py-4 shadow-[0_18px_40px_rgba(2,6,23,0.16)]">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400" x-text="i18n.summary_avg_prep"></p>
+                        <p class="mt-2 text-3xl font-bold text-white" x-text="summaryAvgPrepLabel()"></p>
+                    </div>
+                    <span class="rounded-full bg-amber-500/15 px-2.5 py-1 text-[11px] font-semibold text-amber-200" x-text="i18n.summary_avg_prep_hint"></span>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-700 bg-slate-800/70 px-4 py-4 shadow-[0_18px_40px_rgba(2,6,23,0.16)]">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400" x-text="i18n.summary_repeat_rate"></p>
+                        <p class="mt-2 text-3xl font-bold text-white" x-text="summaryRepeatRateLabel()"></p>
+                    </div>
+                    <span class="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-200" x-text="i18n.summary_repeat_rate_hint"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="filteredOrders.length === 0 && !loading" class="px-4 pb-6 pt-2 sm:px-6">
+        <div class="mx-auto flex min-h-[19rem] w-full max-w-4xl flex-col items-center justify-center rounded-[2rem] border border-dashed border-slate-700 bg-[radial-gradient(circle_at_top,_rgba(30,41,59,0.6),_rgba(15,23,42,0.96))] px-8 py-16 text-center shadow-[0_24px_60px_rgba(2,6,23,0.26)]">
+            <p class="text-3xl font-bold tracking-tight text-slate-100" x-text="boardEmptyTitle()"></p>
+            <p class="mt-5 max-w-2xl text-lg leading-9 text-slate-400" x-text="boardEmptyDescription()"></p>
+        </div>
     </div>
 
     <div x-show="loading" class="flex items-center justify-center py-20">
         <div class="h-8 w-8 animate-spin rounded-full border-4 border-slate-600 border-t-indigo-400"></div>
     </div>
 
-    <div x-show="!loading" class="grid gap-4 p-6" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
+    <div x-show="!loading && filteredOrders.length > 0" class="grid gap-4 p-6" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
         <template x-for="order in filteredOrders" :key="order.id">
             <div class="flex flex-col rounded-2xl border overflow-hidden transition-all duration-300"
                  :class="cardClass(order)"
@@ -183,7 +298,7 @@ $allBoardsI18n = [
 
                 <div class="flex-1 px-4 py-3 space-y-2">
                     <div x-show="order.board === 'kitchen'" class="mb-1 text-[11px] font-semibold text-slate-300">
-                        <span x-text="i18n.item_progress"></span>：<span x-text="completedItemCount(order)"></span>/<span x-text="order.items.length"></span>
+                        <span x-text="i18n.item_progress"></span> <span x-text="completedItemCount(order)"></span>/<span x-text="order.items.length"></span>
                     </div>
                     <template x-for="item in order.items" :key="item.id">
                         <div class="flex items-start justify-between gap-2 rounded-lg border px-2 py-2 transition-colors duration-150"
@@ -221,8 +336,7 @@ $allBoardsI18n = [
                                         <span class="text-xs font-semibold" :class="order.board === 'kitchen' && isItemCompleted(item) ? 'text-emerald-300' : 'text-slate-300'" x-text="'x ' + item.qty"></span>
                                     </div>
                                     <div x-show="item.note" class="mt-0.5 flex items-center gap-1 text-xs text-yellow-400">
-                                        <span x-show="order.board === 'kitchen'" x-text="i18n.item_note_label"></span>
-                                        <span x-show="order.board !== 'kitchen'">📝</span>
+                                        <span x-text="i18n.item_note_label"></span>
                                         <span x-text="item.note"></span>
                                     </div>
                                     <div x-show="item.option_summary" class="mt-0.5 text-xs text-slate-400" x-text="item.option_summary"></div>
@@ -396,6 +510,7 @@ $allBoardsI18n = [
 function allBoards() {
     return {
         orders: @json($ordersData),
+        summary: @json($boardSummary ?? []),
         currencySymbol: @json($currencySymbol),
         boardFilter: 'all',
         checkoutTiming: @json($checkoutTiming ?? 'postpay'),
@@ -443,6 +558,41 @@ function allBoards() {
             const mm = String(d.getMinutes()).padStart(2, '0');
             const ss = String(d.getSeconds()).padStart(2, '0');
             return `${hh}:${mm}:${ss}`;
+        },
+
+        summaryOrdersTodayLabel() {
+            const value = Number(this.summary?.orders_today ?? 0);
+            return Number.isFinite(value) ? value.toLocaleString() : '0';
+        },
+
+        summaryAvgPrepLabel() {
+            const value = Number(this.summary?.avg_prep_minutes);
+            if (!Number.isFinite(value)) {
+                return this.i18n.summary_empty_value;
+            }
+
+            return `${value.toLocaleString(undefined, { maximumFractionDigits: 1 })}${this.i18n.summary_prep_unit}`;
+        },
+
+        summaryRepeatRateLabel() {
+            const value = Number(this.summary?.repeat_rate);
+            if (!Number.isFinite(value)) {
+                return this.i18n.summary_empty_value;
+            }
+
+            return `${Math.round(value)}%`;
+        },
+
+        boardEmptyTitle() {
+            return this.boardFilter === 'kitchen'
+                ? @js(__('admin.board_empty_preparing'))
+                : @js(__('admin.board_empty_pending'));
+        },
+
+        boardEmptyDescription() {
+            return this.boardFilter === 'kitchen'
+                ? this.i18n.empty_preparing_description
+                : this.i18n.empty_pending_description;
         },
 
         init() {
@@ -593,7 +743,9 @@ function allBoards() {
                     return;
                 }
 
-                const merged = await res.json();
+                const payload = await res.json();
+                const merged = Array.isArray(payload) ? payload : payload?.orders;
+
                 if (!Array.isArray(merged)) {
                     this.showError(this.i18n.error_update_failed);
                     return;
@@ -603,6 +755,9 @@ function allBoards() {
                 const hasNew = merged.some((o) => !oldIds.has(`${o.board}-${o.id}`));
 
                 this.orders = merged;
+                if (!Array.isArray(payload) && payload?.summary && typeof payload.summary === 'object') {
+                    this.summary = payload.summary;
+                }
                 this.lastUpdatedAt = Date.now();
 
                 if (hasNew) {

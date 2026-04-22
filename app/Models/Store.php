@@ -11,6 +11,16 @@ class Store extends Model
 {
     use SoftDeletes;
 
+    private const ETA_ACTIVE_PENDING_STATUSES = ['pending', 'accepted', 'confirmed', 'received'];
+
+    private const ETA_ACTIVE_PREPARING_STATUSES = ['preparing', 'processing', 'cooking', 'in_progress'];
+
+    private const ETA_COMPLETED_STATUSES = ['complete', 'completed', 'ready', 'ready_for_pickup', 'picked_up', 'collected', 'served'];
+
+    private const ETA_CANCELLED_STATUSES = ['cancel', 'cancelled', 'canceled'];
+
+    private const ETA_AVERAGE_SAMPLE_LIMIT = 30;
+
     private static ?array $validTimezoneIdentifiers = null;
 
     private ?string $resolvedBusinessTimezoneCache = null;
@@ -463,12 +473,236 @@ class Store extends Model
         return max($fallbackMinutes, (int) $criticalPathMinutes) + $coordinationBufferMinutes;
     }
 
+    public function estimateCustomerReadyTimeForOrderItems(iterable $items, ?int $excludingOrderId = null, float $queueWeight = 1.0): array
+    {
+        $baseMinutes = $this->estimatePrepTimeMinutesForOrderItems($items);
+        $averagePrepMinutes = $this->averageCompletedPrepTimeMinutes();
+        $referencePrepMinutes = $averagePrepMinutes ?? (float) $this->defaultPrepTimeMinutes();
+        $speedFactor = $this->resolveCustomerReadyTimeSpeedFactor($referencePrepMinutes);
+        $adjustedBaseMinutes = max(1, (int) round($baseMinutes * $speedFactor));
+        $workloadSnapshot = $this->activeCustomerReadyWorkloadSnapshot($excludingOrderId);
+        $queueDelayMinutes = $this->estimateCustomerReadyQueueDelayMinutes(
+            $workloadSnapshot,
+            $referencePrepMinutes,
+            $queueWeight
+        );
+
+        return [
+            'minutes' => max(1, $adjustedBaseMinutes + $queueDelayMinutes),
+            'base_minutes' => $baseMinutes,
+            'adjusted_base_minutes' => $adjustedBaseMinutes,
+            'queue_delay_minutes' => $queueDelayMinutes,
+            'average_prep_minutes' => $averagePrepMinutes === null ? null : round($averagePrepMinutes, 1),
+            'speed_factor' => $speedFactor,
+            'active_order_count' => (int) ($workloadSnapshot['active_order_count'] ?? 0),
+            'active_item_quantity' => (int) ($workloadSnapshot['active_item_quantity'] ?? 0),
+        ];
+    }
+
+    public function estimateCustomerReadyTimeForOrder(Order $order): array
+    {
+        $normalizedStatus = strtolower((string) $order->status);
+
+        if (in_array($normalizedStatus, self::ETA_CANCELLED_STATUSES, true)) {
+            return [
+                'minutes' => 0,
+                'base_minutes' => 0,
+                'adjusted_base_minutes' => 0,
+                'queue_delay_minutes' => 0,
+                'average_prep_minutes' => $this->averageCompletedPrepTimeMinutes(),
+                'speed_factor' => 1.0,
+                'active_order_count' => 0,
+                'active_item_quantity' => 0,
+            ];
+        }
+
+        if (in_array($normalizedStatus, self::ETA_COMPLETED_STATUSES, true)) {
+            return [
+                'minutes' => 0,
+                'base_minutes' => 0,
+                'adjusted_base_minutes' => 0,
+                'queue_delay_minutes' => 0,
+                'average_prep_minutes' => $this->averageCompletedPrepTimeMinutes(),
+                'speed_factor' => 1.0,
+                'active_order_count' => 0,
+                'active_item_quantity' => 0,
+            ];
+        }
+
+        $remainingItems = $this->remainingOrderItemsForCustomerReadyEstimate($order);
+
+        if ($remainingItems === []) {
+            return [
+                'minutes' => 1,
+                'base_minutes' => 0,
+                'adjusted_base_minutes' => 0,
+                'queue_delay_minutes' => 0,
+                'average_prep_minutes' => $this->averageCompletedPrepTimeMinutes(),
+                'speed_factor' => 1.0,
+                'active_order_count' => 0,
+                'active_item_quantity' => 0,
+            ];
+        }
+
+        $queueWeight = in_array($normalizedStatus, self::ETA_ACTIVE_PREPARING_STATUSES, true)
+            ? 0.45
+            : 1.0;
+
+        return $this->estimateCustomerReadyTimeForOrderItems($remainingItems, (int) $order->id, $queueWeight);
+    }
+
+    public function averageCompletedPrepTimeMinutes(int $sampleLimit = self::ETA_AVERAGE_SAMPLE_LIMIT): ?float
+    {
+        $recentCompletedOrders = Order::query()
+            ->select(['id', 'store_id', 'created_at', 'updated_at'])
+            ->with(['items:id,order_id,completed_at'])
+            ->where('store_id', $this->id)
+            ->whereIn('status', self::ETA_COMPLETED_STATUSES)
+            ->latest('updated_at')
+            ->limit(max(1, $sampleLimit))
+            ->get();
+
+        $average = $recentCompletedOrders
+            ->map(function (Order $order): ?float {
+                $completedAt = $order->items
+                    ->pluck('completed_at')
+                    ->filter()
+                    ->sortDesc()
+                    ->first();
+
+                $endAt = $completedAt ?? $order->updated_at;
+
+                if (! $order->created_at || ! $endAt) {
+                    return null;
+                }
+
+                $seconds = $order->created_at->diffInSeconds($endAt, false);
+
+                if ($seconds < 0) {
+                    return null;
+                }
+
+                return round($seconds / 60, 1);
+            })
+            ->filter(fn (?float $minutes) => $minutes !== null)
+            ->avg();
+
+        return $average === null ? null : (float) $average;
+    }
+
+    public function customerReadyTimeLabel(?int $minutes): string
+    {
+        return $minutes !== null && $minutes > 0
+            ? __('customer.estimated_prep_time_only', ['minutes' => $minutes])
+            : __('customer.estimated_ready_time_unknown');
+    }
+
     private function defaultPrepTimeMinutes(): int
     {
         return max(
             1,
             (int) ($this->prep_time_minutes ?? config('dineflow.default_prep_time_minutes', 30))
         );
+    }
+
+    private function activeCustomerReadyWorkloadSnapshot(?int $excludingOrderId = null): array
+    {
+        $activeStatuses = array_merge(self::ETA_ACTIVE_PENDING_STATUSES, self::ETA_ACTIVE_PREPARING_STATUSES);
+
+        $orders = Order::query()
+            ->select(['id', 'store_id', 'status'])
+            ->with(['items:id,order_id,qty,item_status,completed_at'])
+            ->where('store_id', $this->id)
+            ->whereIn('status', $activeStatuses)
+            ->when($excludingOrderId !== null, function ($query) use ($excludingOrderId) {
+                $query->where('id', '!=', $excludingOrderId);
+            })
+            ->get();
+
+        $snapshot = [
+            'active_order_count' => 0,
+            'active_order_units' => 0.0,
+            'active_item_quantity' => 0,
+            'active_item_units' => 0.0,
+        ];
+
+        foreach ($orders as $order) {
+            $queueWeight = $this->activeOrderQueueWeight($order->status);
+
+            if ($queueWeight <= 0) {
+                continue;
+            }
+
+            $remainingItemQuantity = $this->remainingItemQuantityForCustomerReadyEstimate($order);
+
+            $snapshot['active_order_count']++;
+            $snapshot['active_order_units'] += $queueWeight;
+            $snapshot['active_item_quantity'] += $remainingItemQuantity;
+            $snapshot['active_item_units'] += $remainingItemQuantity * $queueWeight;
+        }
+
+        return $snapshot;
+    }
+
+    private function estimateCustomerReadyQueueDelayMinutes(array $snapshot, float $averagePrepMinutes, float $queueWeight = 1.0): int
+    {
+        $activeOrderUnits = (float) ($snapshot['active_order_units'] ?? 0);
+        $activeItemUnits = (float) ($snapshot['active_item_units'] ?? 0);
+
+        if ($activeOrderUnits <= 0 && $activeItemUnits <= 0) {
+            return 0;
+        }
+
+        $normalizedQueueWeight = max(0.0, min(1.0, $queueWeight));
+        $orderBufferPerUnit = max(1.0, round($averagePrepMinutes * 0.12, 1));
+        $rawQueueDelay = ($activeOrderUnits * $orderBufferPerUnit) + ($activeItemUnits * 0.45);
+
+        return min(60, max(0, (int) ceil($rawQueueDelay * $normalizedQueueWeight)));
+    }
+
+    private function resolveCustomerReadyTimeSpeedFactor(float $averagePrepMinutes): float
+    {
+        $baselineMinutes = (float) max(1, $this->defaultPrepTimeMinutes());
+
+        return max(0.75, min(1.6, round($averagePrepMinutes / $baselineMinutes, 2)));
+    }
+
+    private function activeOrderQueueWeight(?string $status): float
+    {
+        $normalizedStatus = strtolower((string) $status);
+
+        return match (true) {
+            in_array($normalizedStatus, self::ETA_ACTIVE_PENDING_STATUSES, true) => 1.0,
+            in_array($normalizedStatus, self::ETA_ACTIVE_PREPARING_STATUSES, true) => 0.65,
+            default => 0.0,
+        };
+    }
+
+    private function remainingOrderItemsForCustomerReadyEstimate(Order $order): array
+    {
+        $order->loadMissing(['items:id,order_id,product_id,qty,item_status,completed_at']);
+
+        return $order->items
+            ->filter(fn (OrderItem $item) => ! $this->isCompletedCustomerReadyOrderItem($item))
+            ->values()
+            ->all();
+    }
+
+    private function remainingItemQuantityForCustomerReadyEstimate(Order $order): int
+    {
+        $order->loadMissing(['items:id,order_id,qty,item_status,completed_at']);
+
+        $remainingQuantity = (int) $order->items
+            ->filter(fn (OrderItem $item) => ! $this->isCompletedCustomerReadyOrderItem($item))
+            ->sum(fn (OrderItem $item) => max(1, (int) $item->qty));
+
+        return max(1, $remainingQuantity);
+    }
+
+    private function isCompletedCustomerReadyOrderItem(OrderItem $item): bool
+    {
+        return strtolower((string) ($item->item_status ?? '')) === 'completed'
+            || $item->completed_at !== null;
     }
 
     private function normalizeTime(?string $time): ?string

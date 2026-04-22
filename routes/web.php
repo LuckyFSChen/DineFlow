@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\UserSubscriptionController;
 use App\Http\Controllers\Admin\ProductManagementController;
 use App\Http\Controllers\Admin\DiningTableManagementController;
 use App\Http\Controllers\Admin\KitchenController;
+use App\Http\Controllers\Admin\MerchantOrderController;
 use App\Http\Controllers\Admin\CashierController;
 use App\Http\Controllers\Admin\AllBoardsController;
 use App\Http\Controllers\Admin\Auth\AuthenticatedSessionController as AdminAuthenticatedSessionController;
@@ -42,6 +43,8 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin', 'merchant.subscrip
     Route::resource('stores', AdminStoreController::class)->except(['show']);
     Route::patch('stores/{store}/activate', [AdminStoreController::class, 'activate'])->name('stores.activate');
     Route::patch('stores/{store}/deactivate', [AdminStoreController::class, 'deactivate'])->name('stores.deactivate');
+    Route::get('stores/{store}/orders/create', [MerchantOrderController::class, 'create'])->name('stores.orders.create');
+    Route::post('stores/{store}/orders', [MerchantOrderController::class, 'store'])->name('stores.orders.store');
     Route::post('stores/{store}/categories', [ProductManagementController::class, 'storeCategory'])->name('stores.categories.store');
     Route::get('stores/{store}/categories/{category}/edit', [ProductManagementController::class, 'editCategory'])->name('stores.categories.edit');
     Route::put('stores/{store}/categories/{category}', [ProductManagementController::class, 'updateCategory'])->name('stores.categories.update');
@@ -170,6 +173,7 @@ Route::post('/ecpay/subscription/result', [MerchantSubscriptionController::class
 
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('super-admin')->name('super-admin.')->group(function () {
     Route::get('/subscriptions', [UserSubscriptionController::class, 'index'])->name('subscriptions.index');
+    Route::patch('/subscription-plans/{plan}', [UserSubscriptionController::class, 'updatePlan'])->name('subscriptions.plans.update');
     Route::patch('/subscriptions/{user}', [UserSubscriptionController::class, 'update'])->name('subscriptions.update');
 });
 

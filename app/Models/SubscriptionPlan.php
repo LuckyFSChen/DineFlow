@@ -9,10 +9,13 @@ class SubscriptionPlan extends Model
     protected $fillable = [
         'name',
         'slug',
+        'category',
         'price_twd',
+        'discount_twd',
         'duration_days',
         'max_stores',
         'features',
+        'description',
         'is_active',
     ];
 
@@ -20,5 +23,6 @@ class SubscriptionPlan extends Model
         'features' => 'array',
         'is_active' => 'boolean',
         'max_stores' => 'integer',
+        'discount_twd' => 'integer',
     ];
 }

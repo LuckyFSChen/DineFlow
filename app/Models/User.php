@@ -82,6 +82,9 @@ class User extends Authenticatable
         'merchant_region',
         'subscription_ends_at',
         'subscription_plan_id',
+        'trial_started_at',
+        'trial_ends_at',
+        'trial_used_at',
         'store_id',
     ];
 
