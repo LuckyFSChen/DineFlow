@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Carbon\Carbon;
 use App\Support\PhoneFormatter;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Auth;
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     protected static function booted(): void
     {
@@ -113,6 +114,7 @@ class User extends Authenticatable
             'trial_started_at' => 'datetime',
             'trial_ends_at' => 'datetime',
             'trial_used_at' => 'datetime',
+            'deleted_at' => 'datetime',
         ];
     }
 
