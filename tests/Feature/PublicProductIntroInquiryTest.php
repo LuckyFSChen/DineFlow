@@ -44,6 +44,8 @@ class PublicProductIntroInquiryTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Starter Monthly');
+        $response->assertSee('QR Ordering');
+        $response->assertSee('Menu Management');
         $response->assertDontSee('Hidden Legacy Plan');
     }
 

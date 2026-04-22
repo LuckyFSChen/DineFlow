@@ -43,13 +43,15 @@ trait BuildsAllBoardsPageData
 
     protected function buildBoardSummary(Store $store): array
     {
+        $businessDayBounds = $store->businessDayBounds();
+
         $ordersToday = Order::query()
             ->where('store_id', $store->id)
-            ->where('created_at', '>=', now()->startOfDay())
+            ->whereBetween('created_at', [$businessDayBounds['start'], $businessDayBounds['end']])
             ->whereNotIn('status', $this->boardCancelledStatuses())
             ->count();
 
-        $avgPrepMinutes = $store->averageCompletedPrepTimeMinutes($this->boardSummaryCompletedSampleLimit());
+        $avgPrepMinutes = $store->averageCompletedPrepTimeMinutesForBusinessDate();
 
         $repeatIdentityCounts = Order::query()
             ->select(['customer_name', 'customer_phone'])
@@ -240,11 +242,6 @@ trait BuildsAllBoardsPageData
     protected function boardCancelledStatuses(): array
     {
         return ['cancel', 'cancelled', 'canceled'];
-    }
-
-    protected function boardSummaryCompletedSampleLimit(): int
-    {
-        return 30;
     }
 
     protected function boardSummaryRepeatLookbackDays(): int

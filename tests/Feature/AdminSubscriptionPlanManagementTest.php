@@ -29,6 +29,7 @@ class AdminSubscriptionPlanManagementTest extends TestCase
                 'duration_days' => 90,
                 'max_stores' => 3,
                 'description' => 'For growing teams.',
+                'plan_features' => "Menu Management\n\nBasic Reports\nMulti-store Overview",
                 'is_active' => '1',
             ]);
 
@@ -41,6 +42,14 @@ class AdminSubscriptionPlanManagementTest extends TestCase
             'max_stores' => 3,
             'is_active' => 1,
         ]);
+
+        $plan = SubscriptionPlan::query()->where('slug', 'growth-quarterly')->firstOrFail();
+
+        $this->assertSame([
+            'Menu Management',
+            'Basic Reports',
+            'Multi-store Overview',
+        ], $plan->features);
     }
 
     public function test_admin_can_update_subscription_plan_metadata(): void
@@ -57,6 +66,7 @@ class AdminSubscriptionPlanManagementTest extends TestCase
             'discount_twd' => 0,
             'duration_days' => 30,
             'max_stores' => 1,
+            'features' => ['Old Item'],
             'description' => null,
             'is_active' => true,
         ]);
@@ -74,6 +84,7 @@ class AdminSubscriptionPlanManagementTest extends TestCase
                 'duration_days' => 365,
                 'max_stores' => 10,
                 'description' => 'For large operators.',
+                'plan_features' => "Store Management\nMenu & Item Management\nBasic Reports",
                 'is_active' => '0',
             ]);
 
@@ -89,6 +100,11 @@ class AdminSubscriptionPlanManagementTest extends TestCase
         $this->assertSame(365, $plan->duration_days);
         $this->assertSame(10, $plan->max_stores);
         $this->assertSame('For large operators.', $plan->description);
+        $this->assertSame([
+            'Store Management',
+            'Menu & Item Management',
+            'Basic Reports',
+        ], $plan->features);
         $this->assertFalse($plan->is_active);
     }
 

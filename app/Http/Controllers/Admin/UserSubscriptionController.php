@@ -257,6 +257,7 @@ class UserSubscriptionController extends Controller
             'duration_days' => ['required', 'integer', 'min:1', 'max:3650'],
             'max_stores' => ['nullable', 'integer', 'min:1', 'max:999'],
             'description' => [$supportsDescription ? 'nullable' : 'prohibited', 'string', 'max:2000'],
+            'plan_features' => ['nullable', 'string', 'max:4000'],
             'is_active' => ['required', 'boolean'],
         ];
     }
@@ -293,7 +294,30 @@ class UserSubscriptionController extends Controller
                 : null;
         }
 
+        if (array_key_exists('plan_features', $validated)) {
+            $payload['features'] = $this->parsePlanFeatures($validated['plan_features']);
+        }
+
         return $payload;
+    }
+
+    private function parsePlanFeatures(?string $rawFeatures): ?array
+    {
+        $lines = preg_split('/\r\n|\r|\n/', (string) $rawFeatures);
+
+        if (! is_array($lines)) {
+            return null;
+        }
+
+        $features = array_values(array_filter(
+            array_map(
+                static fn ($line): string => trim((string) $line),
+                $lines
+            ),
+            static fn (string $line): bool => $line !== ''
+        ));
+
+        return $features === [] ? null : $features;
     }
 
     private function resolvePlanSlug(array $validated, ?SubscriptionPlan $plan = null): string

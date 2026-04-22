@@ -1,225 +1,216 @@
 # DineFlow
 
-> DineFlow 專為小型餐飲店打造，協助店家用低成本快速導入 QR 點餐與訂單管理，減少人工作業、加快出餐流程。
+> DineFlow 是一套為餐飲品牌打造的 QR 點餐與營運平台，將品牌官網、門店後台、現場看板、會員經營與訂閱商業模式整合在同一個 Laravel 專案中。
 
-DineFlow 是一套同時涵蓋「店家營運」與「顧客點餐」的餐飲系統，支援內用、外帶、訂閱制、金流與發票流程。
+## 產品概念
 
-## 為什麼是 DineFlow
+餐飲品牌往往不是只缺一個點餐頁，而是缺一套能把「曝光、接單、出餐、收款、回購經營」串起來的系統。
 
-- 低成本快速上線：30-60 分鐘可完成核心流程（註冊、印 QR、開始接單）。
-- 不綁重型 POS：先讓點餐與接單跑起來，再依店況擴充整合。
-- 專注小店高頻需求：優先解決點餐、出餐、收款、發票與回訪經營。
-- 店家品牌入口：除了點餐頁，也能用公開店家頁承接搜尋與社群導流。
+DineFlow 目前聚焦在以下幾件事：
 
-## 適合哪些店家
+- 讓顧客可以快速完成內用與外帶點餐
+- 讓店家能管理多門店、商品、桌位與現場流程
+- 讓商家具備會員、優惠、報表與訂閱化能力
+- 讓整個系統同時具備 B2C 展示面與 B2B 營運面
 
-- 小吃店
-- 早餐店
-- 飲料店
-- 夫妻店
-- 1-2 間店的起步品牌
+## 目前亮點
 
-## 產品入口設計（B2B + B2C）
+- 內用 QR 點餐與外帶點餐雙流程
+- 商家門店後台，支援商品分類、品項排序、桌位與 QR 管理
+- 廚房看板、收銀看板、綜合 boards
+- 會員點數、優惠券、回購經營模組
+- 商家訂閱方案、7 天試用、方案升級補差額
+- 營收、成本、毛利、客單價、品項趨勢等營運報表
+- 公開首頁、產品介紹頁、價格洽詢、門店列表與評論展示
+- 多語系支援：`zh_TW`、`zh_CN`、`en`、`vi`
+- Laravel Reverb 即時同步，支援內用購物車更新
 
-- 店家導向頁（B2B）：`/product-intro`
-	- 說明導入理由、核心流程、適合店型、系統差異。
-- 顧客點餐入口（B2C）：`/`、`/stores/{store:slug}`、`/s/{store:slug}/takeout/menu`
-	- 提供附近店家探索、店家介紹、快速點餐流程。
+## 專案現況
 
-## 與傳統大型系統差異
+DineFlow 已經不是單純的 prototype，而是一個具備完整資料表、seed 資料、角色權限、背景工作與測試的可運行應用。
 
-| 比較面向 | DineFlow | 傳統大型餐飲系統 |
-| --- | --- | --- |
-| 導入成本 | 較低，適合小店先啟用核心流程 | 較高，常需搭配完整設備 |
-| 上線速度 | 較快，可從 QR 點餐與接單先開始 | 導入流程較長，前置設定較多 |
-| 操作難度 | 介面直覺、教育訓練負擔較低 | 功能完整但學習成本較高 |
-| 適合店型 | 小店、新店、剛起步品牌 | 連鎖品牌、大型多模組需求 |
-| 擴充方式 | 可小步上線，依需求逐步擴充 | 多依既有模組與標準流程調整 |
+目前已完成的重點包含：
 
-## 產品路線
+- 顧客端點餐與購物車流程
+- 商家端門店與商品管理
+- 現場看板流程
+- 會員與優惠
+- 訂閱方案與功能開關
+- 營運報表
+- 發票中心 UI、資料模型與背景工作流程
 
-### 第 1 階段：先賣得出去（核心營運）
+目前仍需注意：
 
-- 靜態 QR + 動態 QR。
-- 訂單狀態機與接單模式（手動 / 自動 / 已付款才自動）。
-- 同桌加點、多手機併單。
-- 廚房出單 / KDS（廚房、飲料吧、櫃檯 queue）。
-- 菜單營業時段、售完、隱藏。
-- 預付 / 後付、金流、電子發票。
+- `ECPay` 已用於商家訂閱付款流程
+- 電子發票中心目前仍使用模擬 gateway，尚未接入正式發票服務商
 
-### 第 2 階段：讓店家留下來（留存與客單）
+## 核心模組
 
-- 多人點餐暱稱 / 頭像、服務鈴、請結帳。
-- 套餐、加購、推薦邏輯。
-- 會員、集點、優惠券。
-- 報表與匯出能力。
+### 顧客端
 
-### 第 3 階段：建立護城河（品牌與整合）
+- 內用入口：`/s/{store:slug}/t/{table:qr_token}/menu`
+- 外帶入口：`/s/{store:slug}/takeout/menu`
+- 購物車、優惠券檢查、結帳、訂單成功頁、訂單歷史、再次下單
+- 門店評論與公開展示頁
 
-- 白牌官網、多分店總覽、菜單模板複製。
-- API / webhook / POS bridge。
-- 多語菜單、過敏原與旅客友善資訊。
+### 商家端
 
-### 一開始先不急著做
+- 門店管理與多店配額控制
+- 商品分類、品項、選項群組、售完狀態管理
+- 桌位與 QR 管理
+- 廚房 / 收銀 / 綜合 boards
+- 會員、點數、優惠券管理
+- 發票中心
+- 財務報表
 
-- 過重的 AI 推薦。
-- 過早的大型訂位系統。
-- 複雜連鎖總部後台。
-- 高成本但低實用價值的 fancy 動畫。
+### 平台端
 
-目前專案以 Laravel 12 + Blade + Tailwind 為主，後台重點頁面已採用 Popup + AJAX 操作。
-
-## 核心功能
-
-### 1) 角色與權限
-
-- `admin` / `merchant` / `customer` 三種角色。
-- 商家後台路由受 `auth + verified + role + merchant.subscription` 保護。
-- `merchant` 只能管理自己的店家與商品；`admin` 可管理所有店家。
-
-### 2) 訂閱與方案
-
-- 訂閱方案表：天數、價格、店家上限。
-- 商家可在方案頁訂閱，付款會導向綠界 AIO 金流頁。
-- 綠界付款通知會同步訂閱狀態、到期日與付款紀錄。
-- 付款稽核資料寫入 `subscription_payments`。
-
-### 3) 商家後台
-
-- 店家管理：
-	- 店家列表搜尋、狀態顯示、橫幅顯示。
-	- 新增/編輯使用 Popup + AJAX。
-	- 圖片支援拖曳上傳與預覽。
-- 商品管理中心：
-	- 依分類群組顯示商品。
-	- 新增/編輯使用 Popup + AJAX。
-	- 選配使用樹狀 UI（群組/選項）編輯，系統送出 JSON。
-	- 商品排序支援拖曳（目前為拖曳放開才套用排序）。
-
-### 4) 顧客點餐
-
-- 內用：`/s/{store:slug}/t/{table:qr_token}/menu`
-- 外帶：`/s/{store:slug}/takeout/menu`
-- 支援商品選配、購物車、結帳、成功頁、訂單狀態追蹤。
-- 客戶資料可勾選記住，並可清除已記住資料。
-- 客戶電話會正規化為 `09xx-xxx-xxx`。
+- 訂閱方案管理
+- 商家訂閱狀態管理
+- 全站功能開關
+- 管理員與商家角色權限控制
 
 ## 技術棧
 
-- PHP 8.2+
-- Laravel 12
-- Blade + Tailwind CSS + Alpine.js + Vite
-- QR Code (`simplesoftwareio/simple-qrcode`)
-
-## 環境需求
-
-- PHP 8.2+
-- Composer
-- Node.js 18+
-- npm
-- 資料庫：
-	- 預設可用 SQLite（`.env.example`）
-	- 或自行改為 MySQL
+- `PHP 8.2+`
+- `Laravel 12`
+- `Blade`
+- `Tailwind CSS`
+- `Alpine.js`
+- `Vite`
+- `Laravel Reverb`
+- `SQLite`（本機預設）
+- `PHPUnit`
 
 ## 快速啟動
 
-1. 安裝 PHP 依賴
+### 需求
+
+- `PHP 8.2+`
+- `Composer`
+- `Node.js 18+`
+- `npm`
+
+### 安裝
+
+1. 安裝後端套件
 
 ```bash
 composer install
 ```
 
-2. 建立環境檔與金鑰
+2. 建立環境檔
+
+macOS / Linux:
 
 ```bash
 cp .env.example .env
+```
+
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+3. 產生應用程式金鑰
+
+```bash
 php artisan key:generate
 ```
 
-3. 建立資料表與測試資料
+4. 建立資料表並載入 demo 資料
 
 ```bash
 php artisan migrate:fresh --seed
 ```
 
-4. 建立 storage 連結（橫幅圖片需要）
+5. 建立 storage 連結
 
 ```bash
 php artisan storage:link
 ```
 
-5. 安裝前端依賴並啟動
+6. 安裝前端套件
 
 ```bash
 npm install
+```
+
+7. 啟動開發環境
+
+```bash
 composer run dev
 ```
 
-若只要建置前端靜態資源：
+`composer run dev` 會同時啟動：
+
+- `php artisan serve`
+- `php artisan queue:listen`
+- `php artisan pail`
+- `npm run dev`
+- `php artisan reverb:start`
+
+如果只想先跑一次基本安裝，也可以使用：
 
 ```bash
-npm run build
+composer run setup
 ```
 
-## 測試帳號（Seeder）
+## Demo 資料
 
-執行 `php artisan migrate:fresh --seed` 後可使用：
+執行 `php artisan migrate:fresh --seed` 後，系統會建立：
 
-- Admin
-	- Email: `admin@dineflow.local`
-	- Password: `password`
-- Merchant
-	- Email: `merchant@dineflow.local`
-	- Password: `password`
-- Customer
-	- Email: `customer@dineflow.local`
-	- Password: `password`
+- 10 間 demo 門店
+- 商品、分類、桌位、QR 與歷史訂單資料
+- 訂閱方案
+- 報表展示資料
+- 發票中心示範資料
 
-## 綠界設定
+### 預設帳號
 
-請在 `.env` 設定：
+| 角色 | 帳號 | 密碼 |
+| --- | --- | --- |
+| Admin | `admin@dineflow.local` | `password` |
+| Merchant | `merchant.basic@dineflow.local` | `password` |
+| Merchant | `merchant.growth@dineflow.local` | `password` |
+| Merchant | `merchant.pro@dineflow.local` | `password` |
+| Merchant | `merchant.plus@dineflow.local` | `password` |
+| Customer | `customer01@dineflow.local` ~ `customer24@dineflow.local` | `password` |
 
-```env
-ECPAY_MERCHANT_ID=
-ECPAY_HASH_KEY=
-ECPAY_HASH_IV=
-ECPAY_CHECKOUT_ACTION=https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5
-```
+## 重要環境變數
 
-付款通知路由：
+### 基本
 
-- `POST /ecpay/subscription/notify`
+- `APP_URL`
+- `APP_LOCALE`
+- `APP_TIMEZONE`
+- `DB_*`
 
-## Mail（Microsoft Graph OAuth2）
+### 即時功能
 
-若不使用 SMTP 基本驗證（避免被 Security Defaults 阻擋），可改用 Microsoft Graph：
+- `BROADCAST_CONNECTION=reverb`
+- `REVERB_*`
+- `VITE_REVERB_*`
 
-```env
-MAIL_MAILER=graph
-MS_GRAPH_MAIL_ENABLED=true
-MS_GRAPH_AUTH_MODE=app-only
-MS_GRAPH_TENANT_ID=
-MS_GRAPH_CLIENT_ID=
-MS_GRAPH_CLIENT_SECRET=
-MS_GRAPH_SENDER=admin@dineflow.shop
-GRAPH_USER_SCOPES=User.Read Mail.Send offline_access
-MS_GRAPH_BASE_URL=https://graph.microsoft.com
-```
+### 郵件
 
-說明：
+- `MAIL_*`
+- `MERCHANT_REGISTER_NOTIFY_EMAIL`
+- `MS_GRAPH_*`
+- `GRAPH_USER_SCOPES`
 
-- 全系統改走 Graph：將 `MAIL_MAILER=graph`。
-- 長期運作請使用 App-Only：`MS_GRAPH_AUTH_MODE=app-only`，並設定 `MS_GRAPH_CLIENT_SECRET` + `MS_GRAPH_SENDER`；Azure App 需 `Mail.Send` Application permission + admin consent。
-- Device Code（適合本機測試）：可用 `MS_GRAPH_TENANT_ID` + `MS_GRAPH_CLIENT_ID` + `GRAPH_USER_SCOPES`；首次會出現登入提示。
+### 訂閱付款
 
-測試 Graph 寄信：
+- `ECPAY_MERCHANT_ID`
+- `ECPAY_HASH_KEY`
+- `ECPAY_HASH_IV`
+- `ECPAY_CHECKOUT_ACTION`
 
-```bash
-php artisan optimize:clear
-php artisan mail:test your-email@example.com --graph
-```
+### 地點與發票
 
-注意：Azure App 需具備 `Mail.Send` Application permission，並完成 admin consent。
+- `GOOGLE_PLACES_*`
+- `INVOICE_*`
 
 ## 常用指令
 
@@ -232,101 +223,49 @@ php artisan optimize:clear
 
 # 查看路由
 php artisan route:list
+
+# 建立管理員
+php artisan admin:create admin@example.com --name="Site Admin"
+
+# 為指定門店灌測試菜單
+php artisan stores:fake-menu seed-store-01 --replace
+
+# 為指定門店產生測試訂單
+php artisan stores:fake-orders seed-store-01 --count=30 --days=14
+
+# 發送測試郵件
+php artisan mail:test you@example.com
+php artisan mail:test you@example.com --graph
 ```
 
-## Ubuntu 一鍵部署腳本
+## 部署提醒
 
-已提供腳本 [scripts/ubuntu-deploy.sh](scripts/ubuntu-deploy.sh)，會依序執行：
+- 正式環境請確保 `queue worker`、`reverb server` 與 `scheduler` 正常運作
+- 上傳圖片前需先執行 `php artisan storage:link`
+- 專案提供 `scripts/ubuntu-deploy.sh` 作為簡易部署腳本
+- 若要正式上線電子發票，請先替換目前的模擬 invoice gateway
 
-1. `php artisan migrate`
-2. `npm run build`
-3. `php artisan optimize`
-4. `php artisan queue:restart`
+## 專案結構
 
-使用方式：
+- `app/Http/Controllers/Admin`
+  - 商家後台、boards、門店與商品管理
+- `app/Http/Controllers/Customer`
+  - 內用與外帶點餐、訂單、評論
+- `app/Http/Controllers/Merchant`
+  - 訂閱、報表、會員與發票中心
+- `app/Models`
+  - 核心商業模型
+- `app/Jobs`
+  - 發票相關背景工作
+- `database/migrations`
+  - 資料結構
+- `database/seeders`
+  - demo 資料
+- `resources/views`
+  - 前後台 Blade 畫面
+- `lang`
+  - 多語系檔案
 
-```bash
-chmod +x scripts/ubuntu-deploy.sh
-./scripts/ubuntu-deploy.sh
-```
+## License
 
-## Production：重設 storage 連結
-
-如果 production 上傳圖檔偶發讀不到，常見原因是 `public/storage` 仍指到舊版 release 路徑。可在每次部署後執行以下指令重建連結。
-
-```bash
-cd /var/www/dineflow/current
-
-# 1) 清掉舊連結（不存在就忽略）
-php artisan storage:unlink || true
-rm -rf public/storage
-
-# 2) 重新建立到目前 release 的連結
-php artisan storage:link --relative
-
-# 3) 清快取
-php artisan optimize:clear
-```
-
-檢查是否正確：
-
-```bash
-ls -l public | grep storage
-```
-
-應看到 `public/storage -> ../storage/app/public` 這種相對連結。
-
-另外請確認：
-
-- Web root 指向 `.../current/public`（不要指到專案根目錄）。
-- `storage` 與 `bootstrap/cache` 對 web user 可寫入。
-
-## Production：重建訂閱方案（只跑方案 seed）
-
-如果只要在 production 更新訂閱方案資料，請不要執行整包 `db:seed`，避免覆蓋 demo 資料。建議只跑方案 seeder：
-
-```bash
-cd /var/www/dineflow/current
-php artisan migrate --force
-php artisan db:seed --class=Database\\Seeders\\SubscriptionPlanSeeder --force
-php artisan optimize:clear
-```
-
-或使用專案內建 composer script：
-
-```bash
-composer run prod:refresh-subscription-plans
-```
-
-## 主要路由摘要
-
-- 商家後台
-	- `admin/stores`（店家管理）
-	- `admin/stores/{store}/products`（商品管理）
-	- `admin/stores/{store}/products/reorder`（商品排序 API）
-- 商家訂閱
-	- `merchant/subscription`
-	- `ecpay/subscription/notify`（綠界付款通知）
-- 顧客點餐
-	- 內用：`s/{store:slug}/t/{table:qr_token}/menu`
-	- 外帶：`s/{store:slug}/takeout/menu`
-
-## 專案結構（重點）
-
-- `app/Http/Controllers/Admin`：店家/商品後台控制器
-- `app/Http/Controllers/Customer`：點餐與購物車流程
-- `app/Http/Controllers/Merchant`：訂閱流程
-- `resources/views/admin`：後台頁面
-- `resources/views/customer`：前台點餐頁面
-- `database/migrations`：資料表與欄位演進
-- `database/seeders`：測試資料與 demo 帳號
-
-## 注意事項
-
-- `Store` 路由綁定鍵為 `slug`，不要用數字 id 組後台編輯路由。
-- 商家若無有效訂閱或超出店家額度，後台建立店家會被限制。
-- 商品管理目前分類資料由既有分類表提供，分類進階管理可再擴充。
-
-## 授權
-
-此專案基於 Laravel 生態建置，原始框架授權為 MIT。
+本專案採用 `MIT` 授權。

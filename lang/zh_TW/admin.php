@@ -302,6 +302,8 @@ return [
     'subscription_plan_price'       => '售價',
     'subscription_plan_discount'    => '折扣',
     'subscription_plan_description' => '方案說明',
+    'subscription_plan_features'    => '方案項目',
+    'subscription_plan_features_hint' => '每行輸入一項，前台會顯示成圓點項目。',
     'subscription_plan_duration'    => '方案期間',
     'subscription_plan_days_value'  => ':days 天',
     'subscription_plan_slug'        => 'Slug',

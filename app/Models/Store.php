@@ -562,7 +562,42 @@ class Store extends Model
             ->limit(max(1, $sampleLimit))
             ->get();
 
-        $average = $recentCompletedOrders
+        return $this->resolveAverageCompletedPrepTimeMinutes($recentCompletedOrders);
+    }
+
+    public function averageCompletedPrepTimeMinutesForBusinessDate(?Carbon $date = null): ?float
+    {
+        $bounds = $this->businessDayBounds($date);
+
+        $completedOrders = Order::query()
+            ->select(['id', 'store_id', 'created_at', 'updated_at'])
+            ->with(['items:id,order_id,completed_at'])
+            ->where('store_id', $this->id)
+            ->whereIn('status', self::ETA_COMPLETED_STATUSES)
+            ->whereBetween('updated_at', [$bounds['start'], $bounds['end']])
+            ->latest('updated_at')
+            ->get();
+
+        return $this->resolveAverageCompletedPrepTimeMinutes($completedOrders);
+    }
+
+    public function businessDayBounds(?Carbon $date = null): array
+    {
+        $businessTimezone = $this->businessTimezone();
+        $appTimezone = (string) config('app.timezone', 'Asia/Taipei');
+        $reference = $date
+            ? $date->copy()->setTimezone($businessTimezone)
+            : now($businessTimezone);
+
+        return [
+            'start' => $reference->copy()->startOfDay()->setTimezone($appTimezone),
+            'end' => $reference->copy()->endOfDay()->setTimezone($appTimezone),
+        ];
+    }
+
+    private function resolveAverageCompletedPrepTimeMinutes(iterable $orders): ?float
+    {
+        $average = collect($orders)
             ->map(function (Order $order): ?float {
                 $completedAt = $order->items
                     ->pluck('completed_at')

@@ -22,8 +22,6 @@ class AllBoardsController extends Controller
 
     private const CANCELLED_STATUSES = ['cancel', 'cancelled', 'canceled'];
 
-    private const SUMMARY_COMPLETED_SAMPLE_LIMIT = 30;
-
     private const SUMMARY_REPEAT_LOOKBACK_DAYS = 30;
 
     public function index(Request $request, Store $store)
@@ -190,13 +188,15 @@ class AllBoardsController extends Controller
 
     private function buildBoardSummary(Store $store): array
     {
+        $businessDayBounds = $store->businessDayBounds();
+
         $ordersToday = Order::query()
             ->where('store_id', $store->id)
-            ->where('created_at', '>=', now()->startOfDay())
+            ->whereBetween('created_at', [$businessDayBounds['start'], $businessDayBounds['end']])
             ->whereNotIn('status', self::CANCELLED_STATUSES)
             ->count();
 
-        $avgPrepMinutes = $store->averageCompletedPrepTimeMinutes(self::SUMMARY_COMPLETED_SAMPLE_LIMIT);
+        $avgPrepMinutes = $store->averageCompletedPrepTimeMinutesForBusinessDate();
 
         $repeatIdentityCounts = Order::query()
             ->select(['customer_name', 'customer_phone'])

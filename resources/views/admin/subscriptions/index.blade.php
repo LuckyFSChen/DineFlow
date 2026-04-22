@@ -48,6 +48,7 @@
         'max_stores' => $creatingPlan ? old('max_stores', '') : '',
         'is_active' => (string) ($creatingPlan ? old('is_active', '1') : '1'),
         'description' => $creatingPlan ? old('description', '') : '',
+        'plan_features' => $creatingPlan ? old('plan_features', '') : '',
     ];
 @endphp
 <div class="min-h-screen bg-slate-50">
@@ -303,6 +304,16 @@
                                             >{{ $createPlanValues['description'] }}</textarea>
                                         </label>
                                     @endif
+
+                                    <label class="block">
+                                        <span class="mb-1.5 block text-sm font-semibold text-slate-700">{{ __('admin.subscription_plan_features') }}</span>
+                                        <textarea
+                                            name="plan_features"
+                                            rows="5"
+                                            class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                        >{{ $createPlanValues['plan_features'] }}</textarea>
+                                        <span class="mt-1.5 block text-xs text-slate-500">{{ __('admin.subscription_plan_features_hint') }}</span>
+                                    </label>
                                 </div>
 
                                 <div class="mt-5 border-t border-slate-200 pt-4">
@@ -335,6 +346,9 @@
                                             $maxStoresValue = $isEditingPlan ? old('max_stores', $plan->max_stores ?? '') : ($plan->max_stores ?? '');
                                             $isActiveValue = (string) ($isEditingPlan ? old('is_active', $plan->is_active ? '1' : '0') : ($plan->is_active ? '1' : '0'));
                                             $descriptionValue = $isEditingPlan ? old('description', $plan->description) : $plan->description;
+                                            $planFeaturesValue = $isEditingPlan
+                                                ? old('plan_features', implode(PHP_EOL, (array) ($plan->features ?? [])))
+                                                : implode(PHP_EOL, (array) ($plan->features ?? []));
                                             $originalPrice = (int) $plan->price_twd + (int) ($plan->discount_twd ?? 0);
                                             $assignedMerchantsCount = (int) ($plan->merchant_users_count ?? 0);
                                             $canDeletePlan = $assignedMerchantsCount === 0;
@@ -492,6 +506,16 @@
                                                         >{{ $descriptionValue }}</textarea>
                                                     </label>
                                                 @endif
+
+                                                <label class="block">
+                                                    <span class="mb-1.5 block text-sm font-semibold text-slate-700">{{ __('admin.subscription_plan_features') }}</span>
+                                                    <textarea
+                                                        name="plan_features"
+                                                        rows="5"
+                                                        class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                                    >{{ $planFeaturesValue }}</textarea>
+                                                    <span class="mt-1.5 block text-xs text-slate-500">{{ __('admin.subscription_plan_features_hint') }}</span>
+                                                </label>
 
                                                 <div class="grid gap-3 sm:grid-cols-3">
                                                     <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">

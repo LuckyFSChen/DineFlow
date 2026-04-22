@@ -302,6 +302,8 @@ return [
     'subscription_plan_price'       => '售价',
     'subscription_plan_discount'    => '折扣',
     'subscription_plan_description' => '方案说明',
+    'subscription_plan_features'    => '方案项目',
+    'subscription_plan_features_hint' => '每行输入一项，前台会显示成圆点项目。',
     'subscription_plan_duration'    => '方案时长',
     'subscription_plan_days_value'  => ':days 天',
     'subscription_plan_slug'        => 'Slug',
