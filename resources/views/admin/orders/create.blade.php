@@ -632,8 +632,8 @@
                     </button>
                 </div>
 
-                <div class="grid min-h-0 flex-1 gap-6 overflow-y-auto px-6 py-6 lg:grid-cols-[minmax(0,1fr),280px] xl:overflow-hidden">
-                    <div class="relative z-10 min-h-0 space-y-5 xl:overflow-y-auto xl:pr-2">
+                <div class="grid min-h-0 flex-1 gap-6 overflow-y-auto px-6 py-6 xl:grid-cols-[minmax(0,1fr),280px] xl:overflow-hidden">
+                    <div class="space-y-5 xl:min-h-0 xl:overflow-y-auto xl:pr-2">
                         <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                             <div class="flex items-center justify-between gap-3">
                                 <span class="text-sm text-slate-500">{{ __('merchant_order.modal_base_price') }}</span>
@@ -707,7 +707,7 @@
                         </template>
                     </div>
 
-                    <div class="relative z-0 space-y-4 self-start rounded-3xl border border-slate-200 bg-slate-50 p-5 xl:sticky xl:top-0">
+                    <div class="space-y-4 self-start rounded-3xl border border-slate-200 bg-slate-50 p-5 xl:sticky xl:top-0">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('merchant_order.modal_summary_title') }}</p>
                             <p class="mt-2 text-2xl font-bold text-slate-900" x-text="money(modalSubtotal())"></p>
