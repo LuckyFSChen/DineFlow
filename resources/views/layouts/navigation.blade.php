@@ -328,14 +328,6 @@
                     </a>
                 </div>
 
-                @if($isAdminArea)
-                    <div class="hidden items-center pl-3 sm:flex">
-                        <span class="inline-flex items-center rounded-full border border-cyan-300/80 bg-cyan-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-cyan-700">
-                            {{ __('nav.admin_console') }}
-                        </span>
-                    </div>
-                @endif
-
                 <!-- Navigation Links -->
                 <div class="admin-nav-links hidden sm:-my-px sm:ms-8 sm:flex sm:min-w-0 sm:items-center sm:gap-x-3 sm:overflow-x-auto sm:overflow-y-hidden">
                     @guest
@@ -445,6 +437,26 @@
                                 @endif
                             </div>
 
+                            @if($isAdminArea)
+                                <div class="admin-account-font-switcher my-2 rounded-lg border border-cyan-100 bg-cyan-50/60 px-3 py-3" @click.stop>
+                                    <p class="mb-2 text-xs font-semibold text-slate-500">Text Size</p>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-xs font-semibold text-slate-500">A-</span>
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="4"
+                                            step="1"
+                                            :value="fontSizeIndex()"
+                                            @input="setFontSizeByIndex($event.target.value)"
+                                            class="h-2 flex-1 cursor-pointer accent-cyan-600"
+                                            aria-label="Adjust admin font size"
+                                        >
+                                        <span class="min-w-8 text-right text-xs font-bold text-cyan-700" x-text="fontSizeLabel()"></span>
+                                    </div>
+                                </div>
+                            @endif
+
                             <div class="my-2 border-t border-slate-200"></div>
 
                             <x-dropdown-link :href="route('profile.edit')" class="{{ request()->routeIs('profile.*') ? $settingsDropdownActiveClasses : '' }}">
@@ -513,7 +525,7 @@
 
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="mobile-responsive-menu hidden sm:hidden">
-        <div class="pt-2 pb-3 space-y-1">
+        <div class="admin-responsive-nav-items pt-2 pb-3 space-y-1">
             @guest
                 @unless($isAdminArea)
                     <x-responsive-nav-link :href="route('product.pricing-contact')" :active="request()->routeIs('product.pricing-contact')">
@@ -562,7 +574,7 @@
                     @endif
                 </div>
 
-                <div class="mt-3 space-y-1">
+                <div class="admin-responsive-settings-links mt-3 space-y-1">
                     <x-responsive-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.*')">
                         {{ __('nav.profile') }}
                     </x-responsive-nav-link>
@@ -612,7 +624,7 @@
                 </div>
             @endauth
 
-            <div class="px-4 py-3 border-t border-gray-200">
+            <div class="admin-responsive-utility-panel px-4 py-3 border-t border-gray-200">
                 @if($isAdminArea)
                     <div class="mb-3">
                         <p class="mb-2 text-xs font-semibold text-gray-500">Text Size</p>

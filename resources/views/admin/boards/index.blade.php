@@ -232,7 +232,7 @@ $canOpenMerchantWorkspace = ($navFeatures[\App\Support\NavFeature::STORE_BACKEND
         <div class="h-8 w-8 animate-spin rounded-full border-4 border-slate-600 border-t-indigo-400"></div>
     </div>
 
-    <div x-show="!loading && filteredOrders.length > 0" class="grid gap-4 p-6" style="grid-template-columns: repeat(auto-fill, minmax(var(--board-card-min-width, 320px), 1fr));">
+    <div x-show="!loading && filteredOrders.length > 0" class="grid gap-4 p-4 sm:p-6" style="grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--board-card-min-width, 320px)), 1fr));">
         <template x-for="order in filteredOrders" :key="order.id">
             <div class="flex flex-col rounded-2xl border overflow-hidden transition-all duration-300"
                  :class="cardClass(order)"
@@ -240,7 +240,7 @@ $canOpenMerchantWorkspace = ($navFeatures[\App\Support\NavFeature::STORE_BACKEND
 
                 <div class="grid gap-3 px-4 pt-4 pb-3 border-b sm:grid-cols-[minmax(0,1fr),auto]" :class="cardHeaderClass(order)">
                     <div class="min-w-0">
-                        <span class="block break-all font-mono text-lg font-bold leading-tight text-white" x-text="'#' + (order.order_no || order.id)"></span>
+                        <span class="block max-w-full overflow-x-auto whitespace-nowrap font-mono text-lg font-bold leading-tight text-white" x-text="'#' + (order.order_no || order.id)"></span>
                         <div class="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 text-xs">
                                 <span class="max-w-full break-words text-slate-500" x-text="timeAgo(order.created_at)"></span>
                                 <span class="max-w-full whitespace-normal break-words rounded px-1.5 py-0.5 text-[10px] font-semibold leading-tight"
@@ -255,14 +255,14 @@ $canOpenMerchantWorkspace = ($navFeatures[\App\Support\NavFeature::STORE_BACKEND
                         </div>
                     </div>
 
-                    <div class="ml-auto flex min-w-0 max-w-[55%] flex-wrap items-start justify-end gap-1.5 text-right">
-                        <span class="max-w-full whitespace-normal break-words rounded-full px-2.5 py-0.5 text-right text-xs font-semibold leading-tight" :class="boardBadgeClass(order)" x-text="boardLabel(order)"></span>
-                        <span class="max-w-full whitespace-normal break-words rounded-full px-2.5 py-0.5 text-right text-xs font-semibold leading-tight" :class="statusBadgeClass(order)" x-text="statusLabel(order)"></span>
+                    <div class="ml-auto flex min-w-0 max-w-full flex-wrap items-start justify-end gap-1 text-right sm:max-w-[55%]">
+                        <span class="max-w-full whitespace-normal break-words rounded-full px-2.5 py-0.5 text-right text-xs font-semibold leading-none" :class="boardBadgeClass(order)" x-text="boardLabel(order)"></span>
+                        <span class="max-w-full whitespace-normal break-words rounded-full px-2.5 py-0.5 text-right text-xs font-semibold leading-none" :class="statusBadgeClass(order)" x-text="statusLabel(order)"></span>
                         <template x-if="order.order_type === 'dine_in' && order.table">
-                            <span class="max-w-full whitespace-normal break-words rounded bg-slate-700 px-2.5 py-1 text-right text-sm font-semibold leading-tight text-slate-200">{{ __('admin.board_table_no') }} <span x-text="order.table.table_no"></span></span>
+                            <span class="max-w-full whitespace-normal break-words rounded bg-slate-700 px-2.5 py-0.5 text-right text-xs font-semibold leading-none text-slate-200">{{ __('admin.board_table_no') }} <span x-text="order.table.table_no"></span></span>
                         </template>
                         <template x-if="order.order_type === 'takeout' || order.order_type === 'take_out'">
-                            <span class="max-w-full whitespace-normal break-words rounded bg-orange-800/60 px-2.5 py-1 text-right text-sm font-semibold leading-tight text-orange-200">{{ __('admin.board_takeout') }}</span>
+                            <span class="max-w-full whitespace-normal break-words rounded bg-orange-800/60 px-2.5 py-0.5 text-right text-xs font-semibold leading-none text-orange-200">{{ __('admin.board_takeout') }}</span>
                         </template>
                     </div>
                 </div>

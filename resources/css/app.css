@@ -339,22 +339,22 @@ body.is-admin-area[data-admin-font-size='xl'] {
 }
 
 body.is-admin-area.is-board-page {
-	--board-card-min-width: 320px;
+	--board-card-min-width: 300px;
 }
 
 html[data-admin-font-size='md'] body.is-admin-area.is-board-page,
 body.is-admin-area.is-board-page[data-admin-font-size='md'] {
-	--board-card-min-width: 400px;
+	--board-card-min-width: 340px;
 }
 
 html[data-admin-font-size='lg'] body.is-admin-area.is-board-page,
 body.is-admin-area.is-board-page[data-admin-font-size='lg'] {
-	--board-card-min-width: 500px;
+	--board-card-min-width: 380px;
 }
 
 html[data-admin-font-size='xl'] body.is-admin-area.is-board-page,
 body.is-admin-area.is-board-page[data-admin-font-size='xl'] {
-	--board-card-min-width: 600px;
+	--board-card-min-width: 410px;
 }
 
 body.is-admin-area .text-\[10px\] {
@@ -518,13 +518,12 @@ body.is-admin-area .admin-nav .sm\:flex .space-x-3 > a {
 
 @media (max-width: 1280px) {
 	body.is-admin-area .admin-nav-row {
-		align-items: flex-start;
-		flex-wrap: wrap;
+		align-items: center;
+		flex-wrap: nowrap;
 	}
 
-	body.is-admin-area .admin-nav-primary,
-	body.is-admin-area .admin-nav-controls {
-		flex: 1 1 100%;
+	body.is-admin-area .admin-font-switcher {
+		display: none !important;
 	}
 }
 
