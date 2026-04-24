@@ -285,6 +285,7 @@
 <nav
     x-data="{
         open: false,
+        langOpen: false,
         fontSizes: ['xs', 'sm', 'md', 'lg', 'xl'],
         fontSizeLabels: {
             xs: 'A-',
@@ -294,8 +295,13 @@
             xl: 'A+++',
         },
         fontSize: window.adminFontPreference?.current?.() ?? 'sm',
+        navOverflowMode: 'full',
+        navMeasureCache: {},
+        navResizeObserver: null,
+        navResizeTimer: null,
         setFontSize(size) {
             this.fontSize = window.adminFontPreference?.set?.(size) ?? size;
+            this.scheduleNavOverflowCheck();
         },
         fontSizeIndex() {
             const index = this.fontSizes.indexOf(this.fontSize);
@@ -308,28 +314,146 @@
         fontSizeLabel() {
             return this.fontSizeLabels[this.fontSize] ?? 'A';
         },
+        navOuterWidth(element) {
+            if (!element) {
+                return 0;
+            }
+
+            const style = window.getComputedStyle(element);
+            const rect = element.getBoundingClientRect();
+            const contentWidth = Math.max(rect.width, element.scrollWidth || 0);
+
+            return contentWidth + parseFloat(style.marginLeft || 0) + parseFloat(style.marginRight || 0);
+        },
+        navGap(element) {
+            if (!element) {
+                return 0;
+            }
+
+            return parseFloat(window.getComputedStyle(element).columnGap || window.getComputedStyle(element).gap || 0) || 0;
+        },
+        cachedNavWidth(key, element) {
+            const width = this.navOuterWidth(element);
+
+            if (width > 0) {
+                this.navMeasureCache[key] = width;
+            }
+
+            return this.navMeasureCache[key] || width || 0;
+        },
+        setNavOverflowMode(mode) {
+            if (this.navOverflowMode === mode) {
+                return;
+            }
+
+            this.navOverflowMode = mode;
+            this.open = false;
+            this.$nextTick(() => this.scheduleNavOverflowCheck());
+        },
+        checkNavOverflow() {
+            if (!this.$refs.adminNavRow || window.innerWidth < 640) {
+                this.setNavOverflowMode('menu');
+                return;
+            }
+
+            const rowWidth = this.$refs.adminNavRow.clientWidth;
+            const rowGap = this.navGap(this.$refs.adminNavRow);
+            const controlsGap = this.navGap(this.$refs.adminNavControls);
+            const logoWidth = this.cachedNavWidth('logo', this.$refs.adminNavLogo);
+            const linksWidth = this.cachedNavWidth('links', this.$refs.adminNavLinks);
+            const fontWidth = this.cachedNavWidth('font', this.$refs.adminFontSwitcher);
+            const localeWidth = this.cachedNavWidth('locale', this.$refs.adminNavLocale);
+            const accountWidth = this.cachedNavWidth('account', this.$refs.adminNavAccount);
+            const toggleWidth = this.cachedNavWidth('toggle', this.$refs.adminNavToggle) || 44;
+            const controlsFullParts = [fontWidth, localeWidth, accountWidth].filter((width) => width > 0);
+            const controlsNoFontParts = [localeWidth, accountWidth].filter((width) => width > 0);
+            const controlsFullWidth = controlsFullParts.reduce((total, width) => total + width, 0)
+                + (controlsGap * Math.max(0, controlsFullParts.length - 1));
+            const controlsNoFontWidth = controlsNoFontParts.reduce((total, width) => total + width, 0)
+                + (controlsGap * Math.max(0, controlsNoFontParts.length - 1));
+            const fullWidth = logoWidth + linksWidth + controlsFullWidth + rowGap;
+
+            if (fullWidth <= rowWidth) {
+                this.setNavOverflowMode('full');
+                return;
+            }
+
+            const accountFontWidth = logoWidth + linksWidth + controlsNoFontWidth + rowGap;
+
+            if (accountFontWidth <= rowWidth) {
+                this.setNavOverflowMode('account-font');
+                return;
+            }
+
+            const controlsMenuWidth = logoWidth + linksWidth + toggleWidth + rowGap;
+
+            if (controlsMenuWidth <= rowWidth) {
+                this.setNavOverflowMode('controls-menu');
+                return;
+            }
+
+            this.setNavOverflowMode('menu');
+        },
+        scheduleNavOverflowCheck() {
+            clearTimeout(this.navResizeTimer);
+            this.navResizeTimer = setTimeout(() => this.checkNavOverflow(), 40);
+        },
         init() {
             window.addEventListener('admin-font-size-changed', (event) => {
                 this.fontSize = event.detail?.size ?? (window.adminFontPreference?.current?.() ?? 'sm');
+                this.scheduleNavOverflowCheck();
+            });
+
+            this.$nextTick(() => {
+                this.checkNavOverflow();
+
+                this.navResizeObserver = new ResizeObserver(() => this.scheduleNavOverflowCheck());
+
+                [
+                    this.$refs.adminNavRow,
+                    this.$refs.adminNavLogo,
+                    this.$refs.adminNavLinks,
+                    this.$refs.adminNavControls,
+                    this.$refs.adminFontSwitcher,
+                    this.$refs.adminNavLocale,
+                    this.$refs.adminNavAccount,
+                ].filter(Boolean).forEach((element) => this.navResizeObserver.observe(element));
+
+                window.addEventListener('resize', () => this.scheduleNavOverflowCheck(), { passive: true });
             });
         },
     }"
     x-init="init()"
     class="{{ $isAdminArea ? 'admin-nav sticky top-0 z-40 border-b border-slate-200 bg-white' : 'bg-white border-b border-gray-100' }}"
+    :class="{
+        'admin-overflow-full': navOverflowMode === 'full',
+        'admin-overflow-account-font': navOverflowMode === 'account-font',
+        'admin-overflow-controls-menu': navOverflowMode === 'controls-menu',
+        'admin-overflow-menu': navOverflowMode === 'menu',
+    }"
 >
     <!-- Primary Navigation Menu -->
     <div class="{{ $isAdminArea ? 'mx-auto w-full max-w-[96rem] px-4 sm:px-6 lg:px-8' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8' }}">
-        <div class="admin-nav-row flex min-w-0 items-center justify-between gap-3 py-3">
+        <div
+            x-ref="adminNavRow"
+            class="admin-nav-row flex min-w-0 items-center justify-between gap-3 py-3"
+            :class="{
+                'admin-nav-mode-full': navOverflowMode === 'full',
+                'admin-nav-mode-account-font': navOverflowMode === 'account-font',
+                'admin-nav-mode-controls-menu': navOverflowMode === 'controls-menu',
+                'admin-nav-mode-menu': navOverflowMode === 'menu',
+            }"
+        >
             <div class="admin-nav-primary flex min-w-0 items-center">
                 <!-- Logo -->
-                <div class="shrink-0 flex items-center">
+                <div x-ref="adminNavLogo" class="shrink-0 flex items-center">
                     <a href="{{ route('home') }}">
                         <x-application-logo class="block h-11 w-auto fill-current text-gray-800" />
                     </a>
                 </div>
 
                 <!-- Navigation Links -->
-                <div class="admin-nav-links hidden sm:-my-px sm:ms-8 sm:flex sm:min-w-0 sm:items-center sm:gap-x-3 sm:overflow-x-auto sm:overflow-y-hidden">
+                <div x-ref="adminNavLinks" class="admin-nav-links hidden sm:-my-px sm:ms-8 sm:flex sm:min-w-0 sm:items-center sm:gap-x-3 sm:overflow-x-auto sm:overflow-y-hidden">
                     @guest
                         @unless($isAdminArea)
                             <x-nav-link :href="route('product.pricing-contact')" :active="request()->routeIs('product.pricing-contact')">
@@ -367,9 +491,9 @@
             </div>
 
             <!-- Settings Dropdown -->
-            <div class="admin-nav-controls hidden sm:ms-6 sm:flex sm:min-w-0 sm:items-center sm:justify-end sm:gap-3">
+            <div x-ref="adminNavControls" class="admin-nav-controls hidden sm:ms-6 sm:flex sm:min-w-0 sm:items-center sm:justify-end sm:gap-3">
                 @if($isAdminArea)
-                    <div class="admin-font-switcher inline-flex w-52 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+                    <div x-ref="adminFontSwitcher" class="admin-font-switcher inline-flex w-52 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
                         <span class="text-xs font-semibold text-slate-500">A-</span>
                         <div class="min-w-0 flex-1">
                             <input
@@ -389,7 +513,7 @@
 
                 {{-- Language Switcher --}}
                 @php $localeName = ['zh_TW' => 'TW', 'zh_CN' => 'CN', 'en' => 'EN', 'vi' => 'VI'][app()->getLocale()] ?? 'EN'; @endphp
-                <div x-data="{ langOpen: false }" class="relative admin-nav-locale">
+                <div x-ref="adminNavLocale" class="relative admin-nav-locale">
                     <button @click="langOpen = !langOpen" class="inline-flex w-full items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-50 focus:outline-none">
                         🌐 {{ $localeName }}
                         <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
@@ -409,8 +533,8 @@
                     </div>
                 </div>
                 @auth
-                    <div class="min-w-0 max-w-full">
-                    <x-dropdown align="right" width="56" contentClasses="p-2 bg-white">
+                    <div x-ref="adminNavAccount" class="min-w-0 max-w-full">
+                    <x-dropdown align="right" width="64" contentClasses="p-2 bg-white">
                         <x-slot name="trigger">
                             <button class="inline-flex max-w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none">
                                 <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">
@@ -440,8 +564,8 @@
                             @if($isAdminArea)
                                 <div class="admin-account-font-switcher my-2 rounded-lg border border-cyan-100 bg-cyan-50/60 px-3 py-3" @click.stop>
                                     <p class="mb-2 text-xs font-semibold text-slate-500">Text Size</p>
-                                    <div class="flex items-center gap-3">
-                                        <span class="text-xs font-semibold text-slate-500">A-</span>
+                                    <div class="grid grid-cols-[auto,minmax(0,1fr),auto] items-center gap-2">
+                                        <span class="whitespace-nowrap text-xs font-semibold text-slate-500">A-</span>
                                         <input
                                             type="range"
                                             min="0"
@@ -452,7 +576,7 @@
                                             class="h-2 flex-1 cursor-pointer accent-cyan-600"
                                             aria-label="Adjust admin font size"
                                         >
-                                        <span class="min-w-8 text-right text-xs font-bold text-cyan-700" x-text="fontSizeLabel()"></span>
+                                        <span class="min-w-10 whitespace-nowrap text-right text-xs font-bold text-cyan-700" x-text="fontSizeLabel()"></span>
                                     </div>
                                 </div>
                             @endif
@@ -500,19 +624,21 @@
                     </x-dropdown>
                     </div>
                 @else
-                    <a href="{{ route('login') }}" class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">
-                        {{ __('nav.login') }}
-                    </a>
-                    @if (Route::has('register'))
-                        <a href="{{ route('register') }}" class="inline-flex items-center rounded-xl bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-accent hover:text-brand-dark">
-                            {{ __('nav.register') }}
+                    <div x-ref="adminNavAccount" class="flex items-center gap-2">
+                        <a href="{{ route('login') }}" class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">
+                            {{ __('nav.login') }}
                         </a>
-                    @endif
+                        @if (Route::has('register'))
+                            <a href="{{ route('register') }}" class="inline-flex items-center rounded-xl bg-brand-primary px-3 py-2 text-sm font-semibold text-white hover:bg-brand-accent hover:text-brand-dark">
+                                {{ __('nav.register') }}
+                            </a>
+                        @endif
+                    </div>
                 @endauth
             </div>
 
             <!-- Hamburger -->
-            <div class="admin-nav-toggle -me-2 flex items-center sm:hidden">
+            <div x-ref="adminNavToggle" class="admin-nav-toggle -me-2 flex items-center sm:hidden">
                 <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
