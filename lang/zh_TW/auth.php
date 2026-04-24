@@ -29,7 +29,7 @@ return [
     'merchant_staff_type'        => '商家 / 後台人員',
     'merchant_staff_desc'        => '商家與後台人員共用此登入入口。',
     'backend_staff_type'         => '後台人員',
-    'backend_staff_desc'         => '後台人員帳號，只能登入查看所有看板。',
+    'backend_staff_desc'         => '後台人員帳號，可查看看板。',
     'customer_email_optional_hint' => '顧客可不填 Email，使用手機註冊與登入即可。',
     'secure_area_confirm_password' => '這是系統的安全區域，請先確認密碼後再繼續。',
     'Confirm'                    => '確認',

@@ -11,7 +11,17 @@ return new class extends Migration
             return;
         }
 
-        DB::statement('CREATE EXTENSION IF NOT EXISTS pg_trgm');
+        try {
+            DB::statement('CREATE EXTENSION IF NOT EXISTS pg_trgm');
+        } catch (\Throwable) {
+            if (! $this->hasPgTrgmExtension()) {
+                return;
+            }
+        }
+
+        if (! $this->hasPgTrgmExtension()) {
+            return;
+        }
 
         DB::statement('CREATE INDEX IF NOT EXISTS members_name_trgm_idx ON members USING gin (name gin_trgm_ops)');
         DB::statement('CREATE INDEX IF NOT EXISTS members_email_trgm_idx ON members USING gin (email gin_trgm_ops)');
@@ -39,5 +49,12 @@ return new class extends Migration
         DB::statement('DROP INDEX IF EXISTS members_phone_trgm_idx');
         DB::statement('DROP INDEX IF EXISTS members_email_trgm_idx');
         DB::statement('DROP INDEX IF EXISTS members_name_trgm_idx');
+    }
+
+    private function hasPgTrgmExtension(): bool
+    {
+        return DB::table('pg_extension')
+            ->where('extname', 'pg_trgm')
+            ->exists();
     }
 };

@@ -204,7 +204,7 @@
                                                 @if($store->is_active)
                                                     <a href="{{ route('admin.stores.workspace', ['store' => $store, 'tab' => 'boards']) }}"
                                                        class="inline-flex items-center rounded-xl border border-orange-300 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">
-                                                        {{ __('nav.merchant_order') }}/{{ __('admin.board_all_title') }}
+                                                        {{ __('nav.merchant_order_short') }}/{{ __('admin.board_all_title') }}
                                                     </a>
 
                                                     <a href="{{ route('admin.stores.chefs.index', $store) }}"
@@ -269,9 +269,9 @@
     </div>
 </div>
 
-<div id="store-modal" class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/50 p-4">
-    <div class="w-full max-w-4xl rounded-3xl bg-white shadow-2xl">
-        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+<div id="store-modal" class="admin-modal-viewport fixed z-[120] hidden items-center justify-center overflow-y-auto bg-black/50 p-4 sm:p-6">
+    <div class="admin-modal-panel my-4 flex w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl sm:my-6">
+        <div class="shrink-0 flex items-center justify-between border-b border-slate-200 px-6 py-4">
             <div>
                 <h3 id="store-modal-title" class="text-lg font-bold text-slate-900">{{ __('admin.add_store_modal_title') }}</h3>
                 <p class="text-xs text-slate-500">{{ __('admin.modal_subtitle') }}</p>
@@ -279,7 +279,7 @@
             <button type="button" id="store-modal-close" class="rounded-full p-2 text-slate-500 hover:bg-slate-100" aria-label="Close">&times;</button>
         </div>
 
-        <form id="store-modal-form" class="max-h-[78vh] overflow-y-auto px-6 py-5" enctype="multipart/form-data">
+        <form id="store-modal-form" class="min-h-0 flex-1 overflow-y-auto px-6 py-5" enctype="multipart/form-data">
             <input type="hidden" name="_method" id="store-modal-method" value="POST">
             @php
                 $businessWeekdays = [
@@ -1253,4 +1253,3 @@
 })();
 </script>
 @endsection
-

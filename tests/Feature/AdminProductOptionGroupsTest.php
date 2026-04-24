@@ -35,6 +35,8 @@ class AdminProductOptionGroupsTest extends TestCase
             ->get(route('admin.stores.products.index', $store));
 
         $response->assertOk();
+        $response->assertSee(route('admin.stores.workspace', ['store' => $store, 'tab' => 'boards']), false);
+        $response->assertDontSee(route('admin.stores.kitchen', $store), false);
     }
 
     public function test_admin_can_store_product_with_multiple_choice_option_group(): void

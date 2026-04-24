@@ -64,4 +64,17 @@ return [
         'base_url' => env('MS_GRAPH_BASE_URL', 'https://graph.microsoft.com'),
     ],
 
+    'uber_eats' => [
+        'api_base_url' => env('UBER_EATS_API_BASE_URL', 'https://api.uber.com'),
+        'auth_url' => env('UBER_EATS_AUTH_URL', 'https://auth.uber.com/oauth/v2/token'),
+        'scopes' => env('UBER_EATS_SCOPES', 'eats.store eats.order eats.store.orders.read'),
+        'timeout' => (int) env('UBER_EATS_TIMEOUT', 15),
+    ],
+
+    'foodpanda' => [
+        'api_base_url' => env('FOODPANDA_API_BASE_URL', 'https://foodpanda.partner.deliveryhero.io'),
+        'auth_url' => env('FOODPANDA_AUTH_URL', 'https://foodpanda.partner.deliveryhero.io/v2/oauth/token'),
+        'timeout' => (int) env('FOODPANDA_TIMEOUT', 15),
+    ],
+
 ];

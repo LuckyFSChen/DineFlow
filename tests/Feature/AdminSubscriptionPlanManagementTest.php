@@ -211,4 +211,81 @@ class AdminSubscriptionPlanManagementTest extends TestCase
         $response->assertSessionHas('error');
         $this->assertDatabaseHas('subscription_plans', ['id' => $plan->id]);
     }
+
+    public function test_admin_subscription_assignment_redirects_to_assignments_tab_when_activating(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+        ]);
+
+        $merchant = User::factory()->create([
+            'role' => 'merchant',
+            'subscription_plan_id' => null,
+            'subscription_ends_at' => null,
+        ]);
+
+        $plan = SubscriptionPlan::create([
+            'name' => 'Growth Monthly',
+            'slug' => 'growth-monthly',
+            'category' => 'growth',
+            'price_twd' => 1999,
+            'discount_twd' => 0,
+            'duration_days' => 30,
+            'max_stores' => 3,
+            'description' => null,
+            'is_active' => true,
+        ]);
+
+        $response = $this
+            ->actingAs($admin)
+            ->patch(route('super-admin.subscriptions.update', $merchant), [
+                'plan_id' => $plan->id,
+                'action' => 'activate',
+            ]);
+
+        $response->assertRedirect(route('super-admin.subscriptions.index', ['tab' => 'assignments']));
+
+        $merchant->refresh();
+
+        $this->assertSame($plan->id, $merchant->subscription_plan_id);
+        $this->assertTrue($merchant->hasActiveSubscription());
+    }
+
+    public function test_admin_subscription_assignment_redirects_to_assignments_tab_when_expiring(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+        ]);
+
+        $plan = SubscriptionPlan::create([
+            'name' => 'Basic Monthly',
+            'slug' => 'basic-monthly',
+            'category' => 'basic',
+            'price_twd' => 999,
+            'discount_twd' => 0,
+            'duration_days' => 30,
+            'max_stores' => 1,
+            'description' => null,
+            'is_active' => true,
+        ]);
+
+        $merchant = User::factory()->create([
+            'role' => 'merchant',
+            'subscription_plan_id' => $plan->id,
+            'subscription_ends_at' => now()->addDays(30),
+        ]);
+
+        $response = $this
+            ->actingAs($admin)
+            ->patch(route('super-admin.subscriptions.update', $merchant), [
+                'plan_id' => $plan->id,
+                'action' => 'expire',
+            ]);
+
+        $response->assertRedirect(route('super-admin.subscriptions.index', ['tab' => 'assignments']));
+
+        $merchant->refresh();
+
+        $this->assertFalse($merchant->hasActiveSubscription());
+    }
 }

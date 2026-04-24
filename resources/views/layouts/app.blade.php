@@ -1,8 +1,19 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 @php
-    $isAdminArea = request()->routeIs('admin.*') || request()->routeIs('super-admin.*') || request()->routeIs('merchant.*');
+    $profileUsesAdminShell = request()->routeIs('profile.*')
+        && Auth::check()
+        && ! Auth::user()?->isCustomer();
+    $isAdminArea = request()->routeIs('admin.*')
+        || request()->routeIs('super-admin.*')
+        || request()->routeIs('merchant.*')
+        || $profileUsesAdminShell;
     $isEmbedded = request()->boolean('embedded');
+    $workspaceTab = request()->query('tab') === 'boards' ? 'boards' : 'orders';
+    $isBoardPage = request()->routeIs('admin.stores.boards*')
+        || request()->routeIs('admin.stores.kitchen*')
+        || request()->routeIs('admin.stores.cashier*')
+        || (request()->routeIs('admin.stores.workspace') && $workspaceTab === 'boards');
 @endphp
 <head>
     @php
@@ -61,11 +72,95 @@
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
+        <script>
+            (() => {
+                const storageKey = 'dineflow-admin-font-size';
+                const defaultSize = 'sm';
+                const allowedSizes = ['xs', 'sm', 'md', 'lg', 'xl'];
+
+                const resolveSize = (value) => allowedSizes.includes(value) ? value : defaultSize;
+
+                const readStoredSize = () => {
+                    try {
+                        return resolveSize(window.localStorage.getItem(storageKey));
+                    } catch (error) {
+                        return defaultSize;
+                    }
+                };
+
+                const applySize = (value) => {
+                    const size = resolveSize(value);
+                    document.documentElement.dataset.adminFontSize = size;
+
+                    if (document.body) {
+                        document.body.dataset.adminFontSize = size;
+                    }
+
+                    return size;
+                };
+
+                const persistSize = (value) => {
+                    const size = applySize(value);
+
+                    try {
+                        window.localStorage.setItem(storageKey, size);
+                    } catch (error) {
+                        // Ignore storage failures so the UI still works.
+                    }
+
+                    window.dispatchEvent(new CustomEvent('admin-font-size-changed', {
+                        detail: { size },
+                    }));
+
+                    return size;
+                };
+
+                applySize(readStoredSize());
+
+                window.adminFontPreference = {
+                    current() {
+                        return resolveSize(document.documentElement.dataset.adminFontSize || document.body?.dataset.adminFontSize);
+                    },
+                    set(size) {
+                        return persistSize(size);
+                    },
+                };
+
+                const updateAdminNavOffset = () => {
+                    const nav = document.querySelector('.admin-nav');
+                    const navHeight = nav ? Math.ceil(nav.getBoundingClientRect().height) : 0;
+                    document.documentElement.style.setProperty('--admin-nav-offset', `${navHeight}px`);
+                };
+
+                document.addEventListener('DOMContentLoaded', () => {
+                    applySize(readStoredSize());
+                    updateAdminNavOffset();
+
+                    if (window.ResizeObserver) {
+                        const nav = document.querySelector('.admin-nav');
+
+                        if (nav) {
+                            new ResizeObserver(updateAdminNavOffset).observe(nav);
+                        }
+                    }
+                }, { once: true });
+
+                window.addEventListener('pageshow', () => {
+                    applySize(readStoredSize());
+                    updateAdminNavOffset();
+                });
+
+                window.addEventListener('resize', updateAdminNavOffset);
+                window.addEventListener('admin-font-size-changed', () => {
+                    requestAnimationFrame(updateAdminNavOffset);
+                });
+            })();
+        </script>
     @endif
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="font-sans antialiased bg-light {{ $isAdminArea ? 'is-admin-area' : '' }}">
+<body class="font-sans antialiased bg-light {{ $isAdminArea ? 'is-admin-area' : '' }} {{ $isBoardPage ? 'is-board-page' : '' }}">
     <div class="min-h-screen flex flex-col app-shell">
         @if (! $isEmbedded)
             @include('layouts.navigation')

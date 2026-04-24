@@ -481,15 +481,15 @@
                 <div x-cloak
                      x-show="editModalOpen"
                      @keydown.escape.window="closeEditModal()"
-                     class="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/50 px-4 py-6"
+                     class="admin-modal-viewport fixed z-[120] flex items-center justify-center overflow-y-auto bg-slate-900/50 px-4 py-6"
                      style="display: none;">
-                    <div @click.outside="if (!$event.target.closest('.flatpickr-calendar')) closeEditModal()" class="w-full max-w-2xl rounded-2xl bg-white p-5 shadow-2xl">
-                        <div class="mb-4 flex items-center justify-between">
+                    <div @click.outside="if (!$event.target.closest('.flatpickr-calendar')) closeEditModal()" class="admin-modal-panel my-4 flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+                        <div class="shrink-0 flex items-center justify-between border-b border-slate-200 px-5 py-4">
                             <h3 class="text-lg font-semibold text-slate-900">{{ __('loyalty.edit_coupon_title') }}</h3>
                             <button type="button" @click="closeEditModal()" class="rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100">{{ __('loyalty.close') }}</button>
                         </div>
 
-                        <form method="POST" :action="updateAction" class="grid gap-3 sm:grid-cols-2">
+                        <form method="POST" :action="updateAction" class="grid min-h-0 flex-1 gap-3 overflow-y-auto px-5 py-4 sm:grid-cols-2">
                             @csrf
                             @method('PUT')
 

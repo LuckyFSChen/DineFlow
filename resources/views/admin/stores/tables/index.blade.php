@@ -15,7 +15,7 @@
                 @if($store->is_active)
                         <a href="{{ route('admin.stores.workspace', ['store' => $store, 'tab' => 'boards']) }}"
                            class="inline-flex items-center rounded-xl border border-orange-300 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">
-                            {{ __('nav.merchant_order') }}/{{ __('admin.board_all_title') }}
+                            {{ __('nav.merchant_order_short') }}/{{ __('admin.board_all_title') }}
                     </a>
                 @endif
             </x-slot>

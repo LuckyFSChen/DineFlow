@@ -24,6 +24,12 @@
     $supportsDiscount = (bool) ($planFieldSupport['discount'] ?? false);
     $supportsDescription = (bool) ($planFieldSupport['description'] ?? false);
     $latestLogAt = $logSummary['latest_changed_at'] ?? null;
+    $activeTabLabelKey = match ($activeTab) {
+        'assignments' => 'admin.subscription_tab_assignments',
+        'features' => 'admin.subscription_tab_features',
+        'logs' => 'admin.subscription_tab_logs',
+        default => 'admin.subscription_tab_manage',
+    };
 
     $planStatusClasses = fn (bool $isActive) => $isActive
         ? 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200'
@@ -57,7 +63,7 @@
             <div class="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
                 <div class="max-w-3xl">
                     <span class="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-100">
-                        {{ __('admin.subscription_tab_manage') }}
+                        {{ __($activeTabLabelKey) }}
                     </span>
                     <h1 class="mt-4 text-3xl font-bold tracking-tight text-white">{{ __('admin.subscription_management_title') }}</h1>
                     <p class="mt-3 text-sm leading-6 text-slate-200 md:text-base">{{ __('admin.subscription_management_desc') }}</p>
@@ -127,16 +133,22 @@
                     {{ __('admin.subscription_tab_manage') }}
                 </a>
                 <a
-                    href="{{ route('super-admin.subscriptions.index', ['tab' => 'logs']) }}"
-                    class="rounded-full px-4 py-2 transition {{ $activeTab === 'logs' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}"
+                    href="{{ route('super-admin.subscriptions.index', ['tab' => 'assignments']) }}"
+                    class="rounded-full px-4 py-2 transition {{ $activeTab === 'assignments' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}"
                 >
-                    {{ __('admin.subscription_tab_logs') }}
+                    {{ __('admin.subscription_tab_assignments') }}
                 </a>
                 <a
                     href="{{ route('super-admin.subscriptions.index', ['tab' => 'features']) }}"
                     class="rounded-full px-4 py-2 transition {{ $activeTab === 'features' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}"
                 >
                     {{ __('admin.subscription_tab_features') }}
+                </a>
+                <a
+                    href="{{ route('super-admin.subscriptions.index', ['tab' => 'logs']) }}"
+                    class="rounded-full px-4 py-2 transition {{ $activeTab === 'logs' ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' }}"
+                >
+                    {{ __('admin.subscription_tab_logs') }}
                 </a>
             </div>
 
@@ -592,211 +604,211 @@
                         </div>
                     </div>
                 </section>
-
-                <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                    <div class="border-b border-slate-200 px-6 py-5">
-                        <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-                            <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700">{{ __('admin.manage') }}</p>
-                                <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">{{ __('admin.subscription_assignment_title') }}</h2>
-                                <p class="mt-2 max-w-3xl text-sm text-slate-600">{{ __('admin.subscription_assignment_desc') }}</p>
-                            </div>
-
-                            <div class="grid gap-3 sm:grid-cols-3">
-                                <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-                                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{{ __('admin.merchant_account') }}</p>
-                                    <p class="mt-2 text-sm font-semibold text-slate-900">{{ $merchantSummary['total_count'] ?? 0 }}</p>
-                                </div>
-                                <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-                                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{{ __('admin.subscription_active') }}</p>
-                                    <p class="mt-2 text-sm font-semibold text-slate-900">{{ $merchantSummary['active_count'] ?? 0 }}</p>
-                                </div>
-                                <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-                                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{{ __('admin.subscription_inactive') }}</p>
-                                    <p class="mt-2 text-sm font-semibold text-slate-900">{{ $merchantSummary['inactive_count'] ?? 0 }}</p>
-                                </div>
-                            </div>
+            </div>
+        @elseif($activeTab === 'assignments')
+            <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-200 px-6 py-5">
+                    <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700">{{ __('admin.subscription_tab_assignments') }}</p>
+                            <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-900">{{ __('admin.subscription_assignment_title') }}</h2>
+                            <p class="mt-2 max-w-3xl text-sm text-slate-600">{{ __('admin.subscription_assignment_desc') }}</p>
                         </div>
 
-                        <div class="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
-                            <label class="block">
-                                <span class="mb-1.5 block text-sm font-semibold text-slate-700">{{ __('admin.search') }}</span>
-                                <input
-                                    type="search"
-                                    data-merchant-search
-                                    placeholder="{{ __('admin.subscription_assignment_search_placeholder') }}"
-                                    class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                                >
-                            </label>
-
-                            <label class="block">
-                                <span class="mb-1.5 block text-sm font-semibold text-slate-700">{{ __('admin.status') }}</span>
-                                <select
-                                    data-merchant-status
-                                    class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                                >
-                                    <option value="all">{{ __('admin.subscription_status_all') }}</option>
-                                    <option value="active">{{ __('admin.subscription_status_active_only') }}</option>
-                                    <option value="inactive">{{ __('admin.subscription_status_inactive_only') }}</option>
-                                </select>
-                            </label>
+                        <div class="grid gap-3 sm:grid-cols-3">
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{{ __('admin.merchant_account') }}</p>
+                                <p class="mt-2 text-sm font-semibold text-slate-900">{{ $merchantSummary['total_count'] ?? 0 }}</p>
+                            </div>
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{{ __('admin.subscription_active') }}</p>
+                                <p class="mt-2 text-sm font-semibold text-slate-900">{{ $merchantSummary['active_count'] ?? 0 }}</p>
+                            </div>
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{{ __('admin.subscription_inactive') }}</p>
+                                <p class="mt-2 text-sm font-semibold text-slate-900">{{ $merchantSummary['inactive_count'] ?? 0 }}</p>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="space-y-4 p-5" data-merchant-list>
-                        @forelse($merchants as $merchant)
-                            @php
-                                $hasActiveSubscription = $merchant->hasActiveSubscription();
-                                $isEditingMerchant = $editingMerchantId === (int) $merchant->id;
-                                $selectedPlanId = (int) ($isEditingMerchant ? old('plan_id', $merchant->subscription_plan_id) : $merchant->subscription_plan_id);
-                                $selectedAction = (string) ($isEditingMerchant ? old('action', 'activate') : 'activate');
-                                $merchantPlanCategory = $merchant->subscriptionPlan ? $formatPlanCategory($merchant->subscriptionPlan->category) : null;
-                                $merchantSearchIndex = mb_strtolower(implode(' ', array_filter([
-                                    (string) $merchant->name,
-                                    (string) $merchant->email,
-                                    (string) ($merchant->subscriptionPlan?->name ?? ''),
-                                    (string) ($merchant->subscriptionPlan?->slug ?? ''),
-                                    (string) ($merchantPlanCategory ?? ''),
-                                ])));
-                                $expiringSoon = $merchant->subscription_ends_at !== null
-                                    && $merchant->subscription_ends_at->greaterThanOrEqualTo(now()->startOfDay())
-                                    && $merchant->subscription_ends_at->lessThanOrEqualTo(now()->copy()->addDays(7)->endOfDay());
-                            @endphp
-
-                            <article
-                                class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                                data-merchant-card
-                                data-status="{{ $hasActiveSubscription ? 'active' : 'inactive' }}"
-                                data-search="{{ $merchantSearchIndex }}"
+                    <div class="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+                        <label class="block">
+                            <span class="mb-1.5 block text-sm font-semibold text-slate-700">{{ __('admin.search') }}</span>
+                            <input
+                                type="search"
+                                data-merchant-search
+                                placeholder="{{ __('admin.subscription_assignment_search_placeholder') }}"
+                                class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
                             >
-                                <div class="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-                                    <div class="space-y-4">
-                                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                            <div>
-                                                <div class="flex flex-wrap items-center gap-2">
-                                                    <h3 class="text-xl font-bold text-slate-900">{{ $merchant->name }}</h3>
-                                                    <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $merchantStatusClasses($hasActiveSubscription) }}">
-                                                        {{ $hasActiveSubscription ? __('admin.subscription_active') : __('admin.subscription_inactive') }}
-                                                    </span>
-                                                </div>
-                                                <p class="mt-2 text-sm text-slate-600">{{ $merchant->email }}</p>
-                                            </div>
+                        </label>
 
-                                            <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">
-                                                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{{ __('admin.subscription_log_stores') }}</p>
-                                                <p class="mt-2 font-semibold text-slate-900">{{ (int) ($merchant->active_stores_count ?? 0) }}</p>
-                                                <p class="mt-1 text-xs text-slate-500">{{ (int) ($merchant->stores_count ?? 0) }}</p>
+                        <label class="block">
+                            <span class="mb-1.5 block text-sm font-semibold text-slate-700">{{ __('admin.status') }}</span>
+                            <select
+                                data-merchant-status
+                                class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                            >
+                                <option value="all">{{ __('admin.subscription_status_all') }}</option>
+                                <option value="active">{{ __('admin.subscription_status_active_only') }}</option>
+                                <option value="inactive">{{ __('admin.subscription_status_inactive_only') }}</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="space-y-4 p-5" data-merchant-list>
+                    @forelse($merchants as $merchant)
+                        @php
+                            $hasActiveSubscription = $merchant->hasActiveSubscription();
+                            $isEditingMerchant = $editingMerchantId === (int) $merchant->id;
+                            $selectedPlanId = (int) ($isEditingMerchant ? old('plan_id', $merchant->subscription_plan_id) : $merchant->subscription_plan_id);
+                            $selectedAction = (string) ($isEditingMerchant ? old('action', 'activate') : 'activate');
+                            $merchantPlanCategory = $merchant->subscriptionPlan ? $formatPlanCategory($merchant->subscriptionPlan->category) : null;
+                            $merchantSearchIndex = mb_strtolower(implode(' ', array_filter([
+                                (string) $merchant->name,
+                                (string) $merchant->email,
+                                (string) ($merchant->subscriptionPlan?->name ?? ''),
+                                (string) ($merchant->subscriptionPlan?->slug ?? ''),
+                                (string) ($merchantPlanCategory ?? ''),
+                            ])));
+                            $expiringSoon = $merchant->subscription_ends_at !== null
+                                && $merchant->subscription_ends_at->greaterThanOrEqualTo(now()->startOfDay())
+                                && $merchant->subscription_ends_at->lessThanOrEqualTo(now()->copy()->addDays(7)->endOfDay());
+                        @endphp
+
+                        <article
+                            class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                            data-merchant-card
+                            data-status="{{ $hasActiveSubscription ? 'active' : 'inactive' }}"
+                            data-search="{{ $merchantSearchIndex }}"
+                        >
+                            <div class="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+                                <div class="space-y-4">
+                                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                        <div>
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <h3 class="text-xl font-bold text-slate-900">{{ $merchant->name }}</h3>
+                                                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $merchantStatusClasses($hasActiveSubscription) }}">
+                                                    {{ $hasActiveSubscription ? __('admin.subscription_active') : __('admin.subscription_inactive') }}
+                                                </span>
                                             </div>
+                                            <p class="mt-2 text-sm text-slate-600">{{ $merchant->email }}</p>
                                         </div>
 
-                                        <div class="grid gap-3 md:grid-cols-3">
-                                            <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-                                                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{{ __('admin.current_plan') }}</p>
-                                                @if($merchant->subscriptionPlan)
-                                                    <p class="mt-2 font-semibold text-slate-900">{{ $merchant->subscriptionPlan->name }}</p>
-                                                    <p class="mt-1 text-xs text-slate-500">{{ $merchantPlanCategory }}</p>
-                                                @else
-                                                    <p class="mt-2 font-semibold text-slate-900">-</p>
-                                                    <p class="mt-1 text-xs text-slate-500">{{ __('admin.subscription_never_assigned') }}</p>
-                                                @endif
-                                            </div>
-
-                                            <div class="rounded-2xl border px-4 py-3 {{ $expiringSoon ? 'border-amber-200 bg-amber-50/80' : 'border-slate-200 bg-slate-50/80' }}">
-                                                <p class="text-xs font-semibold uppercase tracking-[0.16em] {{ $expiringSoon ? 'text-amber-700' : 'text-slate-500' }}">{{ __('admin.expiry_date') }}</p>
-                                                <p class="mt-2 font-semibold {{ $expiringSoon ? 'text-amber-900' : 'text-slate-900' }}">
-                                                    {{ $merchant->subscription_ends_at?->format('Y-m-d') ?? '-' }}
-                                                </p>
-                                                <p class="mt-1 text-xs {{ $expiringSoon ? 'text-amber-700' : 'text-slate-500' }}">
-                                                    {{ $hasActiveSubscription ? __('admin.subscription_active') : __('admin.subscription_inactive') }}
-                                                </p>
-                                            </div>
-
-                                            <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-                                                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{{ __('admin.status') }}</p>
-                                                <p class="mt-2 font-semibold text-slate-900">{{ $hasActiveSubscription ? __('admin.subscription_active') : __('admin.subscription_inactive') }}</p>
-                                                @if($merchant->subscriptionPlan)
-                                                    <p class="mt-1 text-xs text-slate-500">{{ $merchant->subscriptionPlan->slug }}</p>
-                                                @endif
-                                            </div>
+                                        <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">
+                                            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{{ __('admin.subscription_log_stores') }}</p>
+                                            <p class="mt-2 font-semibold text-slate-900">{{ (int) ($merchant->active_stores_count ?? 0) }}</p>
+                                            <p class="mt-1 text-xs text-slate-500">{{ (int) ($merchant->stores_count ?? 0) }}</p>
                                         </div>
                                     </div>
 
-                                    <form
-                                        method="POST"
-                                        action="{{ route('super-admin.subscriptions.update', $merchant) }}"
-                                        class="rounded-3xl border border-slate-200 bg-slate-50/80 p-4"
-                                    >
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="editing_merchant_id" value="{{ $merchant->id }}">
-
-                                        <div class="grid gap-4 sm:grid-cols-2">
-                                            <label class="block">
-                                                <span class="mb-1.5 block text-sm font-semibold text-slate-700">{{ __('admin.current_plan') }}</span>
-                                                <select
-                                                    name="plan_id"
-                                                    class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                                                >
-                                                    @foreach($assignablePlans as $plan)
-                                                        <option value="{{ $plan->id }}" @selected($selectedPlanId === $plan->id)>
-                                                            {{ __('admin.subscription_plan_option', [
-                                                                'name' => trim($formatPlanCategory($plan->category) . ' ' . $plan->name),
-                                                                'days' => $plan->duration_days,
-                                                                'stores' => $plan->max_stores === null
-                                                                    ? __('admin.subscription_unlimited_stores')
-                                                                    : __('admin.subscription_max_stores', ['max' => $plan->max_stores]),
-                                                            ]) }}
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                            </label>
-
-                                            <label class="block">
-                                                <span class="mb-1.5 block text-sm font-semibold text-slate-700">{{ __('admin.actions') }}</span>
-                                                <select
-                                                    name="action"
-                                                    class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                                                >
-                                                    <option value="activate" @selected($selectedAction === 'activate')>{{ __('admin.subscription_action_activate') }}</option>
-                                                    <option value="expire" @selected($selectedAction === 'expire')>{{ __('admin.subscription_action_expire') }}</option>
-                                                </select>
-                                            </label>
+                                    <div class="grid gap-3 md:grid-cols-3">
+                                        <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                                            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{{ __('admin.current_plan') }}</p>
+                                            @if($merchant->subscriptionPlan)
+                                                <p class="mt-2 font-semibold text-slate-900">{{ $merchant->subscriptionPlan->name }}</p>
+                                                <p class="mt-1 text-xs text-slate-500">{{ $merchantPlanCategory }}</p>
+                                            @else
+                                                <p class="mt-2 font-semibold text-slate-900">-</p>
+                                                <p class="mt-1 text-xs text-slate-500">{{ __('admin.subscription_never_assigned') }}</p>
+                                            @endif
                                         </div>
 
-                                        <div class="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-                                            <p class="font-semibold text-slate-900">{{ __('admin.subscription_assignment_action_label') }}</p>
-                                            <p class="mt-1">{{ __('admin.subscription_assignment_hint') }}</p>
+                                        <div class="rounded-2xl border px-4 py-3 {{ $expiringSoon ? 'border-amber-200 bg-amber-50/80' : 'border-slate-200 bg-slate-50/80' }}">
+                                            <p class="text-xs font-semibold uppercase tracking-[0.16em] {{ $expiringSoon ? 'text-amber-700' : 'text-slate-500' }}">{{ __('admin.expiry_date') }}</p>
+                                            <p class="mt-2 font-semibold {{ $expiringSoon ? 'text-amber-900' : 'text-slate-900' }}">
+                                                {{ $merchant->subscription_ends_at?->format('Y-m-d') ?? '-' }}
+                                            </p>
+                                            <p class="mt-1 text-xs {{ $expiringSoon ? 'text-amber-700' : 'text-slate-500' }}">
+                                                {{ $hasActiveSubscription ? __('admin.subscription_active') : __('admin.subscription_inactive') }}
+                                            </p>
                                         </div>
 
-                                        <div class="mt-4 flex justify-end">
-                                            <button
-                                                type="submit"
-                                                class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-                                            >
-                                                {{ __('admin.update') }}
-                                            </button>
+                                        <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                                            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{{ __('admin.status') }}</p>
+                                            <p class="mt-2 font-semibold text-slate-900">{{ $hasActiveSubscription ? __('admin.subscription_active') : __('admin.subscription_inactive') }}</p>
+                                            @if($merchant->subscriptionPlan)
+                                                <p class="mt-1 text-xs text-slate-500">{{ $merchant->subscriptionPlan->slug }}</p>
+                                            @endif
                                         </div>
-                                    </form>
+                                    </div>
                                 </div>
-                            </article>
-                        @empty
-                            <div class="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-14 text-center text-slate-500">
-                                {{ __('admin.no_merchant_accounts') }}
+
+                                <form
+                                    method="POST"
+                                    action="{{ route('super-admin.subscriptions.update', $merchant) }}"
+                                    class="rounded-3xl border border-slate-200 bg-slate-50/80 p-4"
+                                >
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="editing_merchant_id" value="{{ $merchant->id }}">
+
+                                    <div class="grid gap-4 sm:grid-cols-2">
+                                        <label class="block">
+                                            <span class="mb-1.5 block text-sm font-semibold text-slate-700">{{ __('admin.current_plan') }}</span>
+                                            <select
+                                                name="plan_id"
+                                                class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                            >
+                                                @foreach($assignablePlans as $plan)
+                                                    <option value="{{ $plan->id }}" @selected($selectedPlanId === $plan->id)>
+                                                        {{ __('admin.subscription_plan_option', [
+                                                            'name' => trim($formatPlanCategory($plan->category) . ' ' . $plan->name),
+                                                            'days' => $plan->duration_days,
+                                                            'stores' => $plan->max_stores === null
+                                                                ? __('admin.subscription_unlimited_stores')
+                                                                : __('admin.subscription_max_stores', ['max' => $plan->max_stores]),
+                                                        ]) }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </label>
+
+                                        <label class="block">
+                                            <span class="mb-1.5 block text-sm font-semibold text-slate-700">{{ __('admin.actions') }}</span>
+                                            <select
+                                                name="action"
+                                                class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                            >
+                                                <option value="activate" @selected($selectedAction === 'activate')>{{ __('admin.subscription_action_activate') }}</option>
+                                                <option value="expire" @selected($selectedAction === 'expire')>{{ __('admin.subscription_action_expire') }}</option>
+                                            </select>
+                                        </label>
+                                    </div>
+
+                                    <div class="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+                                        <p class="font-semibold text-slate-900">{{ __('admin.subscription_assignment_action_label') }}</p>
+                                        <p class="mt-1">{{ __('admin.subscription_assignment_hint') }}</p>
+                                    </div>
+
+                                    <div class="mt-4 flex justify-end">
+                                        <button
+                                            type="submit"
+                                            class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                                        >
+                                            {{ __('admin.update') }}
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
-                        @endforelse
-                    </div>
-
-                    <div class="hidden px-5 pb-5" data-merchant-empty>
+                        </article>
+                    @empty
                         <div class="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-14 text-center text-slate-500">
-                            {{ __('admin.subscription_filtered_empty') }}
+                            {{ __('admin.no_merchant_accounts') }}
                         </div>
-                    </div>
+                    @endforelse
+                </div>
 
-                    <div class="border-t border-slate-200 px-6 py-4">
-                        {{ $merchants->appends(['tab' => 'manage'])->links() }}
+                <div class="hidden px-5 pb-5" data-merchant-empty>
+                    <div class="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-14 text-center text-slate-500">
+                        {{ __('admin.subscription_filtered_empty') }}
                     </div>
-                </section>
-            </div>
+                </div>
+
+                <div class="border-t border-slate-200 px-6 py-4">
+                    {{ $merchants->appends(['tab' => 'assignments'])->links() }}
+                </div>
+            </section>
         @elseif($activeTab === 'features')
             <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
                 <div class="border-b border-slate-200 px-6 py-5">

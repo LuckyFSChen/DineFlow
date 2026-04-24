@@ -44,36 +44,36 @@
                 尚未建立店家，請先到店家後台新增門市。
             </section>
         @else
-            <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-7">
-                <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <section class="grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] gap-4">
+                <article class="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">待開票訂單</p>
-                    <p class="mt-2 text-2xl font-bold text-slate-900">{{ number_format($metrics['not_issued_orders']) }}</p>
+                    <p class="mt-2 break-words text-2xl font-bold leading-tight text-slate-900">{{ number_format($metrics['not_issued_orders']) }}</p>
                 </article>
-                <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <article class="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">已開立未上傳</p>
-                    <p class="mt-2 text-2xl font-bold text-amber-600">{{ number_format($metrics['issued_but_not_uploaded']) }}</p>
+                    <p class="mt-2 break-words text-2xl font-bold leading-tight text-amber-600">{{ number_format($metrics['issued_but_not_uploaded']) }}</p>
                 </article>
-                <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <article class="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">作廢/折讓失敗</p>
-                    <p class="mt-2 text-2xl font-bold text-rose-600">{{ number_format($metrics['void_or_allowance_failed']) }}</p>
+                    <p class="mt-2 break-words text-2xl font-bold leading-tight text-rose-600">{{ number_format($metrics['void_or_allowance_failed']) }}</p>
                 </article>
-                <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <article class="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">逾時案件</p>
-                    <p class="mt-2 text-2xl font-bold text-rose-700">{{ number_format($metrics['overdue_count']) }}</p>
+                    <p class="mt-2 break-words text-2xl font-bold leading-tight text-rose-700">{{ number_format($metrics['overdue_count']) }}</p>
                 </article>
-                <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <article class="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">剩餘字軌</p>
-                    <p class="mt-2 text-2xl font-bold {{ $metrics['track_low'] ? 'text-rose-600' : 'text-slate-900' }}">
+                    <p class="mt-2 break-words text-[clamp(1.25rem,1.6vw,1.5rem)] font-bold leading-tight tabular-nums {{ $metrics['track_low'] ? 'text-rose-600' : 'text-slate-900' }}">
                         {{ $metrics['track_remaining'] === null ? '-' : number_format($metrics['track_remaining']) }}
                     </p>
                 </article>
-                <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <article class="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">空白字軌未上傳</p>
-                    <p class="mt-2 text-2xl font-bold {{ $metrics['blank_track_not_uploaded'] > 0 ? 'text-rose-600' : 'text-emerald-600' }}">{{ number_format($metrics['blank_track_not_uploaded']) }}</p>
+                    <p class="mt-2 break-words text-2xl font-bold leading-tight {{ $metrics['blank_track_not_uploaded'] > 0 ? 'text-rose-600' : 'text-emerald-600' }}">{{ number_format($metrics['blank_track_not_uploaded']) }}</p>
                 </article>
-                <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <article class="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">開通狀態</p>
-                    <p class="mt-2 text-lg font-bold text-slate-900">{{ $setting?->onboarding_status ?? 'not_started' }}</p>
+                    <p class="mt-2 break-words text-lg font-bold leading-tight text-slate-900">{{ $setting?->onboarding_status ?? 'not_started' }}</p>
                 </article>
             </section>
 

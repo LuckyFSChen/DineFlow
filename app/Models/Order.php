@@ -39,6 +39,12 @@ class Order extends Model
         'customer_phone',
         'customer_email',
         'order_locale',
+        'source_platform',
+        'source_order_id',
+        'source_store_id',
+        'source_display_id',
+        'platform_ordered_at',
+        'source_payload',
         'note',
         'coupon_code',
         'coupon_discount',
@@ -56,6 +62,8 @@ class Order extends Model
         'points_used' => 'integer',
         'points_earned' => 'integer',
         'invoice_requested_at' => 'datetime',
+        'platform_ordered_at' => 'datetime',
+        'source_payload' => 'array',
     ];
 
     public function store() {

@@ -78,6 +78,7 @@ trait BuildsMerchantOrderPageData
             'categoriesPayload' => $categoriesPayload,
             'initialCartItems' => $this->buildInitialCartItemsFromOldInput($store),
             'currencySymbol' => $this->currencySymbol($store),
+            'defaultOrderType' => old('order_type', 'dine_in') === 'takeout' ? 'takeout' : 'dine_in',
             'defaultTableId' => (int) old('dining_table_id', 0),
             'defaultCustomerName' => (string) old('customer_name', ''),
             'defaultCustomerPhone' => (string) old('customer_phone', ''),

@@ -12,6 +12,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class StoreManagementController extends Controller
 {
@@ -335,6 +337,54 @@ class StoreManagementController extends Controller
             'opening_time' => ['nullable', 'date_format:H:i', 'required_with:closing_time'],
             'closing_time' => ['nullable', 'date_format:H:i', 'required_with:opening_time'],
             'prep_time_minutes' => ['nullable', 'integer', 'min:1', 'max:300'],
+            'uber_eats_enabled' => ['nullable', 'boolean'],
+            'uber_eats_store_id' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('stores', 'uber_eats_store_id')->ignore($storeId),
+            ],
+            'uber_eats_client_id' => ['nullable', 'string', 'max:255'],
+            'uber_eats_client_secret' => ['nullable', 'string', 'max:2000'],
+            'foodpanda_enabled' => ['nullable', 'boolean'],
+            'foodpanda_chain_id' => [
+                Rule::requiredIf(fn () => $request->boolean('foodpanda_enabled')),
+                'nullable',
+                'string',
+                'max:255',
+            ],
+            'foodpanda_store_id' => [
+                Rule::requiredIf(fn () => $request->boolean('foodpanda_enabled')
+                    && blank($request->input('foodpanda_external_partner_config_id'))),
+                'nullable',
+                'string',
+                'max:255',
+            ],
+            'foodpanda_external_partner_config_id' => [
+                Rule::requiredIf(fn () => $request->boolean('foodpanda_enabled')
+                    && blank($request->input('foodpanda_store_id'))),
+                'nullable',
+                'string',
+                'max:255',
+            ],
+            'foodpanda_client_id' => [
+                Rule::requiredIf(fn () => $request->boolean('foodpanda_enabled')),
+                'nullable',
+                'string',
+                'max:255',
+            ],
+            'foodpanda_client_secret' => [
+                Rule::requiredIf(fn () => $request->boolean('foodpanda_enabled')),
+                'nullable',
+                'string',
+                'max:2000',
+            ],
+            'foodpanda_webhook_secret' => [
+                Rule::requiredIf(fn () => $request->boolean('foodpanda_enabled')),
+                'nullable',
+                'string',
+                'max:2000',
+            ],
         ];
 
         foreach (array_keys($this->weekdayFormToStorageMap()) as $weekday) {
@@ -345,6 +395,7 @@ class StoreManagementController extends Controller
         }
 
         $data = $request->validate($rules);
+        $existingStore = $storeId !== null ? Store::query()->find($storeId) : null;
 
         $countryCode = strtolower((string) ($data['country_code'] ?? 'tw'));
         $data['country_code'] = $countryCode;
@@ -358,11 +409,50 @@ class StoreManagementController extends Controller
         $data['timezone'] = $timezone !== '' ? $timezone : $this->inferTimezoneFromCountryCode($data['country_code']);
         $data['checkout_timing'] = $data['checkout_timing'] ?? 'postpay';
         $data['prep_time_minutes'] = isset($data['prep_time_minutes']) ? (int) $data['prep_time_minutes'] : null;
+        $data['uber_eats_enabled'] = $request->boolean('uber_eats_enabled');
+        $data['uber_eats_store_id'] = $this->normalizeNullableString($data['uber_eats_store_id'] ?? null);
+        $data['uber_eats_client_id'] = $this->normalizeNullableString($data['uber_eats_client_id'] ?? null);
+        $submittedUberSecret = $this->normalizeNullableString($data['uber_eats_client_secret'] ?? null);
+        if ($submittedUberSecret !== null) {
+            $data['uber_eats_client_secret'] = $submittedUberSecret;
+        } else {
+            unset($data['uber_eats_client_secret']);
+        }
+        $data['foodpanda_enabled'] = $request->boolean('foodpanda_enabled');
+        $data['foodpanda_chain_id'] = $this->normalizeNullableString($data['foodpanda_chain_id'] ?? null);
+        $data['foodpanda_store_id'] = $this->normalizeNullableString($data['foodpanda_store_id'] ?? null);
+        $data['foodpanda_external_partner_config_id'] = $this->normalizeNullableString($data['foodpanda_external_partner_config_id'] ?? null);
+        $data['foodpanda_client_id'] = $this->normalizeNullableString($data['foodpanda_client_id'] ?? null);
+        $data['foodpanda_client_secret'] = $this->normalizeNullableString($data['foodpanda_client_secret'] ?? null);
+        $data['foodpanda_webhook_secret'] = $this->normalizeNullableString($data['foodpanda_webhook_secret'] ?? null);
         $data['takeout_qr_enabled'] = true;
         $data['weekly_business_hours'] = $this->normalizeWeeklyBusinessHours($data['business_hours'] ?? []);
         $data['weekly_break_hours'] = $this->normalizeWeeklyBreakHours($data['break_hours'] ?? []);
         unset($data['business_hours']);
         unset($data['break_hours']);
+
+        $uberSecretForValidation = array_key_exists('uber_eats_client_secret', $data)
+            ? $data['uber_eats_client_secret']
+            : $this->normalizeNullableString($existingStore?->uber_eats_client_secret);
+
+        $uberValidationErrors = [];
+        if ($data['uber_eats_enabled']) {
+            if ($data['uber_eats_store_id'] === null) {
+                $uberValidationErrors['uber_eats_store_id'] = 'Uber Eats Store ID is required when the integration is enabled.';
+            }
+
+            if ($data['uber_eats_client_id'] === null) {
+                $uberValidationErrors['uber_eats_client_id'] = 'Uber Eats Client ID is required when the integration is enabled.';
+            }
+
+            if ($uberSecretForValidation === null) {
+                $uberValidationErrors['uber_eats_client_secret'] = 'Uber Eats Client Secret is required when the integration is enabled.';
+            }
+        }
+
+        if ($uberValidationErrors !== []) {
+            throw ValidationException::withMessages($uberValidationErrors);
+        }
 
         return $data;
     }
@@ -447,6 +537,13 @@ class StoreManagementController extends Controller
         }
 
         return round((float) $value, 7);
+    }
+
+    protected function normalizeNullableString(mixed $value): ?string
+    {
+        $normalized = trim((string) ($value ?? ''));
+
+        return $normalized !== '' ? $normalized : null;
     }
 
     protected function fillCoordinatesFromAddress(array $data, ?Store $existingStore = null): array
@@ -575,6 +672,15 @@ class StoreManagementController extends Controller
             'timezone' => $store->timezone ?: $this->inferTimezoneFromCountryCode(strtolower($store->country_code ?? 'tw')),
             'checkout_timing' => $store->checkout_timing ?? 'postpay',
             'is_active' => (bool) $store->is_active,
+            'uber_eats_enabled' => (bool) $store->uber_eats_enabled,
+            'uber_eats_store_id' => $store->uber_eats_store_id,
+            'uber_eats_client_id' => $store->uber_eats_client_id,
+            'uber_eats_has_client_secret' => trim((string) ($store->uber_eats_client_secret ?? '')) !== '',
+            'foodpanda_enabled' => (bool) $store->foodpanda_enabled,
+            'foodpanda_chain_id' => $store->foodpanda_chain_id,
+            'foodpanda_store_id' => $store->foodpanda_store_id,
+            'foodpanda_external_partner_config_id' => $store->foodpanda_external_partner_config_id,
+            'foodpanda_client_id' => $store->foodpanda_client_id,
             'opening_time' => $this->formatTimeForInput($store->opening_time),
             'closing_time' => $this->formatTimeForInput($store->closing_time),
             'weekly_business_hours' => $this->weeklyBusinessHoursForForm($store),

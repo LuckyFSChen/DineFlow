@@ -53,6 +53,11 @@
         'couponMemberPoints' => __('merchant_order.coupon_member_points', ['points' => ':points']),
         'couponApplyButton' => __('merchant_order.coupon_apply_button'),
         'couponRemoveButton' => __('merchant_order.coupon_remove_button'),
+        'orderTypeDineIn' => __('merchant_order.order_type_dine_in'),
+        'orderTypeTakeout' => __('merchant_order.order_type_takeout'),
+        'takeoutSelectedLabel' => __('merchant_order.takeout_selected_label'),
+        'submitDineInOrder' => __('merchant_order.submit_dine_in_order'),
+        'submitTakeoutOrder' => __('merchant_order.submit_takeout_order'),
     ];
 @endphp
 
@@ -65,6 +70,7 @@
         couponLookupUrl: @js(route('admin.stores.orders.coupons', ['store' => $store])),
         initialCartItems: @js($initialCartItems),
         currencySymbol: @js($currencySymbol),
+        defaultOrderType: @js($defaultOrderType),
         defaultTableId: @js($defaultTableId),
         defaultCustomerPhone: @js($defaultCustomerPhone),
         initialCouponCode: @js($oldCouponCode),
@@ -138,10 +144,40 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('admin.stores.orders.store', $orderFormRouteParameters) }}" class="grid gap-6 xl:grid-cols-[380px,minmax(0,1fr)]">
+        <form method="POST" action="{{ route('admin.stores.orders.store', $orderFormRouteParameters) }}" class="grid min-w-0 gap-6 xl:grid-cols-[380px,minmax(0,1fr)]">
             @csrf
 
-            <aside class="space-y-6 xl:sticky xl:top-24 xl:self-start">
+            <aside class="min-w-0 space-y-6">
+                <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <h2 class="text-lg font-bold text-slate-900">{{ __('merchant_order.order_type_title') }}</h2>
+                    <p class="mt-1 text-sm text-slate-500">{{ __('merchant_order.order_type_desc') }}</p>
+
+                    <input type="hidden" name="order_type" :value="orderType">
+
+                    <div class="mt-4 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
+                        <button
+                            type="button"
+                            @click="setOrderType('dine_in')"
+                            class="rounded-xl px-4 py-3 text-sm font-semibold transition"
+                            :class="isDineIn()
+                                ? 'bg-white text-cyan-700 shadow-sm ring-1 ring-cyan-200'
+                                : 'text-slate-600 hover:bg-white/70 hover:text-slate-900'"
+                        >
+                            {{ __('merchant_order.order_type_dine_in') }}
+                        </button>
+                        <button
+                            type="button"
+                            @click="setOrderType('takeout')"
+                            class="rounded-xl px-4 py-3 text-sm font-semibold transition"
+                            :class="isTakeout()
+                                ? 'bg-white text-cyan-700 shadow-sm ring-1 ring-cyan-200'
+                                : 'text-slate-600 hover:bg-white/70 hover:text-slate-900'"
+                        >
+                            {{ __('merchant_order.order_type_takeout') }}
+                        </button>
+                    </div>
+                </section>
+
                 <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div class="flex items-center justify-between gap-3">
                         <div>
@@ -151,9 +187,13 @@
                         <span class="rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700" x-text="selectedTableLabel()"></span>
                     </div>
 
-                    <input type="hidden" name="dining_table_id" :value="selectedTableId || ''">
+                    <input type="hidden" name="dining_table_id" :value="isDineIn() ? (selectedTableId || '') : ''">
 
-                    <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                    <div x-show="isTakeout()" x-cloak class="mt-4 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm font-semibold text-cyan-800">
+                        {{ __('merchant_order.takeout_no_table_hint') }}
+                    </div>
+
+                    <div x-show="isDineIn()" x-cloak class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                         <template x-for="table in tables" :key="table.id">
                             <button
                                 type="button"
@@ -325,7 +365,7 @@
                         </button>
                     </div>
 
-                    <template x-if="selectedTable">
+                    <template x-if="isDineIn() && selectedTable">
                         <div class="mt-4 rounded-2xl border px-4 py-3 text-sm"
                              :class="selectedTable.open_order ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'">
                             <template x-if="selectedTable.open_order">
@@ -346,6 +386,10 @@
                             </template>
                         </div>
                     </template>
+
+                    <div x-show="isTakeout()" x-cloak class="mt-4 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
+                        {{ __('merchant_order.takeout_order_notice') }}
+                    </div>
 
                     <div class="mt-4 space-y-3" x-show="cartItems.length > 0">
                         <template x-for="(item, index) in cartItems" :key="item.uid">
@@ -391,37 +435,57 @@
                         {{ __('merchant_order.empty_cart') }}
                     </div>
 
-                    <div class="mt-5 rounded-2xl border border-slate-200 bg-slate-900 px-4 py-4 text-white">
-                        <div class="flex items-center justify-between text-sm text-slate-300">
-                            <span>{{ __('merchant_order.total_items') }}</span>
-                            <span x-text="totalQty"></span>
+                    <div class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 px-4 py-4 text-white">
+                        <div class="flex items-center justify-between gap-3 text-sm text-slate-300">
+                            <span class="min-w-0">{{ __('merchant_order.total_items') }}</span>
+                            <span class="shrink-0" x-text="totalQty"></span>
                         </div>
-                        <div class="mt-2 flex items-center justify-between text-lg font-bold">
-                            <span>{{ __('merchant_order.total_amount') }}</span>
-                            <span x-text="money(cartTotal)"></span>
+                        <div class="mt-2 flex items-center justify-between gap-3 text-lg font-bold">
+                            <span class="min-w-0">{{ __('merchant_order.total_amount') }}</span>
+                            <span class="shrink-0" x-text="money(cartTotal)"></span>
                         </div>
-                        <div x-show="selectedCouponCode && selectedCouponDiscount > 0" x-cloak class="mt-2 flex items-center justify-between text-sm text-emerald-300">
-                            <span>{{ __('merchant_order.coupon_discount_label') }}</span>
-                            <span x-text="'- ' + money(selectedCouponDiscount)"></span>
+                        <div x-show="selectedCouponCode && selectedCouponDiscount > 0" x-cloak class="mt-2 flex items-center justify-between gap-3 text-sm text-emerald-300">
+                            <span class="min-w-0">{{ __('merchant_order.coupon_discount_label') }}</span>
+                            <span class="shrink-0" x-text="'- ' + money(selectedCouponDiscount)"></span>
                         </div>
-                        <div x-show="selectedCouponCode" x-cloak class="mt-2 flex items-center justify-between border-t border-slate-700 pt-2 text-sm font-semibold text-white">
-                            <span>{{ __('merchant_order.estimated_payable_amount') }}</span>
-                            <span x-text="money(estimatedPayable)"></span>
+                        <div x-show="selectedCouponCode" x-cloak class="mt-2 flex items-center justify-between gap-3 border-t border-slate-700 pt-2 text-sm font-semibold text-white">
+                            <span class="min-w-0">{{ __('merchant_order.estimated_payable_amount') }}</span>
+                            <span class="shrink-0" x-text="money(estimatedPayable)"></span>
                         </div>
                     </div>
 
                     <button
                         type="submit"
                         class="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:bg-slate-300"
-                        :disabled="!selectedTableId || cartItems.length === 0"
+                        :disabled="(isDineIn() && !selectedTableId) || cartItems.length === 0"
+                        x-text="isTakeout() ? text('submitTakeoutOrder') : text('submitDineInOrder')"
                     >
-                        {{ __('merchant_order.submit_order') }}
                     </button>
                 </section>
             </aside>
 
-            <section class="space-y-6">
-                <div class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <section class="min-w-0 space-y-6">
+                <div class="md:hidden sticky top-16 z-30 -mt-1">
+                    <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white/95 p-3 shadow-sm backdrop-blur">
+                        <div class="flex min-w-0 gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                            <template x-for="category in categories" :key="`mobile-${category.id}`">
+                                <button
+                                    type="button"
+                                    class="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition"
+                                    @click="scrollToCategory(category.id)"
+                                    :class="activeCategoryId === category.id
+                                        ? 'border-cyan-500 bg-cyan-50 text-cyan-700'
+                                        : 'border-slate-200 bg-white text-slate-600 hover:border-cyan-300 hover:text-cyan-700'"
+                                >
+                                    <span x-text="category.name"></span>
+                                    <span class="rounded-full bg-white/80 px-2 py-0.5 text-[11px] text-slate-500" x-text="category.product_count"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm xl:block">
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div>
                             <h2 class="text-lg font-bold text-slate-900">{{ __('merchant_order.catalog_title') }}</h2>
@@ -433,90 +497,115 @@
                         </div>
                     </div>
 
-                    <div class="mt-4 flex flex-wrap gap-2">
+                </div>
+
+                <div class="md:grid md:grid-cols-[13rem,minmax(0,1fr)] md:items-start md:gap-6 xl:grid-cols-[15rem,minmax(0,1fr)]">
+                    <div class="hidden md:block md:self-stretch">
+                        <aside class="md:sticky md:top-24">
+                            <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">{{ __('merchant_order.catalog_hint_badge') }}</p>
+                                <p class="mt-2 text-sm text-slate-500">{{ __('merchant_order.catalog_hint_text') }}</p>
+
+                                <div class="mt-4 space-y-2">
+                                    <template x-for="category in categories" :key="`sidebar-${category.id}`">
+                                        <button
+                                            type="button"
+                                            class="flex w-full items-center justify-between gap-3 rounded-2xl border px-3 py-3 text-left text-sm font-semibold transition"
+                                            @click="scrollToCategory(category.id)"
+                                            :class="activeCategoryId === category.id
+                                                ? 'border-cyan-500 bg-cyan-50 text-cyan-700 shadow-sm'
+                                                : 'border-slate-200 bg-white text-slate-600 hover:border-cyan-300 hover:bg-slate-50 hover:text-slate-900'"
+                                        >
+                                            <span class="truncate" x-text="category.name"></span>
+                                            <span
+                                                class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                                                :class="activeCategoryId === category.id
+                                                    ? 'bg-white text-cyan-700'
+                                                    : 'bg-slate-100 text-slate-500'"
+                                                x-text="category.product_count"
+                                            ></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        </aside>
+                    </div>
+
+                    <div class="space-y-6">
                         <template x-for="category in categories" :key="category.id">
-                            <a
-                                class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition"
-                                :href="`#category-${category.id}`"
-                                @click="activeCategoryId = category.id"
-                                :class="activeCategoryId === category.id
-                                    ? 'border-cyan-500 bg-cyan-50 text-cyan-700'
-                                    : 'border-slate-200 bg-white text-slate-600 hover:border-cyan-300 hover:text-cyan-700'"
+                            <section
+                                class="scroll-mt-36 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:scroll-mt-28 xl:scroll-mt-24"
+                                :id="`category-${category.id}`"
+                                :data-category-id="category.id"
+                                data-order-category-section
                             >
-                                <span x-text="category.name"></span>
-                                <span class="rounded-full bg-white/80 px-2 py-0.5 text-[11px] text-slate-500" x-text="category.product_count"></span>
-                            </a>
+                                <div class="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                                    <div>
+                                        <h3 class="text-xl font-bold text-slate-900" x-text="category.name"></h3>
+                                        <p class="mt-1 text-sm text-slate-500">
+                                            <span x-text="category.product_count"></span> {{ __('merchant_order.products_count_suffix') }}
+                                            <template x-if="category.prep_time_minutes">
+                                                <span> / {{ __('merchant_order.prep_time_prefix') }} <span x-text="category.prep_time_minutes"></span> {{ __('merchant_order.minutes_unit') }}</span>
+                                            </template>
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        class="w-fit rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 xl:hidden"
+                                        @click="scrollToCategory(category.id)"
+                                    >
+                                        {{ __('merchant_order.back_to_category') }}
+                                    </button>
+                                </div>
+
+                                <div class="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+                                    <template x-for="product in category.products" :key="product.id">
+                                        <article class="flex h-full flex-col rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                                            <div class="flex items-start gap-4">
+                                                <template x-if="product.image_url">
+                                                    <img :src="product.image_url" :alt="product.name" class="h-20 w-20 rounded-2xl object-cover ring-1 ring-slate-200">
+                                                </template>
+
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="flex items-start justify-between gap-3">
+                                                        <div>
+                                                            <h4 class="text-base font-semibold text-slate-900" x-text="product.name"></h4>
+                                                            <p class="mt-1 text-sm font-semibold text-cyan-700" x-text="money(product.price)"></p>
+                                                        </div>
+                                                        <span class="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200" x-text="product.category_name"></span>
+                                                    </div>
+
+                                                    <p class="mt-3 line-clamp-3 text-sm leading-6 text-slate-600" x-text="productDescription(product)"></p>
+
+                                                    <div class="mt-3 flex flex-wrap gap-2 text-xs font-medium">
+                                                        <span class="rounded-full bg-indigo-50 px-2.5 py-1 text-indigo-700" x-text="productOptionGroupsLabel(product)"></span>
+                                                        <template x-if="product.option_group_count > 0">
+                                                            <span class="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700" x-text="productRequiredGroupsLabel(product)"></span>
+                                                        </template>
+                                                        <template x-if="product.allow_item_note">
+                                                            <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">{{ __('merchant_order.allow_item_note') }}</span>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mt-5 flex items-center justify-between gap-3">
+                                                <div class="text-xs text-slate-500">{{ __('merchant_order.product_card_hint') }}</div>
+                                                <button
+                                                    type="button"
+                                                    @click="openProduct(product)"
+                                                    class="inline-flex items-center justify-center rounded-2xl bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-500"
+                                                >
+                                                    {{ __('merchant_order.add_to_order') }}
+                                                </button>
+                                            </div>
+                                        </article>
+                                    </template>
+                                </div>
+                            </section>
                         </template>
                     </div>
                 </div>
-
-                <template x-for="category in categories" :key="category.id">
-                    <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm" :id="`category-${category.id}`">
-                        <div class="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                            <div>
-                                <h3 class="text-xl font-bold text-slate-900" x-text="category.name"></h3>
-                                <p class="mt-1 text-sm text-slate-500">
-                                    <span x-text="category.product_count"></span> {{ __('merchant_order.products_count_suffix') }}
-                                    <template x-if="category.prep_time_minutes">
-                                        <span> / {{ __('merchant_order.prep_time_prefix') }} <span x-text="category.prep_time_minutes"></span> {{ __('merchant_order.minutes_unit') }}</span>
-                                    </template>
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                class="w-fit rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-                                @click="activeCategoryId = category.id; window.location.hash = `category-${category.id}`"
-                            >
-                                {{ __('merchant_order.back_to_category') }}
-                            </button>
-                        </div>
-
-                        <div class="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-                            <template x-for="product in category.products" :key="product.id">
-                                <article class="flex h-full flex-col rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                                    <div class="flex items-start gap-4">
-                                        <template x-if="product.image_url">
-                                            <img :src="product.image_url" :alt="product.name" class="h-20 w-20 rounded-2xl object-cover ring-1 ring-slate-200">
-                                        </template>
-
-                                        <div class="min-w-0 flex-1">
-                                            <div class="flex items-start justify-between gap-3">
-                                                <div>
-                                                    <h4 class="text-base font-semibold text-slate-900" x-text="product.name"></h4>
-                                                    <p class="mt-1 text-sm font-semibold text-cyan-700" x-text="money(product.price)"></p>
-                                                </div>
-                                                <span class="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200" x-text="product.category_name"></span>
-                                            </div>
-
-                                            <p class="mt-3 line-clamp-3 text-sm leading-6 text-slate-600" x-text="productDescription(product)"></p>
-
-                                            <div class="mt-3 flex flex-wrap gap-2 text-xs font-medium">
-                                                <span class="rounded-full bg-indigo-50 px-2.5 py-1 text-indigo-700" x-text="productOptionGroupsLabel(product)"></span>
-                                                <template x-if="product.option_group_count > 0">
-                                                    <span class="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700" x-text="productRequiredGroupsLabel(product)"></span>
-                                                </template>
-                                                <template x-if="product.allow_item_note">
-                                                    <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">{{ __('merchant_order.allow_item_note') }}</span>
-                                                </template>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="mt-5 flex items-center justify-between gap-3">
-                                        <div class="text-xs text-slate-500">{{ __('merchant_order.product_card_hint') }}</div>
-                                        <button
-                                            type="button"
-                                            @click="openProduct(product)"
-                                            class="inline-flex items-center justify-center rounded-2xl bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-500"
-                                        >
-                                            {{ __('merchant_order.add_to_order') }}
-                                        </button>
-                                    </div>
-                                </article>
-                            </template>
-                        </div>
-                    </section>
-                </template>
             </section>
         </form>
     </div>
@@ -525,131 +614,133 @@
         x-show="modalOpen"
         x-cloak
         x-transition.opacity
-        class="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/60 p-4"
+        class="admin-modal-viewport fixed z-[220] overflow-hidden bg-slate-950/60 px-4 py-6 sm:px-6 sm:py-8"
         @keydown.escape.window="closeModal()"
     >
-        <div class="w-full max-w-3xl rounded-3xl border border-slate-200 bg-white shadow-2xl" @click.outside="closeModal()">
-            <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700" x-text="modalProduct?.category_name || ''"></p>
-                    <h3 class="mt-2 text-2xl font-bold text-slate-900" x-text="modalProduct?.name || ''"></h3>
-                    <p class="mt-2 text-sm text-slate-500" x-text="productDescription(modalProduct)"></p>
-                </div>
-                <button type="button" @click="closeModal()" class="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-100">
-                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                        <path d="m5 5 10 10M15 5 5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                    </svg>
-                </button>
-            </div>
-
-            <div class="grid gap-6 px-6 py-6 lg:grid-cols-[minmax(0,1fr),280px]">
-                <div class="space-y-5">
-                    <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="text-sm text-slate-500">{{ __('merchant_order.modal_base_price') }}</span>
-                            <span class="text-lg font-bold text-cyan-700" x-text="modalProduct ? money(modalProduct.price) : ''"></span>
-                        </div>
+        <div class="mx-auto flex h-full max-w-4xl items-center justify-center">
+            <div class="admin-modal-panel flex min-h-0 w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl" @click.outside="closeModal()">
+                <div class="shrink-0 flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700" x-text="modalProduct?.category_name || ''"></p>
+                        <h3 class="mt-2 text-2xl font-bold text-slate-900" x-text="modalProduct?.name || ''"></h3>
+                        <p class="mt-2 text-sm text-slate-500" x-text="productDescription(modalProduct)"></p>
                     </div>
+                    <button type="button" @click="closeModal()" class="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-100">
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                            <path d="m5 5 10 10M15 5 5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
 
-                    <template x-if="modalProduct && modalProduct.option_group_count > 0">
-                        <div class="space-y-4">
-                            <template x-for="group in modalProduct.option_groups" :key="group.id">
-                                <section class="rounded-2xl border border-slate-200 bg-white p-4">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <div>
-                                            <h4 class="text-sm font-semibold text-slate-900" x-text="group.name || ui.modalGroupFallback"></h4>
-                                            <p class="mt-1 text-xs text-slate-500">
-                                                <span x-text="groupTypeLabel(group)"></span>
-                                                <template x-if="group.required">
-                                                    <span> / {{ __('merchant_order.modal_required_tag') }}</span>
-                                                </template>
-                                            </p>
+                <div class="grid min-h-0 flex-1 gap-6 overflow-y-auto px-6 py-6 lg:grid-cols-[minmax(0,1fr),280px] xl:overflow-hidden">
+                    <div class="relative z-10 min-h-0 space-y-5 xl:overflow-y-auto xl:pr-2">
+                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-sm text-slate-500">{{ __('merchant_order.modal_base_price') }}</span>
+                                <span class="text-lg font-bold text-cyan-700" x-text="modalProduct ? money(modalProduct.price) : ''"></span>
+                            </div>
+                        </div>
+
+                        <template x-if="modalProduct && modalProduct.option_group_count > 0">
+                            <div class="space-y-4">
+                                <template x-for="group in modalProduct.option_groups" :key="group.id">
+                                    <section class="rounded-2xl border border-slate-200 bg-white p-4">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div>
+                                                <h4 class="text-sm font-semibold text-slate-900" x-text="group.name || ui.modalGroupFallback"></h4>
+                                                <p class="mt-1 text-xs text-slate-500">
+                                                    <span x-text="groupTypeLabel(group)"></span>
+                                                    <template x-if="group.required">
+                                                        <span> / {{ __('merchant_order.modal_required_tag') }}</span>
+                                                    </template>
+                                                </p>
+                                            </div>
+                                            <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                                                  :class="group.required ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'"
+                                                  x-text="group.required ? ui.modalRequiredTag : ui.modalOptionalTag"></span>
                                         </div>
-                                        <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold"
-                                              :class="group.required ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'"
-                                              x-text="group.required ? ui.modalRequiredTag : ui.modalOptionalTag"></span>
-                                    </div>
 
-                                    <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                                        <template x-for="choice in group.choices || []" :key="choice.id">
-                                            <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 transition hover:border-cyan-300 hover:bg-cyan-50/40">
-                                                <template x-if="group.type === 'multiple'">
-                                                    <input
-                                                        type="checkbox"
-                                                        class="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
-                                                        :checked="isChecked(group.id, choice.id)"
-                                                        @change="toggleMultipleChoice(group, choice.id, $event.target.checked)"
-                                                    >
-                                                </template>
-                                                <template x-if="group.type !== 'multiple'">
-                                                    <input
-                                                        type="radio"
-                                                        class="mt-1 h-4 w-4 border-slate-300 text-cyan-600 focus:ring-cyan-500"
-                                                        :name="`modal-group-${group.id}`"
-                                                        :checked="isSelected(group.id, choice.id)"
-                                                        @change="selectSingleChoice(group.id, choice.id)"
-                                                    >
-                                                </template>
+                                        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                            <template x-for="choice in group.choices || []" :key="choice.id">
+                                                <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 transition hover:border-cyan-300 hover:bg-cyan-50/40">
+                                                    <template x-if="group.type === 'multiple'">
+                                                        <input
+                                                            type="checkbox"
+                                                            class="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                                                            :checked="isChecked(group.id, choice.id)"
+                                                            @change="toggleMultipleChoice(group, choice.id, $event.target.checked)"
+                                                        >
+                                                    </template>
+                                                    <template x-if="group.type !== 'multiple'">
+                                                        <input
+                                                            type="radio"
+                                                            class="mt-1 h-4 w-4 border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                                                            :name="`modal-group-${group.id}`"
+                                                            :checked="isSelected(group.id, choice.id)"
+                                                            @change="selectSingleChoice(group.id, choice.id)"
+                                                        >
+                                                    </template>
 
-                                                <div class="min-w-0">
-                                                    <p class="text-sm font-semibold text-slate-900" x-text="choice.name"></p>
-                                                    <p class="mt-1 text-xs text-slate-500" x-text="choicePriceLabel(choice)"></p>
-                                                </div>
-                                            </label>
-                                        </template>
-                                    </div>
-                                </section>
-                            </template>
-                        </div>
-                    </template>
+                                                    <div class="min-w-0">
+                                                        <p class="text-sm font-semibold text-slate-900" x-text="choice.name"></p>
+                                                        <p class="mt-1 text-xs text-slate-500" x-text="choicePriceLabel(choice)"></p>
+                                                    </div>
+                                                </label>
+                                            </template>
+                                        </div>
+                                    </section>
+                                </template>
+                            </div>
+                        </template>
 
-                    <template x-if="modalProduct && modalProduct.allow_item_note">
+                        <template x-if="modalProduct && modalProduct.allow_item_note">
+                            <div>
+                                <label for="modal-item-note" class="mb-1 block text-xs font-semibold text-slate-600">{{ __('merchant_order.modal_item_note_label') }}</label>
+                                <textarea
+                                    id="modal-item-note"
+                                    rows="3"
+                                    x-model="modalItemNote"
+                                    placeholder="{{ __('merchant_order.modal_item_note_placeholder') }}"
+                                    class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100"
+                                ></textarea>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="relative z-0 space-y-4 self-start rounded-3xl border border-slate-200 bg-slate-50 p-5 xl:sticky xl:top-0">
                         <div>
-                            <label for="modal-item-note" class="mb-1 block text-xs font-semibold text-slate-600">{{ __('merchant_order.modal_item_note_label') }}</label>
-                            <textarea
-                                id="modal-item-note"
-                                rows="3"
-                                x-model="modalItemNote"
-                                placeholder="{{ __('merchant_order.modal_item_note_placeholder') }}"
-                                class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100"
-                            ></textarea>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('merchant_order.modal_summary_title') }}</p>
+                            <p class="mt-2 text-2xl font-bold text-slate-900" x-text="money(modalSubtotal())"></p>
                         </div>
-                    </template>
-                </div>
 
-                <div class="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('merchant_order.modal_summary_title') }}</p>
-                        <p class="mt-2 text-2xl font-bold text-slate-900" x-text="money(modalSubtotal())"></p>
+                        <div>
+                            <p class="text-xs font-semibold text-slate-500">{{ __('merchant_order.modal_quantity_label') }}</p>
+                            <div class="mt-2 inline-flex items-center rounded-full border border-slate-300 bg-white">
+                                <button type="button" @click="modalQty = Math.max(1, modalQty - 1)" class="px-4 py-2 text-sm font-semibold text-slate-700">-</button>
+                                <span class="min-w-12 px-2 text-center text-sm font-semibold text-slate-900" x-text="modalQty"></span>
+                                <button type="button" @click="modalQty = modalQty + 1" class="px-4 py-2 text-sm font-semibold text-slate-700">+</button>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+                            <div class="flex items-center justify-between gap-3">
+                                <span>{{ __('merchant_order.modal_extra_price') }}</span>
+                                <span class="font-semibold text-slate-900" x-text="money(selectedExtraPrice())"></span>
+                            </div>
+                            <div class="mt-2 flex items-center justify-between gap-3">
+                                <span>{{ __('merchant_order.modal_unit_price') }}</span>
+                                <span class="font-semibold text-slate-900" x-text="modalUnitPriceLabel()"></span>
+                            </div>
+                        </div>
+
+                        <button type="button" @click="addModalItem()" class="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-cyan-500">
+                            {{ __('merchant_order.modal_add') }}
+                        </button>
+
+                        <button type="button" @click="closeModal()" class="inline-flex w-full items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+                            {{ __('merchant_order.modal_cancel') }}
+                        </button>
                     </div>
-
-                    <div>
-                        <p class="text-xs font-semibold text-slate-500">{{ __('merchant_order.modal_quantity_label') }}</p>
-                        <div class="mt-2 inline-flex items-center rounded-full border border-slate-300 bg-white">
-                            <button type="button" @click="modalQty = Math.max(1, modalQty - 1)" class="px-4 py-2 text-sm font-semibold text-slate-700">-</button>
-                            <span class="min-w-12 px-2 text-center text-sm font-semibold text-slate-900" x-text="modalQty"></span>
-                            <button type="button" @click="modalQty = modalQty + 1" class="px-4 py-2 text-sm font-semibold text-slate-700">+</button>
-                        </div>
-                    </div>
-
-                    <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-                        <div class="flex items-center justify-between gap-3">
-                            <span>{{ __('merchant_order.modal_extra_price') }}</span>
-                            <span class="font-semibold text-slate-900" x-text="money(selectedExtraPrice())"></span>
-                        </div>
-                        <div class="mt-2 flex items-center justify-between gap-3">
-                            <span>{{ __('merchant_order.modal_unit_price') }}</span>
-                            <span class="font-semibold text-slate-900" x-text="modalUnitPriceLabel()"></span>
-                        </div>
-                    </div>
-
-                    <button type="button" @click="addModalItem()" class="inline-flex w-full items-center justify-center rounded-2xl bg-cyan-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-cyan-500">
-                        {{ __('merchant_order.modal_add') }}
-                    </button>
-
-                    <button type="button" @click="closeModal()" class="inline-flex w-full items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
-                        {{ __('merchant_order.modal_cancel') }}
-                    </button>
                 </div>
             </div>
         </div>
@@ -680,6 +771,7 @@
             tablesRefreshUrl: config.tablesRefreshUrl || null,
             couponLookupUrl: config.couponLookupUrl || null,
             customerPhone: config.defaultCustomerPhone || '',
+            orderType: config.defaultOrderType === 'takeout' ? 'takeout' : 'dine_in',
             selectedTableId: Number(config.defaultTableId || 0) || null,
             activeCategoryId: (config.categories || [])[0]?.id || null,
             modalOpen: false,
@@ -699,6 +791,8 @@
             _tablesPollTimer: null,
             _workspaceTabHandler: null,
             _boardSyncHandler: null,
+            _categoryObserver: null,
+            _hashChangeHandler: null,
 
             get selectedTable() {
                 return this.tables.find((table) => Number(table.id) === Number(this.selectedTableId)) || null;
@@ -732,6 +826,10 @@
                 this._workspaceTabHandler = (event) => {
                     if (event?.detail?.tab === 'orders') {
                         this.refreshTables({ preserveSelection: true });
+                        this.$nextTick(() => {
+                            this.syncActiveCategoryFromHash();
+                            this.initCategoryObserver();
+                        });
                     }
                 };
                 window.addEventListener('merchant-workspace-tab-changed', this._workspaceTabHandler);
@@ -740,6 +838,16 @@
                     this.refreshTables({ preserveSelection: true });
                 };
                 window.addEventListener('board-orders-updated', this._boardSyncHandler);
+
+                this._hashChangeHandler = () => {
+                    this.syncActiveCategoryFromHash();
+                };
+                window.addEventListener('hashchange', this._hashChangeHandler);
+
+                this.$nextTick(() => {
+                    this.syncActiveCategoryFromHash();
+                    this.initCategoryObserver();
+                });
             },
 
             async refreshTables({ preserveSelection = true } = {}) {
@@ -781,6 +889,24 @@
                 return template;
             },
 
+            isDineIn() {
+                return this.orderType !== 'takeout';
+            },
+
+            isTakeout() {
+                return this.orderType === 'takeout';
+            },
+
+            setOrderType(type) {
+                const nextType = type === 'takeout' ? 'takeout' : 'dine_in';
+                if (nextType === this.orderType) {
+                    return;
+                }
+
+                this.orderType = nextType;
+                this.invalidateCouponSelection();
+            },
+
             selectTable(tableId) {
                 const target = this.tables.find((table) => Number(table.id) === Number(tableId));
                 if (!target || target.status === 'inactive') {
@@ -791,11 +917,87 @@
             },
 
             selectedTableLabel() {
+                if (this.isTakeout()) {
+                    return this.text('takeoutSelectedLabel');
+                }
+
                 if (!this.selectedTable) {
                     return this.text('selectedTableNone');
                 }
 
                 return `${this.text('selectedTablePrefix')}${this.selectedTable.table_no}`;
+            },
+
+            syncActiveCategoryFromHash() {
+                const hash = String(window.location.hash || '');
+                const matched = hash.match(/^#category-(.+)$/);
+                if (!matched) {
+                    return;
+                }
+
+                const categoryId = Number(matched[1]);
+                if (!Number.isFinite(categoryId)) {
+                    return;
+                }
+
+                if (this.categories.some((category) => Number(category.id) === categoryId)) {
+                    this.activeCategoryId = categoryId;
+                }
+            },
+
+            scrollToCategory(categoryId) {
+                const targetId = Number(categoryId);
+                if (!Number.isFinite(targetId)) {
+                    return;
+                }
+
+                this.activeCategoryId = targetId;
+                const target = document.getElementById(`category-${targetId}`);
+                if (!target) {
+                    return;
+                }
+
+                const nextUrl = new URL(window.location.href);
+                nextUrl.hash = `category-${targetId}`;
+                window.history.replaceState(window.history.state, '', nextUrl.toString());
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            },
+
+            initCategoryObserver() {
+                if (typeof window === 'undefined' || typeof window.IntersectionObserver !== 'function') {
+                    return;
+                }
+
+                if (this._categoryObserver) {
+                    this._categoryObserver.disconnect();
+                }
+
+                const sections = Array.from(document.querySelectorAll('[data-order-category-section]'));
+                if (sections.length === 0) {
+                    return;
+                }
+
+                this._categoryObserver = new IntersectionObserver((entries) => {
+                    const visibleEntry = entries
+                        .filter((entry) => entry.isIntersecting)
+                        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+
+                    if (!visibleEntry) {
+                        return;
+                    }
+
+                    const nextId = Number(visibleEntry.target.dataset.categoryId || 0);
+                    if (Number.isFinite(nextId) && nextId > 0) {
+                        this.activeCategoryId = nextId;
+                    }
+                }, {
+                    rootMargin: '-18% 0px -58% 0px',
+                    threshold: [0.15, 0.35, 0.6],
+                });
+
+                sections.forEach((section) => {
+                    this._categoryObserver.observe(section);
+                });
             },
 
             openOrderSummary(order) {
@@ -875,6 +1077,7 @@
 
                 try {
                     const endpoint = new URL(this.couponLookupUrl, window.location.origin);
+                    endpoint.searchParams.set('order_type', this.orderType);
                     endpoint.searchParams.set('customer_phone', phone);
                     endpoint.searchParams.set('subtotal', String(this.cartTotal));
 
@@ -973,6 +1176,7 @@
             openProduct(product) {
                 this.modalProduct = product;
                 this.modalOpen = true;
+                this.lockPageScroll();
                 this.modalQty = 1;
                 this.modalItemNote = '';
                 this.modalSelections = {};
@@ -981,10 +1185,19 @@
 
             closeModal() {
                 this.modalOpen = false;
+                this.unlockPageScroll();
                 this.modalProduct = null;
                 this.modalSelections = {};
                 this.modalQty = 1;
                 this.modalItemNote = '';
+            },
+
+            lockPageScroll() {
+                document.body.classList.add('overflow-y-hidden');
+            },
+
+            unlockPageScroll() {
+                document.body.classList.remove('overflow-y-hidden');
             },
 
             isChecked(groupId, choiceId) {

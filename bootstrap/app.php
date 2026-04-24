@@ -34,6 +34,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'ecpay/subscription/notify',
             'ecpay/subscription/result',
+            'webhooks/uber-eats',
+            'webhooks/foodpanda/orders',
         ]);
 
         $middleware->alias([

@@ -293,7 +293,17 @@
 	}
 }
 
+html[data-admin-font-size] body.is-admin-area,
 body.is-admin-area {
+	--admin-font-scale: 1.12;
+	--admin-font-size-xs: calc(0.75rem * var(--admin-font-scale));
+	--admin-font-size-sm: calc(0.875rem * var(--admin-font-scale));
+	--admin-font-size-base: calc(1rem * var(--admin-font-scale));
+	--admin-font-size-lg: calc(1.125rem * var(--admin-font-scale));
+	--admin-font-size-xl: calc(1.25rem * var(--admin-font-scale));
+	--admin-font-size-2xl: calc(1.5rem * var(--admin-font-scale));
+	--admin-font-size-3xl: calc(1.875rem * var(--admin-font-scale));
+	--admin-font-size-4xl: calc(2.25rem * var(--admin-font-scale));
 	font-family: 'Plus Jakarta Sans', 'IBM Plex Sans TC', sans-serif;
 	color: var(--admin-ink);
 	background:
@@ -303,9 +313,121 @@ body.is-admin-area {
 	background-attachment: fixed;
 }
 
+html[data-admin-font-size='sm'] body.is-admin-area,
+body.is-admin-area[data-admin-font-size='sm'] {
+	--admin-font-scale: 1.12;
+}
+
+html[data-admin-font-size='xs'] body.is-admin-area,
+body.is-admin-area[data-admin-font-size='xs'] {
+	--admin-font-scale: 0.96;
+}
+
+html[data-admin-font-size='md'] body.is-admin-area,
+body.is-admin-area[data-admin-font-size='md'] {
+	--admin-font-scale: 1.28;
+}
+
+html[data-admin-font-size='lg'] body.is-admin-area,
+body.is-admin-area[data-admin-font-size='lg'] {
+	--admin-font-scale: 1.48;
+}
+
+html[data-admin-font-size='xl'] body.is-admin-area,
+body.is-admin-area[data-admin-font-size='xl'] {
+	--admin-font-scale: 1.72;
+}
+
+body.is-admin-area.is-board-page {
+	--board-card-min-width: 320px;
+}
+
+html[data-admin-font-size='md'] body.is-admin-area.is-board-page,
+body.is-admin-area.is-board-page[data-admin-font-size='md'] {
+	--board-card-min-width: 400px;
+}
+
+html[data-admin-font-size='lg'] body.is-admin-area.is-board-page,
+body.is-admin-area.is-board-page[data-admin-font-size='lg'] {
+	--board-card-min-width: 500px;
+}
+
+html[data-admin-font-size='xl'] body.is-admin-area.is-board-page,
+body.is-admin-area.is-board-page[data-admin-font-size='xl'] {
+	--board-card-min-width: 600px;
+}
+
+body.is-admin-area .text-\[10px\] {
+	font-size: calc(10px * var(--admin-font-scale)) !important;
+	line-height: 1.45 !important;
+}
+
+body.is-admin-area .text-\[11px\] {
+	font-size: calc(11px * var(--admin-font-scale)) !important;
+	line-height: 1.45 !important;
+}
+
+body.is-admin-area .text-xs {
+	font-size: var(--admin-font-size-xs) !important;
+	line-height: 1.45 !important;
+}
+
+body.is-admin-area .text-sm {
+	font-size: var(--admin-font-size-sm) !important;
+	line-height: 1.5 !important;
+}
+
+body.is-admin-area .text-base {
+	font-size: var(--admin-font-size-base) !important;
+	line-height: 1.6 !important;
+}
+
+body.is-admin-area .text-lg {
+	font-size: var(--admin-font-size-lg) !important;
+	line-height: 1.45 !important;
+}
+
+body.is-admin-area .text-xl {
+	font-size: var(--admin-font-size-xl) !important;
+	line-height: 1.35 !important;
+}
+
+body.is-admin-area .text-2xl {
+	font-size: var(--admin-font-size-2xl) !important;
+	line-height: 1.25 !important;
+}
+
+body.is-admin-area .text-3xl {
+	font-size: var(--admin-font-size-3xl) !important;
+	line-height: 1.2 !important;
+}
+
+body.is-admin-area .text-4xl {
+	font-size: var(--admin-font-size-4xl) !important;
+	line-height: 1.1 !important;
+}
+
 body.is-admin-area .admin-stage {
 	position: relative;
 	isolation: isolate;
+}
+
+.admin-modal-viewport {
+	inset: 0;
+}
+
+body.is-admin-area .admin-modal-viewport {
+	inset: var(--admin-nav-offset, 0px) 0 0 0;
+}
+
+.admin-modal-panel {
+	max-height: calc(100dvh - var(--admin-nav-offset, 0px) - 2rem);
+}
+
+@media (min-width: 640px) {
+	.admin-modal-panel {
+		max-height: calc(100dvh - var(--admin-nav-offset, 0px) - 3rem);
+	}
 }
 
 body.is-admin-area .admin-stage::before {
@@ -327,6 +449,63 @@ body.is-admin-area .admin-nav {
 	box-shadow: 0 10px 30px rgba(13, 76, 93, 0.1);
 }
 
+body.is-admin-area .admin-nav-row {
+	min-height: 4rem;
+	flex-wrap: nowrap;
+}
+
+body.is-admin-area .admin-nav-primary {
+	flex: 1 1 auto;
+	justify-content: flex-start;
+	min-width: 0;
+}
+
+body.is-admin-area .admin-nav-controls {
+	flex: 0 0 auto;
+	justify-content: flex-end;
+	flex-wrap: nowrap;
+	align-items: center;
+}
+
+body.is-admin-area .admin-nav-links {
+	flex: 1 1 auto;
+	flex-wrap: nowrap;
+	white-space: nowrap;
+	scrollbar-width: thin;
+}
+
+body.is-admin-area .admin-nav-links > * {
+	flex: 0 0 auto;
+}
+
+body.is-admin-area .admin-font-switcher,
+body.is-admin-area .admin-nav-locale,
+body.is-admin-area .admin-nav-controls > .min-w-0 {
+	flex: 0 0 auto;
+	min-width: 0;
+	max-width: none;
+}
+
+body.is-admin-area .admin-font-switcher {
+	justify-content: space-between;
+	min-width: 14.5rem;
+}
+
+body.is-admin-area .admin-font-switcher > div:last-child {
+	display: flex;
+	flex: 1 1 auto;
+	justify-content: space-between;
+}
+
+body.is-admin-area .admin-font-switcher > div:last-child > button {
+	flex: 1 1 0;
+}
+
+body.is-admin-area .admin-nav-locale > button,
+body.is-admin-area .admin-nav-controls .min-w-0 > div > button {
+	width: auto;
+}
+
 body.is-admin-area .admin-nav a,
 body.is-admin-area .admin-nav button {
 	transition: all 0.22s ease;
@@ -335,6 +514,33 @@ body.is-admin-area .admin-nav button {
 body.is-admin-area .admin-nav .sm\:flex .space-x-3 > * > a,
 body.is-admin-area .admin-nav .sm\:flex .space-x-3 > a {
 	border-radius: 999px;
+}
+
+@media (max-width: 1280px) {
+	body.is-admin-area .admin-nav-row {
+		align-items: flex-start;
+		flex-wrap: wrap;
+	}
+
+	body.is-admin-area .admin-nav-primary,
+	body.is-admin-area .admin-nav-controls {
+		flex: 1 1 100%;
+	}
+}
+
+@media (max-width: 639px) {
+	body.is-admin-area .admin-nav-row {
+		align-items: center;
+		flex-wrap: nowrap;
+	}
+
+	body.is-admin-area .admin-nav-primary {
+		flex: 1 1 auto;
+	}
+
+	body.is-admin-area .admin-nav-controls {
+		display: none;
+	}
 }
 
 body.is-admin-area .rounded-3xl.bg-white,
@@ -563,7 +769,7 @@ body.is-admin-area .admin-kpi {
 }
 
 body.is-admin-area .admin-kpi .value {
-	font-size: 1.75rem;
+	font-size: calc(1.75rem * var(--admin-font-scale));
 	font-weight: 800;
 	letter-spacing: -0.02em;
 }
@@ -582,6 +788,14 @@ body.is-admin-area .admin-pill-nav button {
 body.is-admin-area .admin-search-shell {
 	border: 1px solid rgba(116, 170, 188, 0.38);
 	background: rgba(255, 255, 255, 0.9);
+}
+
+html[data-admin-font-size='lg'] body.is-admin-area:not(.is-board-page) {
+	--board-card-min-width: 340px;
+}
+
+html[data-admin-font-size='xl'] body.is-admin-area:not(.is-board-page) {
+	--board-card-min-width: 360px;
 }
 
 body.is-admin-area .mobile-admin-dock {
@@ -605,7 +819,7 @@ body.is-admin-area .mobile-admin-dock a {
 	border-radius: 14px;
 	padding: 8px 6px;
 	text-align: center;
-	font-size: 11px;
+	font-size: calc(11px * var(--admin-font-scale));
 	font-weight: 700;
 	color: #315b64;
 }
@@ -616,6 +830,21 @@ body.is-admin-area .mobile-admin-dock a.active {
 }
 
 @media (max-width: 768px) {
+	body.is-admin-area .mobile-responsive-menu {
+		position: fixed;
+		top: var(--admin-nav-offset, 64px);
+		right: 0;
+		bottom: 0;
+		left: 0;
+		z-index: 44;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		padding-bottom: 104px;
+		background: #ffffff;
+		box-shadow: 0 18px 34px rgba(15, 23, 42, 0.14);
+		-webkit-overflow-scrolling: touch;
+	}
+
 	body.is-admin-area .mobile-admin-dock {
 		display: flex;
 		gap: 6px;
@@ -701,7 +930,7 @@ body.is-admin-area .board-store-select option:checked {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.5rem;
-	font-size: 0.8125rem;
+	font-size: calc(0.8125rem * var(--admin-font-scale, 1));
 	font-weight: 600;
 	color: #475569;
 }
@@ -712,7 +941,7 @@ body.is-admin-area .board-store-select option:checked {
 	border-radius: 0.75rem;
 	background-color: #ffffff;
 	padding: 0.4rem 0.65rem;
-	font-size: 0.8125rem;
+	font-size: calc(0.8125rem * var(--admin-font-scale, 1));
 	color: #0f172a;
 }
 
@@ -725,7 +954,7 @@ body.is-admin-area .board-store-select option:checked {
 
 .dataTables_wrapper .dataTables_info {
 	padding-top: 0.65rem;
-	font-size: 0.75rem;
+	font-size: calc(0.75rem * var(--admin-font-scale, 1));
 	color: #64748b;
 }
 
@@ -739,7 +968,7 @@ body.is-admin-area .board-store-select option:checked {
 	background: #ffffff !important;
 	color: #334155 !important;
 	padding: 0.22rem 0.65rem !important;
-	font-size: 0.78rem;
+	font-size: calc(0.78rem * var(--admin-font-scale, 1));
 }
 
 .dataTables_wrapper .dataTables_paginate .paginate_button.current,

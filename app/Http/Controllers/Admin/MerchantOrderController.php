@@ -59,10 +59,12 @@ class MerchantOrderController extends Controller
         $this->authorize('update', $store);
 
         $validated = $request->validate([
+            'order_type' => ['nullable', 'in:dine_in,takeout'],
             'customer_phone' => ['required', ...$this->customerPhoneValidationRules($store)],
             'subtotal' => ['required', 'integer', 'min:1'],
         ]);
 
+        $orderType = $this->normalizeBackendOrderType($validated['order_type'] ?? null);
         $customerPhone = $this->normalizeCustomerPhone($validated['customer_phone'] ?? null, $store);
         $subtotal = max((int) ($validated['subtotal'] ?? 0), 0);
         $member = $this->findExistingMemberForCoupon($store, null, $customerPhone);
@@ -75,7 +77,7 @@ class MerchantOrderController extends Controller
                 'phone' => (string) ($member->phone ?? ''),
                 'points_balance' => (int) ($member->points_balance ?? 0),
             ] : null,
-            'coupons' => $this->buildAvailableCouponsPayload($store, $subtotal, $member),
+            'coupons' => $this->buildAvailableCouponsPayload($store, $subtotal, $member, $orderType),
         ]);
     }
 
@@ -90,7 +92,8 @@ class MerchantOrderController extends Controller
         }
 
         $validated = $request->validate([
-            'dining_table_id' => ['required', 'integer', 'exists:dining_tables,id'],
+            'order_type' => ['nullable', 'in:dine_in,takeout'],
+            'dining_table_id' => ['nullable', 'integer', 'exists:dining_tables,id'],
             'customer_name' => ['nullable', 'string', 'max:255'],
             'customer_phone' => $this->customerPhoneValidationRules($store),
             'coupon_code' => ['nullable', 'string', 'max:64'],
@@ -106,14 +109,25 @@ class MerchantOrderController extends Controller
             'items.min' => __('merchant_order.validation_items_required'),
         ]);
 
-        $table = DiningTable::query()
-            ->where('store_id', $store->id)
-            ->findOrFail((int) $validated['dining_table_id']);
+        $orderType = $this->normalizeBackendOrderType($validated['order_type'] ?? null);
+        $table = null;
 
-        if ((string) $table->status === 'inactive') {
-            throw ValidationException::withMessages([
-                'dining_table_id' => __('merchant_order.validation_table_inactive'),
-            ]);
+        if ($orderType === 'dine_in') {
+            if (empty($validated['dining_table_id'])) {
+                throw ValidationException::withMessages([
+                    'dining_table_id' => __('merchant_order.validation_dining_table_required'),
+                ]);
+            }
+
+            $table = DiningTable::query()
+                ->where('store_id', $store->id)
+                ->findOrFail((int) $validated['dining_table_id']);
+
+            if ((string) $table->status === 'inactive') {
+                throw ValidationException::withMessages([
+                    'dining_table_id' => __('merchant_order.validation_table_inactive'),
+                ]);
+            }
         }
 
         $normalizedCustomerName = $this->normalizeOptionalText($validated['customer_name'] ?? null);
@@ -125,6 +139,7 @@ class MerchantOrderController extends Controller
             $order = DB::transaction(function () use (
                 $store,
                 $table,
+                $orderType,
                 $validated,
                 $normalizedCustomerName,
                 $normalizedCustomerPhone,
@@ -152,7 +167,7 @@ class MerchantOrderController extends Controller
                     $member = Member::query()->lockForUpdate()->find($member->id);
                 }
 
-                $couponResult = app(LoyaltyService::class)->resolveCoupon($store, $couponCode, $lineSubtotal, $member, 'dine_in');
+                $couponResult = app(LoyaltyService::class)->resolveCoupon($store, $couponCode, $lineSubtotal, $member, $orderType);
                 $couponError = $couponResult['error'] ?? null;
 
                 if ($couponError !== null) {
@@ -174,19 +189,25 @@ class MerchantOrderController extends Controller
                 $bonusEarnedPoints = max((int) ($couponResult['bonus_points'] ?? 0), 0);
                 $pointsEarned = max($baseEarnedPoints + $bonusEarnedPoints, 0);
 
-                $order = $this->findAppendableDineInOrder($store, $table);
+                $order = $orderType === 'dine_in' && $table instanceof DiningTable
+                    ? $this->findAppendableDineInOrder($store, $table)
+                    : null;
 
                 if (! $order) {
                     $order = Order::query()->create([
                         'store_id' => $store->id,
-                        'dining_table_id' => $table->id,
-                        'order_type' => 'dine_in',
+                        'dining_table_id' => $table?->id,
+                        'order_type' => $orderType,
                         'cart_token' => null,
                         'order_no' => Order::generateOrderNoForStore((int) $store->id),
                         'status' => 'pending',
                         'payment_status' => 'unpaid',
                         'invoice_flow' => InvoiceFlow::NONE,
-                        'customer_name' => $normalizedCustomerName ?: __('merchant_order.default_customer_name'),
+                        'customer_name' => $normalizedCustomerName ?: (
+                            $orderType === 'takeout'
+                                ? __('merchant_order.default_takeout_customer_name')
+                                : __('merchant_order.default_customer_name')
+                        ),
                         'customer_phone' => $normalizedCustomerPhone,
                         'customer_email' => null,
                         'member_id' => $member?->id,
@@ -647,16 +668,22 @@ class MerchantOrderController extends Controller
         return $query->first();
     }
 
-    private function buildAvailableCouponsPayload(Store $store, int $subtotal, ?Member $member): array
+    private function normalizeBackendOrderType(?string $orderType): string
+    {
+        return $orderType === 'takeout' ? 'takeout' : 'dine_in';
+    }
+
+    private function buildAvailableCouponsPayload(Store $store, int $subtotal, ?Member $member, string $orderType = 'dine_in'): array
     {
         $currencySymbol = $this->currencySymbol($store);
+        $normalizedOrderType = $this->normalizeBackendOrderType($orderType);
 
         return Coupon::query()
             ->where('store_id', $store->id)
             ->orderByDesc('id')
             ->get()
-            ->map(function (Coupon $coupon) use ($store, $subtotal, $member, $currencySymbol) {
-                $result = app(LoyaltyService::class)->resolveCoupon($store, $coupon->code, $subtotal, $member, 'dine_in');
+            ->map(function (Coupon $coupon) use ($store, $subtotal, $member, $currencySymbol, $normalizedOrderType) {
+                $result = app(LoyaltyService::class)->resolveCoupon($store, $coupon->code, $subtotal, $member, $normalizedOrderType);
                 if (($result['error'] ?? null) !== null) {
                     return null;
                 }

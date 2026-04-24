@@ -46,6 +46,17 @@ class Store extends Model
         'notification_email',
         'is_active',
         'takeout_qr_enabled',
+        'uber_eats_enabled',
+        'uber_eats_store_id',
+        'uber_eats_client_id',
+        'uber_eats_client_secret',
+        'foodpanda_enabled',
+        'foodpanda_chain_id',
+        'foodpanda_store_id',
+        'foodpanda_external_partner_config_id',
+        'foodpanda_client_id',
+        'foodpanda_client_secret',
+        'foodpanda_webhook_secret',
         'checkout_timing',
         'banner_image',
         'opening_time',
@@ -62,6 +73,11 @@ class Store extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'takeout_qr_enabled' => 'boolean',
+        'uber_eats_enabled' => 'boolean',
+        'uber_eats_client_secret' => 'encrypted',
+        'foodpanda_enabled' => 'boolean',
+        'foodpanda_client_secret' => 'encrypted',
+        'foodpanda_webhook_secret' => 'encrypted',
         'monthly_revenue_target' => 'integer',
         'latitude' => 'float',
         'longitude' => 'float',
@@ -306,6 +322,32 @@ class Store extends Model
     public function orders()
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function hasUberEatsIntegration(): bool
+    {
+        return (bool) $this->uber_eats_enabled
+            && $this->hasUberEatsApiCredentials();
+    }
+
+    public function hasUberEatsApiCredentials(): bool
+    {
+        return trim((string) ($this->uber_eats_store_id ?? '')) !== ''
+            && trim((string) ($this->uber_eats_client_id ?? '')) !== ''
+            && trim((string) ($this->uber_eats_client_secret ?? '')) !== '';
+    }
+
+    public function hasFoodpandaIntegration(): bool
+    {
+        return (bool) $this->foodpanda_enabled
+            && trim((string) ($this->foodpanda_chain_id ?? '')) !== ''
+            && trim((string) ($this->foodpanda_client_id ?? '')) !== ''
+            && trim((string) ($this->foodpanda_client_secret ?? '')) !== ''
+            && trim((string) ($this->foodpanda_webhook_secret ?? '')) !== ''
+            && (
+                trim((string) ($this->foodpanda_external_partner_config_id ?? '')) !== ''
+                || trim((string) ($this->foodpanda_store_id ?? '')) !== ''
+            );
     }
 
     public function members()

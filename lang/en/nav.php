@@ -11,7 +11,7 @@ return [
     'invoice_center'     => 'Invoice Center',
     'loyalty'            => 'Loyalty',
     'store_backend'      => 'Store Management',
-    'merchant_order'     => 'Merchant Order',
+    'merchant_order'     => 'Order',
     'merchant_order_short' => 'Order',
     'stores_short'       => 'Stores',
     'kitchen'            => 'Kitchen Board',

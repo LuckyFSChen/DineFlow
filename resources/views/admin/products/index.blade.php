@@ -21,7 +21,7 @@
                 <div class="flex flex-wrap gap-2">
                     <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center justify-center rounded-2xl border border-slate-900 bg-slate-800 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700">{{ __('admin.products_back_to_stores') }}</a>
                     @if($store->is_active)
-                        <a href="{{ route('admin.stores.kitchen', $store) }}" class="inline-flex items-center justify-center rounded-2xl border border-orange-300 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">🍳 {{ __('admin.kitchen') }}</a>
+                        <a href="{{ route('admin.stores.workspace', ['store' => $store, 'tab' => 'boards']) }}" class="inline-flex items-center justify-center rounded-2xl border border-orange-300 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">{{ __('nav.merchant_order_short') }}/{{ __('admin.board_all_title') }}</a>
                     @endif
                     <button type="button" id="create-category-btn" class="inline-flex items-center justify-center rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">{{ __('admin.products_btn_add_category') }}</button>
                     <button type="button" id="create-product-btn" class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500">{{ __('admin.products_btn_add_product') }}</button>
@@ -168,9 +168,9 @@
     </div>
 </div>
 
-<div id="product-modal" class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/50 p-4">
-    <div class="w-full max-w-3xl rounded-3xl bg-white shadow-2xl">
-        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+<div id="product-modal" class="admin-modal-viewport fixed z-[120] hidden items-center justify-center overflow-y-auto bg-black/50 p-4 sm:p-6">
+    <div class="admin-modal-panel my-4 flex w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl sm:my-6">
+        <div class="shrink-0 flex items-center justify-between border-b border-slate-200 px-6 py-4">
             <div>
                 <h3 id="product-modal-title" class="text-lg font-bold text-slate-900">{{ __('admin.products_modal_product_title') }}</h3>
                 <p class="text-xs text-slate-500">{{ __('admin.products_modal_product_description') }}</p>
@@ -178,7 +178,7 @@
             <button type="button" id="product-modal-close" class="rounded-full p-2 text-slate-500 hover:bg-slate-100">✕</button>
         </div>
 
-        <form id="product-modal-form" class="max-h-[75vh] overflow-y-auto px-6 py-5">
+        <form id="product-modal-form" class="min-h-0 flex-1 overflow-y-auto px-6 py-5">
             <input type="hidden" name="_method" id="product-modal-method" value="POST">
 
             <div class="grid gap-4 md:grid-cols-2">
@@ -292,7 +292,7 @@
     </div>
 </div>
 
-<div id="category-modal" class="fixed inset-0 z-[130] hidden items-center justify-center bg-black/50 p-4">
+<div id="category-modal" class="admin-modal-viewport fixed z-[130] hidden items-center justify-center bg-black/50 p-4">
     <div class="w-full max-w-xl rounded-3xl bg-white shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
             <div>

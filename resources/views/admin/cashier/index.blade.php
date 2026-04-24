@@ -357,7 +357,7 @@ $cashierI18n = [
         x-show="cancelModalOpen"
         x-cloak
         x-transition.opacity
-        class="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4"
+        class="admin-modal-viewport fixed z-[120] flex items-center justify-center bg-slate-950/70 p-4"
         @keydown.escape.window="closeCancelDialog()">
         <div
             class="w-full max-w-xl rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl"

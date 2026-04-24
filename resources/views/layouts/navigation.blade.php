@@ -1,5 +1,11 @@
 @php
-    $isAdminArea = request()->routeIs('admin.*') || request()->routeIs('super-admin.*') || request()->routeIs('merchant.*');
+    $profileUsesAdminShell = request()->routeIs('profile.*')
+        && Auth::check()
+        && ! Auth::user()?->isCustomer();
+    $isAdminArea = request()->routeIs('admin.*')
+        || request()->routeIs('super-admin.*')
+        || request()->routeIs('merchant.*')
+        || $profileUsesAdminShell;
     $isDineInCartPage = request()->routeIs('customer.dinein.cart.*');
     $isWorkspacePage = request()->routeIs('admin.stores.workspace');
     $workspaceTab = request()->query('tab') === 'boards' ? 'boards' : 'orders';
@@ -276,11 +282,45 @@
     </div>
 </nav>
 @else
-<nav x-data="{ open: false }" class="{{ $isAdminArea ? 'admin-nav sticky top-0 z-40 border-b border-slate-200 bg-white' : 'bg-white border-b border-gray-100' }}">
+<nav
+    x-data="{
+        open: false,
+        fontSizes: ['xs', 'sm', 'md', 'lg', 'xl'],
+        fontSizeLabels: {
+            xs: 'A-',
+            sm: 'A',
+            md: 'A+',
+            lg: 'A++',
+            xl: 'A+++',
+        },
+        fontSize: window.adminFontPreference?.current?.() ?? 'sm',
+        setFontSize(size) {
+            this.fontSize = window.adminFontPreference?.set?.(size) ?? size;
+        },
+        fontSizeIndex() {
+            const index = this.fontSizes.indexOf(this.fontSize);
+
+            return index >= 0 ? index : 1;
+        },
+        setFontSizeByIndex(index) {
+            this.setFontSize(this.fontSizes[Number(index)] ?? 'sm');
+        },
+        fontSizeLabel() {
+            return this.fontSizeLabels[this.fontSize] ?? 'A';
+        },
+        init() {
+            window.addEventListener('admin-font-size-changed', (event) => {
+                this.fontSize = event.detail?.size ?? (window.adminFontPreference?.current?.() ?? 'sm');
+            });
+        },
+    }"
+    x-init="init()"
+    class="{{ $isAdminArea ? 'admin-nav sticky top-0 z-40 border-b border-slate-200 bg-white' : 'bg-white border-b border-gray-100' }}"
+>
     <!-- Primary Navigation Menu -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex">
+    <div class="{{ $isAdminArea ? 'mx-auto w-full max-w-[96rem] px-4 sm:px-6 lg:px-8' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8' }}">
+        <div class="admin-nav-row flex min-w-0 items-center justify-between gap-3 py-3">
+            <div class="admin-nav-primary flex min-w-0 items-center">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('home') }}">
@@ -297,7 +337,7 @@
                 @endif
 
                 <!-- Navigation Links -->
-                <div class="hidden space-x-3 sm:-my-px sm:ms-8 sm:flex sm:items-center">
+                <div class="admin-nav-links hidden sm:-my-px sm:ms-8 sm:flex sm:min-w-0 sm:items-center sm:gap-x-3 sm:overflow-x-auto sm:overflow-y-hidden">
                     @guest
                         @unless($isAdminArea)
                             <x-nav-link :href="route('product.pricing-contact')" :active="request()->routeIs('product.pricing-contact')">
@@ -317,7 +357,7 @@
 
                     @if($showCombinedMerchantWorkspaceNav && $combinedMerchantWorkspaceHref)
                         <x-nav-link :href="$combinedMerchantWorkspaceHref" :active="$isCombinedMerchantWorkspacePage">
-                            {{ __('nav.merchant_order') }} / {{ __('admin.board_all_title') }}
+                            {{ __('nav.merchant_order_short') }}/{{ __('admin.board_all_title') }}
                         </x-nav-link>
                     @elseif($showMerchantOrderNav && $merchantOrderNavHref)
                         <x-nav-link :href="$merchantOrderNavHref" :active="$isMerchantOrderPage">
@@ -335,11 +375,30 @@
             </div>
 
             <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6 sm:gap-3">
+            <div class="admin-nav-controls hidden sm:ms-6 sm:flex sm:min-w-0 sm:items-center sm:justify-end sm:gap-3">
+                @if($isAdminArea)
+                    <div class="admin-font-switcher inline-flex w-52 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+                        <span class="text-xs font-semibold text-slate-500">A-</span>
+                        <div class="min-w-0 flex-1">
+                            <input
+                                type="range"
+                                min="0"
+                                max="4"
+                                step="1"
+                                :value="fontSizeIndex()"
+                                @input="setFontSizeByIndex($event.target.value)"
+                                class="h-2 w-full cursor-pointer accent-cyan-600"
+                                aria-label="Adjust admin font size"
+                            >
+                        </div>
+                        <span class="min-w-8 text-right text-xs font-bold text-cyan-700" x-text="fontSizeLabel()"></span>
+                    </div>
+                @endif
+
                 {{-- Language Switcher --}}
                 @php $localeName = ['zh_TW' => 'TW', 'zh_CN' => 'CN', 'en' => 'EN', 'vi' => 'VI'][app()->getLocale()] ?? 'EN'; @endphp
-                <div x-data="{ langOpen: false }" class="relative">
-                    <button @click="langOpen = !langOpen" class="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-50 focus:outline-none">
+                <div x-data="{ langOpen: false }" class="relative admin-nav-locale">
+                    <button @click="langOpen = !langOpen" class="inline-flex w-full items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-50 focus:outline-none">
                         🌐 {{ $localeName }}
                         <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
                     </button>
@@ -358,15 +417,16 @@
                     </div>
                 </div>
                 @auth
+                    <div class="min-w-0 max-w-full">
                     <x-dropdown align="right" width="56" contentClasses="p-2 bg-white">
                         <x-slot name="trigger">
-                            <button class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none">
+                            <button class="inline-flex max-w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none">
                                 <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">
                                     {{ strtoupper(substr((string) Auth::user()->name, 0, 1)) }}
                                 </span>
-                                <span class="max-w-[140px] leading-tight text-left">
+                                <span class="max-w-[132px] leading-tight text-left xl:max-w-[168px]">
                                     <span class="block truncate">{{ Auth::user()->name }}</span>
-                                    <span class="block text-[11px] font-medium text-slate-500">{{ Auth::user()->localizedRoleLabel() }}</span>
+                                    <span class="block truncate text-[11px] font-medium text-slate-500">{{ Auth::user()->localizedRoleLabel() }}</span>
                                 </span>
                                 <div>
                                     <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -426,6 +486,7 @@
                             </form>
                         </x-slot>
                     </x-dropdown>
+                    </div>
                 @else
                     <a href="{{ route('login') }}" class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50">
                         {{ __('nav.login') }}
@@ -451,7 +512,7 @@
     </div>
 
     <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
+    <div :class="{'block': open, 'hidden': ! open}" class="mobile-responsive-menu hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
             @guest
                 @unless($isAdminArea)
@@ -473,7 +534,7 @@
 
             @if($showCombinedMerchantWorkspaceNav && $combinedMerchantWorkspaceHref)
                 <x-responsive-nav-link :href="$combinedMerchantWorkspaceHref" :active="$isCombinedMerchantWorkspacePage">
-                    {{ __('nav.merchant_order') }} / {{ __('admin.board_all_title') }}
+                    {{ __('nav.merchant_order_short') }}/{{ __('admin.board_all_title') }}
                 </x-responsive-nav-link>
             @elseif($showMerchantOrderNav && $merchantOrderNavHref)
                 <x-responsive-nav-link :href="$merchantOrderNavHref" :active="$isMerchantOrderPage">
@@ -552,6 +613,26 @@
             @endauth
 
             <div class="px-4 py-3 border-t border-gray-200">
+                @if($isAdminArea)
+                    <div class="mb-3">
+                        <p class="mb-2 text-xs font-semibold text-gray-500">Text Size</p>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-semibold text-slate-500">A-</span>
+                            <input
+                                type="range"
+                                min="0"
+                                max="4"
+                                step="1"
+                                :value="fontSizeIndex()"
+                                @input="setFontSizeByIndex($event.target.value)"
+                                class="h-2 flex-1 cursor-pointer accent-cyan-600"
+                                aria-label="Adjust admin font size"
+                            >
+                            <span class="min-w-8 text-right text-xs font-bold text-cyan-700" x-text="fontSizeLabel()"></span>
+                        </div>
+                    </div>
+                @endif
+
                 <p class="text-xs font-semibold text-gray-500 mb-2">{{ __('nav.language') }}</p>
                 <div class="flex gap-2">
                     <a href="{{ route('locale.switch', 'zh_TW') }}" class="rounded-lg border px-3 py-1.5 text-xs font-semibold {{ app()->getLocale() === 'zh_TW' ? 'border-indigo-400 bg-indigo-50 text-indigo-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">ZH</a>

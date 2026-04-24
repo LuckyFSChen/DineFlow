@@ -203,6 +203,68 @@ class AdminMerchantOrderTest extends TestCase
         $this->assertCount(2, $order->items);
         $this->assertTrue($order->items->contains(fn ($item) => $item->product_name === '奶茶' && (int) $item->qty === 2));
     }
+
+    public function test_admin_can_create_backend_takeout_order_without_table(): void
+    {
+        $admin = User::create([
+            'name' => 'Admin User',
+            'email' => 'admin-takeout-order@example.com',
+            'password' => Hash::make('password'),
+            'role' => 'admin',
+        ]);
+
+        $store = Store::create([
+            'name' => 'Backend Takeout Store',
+            'slug' => 'backend-takeout-store',
+            'is_active' => true,
+            'opening_time' => '00:00',
+            'closing_time' => '23:59',
+        ]);
+
+        $category = Category::create([
+            'store_id' => $store->id,
+            'name' => 'Takeout',
+            'sort' => 1,
+            'is_active' => true,
+        ]);
+
+        $product = Product::create([
+            'store_id' => $store->id,
+            'category_id' => $category->id,
+            'name' => 'Takeout Bento',
+            'price' => 120,
+            'is_active' => true,
+            'is_sold_out' => false,
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('admin.stores.orders.store', $store), [
+            'order_type' => 'takeout',
+            'customer_name' => 'Pickup Guest',
+            'customer_phone' => '0912-345-678',
+            'items' => [
+                [
+                    'product_id' => $product->id,
+                    'qty' => 2,
+                    'option_payload' => '',
+                    'item_note' => '',
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect(route('admin.stores.orders.create', $store));
+        $response->assertSessionHas('success');
+
+        $order = Order::query()->with('items')->sole();
+
+        $this->assertNull($order->dining_table_id);
+        $this->assertSame('takeout', $order->order_type);
+        $this->assertSame('Pickup Guest', $order->customer_name);
+        $this->assertSame('0912345678', $order->getRawOriginal('customer_phone'));
+        $this->assertSame(240, (int) $order->subtotal);
+        $this->assertSame(240, (int) $order->total);
+        $this->assertCount(1, $order->items);
+    }
+
     public function test_admin_can_lookup_available_coupons_by_customer_phone_for_backend_order(): void
     {
         $admin = User::create([

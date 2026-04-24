@@ -39,7 +39,7 @@ class AdminMerchantConsoleAccessTest extends TestCase
         $response->assertSee(route('merchant.orders.index'), false);
         $response->assertSee(route('merchant.invoices.index'), false);
         $response->assertSee(route('merchant.loyalty.index'), false);
-        $response->assertSee(route('admin.stores.boards', ['store' => $store->slug]), false);
+        $response->assertSee(route('admin.stores.workspace', ['store' => $store->slug, 'tab' => 'boards']), false);
     }
 
     public function test_admin_can_open_merchant_management_pages_for_any_store(): void

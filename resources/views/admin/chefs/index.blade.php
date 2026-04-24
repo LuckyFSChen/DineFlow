@@ -11,7 +11,7 @@
         >
             <x-slot name="actions">
                 @if($store->is_active)
-                    <a href="{{ route('admin.stores.boards', $store) }}" class="inline-flex items-center rounded-2xl border border-orange-300/70 bg-orange-500/20 px-4 py-3 text-sm font-semibold text-orange-100 transition hover:bg-orange-500/30">{{ __('admin.board_all_title') }}</a>
+                    <a href="{{ route('admin.stores.workspace', ['store' => $store, 'tab' => 'boards']) }}" class="inline-flex items-center rounded-2xl border border-orange-300/70 bg-orange-500/20 px-4 py-3 text-sm font-semibold text-orange-100 transition hover:bg-orange-500/30">{{ __('nav.merchant_order_short') }}/{{ __('admin.board_all_title') }}</a>
                 @endif
                 <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center rounded-2xl border border-slate-300/70 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/20">{{ __('admin.back_to_stores') }}</a>
             </x-slot>

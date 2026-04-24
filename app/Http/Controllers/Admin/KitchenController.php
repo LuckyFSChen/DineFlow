@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Store;
+use App\Services\FoodpandaOrderSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class KitchenController extends Controller
 {
@@ -65,7 +67,20 @@ class KitchenController extends Controller
 
         abort_if($order->store_id !== $store->id, 403);
 
-        $order->update(['status' => 'completed']);
+        try {
+            DB::transaction(function () use ($order): void {
+                $this->syncFoodpandaCompletionIfNeeded($order);
+
+                $order->update(['status' => 'completed']);
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'ok' => false,
+                'message' => 'Unable to sync the completion to Foodpanda. Please try again.',
+            ], 422);
+        }
 
         return response()->json(['ok' => true]);
     }
@@ -98,7 +113,20 @@ class KitchenController extends Controller
             return response()->json(['ok' => false, 'message' => __('admin.error_invalid_status')], 422);
         }
 
-        $order->update(['status' => 'completed']);
+        try {
+            DB::transaction(function () use ($order): void {
+                $this->syncFoodpandaCompletionIfNeeded($order);
+
+                $order->update(['status' => 'completed']);
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'ok' => false,
+                'message' => 'Unable to sync the completion to Foodpanda. Please try again.',
+            ], 422);
+        }
 
         return response()->json([
             'ok'             => true,
@@ -124,27 +152,43 @@ class KitchenController extends Controller
 
     private function applyItemStatusUpdate(Order $order, OrderItem $item, string $status): JsonResponse
     {
-        $item->item_status = $status;
-        $item->completed_at = $status === 'completed' ? now() : null;
-        $item->save();
+        try {
+            DB::transaction(function () use ($order, $item, $status): void {
+                $item->item_status = $status;
+                $item->completed_at = $status === 'completed' ? now() : null;
+                $item->save();
 
-        if ($status === 'completed') {
-            $hasOtherPendingItems = $order->items()
-                ->whereKeyNot($item->id)
-                ->where(function ($query) {
-                    $query->whereNull('item_status')
-                        ->orWhere('item_status', '!=', 'completed');
-                })
-                ->exists();
+                if ($status === 'completed') {
+                    $hasOtherPendingItems = $order->items()
+                        ->whereKeyNot($item->id)
+                        ->where(function ($query) {
+                            $query->whereNull('item_status')
+                                ->orWhere('item_status', '!=', 'completed');
+                        })
+                        ->exists();
 
-            if (! $hasOtherPendingItems && ! in_array(strtolower((string) $order->status), self::COMPLETED_STATUSES, true)) {
-                $order->status = 'completed';
-                $order->save();
-            }
-        } elseif (in_array(strtolower((string) $order->status), self::COMPLETED_STATUSES, true)) {
-            $order->status = 'preparing';
-            $order->save();
+                    if (! $hasOtherPendingItems && ! in_array(strtolower((string) $order->status), self::COMPLETED_STATUSES, true)) {
+                        $this->syncFoodpandaCompletionIfNeeded($order);
+
+                        $order->status = 'completed';
+                        $order->save();
+                    }
+                } elseif (in_array(strtolower((string) $order->status), self::COMPLETED_STATUSES, true)) {
+                    $order->status = 'preparing';
+                    $order->save();
+                }
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'ok' => false,
+                'message' => 'Unable to sync the completion to Foodpanda. Please try again.',
+            ], 422);
         }
+
+        $item->refresh();
+        $order->refresh();
 
         return response()->json([
             'ok' => true,
@@ -188,6 +232,15 @@ class KitchenController extends Controller
             ->whereIn('status', self::PREPARING_STATUSES)
             ->orderBy('created_at', 'asc')
             ->get();
+    }
+
+    private function syncFoodpandaCompletionIfNeeded(Order $order): void
+    {
+        if (strtolower((string) $order->source_platform) !== 'foodpanda') {
+            return;
+        }
+
+        app(FoodpandaOrderSyncService::class)->completeOrder($order);
     }
 
     private function resolveAccessibleStores(Request $request): \Illuminate\Database\Eloquent\Collection

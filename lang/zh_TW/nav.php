@@ -11,7 +11,7 @@ return [
     'invoice_center'     => '發票中心',
     'loyalty'            => '會員與優惠',
     'store_backend'      => '門市管理',
-    'merchant_order'     => '商家點餐',
+    'merchant_order'     => '點餐',
     'merchant_order_short' => '點餐',
     'stores_short'       => '門市',
     'kitchen'            => '後廚看板',

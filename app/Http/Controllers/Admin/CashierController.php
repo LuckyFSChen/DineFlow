@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Store;
+use App\Services\FoodpandaOrderSyncService;
 use App\Services\LoyaltyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -93,6 +94,23 @@ class CashierController extends Controller
 
             if ($cancelReasonOptions->isEmpty() && $cancelReasonOther === '') {
                 return response()->json(['ok' => false, 'message' => __('admin.error_cancel_reason_required')], 422);
+            }
+
+            try {
+                if ($this->isFoodpandaOrder($order)) {
+                    app(FoodpandaOrderSyncService::class)->cancelOrder(
+                        $order,
+                        $cancelReasonOptions->values()->all(),
+                        $cancelReasonOther !== '' ? $cancelReasonOther : null
+                    );
+                }
+            } catch (\Throwable $e) {
+                report($e);
+
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'Unable to sync the cancellation to Foodpanda. Please try again.',
+                ], 422);
             }
 
             DB::transaction(function () use ($order, $cancelReasonOptions, $cancelReasonOther): void {
@@ -260,5 +278,11 @@ class CashierController extends Controller
         }
 
         return $text;
+    }
+
+    private function isFoodpandaOrder(Order $order): bool
+    {
+        return strtolower((string) $order->source_platform) === 'foodpanda'
+            && trim((string) ($order->source_order_id ?? '')) !== '';
     }
 }

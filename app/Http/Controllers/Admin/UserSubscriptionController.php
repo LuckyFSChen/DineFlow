@@ -17,7 +17,7 @@ class UserSubscriptionController extends Controller
 {
     public function index(Request $request): View
     {
-        $activeTab = in_array($request->query('tab'), ['manage', 'logs', 'features'], true)
+        $activeTab = in_array($request->query('tab'), ['manage', 'assignments', 'logs', 'features'], true)
             ? $request->query('tab')
             : 'manage';
 
@@ -188,7 +188,7 @@ class UserSubscriptionController extends Controller
             ]);
 
             return redirect()
-                ->route('super-admin.subscriptions.index', ['tab' => 'manage'])
+                ->route('super-admin.subscriptions.index', ['tab' => 'assignments'])
                 ->with('success', __('admin.subscription_assignment_expired', ['email' => $user->email]));
         }
 
@@ -202,7 +202,7 @@ class UserSubscriptionController extends Controller
         ]);
 
         return redirect()
-            ->route('super-admin.subscriptions.index', ['tab' => 'manage'])
+            ->route('super-admin.subscriptions.index', ['tab' => 'assignments'])
             ->with('success', __('admin.subscription_assignment_updated', ['email' => $user->email]));
     }
 

@@ -127,14 +127,7 @@ class FinancialReportDemoSeeder extends Seeder
                     'dining_table_id' => $tableId,
                     'order_type' => $orderType,
                     'cart_token' => $orderType === 'takeout' ? 'demo_' . bin2hex(random_bytes(6)) : null,
-                    'order_no' => sprintf(
-                        'DF%sS%sD%sI%sT%s',
-                        $day->format('ymd'),
-                        $store->id,
-                        str_pad((string) $d, 2, '0', STR_PAD_LEFT),
-                        str_pad((string) $i, 2, '0', STR_PAD_LEFT),
-                        $createdAt->format('His')
-                    ),
+                    'order_no' => Order::generateOrderNoForStore((int) $store->id),
                     'status' => $status,
                     'payment_status' => $paymentStatus,
                     'customer_name' => (string) $customer->name,

@@ -232,37 +232,37 @@ $canOpenMerchantWorkspace = ($navFeatures[\App\Support\NavFeature::STORE_BACKEND
         <div class="h-8 w-8 animate-spin rounded-full border-4 border-slate-600 border-t-indigo-400"></div>
     </div>
 
-    <div x-show="!loading && filteredOrders.length > 0" class="grid gap-4 p-6" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
+    <div x-show="!loading && filteredOrders.length > 0" class="grid gap-4 p-6" style="grid-template-columns: repeat(auto-fill, minmax(var(--board-card-min-width, 320px), 1fr));">
         <template x-for="order in filteredOrders" :key="order.id">
             <div class="flex flex-col rounded-2xl border overflow-hidden transition-all duration-300"
                  :class="cardClass(order)"
                  :style="waitCardStyle(order)">
 
-                <div class="flex items-start justify-between px-4 pt-4 pb-3 border-b" :class="cardHeaderClass(order)">
-                    <div>
-                        <span class="font-mono text-lg font-bold text-white" x-text="'#' + (order.order_no || order.id)"></span>
-                        <div class="mt-0.5 flex items-center gap-2 text-xs">
-                                <span class="text-slate-500" x-text="timeAgo(order.created_at)"></span>
-                                <span class="rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                <div class="grid gap-3 px-4 pt-4 pb-3 border-b sm:grid-cols-[minmax(0,1fr),auto]" :class="cardHeaderClass(order)">
+                    <div class="min-w-0">
+                        <span class="block break-all font-mono text-lg font-bold leading-tight text-white" x-text="'#' + (order.order_no || order.id)"></span>
+                        <div class="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 text-xs">
+                                <span class="max-w-full break-words text-slate-500" x-text="timeAgo(order.created_at)"></span>
+                                <span class="max-w-full whitespace-normal break-words rounded px-1.5 py-0.5 text-[10px] font-semibold leading-tight"
                                     :class="waitBadgeClass(order)"
                                     :style="waitBadgeStyle(order)"
                                     x-text="i18n.waiting_prefix + waitMinutes(order) + 'm'"></span>
-                                <span class="rounded border border-sky-500/40 bg-sky-900/40 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300"
+                                <span class="max-w-full whitespace-normal break-words rounded border border-sky-500/40 bg-sky-900/40 px-1.5 py-0.5 text-[10px] font-semibold leading-tight text-sky-300"
                                     x-text="i18n.locale_prefix + localeLabel(order.order_locale)"></span>
                         </div>
-                        <div x-show="order.customer_name" class="mt-0.5 text-xs text-slate-400">
+                        <div x-show="order.customer_name" class="mt-1 min-w-0 break-words text-xs text-slate-400">
                             <span x-text="order.customer_name"></span>
                         </div>
                     </div>
 
-                    <div class="flex flex-col items-end gap-1.5">
-                        <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="boardBadgeClass(order)" x-text="boardLabel(order)"></span>
-                        <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="statusBadgeClass(order)" x-text="statusLabel(order)"></span>
+                    <div class="ml-auto flex min-w-0 max-w-[55%] flex-wrap items-start justify-end gap-1.5 text-right">
+                        <span class="max-w-full whitespace-normal break-words rounded-full px-2.5 py-0.5 text-right text-xs font-semibold leading-tight" :class="boardBadgeClass(order)" x-text="boardLabel(order)"></span>
+                        <span class="max-w-full whitespace-normal break-words rounded-full px-2.5 py-0.5 text-right text-xs font-semibold leading-tight" :class="statusBadgeClass(order)" x-text="statusLabel(order)"></span>
                         <template x-if="order.order_type === 'dine_in' && order.table">
-                            <span class="rounded bg-slate-700 px-2.5 py-1 text-sm font-semibold text-slate-200">{{ __('admin.board_table_no') }} <span x-text="order.table.table_no"></span></span>
+                            <span class="max-w-full whitespace-normal break-words rounded bg-slate-700 px-2.5 py-1 text-right text-sm font-semibold leading-tight text-slate-200">{{ __('admin.board_table_no') }} <span x-text="order.table.table_no"></span></span>
                         </template>
                         <template x-if="order.order_type === 'takeout' || order.order_type === 'take_out'">
-                            <span class="rounded bg-orange-800/60 px-2.5 py-1 text-sm font-semibold text-orange-200">{{ __('admin.board_takeout') }}</span>
+                            <span class="max-w-full whitespace-normal break-words rounded bg-orange-800/60 px-2.5 py-1 text-right text-sm font-semibold leading-tight text-orange-200">{{ __('admin.board_takeout') }}</span>
                         </template>
                     </div>
                 </div>
@@ -272,7 +272,7 @@ $canOpenMerchantWorkspace = ($navFeatures[\App\Support\NavFeature::STORE_BACKEND
                         <span x-text="i18n.item_progress"></span> <span x-text="completedItemCount(order)"></span>/<span x-text="order.items.length"></span>
                     </div>
                     <template x-for="item in order.items" :key="item.id">
-                        <div class="flex items-start justify-between gap-2 rounded-lg border px-2 py-2 transition-colors duration-150"
+                        <div class="grid gap-2 rounded-lg border px-2 py-2 transition-colors duration-150 sm:grid-cols-[minmax(0,1fr),auto]"
                              :role="order.board === 'kitchen' ? 'button' : null"
                              :tabindex="order.board === 'kitchen' ? 0 : -1"
                              @click="order.board === 'kitchen' && toggleItemStatus(order, item)"
@@ -283,7 +283,7 @@ $canOpenMerchantWorkspace = ($navFeatures[\App\Support\NavFeature::STORE_BACKEND
                                     ? 'border-emerald-500/40 bg-emerald-900/20 cursor-pointer hover:bg-emerald-900/30'
                                     : 'border-slate-700/60 bg-slate-900/20 cursor-pointer hover:border-indigo-400/70 hover:bg-slate-900/40')
                                 : 'border-slate-700/60 bg-slate-900/20'">
-                            <div class="flex items-start gap-2">
+                            <div class="flex min-w-0 items-start gap-2">
                                 <button
                                     x-show="order.board === 'kitchen'"
                                     @click.stop="toggleItemStatus(order, item)"
@@ -301,19 +301,19 @@ $canOpenMerchantWorkspace = ($navFeatures[\App\Support\NavFeature::STORE_BACKEND
                                         <rect x="4" y="4" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/>
                                     </svg>
                                 </button>
-                                <div>
+                                <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <span class="text-sm font-semibold" :class="order.board === 'kitchen' && isItemCompleted(item) ? 'text-emerald-200 line-through' : 'text-white'" x-text="item.product_name"></span>
-                                        <span class="text-xs font-semibold" :class="order.board === 'kitchen' && isItemCompleted(item) ? 'text-emerald-300' : 'text-slate-300'" x-text="'x ' + item.qty"></span>
+                                        <span class="min-w-0 break-words text-sm font-semibold leading-snug" :class="order.board === 'kitchen' && isItemCompleted(item) ? 'text-emerald-200 line-through' : 'text-white'" x-text="item.product_name"></span>
+                                        <span class="shrink-0 text-xs font-semibold" :class="order.board === 'kitchen' && isItemCompleted(item) ? 'text-emerald-300' : 'text-slate-300'" x-text="'x ' + item.qty"></span>
                                     </div>
-                                    <div x-show="item.note" class="mt-0.5 flex items-center gap-1 text-xs text-yellow-400">
+                                    <div x-show="item.note" class="mt-0.5 flex min-w-0 flex-wrap items-center gap-1 text-xs text-yellow-400">
                                         <span x-text="i18n.item_note_label"></span>
-                                        <span x-text="item.note"></span>
+                                        <span class="min-w-0 break-words" x-text="item.note"></span>
                                     </div>
-                                    <div x-show="item.option_summary" class="mt-0.5 text-xs text-slate-400" x-text="item.option_summary"></div>
+                                    <div x-show="item.option_summary" class="mt-0.5 break-words text-xs text-slate-400" x-text="item.option_summary"></div>
                                 </div>
                             </div>
-                            <div x-show="order.board === 'cashier'" class="shrink-0 text-right text-xs text-slate-300">
+                            <div x-show="order.board === 'cashier'" class="min-w-0 text-left text-xs text-slate-300 sm:text-right">
                                 <div><span x-text="i18n.item_price"></span> <span x-text="formatMoney(item.price)"></span></div>
                                 <div class="font-semibold text-white"><span x-text="i18n.item_subtotal"></span> <span x-text="formatMoney(item.subtotal)"></span></div>
                             </div>
@@ -391,7 +391,7 @@ $canOpenMerchantWorkspace = ($navFeatures[\App\Support\NavFeature::STORE_BACKEND
         x-show="cancelModalOpen"
         x-cloak
         x-transition.opacity
-        class="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-4"
+        class="admin-modal-viewport fixed z-[120] flex items-center justify-center bg-slate-950/70 p-4"
         @keydown.escape.window="closeCancelDialog()">
         <div
             class="w-full max-w-xl rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl"

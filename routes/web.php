@@ -26,6 +26,8 @@ use App\Http\Controllers\Merchant\SubscriptionController as MerchantSubscription
 use App\Http\Controllers\ProductIntroController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StoreController;
+use App\Http\Controllers\Webhooks\FoodpandaWebhookController;
+use App\Http\Controllers\Webhooks\UberEatsWebhookController;
 use App\Support\NavFeature;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -195,6 +197,8 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin', 'nav.feature:loyal
 
 Route::post('/ecpay/subscription/notify', [MerchantSubscriptionController::class, 'notify'])->name('ecpay.subscription.notify');
 Route::post('/ecpay/subscription/result', [MerchantSubscriptionController::class, 'result'])->name('ecpay.subscription.result');
+Route::post('/webhooks/uber-eats', UberEatsWebhookController::class)->name('webhooks.uber-eats');
+Route::post('/webhooks/foodpanda/orders', FoodpandaWebhookController::class)->name('webhooks.foodpanda.orders');
 
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('super-admin')->name('super-admin.')->group(function () {
     Route::get('/subscriptions', [UserSubscriptionController::class, 'index'])->name('subscriptions.index');

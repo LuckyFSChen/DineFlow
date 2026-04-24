@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', $store->name.' | '.__('nav.merchant_order').' / '.__('admin.board_all_title'))
+@section('title', $store->name.' | '.__('nav.merchant_order_short').'/'.__('admin.board_all_title'))
 
 @php
     $storeRouteValue = static function ($value) {
@@ -46,7 +46,7 @@
 
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">{{ $store->name }}</p>
-                            <h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-900">{{ __('nav.merchant_order') }} / {{ __('admin.board_all_title') }}</h1>
+                            <h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-900">{{ __('nav.merchant_order_short') }}/{{ __('admin.board_all_title') }}</h1>
                         </div>
                     </div>
 
@@ -100,7 +100,7 @@
                     x-cloak
                     x-show="isActive('orders')"
                     style="{{ $initialTab === 'orders' ? '' : 'display: none;' }}"
-                    class="overflow-hidden flex-1"
+                    class="flex-1"
                 >
                     {!! $ordersPanelHtml !!}
                 </div>

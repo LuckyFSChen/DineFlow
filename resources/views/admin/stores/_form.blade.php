@@ -206,6 +206,187 @@
         @enderror
     </div>
 
+    <div class="lg:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+        <div class="flex flex-col gap-1">
+            <h3 class="text-sm font-semibold text-slate-800">Uber Eats Integration</h3>
+            <p class="text-xs text-slate-500">Each store uses its own Uber app credentials. DineFlow will verify webhook signatures and fetch orders with this store's own Client ID / Client Secret.</p>
+        </div>
+
+        <div class="mt-4 grid gap-4 lg:grid-cols-2">
+            <div class="lg:col-span-2">
+                <label class="inline-flex items-center gap-3">
+                    <input type="checkbox"
+                           name="uber_eats_enabled"
+                           value="1"
+                           {{ old('uber_eats_enabled', $store->uber_eats_enabled ?? false) ? 'checked' : '' }}
+                           class="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                    <span class="text-sm font-semibold text-slate-700">Enable Uber Eats auto-sync</span>
+                </label>
+            </div>
+
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Uber Eats Store ID</label>
+                <input type="text"
+                       name="uber_eats_store_id"
+                       value="{{ old('uber_eats_store_id', $store->uber_eats_store_id) }}"
+                       placeholder="Example: 6f7c1b2a-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                       class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                <p class="mt-2 text-xs text-slate-500">This must exactly match the store id used in the Uber Developer Dashboard for this store app.</p>
+                @error('uber_eats_store_id')
+                    <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Client ID</label>
+                <input type="text"
+                       name="uber_eats_client_id"
+                       value="{{ old('uber_eats_client_id', $store->uber_eats_client_id) }}"
+                       placeholder="Uber app client id"
+                       class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                @error('uber_eats_client_id')
+                    <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Client Secret</label>
+                <input type="password"
+                       name="uber_eats_client_secret"
+                       value="{{ old('uber_eats_client_secret') }}"
+                       placeholder="{{ ($store->uber_eats_has_client_secret ?? false) ? 'Leave blank to keep current secret' : 'Uber app client secret' }}"
+                       class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                <p class="mt-2 text-xs text-slate-500">
+                    @if ($store->uber_eats_has_client_secret ?? false)
+                        A client secret is already stored. Leave this blank if you do not want to replace it.
+                    @else
+                        Enter the client secret for this store's Uber app.
+                    @endif
+                </p>
+                @error('uber_eats_client_secret')
+                    <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Webhook URL</label>
+                <input type="text"
+                       value="{{ route('webhooks.uber-eats') }}"
+                       readonly
+                       class="w-full rounded-2xl border border-slate-300 bg-slate-100 px-4 py-3 text-slate-600 focus:outline-none">
+                <p class="mt-2 text-xs text-slate-500">Point every store app's Primary Webhook URL to this endpoint. DineFlow will map the webhook to the correct store by Uber store id and verify it with that store's own secret.</p>
+            </div>
+
+            <div class="lg:col-span-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <p class="font-semibold">Server config</p>
+                <p class="mt-1 text-xs text-amber-800">`.env` now only keeps shared Uber endpoint settings such as API base URL, auth URL, scopes, and timeout. Client ID / Client Secret should be saved per store here.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="lg:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+        <div class="flex flex-col gap-1">
+            <h3 class="text-sm font-semibold text-slate-800">Foodpanda Integration</h3>
+            <p class="text-xs text-slate-500">設定 Foodpanda webhook 與 API 憑證後，Foodpanda 訂單會自動同步進餐廳板位，取消單與完單也會回寫到平台。</p>
+        </div>
+
+        <div class="mt-4 grid gap-4 lg:grid-cols-2">
+            <div class="lg:col-span-2">
+                <label class="inline-flex items-center gap-3">
+                    <input type="checkbox"
+                           name="foodpanda_enabled"
+                           value="1"
+                           {{ old('foodpanda_enabled', $store->foodpanda_enabled ?? false) ? 'checked' : '' }}
+                           class="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                    <span class="text-sm font-semibold text-slate-700">啟用 Foodpanda 同步</span>
+                </label>
+            </div>
+
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Chain ID</label>
+                <input type="text"
+                       name="foodpanda_chain_id"
+                       value="{{ old('foodpanda_chain_id', $store->foodpanda_chain_id) }}"
+                       placeholder="例如 550e8400-e29b-41d4-a716-446655440000"
+                       class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                @error('foodpanda_chain_id')
+                    <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Store ID / Vendor ID</label>
+                <input type="text"
+                       name="foodpanda_store_id"
+                       value="{{ old('foodpanda_store_id', $store->foodpanda_store_id) }}"
+                       placeholder="Foodpanda 平台上的 store_id"
+                       class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                @error('foodpanda_store_id')
+                    <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">External Partner Config ID</label>
+                <input type="text"
+                       name="foodpanda_external_partner_config_id"
+                       value="{{ old('foodpanda_external_partner_config_id', $store->foodpanda_external_partner_config_id) }}"
+                       placeholder="建議填你的內部門市代碼"
+                       class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                <p class="mt-2 text-xs text-slate-500">如果 Partner Portal 有設定 internal store mapping，DineFlow 會優先用這個欄位對應門市。</p>
+                @error('foodpanda_external_partner_config_id')
+                    <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Webhook URL</label>
+                <input type="text"
+                       value="{{ route('webhooks.foodpanda.orders') }}"
+                       readonly
+                       class="w-full rounded-2xl border border-slate-300 bg-slate-100 px-4 py-3 text-slate-600 focus:outline-none">
+                <p class="mt-2 text-xs text-slate-500">把這個網址填到 Foodpanda Partner Portal 的 webhook 設定。</p>
+            </div>
+
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Client ID</label>
+                <input type="text"
+                       name="foodpanda_client_id"
+                       value="{{ old('foodpanda_client_id', $store->foodpanda_client_id) }}"
+                       placeholder="OAuth client id"
+                       class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                @error('foodpanda_client_id')
+                    <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Client Secret</label>
+                <input type="text"
+                       name="foodpanda_client_secret"
+                       value="{{ old('foodpanda_client_secret', $store->foodpanda_client_secret) }}"
+                       placeholder="OAuth client secret"
+                       class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                @error('foodpanda_client_secret')
+                    <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="lg:col-span-2">
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Webhook Secret</label>
+                <input type="text"
+                       name="foodpanda_webhook_secret"
+                       value="{{ old('foodpanda_webhook_secret', $store->foodpanda_webhook_secret) }}"
+                       placeholder="Partner Portal 設定的 Authorization header 值"
+                       class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                <p class="mt-2 text-xs text-slate-500">Foodpanda 會把這個值原封不動放進 `Authorization` header，所以若你用 Basic Auth，就直接填 `Basic ...`。</p>
+                @error('foodpanda_webhook_secret')
+                    <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
+    </div>
+
     <div class="lg:col-span-2">
         <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('admin.banner_image') }}</label>
 
