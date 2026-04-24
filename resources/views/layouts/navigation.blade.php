@@ -645,31 +645,3 @@
     </div>
 </nav>
 @endif
-
-@auth
-    @if($isAdminArea)
-        <div class="mobile-admin-dock">
-            @if($showStoreBackendNav)
-                <a href="{{ route('admin.stores.index') }}" class="{{ $isStoreBackendPage ? 'active' : '' }}">{{ __('nav.stores_short') }}</a>
-            @endif
-
-            @if($showCombinedMerchantWorkspaceNav && $combinedMerchantWorkspaceHref)
-                <a href="{{ $combinedMerchantWorkspaceHref }}" class="{{ $isCombinedMerchantWorkspacePage ? 'active' : '' }}">{{ __('nav.merchant_order_short') }}/{{ __('admin.board_all_title') }}</a>
-            @else
-                @if($showMerchantOrderNav && $merchantOrderNavHref)
-                    <a href="{{ $merchantOrderNavHref }}" class="{{ $isMerchantOrderPage ? 'active' : '' }}">{{ __('nav.merchant_order_short') }}</a>
-                @endif
-
-                @if($showBoardNav && $boardNavHref)
-                    <a href="{{ $boardNavHref }}" class="{{ $isBoardPage ? 'active' : '' }}">{{ __('admin.board_all_title') }}</a>
-                @endif
-            @endif
-
-            @if(Auth::user()?->isMerchant() && $subscriptionFeatureEnabled)
-                <a href="{{ route('merchant.subscription.index') }}" class="{{ request()->routeIs('merchant.subscription.*') ? 'active' : '' }}">{{ __('nav.plan_short') }}</a>
-            @elseif(Auth::user()?->isAdmin())
-                <a href="{{ route('super-admin.subscriptions.index', ['tab' => 'features']) }}" class="{{ request()->routeIs('super-admin.subscriptions.*') ? 'active' : '' }}">{{ __('nav.subscription_short') }}</a>
-            @endif
-        </div>
-    @endif
-@endauth

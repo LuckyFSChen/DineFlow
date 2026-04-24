@@ -83,7 +83,7 @@
     })"
     x-init="init()"
 >
-    <div class="w-full px-4 py-6 sm:px-6 lg:px-8">
+    <div class="w-full px-4 pb-32 pt-6 sm:px-6 lg:px-8 xl:pb-6">
         <div class="admin-hero mb-6 rounded-3xl px-5 py-5 md:px-7">
             <div class="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
@@ -144,11 +144,11 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('admin.stores.orders.store', $orderFormRouteParameters) }}" class="grid min-w-0 gap-6 xl:grid-cols-[380px,minmax(0,1fr)]">
+        <form id="merchant-order-form" method="POST" action="{{ route('admin.stores.orders.store', $orderFormRouteParameters) }}" class="grid min-w-0 gap-6 xl:grid-cols-[380px,minmax(0,1fr)]">
             @csrf
 
             <aside class="min-w-0 space-y-6">
-                <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <section class="hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm xl:block">
                     <h2 class="text-lg font-bold text-slate-900">{{ __('merchant_order.order_type_title') }}</h2>
                     <p class="mt-1 text-sm text-slate-500">{{ __('merchant_order.order_type_desc') }}</p>
 
@@ -608,6 +608,139 @@
                 </div>
             </section>
         </form>
+
+        <div
+            x-cloak
+            class="fixed inset-x-0 bottom-0 z-[80] border-t border-slate-200 bg-white/95 px-3 py-3 shadow-[0_-18px_40px_rgba(15,23,42,0.14)] backdrop-blur xl:hidden"
+        >
+            <div class="mx-auto grid w-full max-w-4xl grid-cols-[minmax(0,1fr),minmax(8.5rem,auto)] items-stretch gap-2">
+                <button
+                    type="button"
+                    @click="cartDetailsOpen = true"
+                    class="min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition hover:bg-slate-100"
+                >
+                    <div class="flex min-w-0 items-center justify-between gap-3">
+                        <span class="text-xs font-semibold text-slate-500">{{ __('merchant_order.total_items') }}</span>
+                        <span class="text-base font-bold text-slate-900 tabular-nums" x-text="totalQty"></span>
+                    </div>
+                    <div class="mt-1 flex min-w-0 items-center justify-between gap-3">
+                        <span class="text-xs font-semibold text-slate-500">{{ __('merchant_order.total_amount') }}</span>
+                        <span class="min-w-0 truncate text-base font-bold text-cyan-700 tabular-nums" x-text="money(estimatedPayable)"></span>
+                    </div>
+                </button>
+
+                <div class="grid min-w-0 grid-rows-2 gap-2">
+                    <button
+                        type="button"
+                        @click="cartDetailsOpen = true"
+                        class="inline-flex min-h-0 items-center justify-center whitespace-nowrap rounded-2xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                    >
+                        {{ __('merchant_order.cart_title') }}
+                    </button>
+
+                    <button
+                        type="submit"
+                        form="merchant-order-form"
+                        class="inline-flex min-h-0 items-center justify-center whitespace-nowrap rounded-2xl bg-cyan-600 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+                        :disabled="(isDineIn() && !selectedTableId) || cartItems.length === 0"
+                        x-text="isTakeout() ? text('submitTakeoutOrder') : text('submitDineInOrder')"
+                    ></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div
+        x-show="cartDetailsOpen"
+        x-cloak
+        x-transition.opacity
+        class="admin-modal-viewport fixed z-[230] overflow-hidden bg-slate-950/60 px-4 py-6 sm:px-6 sm:py-8"
+        @keydown.escape.window="cartDetailsOpen = false"
+    >
+        <div class="mx-auto flex h-full max-w-2xl items-end justify-center sm:items-center">
+            <div class="admin-modal-panel flex min-h-0 w-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl" @click.outside="cartDetailsOpen = false">
+                <div class="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900">{{ __('merchant_order.cart_title') }}</h3>
+                        <p class="mt-1 text-sm text-slate-500">{{ __('merchant_order.cart_desc') }}</p>
+                    </div>
+                    <button type="button" @click="cartDetailsOpen = false" class="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-100">
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                            <path d="m5 5 10 10M15 5 5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+                    <div class="space-y-3" x-show="cartItems.length > 0">
+                        <template x-for="(item, index) in cartItems" :key="`details-${item.uid}`">
+                            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-slate-900" x-text="item.productName"></p>
+                                        <p class="mt-1 text-xs text-slate-500" x-text="item.categoryName || ''"></p>
+                                        <template x-if="item.optionLabel">
+                                            <p class="mt-2 text-xs text-cyan-700" x-text="item.optionLabel"></p>
+                                        </template>
+                                        <template x-if="item.itemNote">
+                                            <p class="mt-1 text-xs text-amber-700"><span x-text="ui.itemNoteLabel"></span><span x-text="item.itemNote"></span></p>
+                                        </template>
+                                    </div>
+                                    <button type="button" @click="removeItem(index)" class="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100">
+                                        {{ __('merchant_order.remove_item') }}
+                                    </button>
+                                </div>
+
+                                <div class="mt-3 flex items-center justify-between gap-3">
+                                    <div class="inline-flex items-center rounded-full border border-slate-300 bg-white">
+                                        <button type="button" @click="decreaseQty(index)" class="px-3 py-1.5 text-sm font-semibold text-slate-700">-</button>
+                                        <span class="min-w-10 px-2 text-center text-sm font-semibold text-slate-900" x-text="item.qty"></span>
+                                        <button type="button" @click="increaseQty(index)" class="px-3 py-1.5 text-sm font-semibold text-slate-700">+</button>
+                                    </div>
+
+                                    <div class="text-right">
+                                        <p class="text-xs text-slate-500">{{ __('merchant_order.unit_price') }} <span x-text="money(item.price)"></span></p>
+                                        <p class="text-sm font-semibold text-slate-900" x-text="money(item.subtotal)"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div x-show="cartItems.length === 0" class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+                        {{ __('merchant_order.empty_cart') }}
+                    </div>
+                </div>
+
+                <div class="shrink-0 border-t border-slate-200 bg-white px-5 py-4">
+                    <div class="rounded-2xl border border-slate-200 bg-slate-900 px-4 py-4 text-white">
+                        <div class="flex items-center justify-between gap-3 text-sm text-slate-300">
+                            <span>{{ __('merchant_order.total_items') }}</span>
+                            <span x-text="totalQty"></span>
+                        </div>
+                        <div class="mt-2 flex items-center justify-between gap-3 text-lg font-bold">
+                            <span>{{ __('merchant_order.total_amount') }}</span>
+                            <span x-text="money(cartTotal)"></span>
+                        </div>
+                        <div x-show="selectedCouponCode && selectedCouponDiscount > 0" x-cloak class="mt-2 flex items-center justify-between gap-3 text-sm text-emerald-300">
+                            <span>{{ __('merchant_order.coupon_discount_label') }}</span>
+                            <span x-text="'- ' + money(selectedCouponDiscount)"></span>
+                        </div>
+                        <div x-show="selectedCouponCode" x-cloak class="mt-2 flex items-center justify-between gap-3 border-t border-slate-700 pt-2 text-sm font-semibold text-white">
+                            <span>{{ __('merchant_order.estimated_payable_amount') }}</span>
+                            <span x-text="money(estimatedPayable)"></span>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        @click="cartDetailsOpen = false"
+                        class="mt-3 inline-flex w-full items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                    >
+                        {{ __('merchant_order.modal_cancel') }}
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div
@@ -775,6 +908,7 @@
             selectedTableId: Number(config.defaultTableId || 0) || null,
             activeCategoryId: (config.categories || [])[0]?.id || null,
             modalOpen: false,
+            cartDetailsOpen: false,
             modalProduct: null,
             modalSelections: {},
             modalQty: 1,
