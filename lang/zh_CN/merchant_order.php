@@ -53,6 +53,7 @@ return [
     'submit_order' => '提交订单',
     'submit_dine_in_order' => '提交堂食',
     'submit_takeout_order' => '提交外带',
+    'prepay_collected_confirm' => '此店为餐前结账。是否已收款？确定：已收款并送后厨；取消：尚未收款。',
     'catalog_title' => '商品目录',
     'catalog_desc' => '选商品，设规格。',
     'catalog_hint_badge' => '实时菜单',

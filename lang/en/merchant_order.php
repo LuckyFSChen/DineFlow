@@ -70,6 +70,7 @@ return [
     'submit_order' => 'Submit Order',
     'submit_dine_in_order' => 'Submit Dine-In',
     'submit_takeout_order' => 'Submit Takeout',
+    'prepay_collected_confirm' => 'This store uses prepay checkout. Has payment been collected? OK: mark paid and send to kitchen. Cancel: submit unpaid.',
     'catalog_title' => 'Menu Catalog',
     'catalog_desc' => 'Pick items and options.',
     'catalog_hint_badge' => 'Live Menu',

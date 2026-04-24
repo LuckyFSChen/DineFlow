@@ -70,6 +70,7 @@ return [
     'submit_order' => '送出訂單',
     'submit_dine_in_order' => '送出內用',
     'submit_takeout_order' => '送出外帶',
+    'prepay_collected_confirm' => '此店為餐前結帳。是否已收款？確定：已收款並送後廚；取消：尚未收款。',
     'catalog_title' => '商品目錄',
     'catalog_desc' => '選商品，設定規格。',
     'catalog_hint_badge' => '即時菜單',

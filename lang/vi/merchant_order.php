@@ -70,6 +70,7 @@ return [
     'submit_order' => 'Gui Don',
     'submit_dine_in_order' => 'Gui Tai Quan',
     'submit_takeout_order' => 'Gui Mang Di',
+    'prepay_collected_confirm' => 'Cua hang dung tra truoc. Da thu tien chua? OK: da thu va gui bep. Cancel: gui chua thu tien.',
     'catalog_title' => 'Danh Muc Mon',
     'catalog_desc' => 'Chon mon va tuy chon.',
     'catalog_hint_badge' => 'Menu Hien Tai',

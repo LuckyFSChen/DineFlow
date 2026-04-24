@@ -265,6 +265,69 @@ class AdminMerchantOrderTest extends TestCase
         $this->assertCount(1, $order->items);
     }
 
+    public function test_backend_prepay_order_marked_collected_goes_directly_to_kitchen(): void
+    {
+        $admin = User::create([
+            'name' => 'Admin User',
+            'email' => 'admin-prepay-collected@example.com',
+            'password' => Hash::make('password'),
+            'role' => 'admin',
+        ]);
+
+        $store = Store::create([
+            'name' => 'Prepay Backend Store',
+            'slug' => 'prepay-backend-store',
+            'is_active' => true,
+            'checkout_timing' => 'prepay',
+            'opening_time' => '00:00',
+            'closing_time' => '23:59',
+        ]);
+
+        $table = DiningTable::create([
+            'store_id' => $store->id,
+            'table_no' => 'P1',
+            'qr_token' => 'prepay-p1',
+            'status' => 'available',
+        ]);
+
+        $category = Category::create([
+            'store_id' => $store->id,
+            'name' => 'Prepay',
+            'sort' => 1,
+            'is_active' => true,
+        ]);
+
+        $product = Product::create([
+            'store_id' => $store->id,
+            'category_id' => $category->id,
+            'name' => 'Paid Meal',
+            'price' => 180,
+            'is_active' => true,
+            'is_sold_out' => false,
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('admin.stores.orders.store', $store), [
+            'order_type' => 'dine_in',
+            'dining_table_id' => $table->id,
+            'payment_collected' => '1',
+            'items' => [
+                [
+                    'product_id' => $product->id,
+                    'qty' => 1,
+                    'option_payload' => '',
+                    'item_note' => '',
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect(route('admin.stores.orders.create', $store));
+
+        $order = Order::query()->sole();
+
+        $this->assertSame('preparing', $order->status);
+        $this->assertSame('paid', $order->payment_status);
+    }
+
     public function test_admin_can_lookup_available_coupons_by_customer_phone_for_backend_order(): void
     {
         $admin = User::create([

@@ -97,6 +97,7 @@ class MerchantOrderController extends Controller
             'customer_name' => ['nullable', 'string', 'max:255'],
             'customer_phone' => $this->customerPhoneValidationRules($store),
             'coupon_code' => ['nullable', 'string', 'max:64'],
+            'payment_collected' => ['nullable', 'boolean'],
             'note' => ['nullable', 'string', 'max:1000'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
@@ -134,6 +135,7 @@ class MerchantOrderController extends Controller
         $normalizedCustomerPhone = $this->normalizeCustomerPhone($validated['customer_phone'] ?? null, $store);
         $couponCode = $this->normalizeCouponCode($validated['coupon_code'] ?? null);
         $normalizedOrderNote = $this->normalizeOptionalText($validated['note'] ?? null);
+        $paymentCollected = $store->isPrepayCheckout() && (bool) ($validated['payment_collected'] ?? false);
 
         try {
             $order = DB::transaction(function () use (
@@ -144,7 +146,8 @@ class MerchantOrderController extends Controller
                 $normalizedCustomerName,
                 $normalizedCustomerPhone,
                 $couponCode,
-                $normalizedOrderNote
+                $normalizedOrderNote,
+                $paymentCollected
             ) {
                 $lineItems = $this->resolveOrderItems($store, $validated['items']);
                 $lineSubtotal = (int) collect($lineItems)->sum('subtotal');
@@ -200,8 +203,8 @@ class MerchantOrderController extends Controller
                         'order_type' => $orderType,
                         'cart_token' => null,
                         'order_no' => Order::generateOrderNoForStore((int) $store->id),
-                        'status' => 'pending',
-                        'payment_status' => 'unpaid',
+                        'status' => $paymentCollected ? 'preparing' : 'pending',
+                        'payment_status' => $paymentCollected ? 'paid' : 'unpaid',
                         'invoice_flow' => InvoiceFlow::NONE,
                         'customer_name' => $normalizedCustomerName ?: (
                             $orderType === 'takeout'
@@ -222,6 +225,11 @@ class MerchantOrderController extends Controller
                     ]);
                 } elseif (in_array(strtolower((string) $order->status), self::COMPLETED_ORDER_STATUSES, true)) {
                     $order->status = 'preparing';
+                }
+
+                if ($paymentCollected) {
+                    $order->status = 'preparing';
+                    $order->payment_status = 'paid';
                 }
 
                 if ($order->member_id === null && $member !== null) {

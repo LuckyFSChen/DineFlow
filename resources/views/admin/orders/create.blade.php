@@ -58,6 +58,7 @@
         'takeoutSelectedLabel' => __('merchant_order.takeout_selected_label'),
         'submitDineInOrder' => __('merchant_order.submit_dine_in_order'),
         'submitTakeoutOrder' => __('merchant_order.submit_takeout_order'),
+        'prepayCollectedConfirm' => __('merchant_order.prepay_collected_confirm'),
     ];
 @endphp
 
@@ -78,6 +79,7 @@
         initialCouponDiscount: @js($oldAppliedCouponDiscount),
         initialCouponName: @js($oldAppliedCouponName),
         initialCouponError: @js($errors->first('coupon_code')),
+        checkoutTiming: @js($checkoutTiming),
         locale: @js($numberLocale),
         ui: @js($ui),
     })"
@@ -144,11 +146,12 @@
             </div>
         @endif
 
-        <form id="merchant-order-form" method="POST" action="{{ route('admin.stores.orders.store', $orderFormRouteParameters) }}" class="grid min-w-0 gap-6 xl:grid-cols-[380px,minmax(0,1fr)]">
+        <form id="merchant-order-form" method="POST" action="{{ route('admin.stores.orders.store', $orderFormRouteParameters) }}" class="grid min-w-0 gap-6 xl:grid-cols-[380px,minmax(0,1fr)]" @submit="handleSubmit($event)">
             @csrf
+            <input type="hidden" name="payment_collected" :value="paymentCollected ? 1 : 0">
 
             <aside class="min-w-0 space-y-6">
-                <section class="hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm xl:block">
+                <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                     <h2 class="text-lg font-bold text-slate-900">{{ __('merchant_order.order_type_title') }}</h2>
                     <p class="mt-1 text-sm text-slate-500">{{ __('merchant_order.order_type_desc') }}</p>
 
@@ -178,7 +181,9 @@
                     </div>
                 </section>
 
-                <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <input type="hidden" name="dining_table_id" :value="isDineIn() ? (selectedTableId || '') : ''">
+
+                <section x-show="isDineIn()" x-cloak class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div class="flex items-center justify-between gap-3">
                         <div>
                             <h2 class="text-lg font-bold text-slate-900">{{ __('merchant_order.table_picker_title') }}</h2>
@@ -187,13 +192,7 @@
                         <span class="rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700" x-text="selectedTableLabel()"></span>
                     </div>
 
-                    <input type="hidden" name="dining_table_id" :value="isDineIn() ? (selectedTableId || '') : ''">
-
-                    <div x-show="isTakeout()" x-cloak class="mt-4 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm font-semibold text-cyan-800">
-                        {{ __('merchant_order.takeout_no_table_hint') }}
-                    </div>
-
-                    <div x-show="isDineIn()" x-cloak class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                    <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                         <template x-for="table in tables" :key="table.id">
                             <button
                                 type="button"
@@ -349,7 +348,7 @@
                     </div>
                 </section>
 
-                <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <section class="hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm xl:block">
                     <div class="flex items-center justify-between gap-3">
                         <div>
                             <h2 class="text-lg font-bold text-slate-900">{{ __('merchant_order.cart_title') }}</h2>
@@ -901,6 +900,8 @@
             currencySymbol: config.currencySymbol || 'NT$',
             locale: config.locale || undefined,
             ui: config.ui || {},
+            checkoutTiming: config.checkoutTiming || 'postpay',
+            paymentCollected: false,
             tablesRefreshUrl: config.tablesRefreshUrl || null,
             couponLookupUrl: config.couponLookupUrl || null,
             customerPhone: config.defaultCustomerPhone || '',
@@ -1029,6 +1030,20 @@
 
             isTakeout() {
                 return this.orderType === 'takeout';
+            },
+
+            isPrepayCheckout() {
+                return this.checkoutTiming === 'prepay';
+            },
+
+            handleSubmit() {
+                if (!this.isPrepayCheckout()) {
+                    this.paymentCollected = false;
+                    return true;
+                }
+
+                this.paymentCollected = window.confirm(this.text('prepayCollectedConfirm'));
+                return true;
             },
 
             setOrderType(type) {
