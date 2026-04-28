@@ -96,6 +96,77 @@ class ProfileTest extends TestCase
         Notification::assertSentTo($user, VerifyEmail::class);
     }
 
+    public function test_merchant_email_change_rejects_email_used_by_another_login_account(): void
+    {
+        Notification::fake();
+
+        User::factory()->create([
+            'role' => 'admin',
+            'email' => 'shared@example.com',
+        ]);
+
+        $user = User::factory()->create([
+            'role' => 'merchant',
+            'email' => 'merchant@example.com',
+            'email_verified_at' => now(),
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->from('/profile')
+            ->patch('/profile', [
+                'name' => 'Merchant User',
+                'email' => 'shared@example.com',
+            ]);
+
+        $response
+            ->assertSessionHasErrors('email')
+            ->assertRedirect('/profile');
+
+        $user->refresh();
+
+        $this->assertSame('merchant@example.com', $user->email);
+        $this->assertNull($user->pending_email);
+
+        Notification::assertNothingSent();
+    }
+
+    public function test_merchant_email_change_rejects_email_pending_on_another_login_account(): void
+    {
+        Notification::fake();
+
+        User::factory()->create([
+            'role' => 'merchant',
+            'email' => 'other@example.com',
+            'pending_email' => 'shared@example.com',
+        ]);
+
+        $user = User::factory()->create([
+            'role' => 'merchant',
+            'email' => 'merchant@example.com',
+            'email_verified_at' => now(),
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->from('/profile')
+            ->patch('/profile', [
+                'name' => 'Merchant User',
+                'email' => 'shared@example.com',
+            ]);
+
+        $response
+            ->assertSessionHasErrors('email')
+            ->assertRedirect('/profile');
+
+        $user->refresh();
+
+        $this->assertSame('merchant@example.com', $user->email);
+        $this->assertNull($user->pending_email);
+
+        Notification::assertNothingSent();
+    }
+
     public function test_pending_merchant_email_is_applied_after_verification(): void
     {
         $user = User::factory()->create([
@@ -120,6 +191,38 @@ class ProfileTest extends TestCase
         $this->assertSame('new-merchant@example.com', $user->email);
         $this->assertNull($user->pending_email);
         $this->assertNotNull($user->email_verified_at);
+    }
+
+    public function test_pending_merchant_email_is_not_applied_if_another_login_account_claimed_it(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'merchant',
+            'email' => 'merchant@example.com',
+            'pending_email' => 'shared@example.com',
+            'email_verified_at' => now(),
+        ]);
+
+        User::factory()->create([
+            'role' => 'admin',
+            'email' => 'shared@example.com',
+        ]);
+
+        $verificationUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $user->id, 'hash' => sha1('shared@example.com')]
+        );
+
+        $response = $this->actingAs($user)->get($verificationUrl);
+
+        $response
+            ->assertRedirect(route('profile.edit', absolute: false))
+            ->assertSessionHasErrors('email');
+
+        $user->refresh();
+
+        $this->assertSame('merchant@example.com', $user->email);
+        $this->assertSame('shared@example.com', $user->pending_email);
     }
 
     public function test_user_can_delete_their_account(): void

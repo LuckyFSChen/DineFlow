@@ -65,6 +65,12 @@ class RegisteredUserController extends Controller
             ]);
         }
 
+        if ($accountType === 'merchant' && User::emailIsReservedForLogin((string) $request->input('email'))) {
+            throw ValidationException::withMessages([
+                'email' => __('validation.unique', ['attribute' => __('auth.Email')]),
+            ]);
+        }
+
         try {
             $user = User::create([
                 'name' => $request->name,

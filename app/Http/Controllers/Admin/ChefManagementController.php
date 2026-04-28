@@ -36,6 +36,11 @@ class ChefManagementController extends Controller
                 'email',
                 'max:255',
                 Rule::unique('users', 'email')->where(fn ($query) => $query->where('role', 'chef')),
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (User::emailIsReservedForLogin((string) $value)) {
+                        $fail(__('validation.unique', ['attribute' => __('validation.attributes.email')]));
+                    }
+                },
             ],
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);

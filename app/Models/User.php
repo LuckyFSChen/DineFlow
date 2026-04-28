@@ -19,6 +19,8 @@ class User extends Authenticatable implements MustVerifyEmail
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
 
+    public const EMAIL_LOGIN_ROLES = ['admin', 'merchant', 'chef', 'cashier'];
+
     protected static function booted(): void
     {
         static::updated(function (User $user): void {
@@ -160,6 +162,24 @@ class User extends Authenticatable implements MustVerifyEmail
         }
 
         return $this->email;
+    }
+
+    public static function emailIsReservedForLogin(string $email, ?int $ignoreUserId = null): bool
+    {
+        $email = strtolower(trim($email));
+
+        if ($email === '') {
+            return false;
+        }
+
+        return static::query()
+            ->whereIn('role', self::EMAIL_LOGIN_ROLES)
+            ->when($ignoreUserId !== null, fn ($query) => $query->whereKeyNot($ignoreUserId))
+            ->where(function ($query) use ($email): void {
+                $query->where('email', $email)
+                    ->orWhere('pending_email', $email);
+            })
+            ->exists();
     }
 
     public function isMerchant(): bool

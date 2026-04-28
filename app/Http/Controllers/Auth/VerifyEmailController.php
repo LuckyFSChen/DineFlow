@@ -18,6 +18,14 @@ class VerifyEmailController extends Controller
         $user = $request->user();
 
         if ($user instanceof User && $user->pending_email) {
+            if (User::emailIsReservedForLogin($user->pending_email, $user->id)) {
+                return redirect()
+                    ->route('profile.edit')
+                    ->withErrors([
+                        'email' => __('validation.unique', ['attribute' => __('validation.attributes.email')]),
+                    ]);
+            }
+
             $user->forceFill([
                 'email' => $user->pending_email,
                 'pending_email' => null,
