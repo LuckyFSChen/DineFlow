@@ -51,4 +51,6 @@ return [
     'password_placeholder'   => '請輸入密碼',
     'cancel'                 => '取消',
     'confirm_delete_btn'     => '確認刪除',
+    'pending_email_hint'     => '驗證信已寄到 :email。完成驗證後，帳號 Email 才會更新。',
+    'email_verification_sent' => '驗證信已寄出。完成驗證後，Email 才會更新。',
 ];

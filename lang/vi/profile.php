@@ -51,4 +51,6 @@ return [
     'password_placeholder'   => 'Nhập mật khẩu của bạn',
     'cancel'                 => 'Hủy',
     'confirm_delete_btn'     => 'Xác Nhận Xóa',
+    'pending_email_hint'     => 'Email xác minh đã được gửi đến :email. Email tài khoản sẽ được cập nhật sau khi xác minh.',
+    'email_verification_sent' => 'Email xác minh đã được gửi. Email sẽ được cập nhật sau khi bạn xác minh.',
 ];

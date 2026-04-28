@@ -28,8 +28,10 @@ return [
     'name_label'             => 'Name',
     'email_label'            => 'Email',
     'unverified_hint'        => 'Your email address is unverified.',
+    'pending_email_hint'     => 'A verification email has been sent to :email. Your account email will change after verification.',
     'resend_verification'    => 'Click here to resend the verification email.',
     'verification_sent'      => 'A new verification link has been sent to your email address.',
+    'email_verification_sent' => 'Verification email sent. Your email will be updated after you verify it.',
     'save_changes'           => 'Save Changes',
     'saved'                  => 'Saved.',
     // Password form

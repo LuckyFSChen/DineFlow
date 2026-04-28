@@ -28,6 +28,12 @@
             <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
 
+            @if ($user->pending_email)
+                <p class="text-sm mt-2 text-gray-800">
+                    {{ __('profile.pending_email_hint', ['email' => $user->pending_email]) }}
+                </p>
+            @endif
+
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
                 <div>
                     <p class="text-sm mt-2 text-gray-800">
@@ -58,6 +64,16 @@
                     x-init="setTimeout(() => show = false, 2000)"
                     class="text-sm text-gray-600"
                 >{{ __('profile.saved') }}</p>
+            @endif
+
+            @if (session('status') === 'email-verification-link-sent')
+                <p
+                    x-data="{ show: true }"
+                    x-show="show"
+                    x-transition
+                    x-init="setTimeout(() => show = false, 4000)"
+                    class="text-sm text-gray-600"
+                >{{ __('profile.email_verification_sent') }}</p>
             @endif
         </div>
     </form>
