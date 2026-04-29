@@ -15,6 +15,6 @@
 - {{ __('merchant_inquiry.email_submitted_at') }}: {{ $submittedAt->format('Y-m-d H:i:s') }}
 - {{ __('merchant_inquiry.email_source') }}: {{ route('product.intro') }}
 
-Thanks,<br>
+{{ __('merchant_inquiry.email_footer_thanks') }},<br>
 {{ config('app.name') }}
 </x-mail::message>

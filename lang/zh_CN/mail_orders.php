@@ -7,6 +7,12 @@ return [
         'heading' => '您的订单已送出',
         'intro' => '我们已收到您在 **:store** 的订单。',
     ],
+    'store_new_order' => [
+        'subject' => '[DineFlow] 新门店订单',
+        'heading' => '新门店订单',
+        'intro' => '有新的门店订单建立，请前往后台查看最新订单内容。',
+        'cta' => '前往后台',
+    ],
     'completed' => [
         'subject' => '[:store] 订单已完成 #:order_no',
         'heading' => '您的订单已完成',

@@ -33,6 +33,7 @@ return [
     'email_intro' => '有访客通过公开方案页提交了商家合作表单。',
     'email_submitted_at' => '提交时间',
     'email_source' => '来源页面',
+    'email_footer_thanks' => '谢谢',
     'empty_value' => '-',
     'statuses' => [
         'open' => '已开店',

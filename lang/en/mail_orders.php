@@ -7,6 +7,12 @@ return [
         'heading' => 'Your Order Has Been Submitted',
         'intro' => 'We have received your order at **:store**.',
     ],
+    'store_new_order' => [
+        'subject' => '[DineFlow] New Store Order',
+        'heading' => 'New Store Order',
+        'intro' => 'A new store order has been created. Please open the backend to review the latest order details.',
+        'cta' => 'Open Backend',
+    ],
     'completed' => [
         'subject' => '[:store] Order Completed #:order_no',
         'heading' => 'Your Order Is Ready',

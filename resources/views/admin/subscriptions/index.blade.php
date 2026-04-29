@@ -55,6 +55,7 @@
         'is_active' => (string) ($creatingPlan ? old('is_active', '1') : '1'),
         'description' => $creatingPlan ? old('description', '') : '',
         'plan_features' => $creatingPlan ? old('plan_features', '') : '',
+        'nav_features' => $creatingPlan ? (array) old('nav_features', \App\Support\NavFeature::defaults()) : \App\Support\NavFeature::defaults(),
     ];
 @endphp
 <div class="min-h-screen bg-slate-50">
@@ -326,6 +327,31 @@
                                         >{{ $createPlanValues['plan_features'] }}</textarea>
                                         <span class="mt-1.5 block text-xs text-slate-500">{{ __('admin.subscription_plan_features_hint') }}</span>
                                     </label>
+
+                                    <div class="rounded-2xl border border-slate-200 bg-white px-4 py-4">
+                                        <p class="text-sm font-semibold text-slate-800">{{ __('subscription.plan_nav_features') }}</p>
+                                        <p class="mt-1 text-xs leading-5 text-slate-500">{{ __('subscription.plan_nav_features_hint') }}</p>
+
+                                        <div class="mt-3 grid gap-2">
+                                            @foreach($navFeatureDefinitions as $featureKey => $featureDefinition)
+                                                @php $createNavFeatureEnabled = (bool) ($createPlanValues['nav_features'][$featureKey] ?? true); @endphp
+                                                <input type="hidden" name="nav_features[{{ $featureKey }}]" value="0">
+                                                <label class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        name="nav_features[{{ $featureKey }}]"
+                                                        value="1"
+                                                        @checked($createNavFeatureEnabled)
+                                                        class="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                                                    >
+                                                    <span class="min-w-0">
+                                                        <span class="block text-sm font-semibold text-slate-800">{{ __($featureDefinition['label_key']) }}</span>
+                                                        <span class="mt-0.5 block text-xs leading-5 text-slate-500">{{ __($featureDefinition['description_key']) }}</span>
+                                                    </span>
+                                                </label>
+                                            @endforeach
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="mt-5 border-t border-slate-200 pt-4">
@@ -361,6 +387,9 @@
                                             $planFeaturesValue = $isEditingPlan
                                                 ? old('plan_features', implode(PHP_EOL, (array) ($plan->features ?? [])))
                                                 : implode(PHP_EOL, (array) ($plan->features ?? []));
+                                            $planNavFeaturesValue = $isEditingPlan
+                                                ? (array) old('nav_features', $plan->nav_features ?? \App\Support\NavFeature::defaults())
+                                                : (array) ($plan->nav_features ?? \App\Support\NavFeature::defaults());
                                             $originalPrice = (int) $plan->price_twd + (int) ($plan->discount_twd ?? 0);
                                             $assignedMerchantsCount = (int) ($plan->merchant_users_count ?? 0);
                                             $canDeletePlan = $assignedMerchantsCount === 0;
@@ -528,6 +557,31 @@
                                                     >{{ $planFeaturesValue }}</textarea>
                                                     <span class="mt-1.5 block text-xs text-slate-500">{{ __('admin.subscription_plan_features_hint') }}</span>
                                                 </label>
+
+                                                <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4">
+                                                    <p class="text-sm font-semibold text-slate-800">{{ __('subscription.plan_nav_features') }}</p>
+                                                    <p class="mt-1 text-xs leading-5 text-slate-500">{{ __('subscription.plan_nav_features_hint') }}</p>
+
+                                                    <div class="mt-3 grid gap-2 md:grid-cols-2">
+                                                        @foreach($navFeatureDefinitions as $featureKey => $featureDefinition)
+                                                            @php $planNavFeatureEnabled = (bool) ($planNavFeaturesValue[$featureKey] ?? true); @endphp
+                                                            <input type="hidden" name="nav_features[{{ $featureKey }}]" value="0">
+                                                            <label class="flex items-start gap-3 rounded-xl border {{ $planNavFeatureEnabled ? 'border-emerald-200 bg-emerald-50/60' : 'border-slate-200 bg-white' }} px-3 py-2">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    name="nav_features[{{ $featureKey }}]"
+                                                                    value="1"
+                                                                    @checked($planNavFeatureEnabled)
+                                                                    class="mt-1 h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                                                                >
+                                                                <span class="min-w-0">
+                                                                    <span class="block text-sm font-semibold text-slate-800">{{ __($featureDefinition['label_key']) }}</span>
+                                                                    <span class="mt-0.5 block text-xs leading-5 text-slate-500">{{ __($featureDefinition['description_key']) }}</span>
+                                                                </span>
+                                                            </label>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
 
                                                 <div class="grid gap-3 sm:grid-cols-3">
                                                     <div class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">

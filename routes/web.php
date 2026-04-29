@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\StoreManagementController as AdminStoreController;
+use App\Http\Controllers\Admin\UberEatsIntegrationTestController;
+use App\Http\Controllers\Admin\UberEatsMenuMappingController;
 use App\Http\Controllers\Admin\UserSubscriptionController;
 use App\Http\Controllers\Admin\ProductManagementController;
 use App\Http\Controllers\Admin\DiningTableManagementController;
@@ -60,6 +62,9 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin', 'merchant.subscrip
     Route::delete('stores/{store}/categories/{category}', [ProductManagementController::class, 'destroyCategory'])->name('stores.categories.destroy');
     Route::post('stores/{store}/products/reorder', [ProductManagementController::class, 'reorder'])->name('stores.products.reorder');
     Route::post('stores/{store}/products/move', [ProductManagementController::class, 'move'])->name('stores.products.move');
+    Route::get('stores/{store}/uber-eats-menu', [UberEatsMenuMappingController::class, 'index'])->name('stores.uber-eats-menu.index');
+    Route::post('stores/{store}/uber-eats-menu/sync', [UberEatsMenuMappingController::class, 'sync'])->name('stores.uber-eats-menu.sync');
+    Route::put('stores/{store}/uber-eats-menu', [UberEatsMenuMappingController::class, 'update'])->name('stores.uber-eats-menu.update');
     Route::resource('stores.products', ProductManagementController::class)->except(['show']);
     Route::get('stores/{store}/tables', [DiningTableManagementController::class, 'index'])->name('stores.tables.index');
     Route::get('stores/{store}/tables/print', [DiningTableManagementController::class, 'print'])->name('stores.tables.print');
@@ -207,6 +212,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('super-admin')->na
     Route::delete('/subscription-plans/{plan}', [UserSubscriptionController::class, 'destroyPlan'])->name('subscriptions.plans.destroy');
     Route::patch('/subscriptions/{user}', [UserSubscriptionController::class, 'update'])->name('subscriptions.update');
     Route::patch('/nav-features', [UserSubscriptionController::class, 'updateNavFeatures'])->name('subscriptions.features.update');
+    Route::get('/integrations/uber-eats', [UberEatsIntegrationTestController::class, 'index'])->name('integrations.uber-eats.index');
+    Route::post('/integrations/uber-eats/switch', [UberEatsIntegrationTestController::class, 'switchMode'])->name('integrations.uber-eats.switch');
+    Route::post('/integrations/uber-eats/test', [UberEatsIntegrationTestController::class, 'test'])->name('integrations.uber-eats.test');
 });
 
 /*
@@ -370,11 +378,11 @@ Route::get('/admin', function (Request $request) {
     }
 
     if ($user->isMerchant()) {
-        if (NavFeature::enabled(NavFeature::SUBSCRIPTION)) {
+        if (NavFeature::enabledForUser($user, NavFeature::SUBSCRIPTION)) {
             return redirect()->route('merchant.subscription.index');
         }
 
-        if (NavFeature::enabled(NavFeature::STORE_BACKEND) && $user->hasActiveSubscription()) {
+        if (NavFeature::enabledForUser($user, NavFeature::STORE_BACKEND) && $user->hasActiveSubscription()) {
             return redirect()->route('admin.stores.index');
         }
 
@@ -383,23 +391,23 @@ Route::get('/admin', function (Request $request) {
             ->orderBy('id')
             ->first();
 
-        if (NavFeature::enabled(NavFeature::BOARDS) && $user->hasActiveSubscription() && $merchantBoardStore) {
+        if (NavFeature::enabledForUser($user, NavFeature::BOARDS, $merchantBoardStore) && $user->hasActiveSubscription() && $merchantBoardStore) {
             return redirect()->route('admin.stores.boards', $merchantBoardStore);
         }
 
-        if (NavFeature::enabled(NavFeature::FINANCIAL_REPORT)) {
+        if (NavFeature::enabledForUser($user, NavFeature::FINANCIAL_REPORT)) {
             return redirect()->route('merchant.reports.financial');
         }
 
-        if (NavFeature::enabled(NavFeature::ORDER_HISTORY)) {
+        if (NavFeature::enabledForUser($user, NavFeature::ORDER_HISTORY)) {
             return redirect()->route('merchant.orders.index');
         }
 
-        if (NavFeature::enabled(NavFeature::INVOICE_CENTER)) {
+        if (NavFeature::enabledForUser($user, NavFeature::INVOICE_CENTER)) {
             return redirect()->route('merchant.invoices.index');
         }
 
-        if (NavFeature::enabled(NavFeature::LOYALTY)) {
+        if (NavFeature::enabledForUser($user, NavFeature::LOYALTY)) {
             return redirect()->route('merchant.loyalty.index');
         }
 
@@ -410,7 +418,7 @@ Route::get('/admin', function (Request $request) {
         return redirect()->route('super-admin.subscriptions.index', ['tab' => 'features']);
     }
 
-    if (($user->isChef() || $user->isCashier()) && $user->store && NavFeature::enabled(NavFeature::BOARDS)) {
+    if (($user->isChef() || $user->isCashier()) && $user->store && NavFeature::enabledForUser($user, NavFeature::BOARDS, $user->store)) {
         return redirect()->route('admin.stores.boards', $user->store);
     }
 

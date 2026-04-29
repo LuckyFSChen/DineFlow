@@ -20,7 +20,7 @@ class MerchantRegisteredNotificationMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[DineFlow] New Merchant Registration',
+            subject: __('mail_admin.merchant_registered.subject'),
         );
     }
 
@@ -35,4 +35,3 @@ class MerchantRegisteredNotificationMail extends Mailable
         );
     }
 }
-

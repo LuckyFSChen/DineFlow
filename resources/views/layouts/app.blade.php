@@ -180,5 +180,6 @@
             @include('partials.public-footer')
         @endif
     </div>
+    <x-global-request-alert />
 </body>
 </html>

@@ -21,16 +21,6 @@
         && ! $isWorkspacePage;
 
     $navUser = Auth::user();
-    $navFeatures = \App\Support\NavFeature::all();
-    $subscriptionFeatureEnabled = $navUser?->isAdmin()
-        ? true
-        : ($navFeatures[\App\Support\NavFeature::SUBSCRIPTION] ?? true);
-    $financialReportFeatureEnabled = $navFeatures[\App\Support\NavFeature::FINANCIAL_REPORT] ?? true;
-    $orderHistoryFeatureEnabled = $navFeatures[\App\Support\NavFeature::ORDER_HISTORY] ?? true;
-    $invoiceCenterFeatureEnabled = $navFeatures[\App\Support\NavFeature::INVOICE_CENTER] ?? true;
-    $loyaltyFeatureEnabled = $navFeatures[\App\Support\NavFeature::LOYALTY] ?? true;
-    $storeBackendFeatureEnabled = $navFeatures[\App\Support\NavFeature::STORE_BACKEND] ?? true;
-    $boardsFeatureEnabled = $navFeatures[\App\Support\NavFeature::BOARDS] ?? true;
     $routeStoreParam = request()->route('store');
 
     $resolvedRouteStore = null;
@@ -45,6 +35,20 @@
     if ($resolvedRouteStore && ! $resolvedRouteStore->is_active) {
         $resolvedRouteStore = null;
     }
+
+    $navFeatureEnabled = static fn (string $feature, ?\App\Models\Store $store = null): bool => \App\Support\NavFeature::enabledForUser(
+        $navUser,
+        $feature,
+        $store ?: $resolvedRouteStore,
+    );
+
+    $subscriptionFeatureEnabled = $navFeatureEnabled(\App\Support\NavFeature::SUBSCRIPTION);
+    $financialReportFeatureEnabled = $navFeatureEnabled(\App\Support\NavFeature::FINANCIAL_REPORT);
+    $orderHistoryFeatureEnabled = $navFeatureEnabled(\App\Support\NavFeature::ORDER_HISTORY);
+    $invoiceCenterFeatureEnabled = $navFeatureEnabled(\App\Support\NavFeature::INVOICE_CENTER);
+    $loyaltyFeatureEnabled = $navFeatureEnabled(\App\Support\NavFeature::LOYALTY);
+    $storeBackendFeatureEnabled = $navFeatureEnabled(\App\Support\NavFeature::STORE_BACKEND);
+    $boardsFeatureEnabled = $navFeatureEnabled(\App\Support\NavFeature::BOARDS);
 
     $storeRouteValue = static function ($store) {
         if ($store instanceof \App\Models\Store) {
@@ -97,6 +101,8 @@
     } elseif ($navUser?->isAdmin() || $navUser?->hasActiveSubscription()) {
         $boardNavStore = $resolvedRouteStore ?: $firstOpenStore();
     }
+
+    $boardsFeatureEnabled = $navFeatureEnabled(\App\Support\NavFeature::BOARDS, $boardNavStore);
 
     $showBoardNav = $boardsFeatureEnabled
         && $boardNavStore
@@ -503,7 +509,7 @@
                                 step="1"
                                 :value="fontSizeIndex()"
                                 @input="setFontSizeByIndex($event.target.value)"
-                                class="h-2 w-full cursor-pointer accent-cyan-600"
+                                class="admin-font-range h-5 w-full cursor-pointer accent-cyan-600"
                                 aria-label="Adjust admin font size"
                             >
                         </div>
@@ -573,7 +579,7 @@
                                             step="1"
                                             :value="fontSizeIndex()"
                                             @input="setFontSizeByIndex($event.target.value)"
-                                            class="h-2 flex-1 cursor-pointer accent-cyan-600"
+                                            class="admin-font-range h-5 flex-1 cursor-pointer accent-cyan-600"
                                             aria-label="Adjust admin font size"
                                         >
                                         <span class="min-w-10 whitespace-nowrap text-right text-xs font-bold text-cyan-700" x-text="fontSizeLabel()"></span>
@@ -599,6 +605,12 @@
                                         </span>
                                     @endif
                                 @endforeach
+                            @endif
+
+                            @if(Auth::user()?->isAdmin())
+                                <x-dropdown-link :href="route('super-admin.integrations.uber-eats.index')" class="{{ request()->routeIs('super-admin.integrations.uber-eats.*') ? $settingsDropdownActiveClasses : '' }}">
+                                    {{ __('uber_eats.integration_test_nav') }}
+                                </x-dropdown-link>
                             @endif
 
                             @if(Auth::user()?->isCustomer())
@@ -719,6 +731,12 @@
                         @endforeach
                     @endif
 
+                    @if(Auth::user()?->isAdmin())
+                        <x-responsive-nav-link :href="route('super-admin.integrations.uber-eats.index')" :active="request()->routeIs('super-admin.integrations.uber-eats.*')">
+                            {{ __('uber_eats.integration_test_nav') }}
+                        </x-responsive-nav-link>
+                    @endif
+
                     @if(Auth::user()?->isCustomer())
                         <x-responsive-nav-link :href="route('customer.points.index')" :active="request()->routeIs('customer.points.*')">
                             {{ __('nav.points_card') }}
@@ -763,7 +781,7 @@
                                 step="1"
                                 :value="fontSizeIndex()"
                                 @input="setFontSizeByIndex($event.target.value)"
-                                class="h-2 flex-1 cursor-pointer accent-cyan-600"
+                                class="admin-font-range h-5 flex-1 cursor-pointer accent-cyan-600"
                                 aria-label="Adjust admin font size"
                             >
                             <span class="min-w-8 text-right text-xs font-bold text-cyan-700" x-text="fontSizeLabel()"></span>

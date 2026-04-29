@@ -270,6 +270,8 @@ return [
     'subscription_plan_description' => 'Description',
     'subscription_plan_features'    => 'Feature Bullets',
     'subscription_plan_features_hint' => 'Enter one item per line. Each line will appear as a bullet point on pricing cards.',
+    'subscription_plan_nav_features' => 'Available NAV Features',
+    'subscription_plan_nav_features_hint' => 'Select which navigation entries and protected feature routes merchants on this plan can use.',
     'subscription_plan_duration'    => 'Duration',
     'subscription_plan_days_value'  => ':days days',
     'subscription_plan_store_limit' => 'Store Limit',

@@ -1,12 +1,12 @@
 <x-mail::message>
-# Introduction
+# {{ __('mail_orders.store_new_order.heading') }}
 
-The body of your message.
+{{ __('mail_orders.store_new_order.intro') }}
 
 <x-mail::button :url="''">
-Button Text
+{{ __('mail_orders.store_new_order.cta') }}
 </x-mail::button>
 
-Thanks,<br>
+{{ __('mail_orders.footer.thanks') }},<br>
 {{ config('app.name') }}
 </x-mail::message>

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Order;
+use App\Models\ExternalProductMapping;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\UberEatsWebhookEvent;
@@ -403,6 +404,14 @@ class UberEatsOrderSyncService
             ->where('store_id', $store->id)
             ->get(['id', 'name']);
 
+        $externalMappings = ExternalProductMapping::query()
+            ->where('store_id', $store->id)
+            ->where('platform', self::SOURCE_PLATFORM)
+            ->whereNotNull('product_id')
+            ->pluck('product_id', 'external_item_id')
+            ->map(fn ($productId) => (int) $productId)
+            ->all();
+
         $lookup = [];
         foreach ($products as $product) {
             foreach ($this->buildLookupKeys((string) $product->name) as $key) {
@@ -438,10 +447,17 @@ class UberEatsOrderSyncService
             );
 
             $matchedProductId = null;
-            foreach ($this->buildLookupKeys($productName) as $key) {
-                if (isset($lookup[$key])) {
-                    $matchedProductId = $lookup[$key];
-                    break;
+            $externalItemId = trim((string) Arr::get($rawItem, 'id', ''));
+            if ($externalItemId !== '' && isset($externalMappings[$externalItemId])) {
+                $matchedProductId = (int) $externalMappings[$externalItemId];
+            }
+
+            if ($matchedProductId === null) {
+                foreach ($this->buildLookupKeys($productName) as $key) {
+                    if (isset($lookup[$key])) {
+                        $matchedProductId = $lookup[$key];
+                        break;
+                    }
                 }
             }
 

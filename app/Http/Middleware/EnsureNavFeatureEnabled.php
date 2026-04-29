@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Support\NavFeature;
+use App\Models\Store;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -11,7 +12,10 @@ class EnsureNavFeatureEnabled
 {
     public function handle(Request $request, Closure $next, string $feature): Response
     {
-        if (NavFeature::enabled($feature)) {
+        $routeStore = $request->route('store');
+        $store = $routeStore instanceof Store ? $routeStore : null;
+
+        if (NavFeature::enabledForUser($request->user(), $feature, $store)) {
             return $next($request);
         }
 

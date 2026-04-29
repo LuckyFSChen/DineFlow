@@ -501,6 +501,62 @@ body.is-admin-area .admin-font-switcher > div:last-child > button {
 	flex: 1 1 0;
 }
 
+body.is-admin-area .admin-font-range {
+	position: relative;
+	z-index: 1;
+	display: block;
+	min-width: 7rem;
+	height: 1.25rem;
+	padding: 0;
+	background: transparent;
+	touch-action: pan-x;
+	pointer-events: auto;
+	-webkit-appearance: none;
+	appearance: none;
+}
+
+body.is-admin-area .admin-font-range::-webkit-slider-runnable-track {
+	height: 0.5rem;
+	border-radius: 999px;
+	background: #dbe4e8;
+}
+
+body.is-admin-area .admin-font-range::-webkit-slider-thumb {
+	width: 0.875rem;
+	height: 0.875rem;
+	margin-top: -0.1875rem;
+	border: 0;
+	border-radius: 999px;
+	background: #0891b2;
+	cursor: grab;
+	-webkit-appearance: none;
+	appearance: none;
+}
+
+body.is-admin-area .admin-font-range:active::-webkit-slider-thumb {
+	cursor: grabbing;
+}
+
+body.is-admin-area .admin-font-range::-moz-range-track {
+	height: 0.5rem;
+	border: 0;
+	border-radius: 999px;
+	background: #dbe4e8;
+}
+
+body.is-admin-area .admin-font-range::-moz-range-thumb {
+	width: 0.875rem;
+	height: 0.875rem;
+	border: 0;
+	border-radius: 999px;
+	background: #0891b2;
+	cursor: grab;
+}
+
+body.is-admin-area .admin-font-range:active::-moz-range-thumb {
+	cursor: grabbing;
+}
+
 body.is-admin-area .admin-nav-locale > button,
 body.is-admin-area .admin-nav-controls .min-w-0 > div > button {
 	width: auto;

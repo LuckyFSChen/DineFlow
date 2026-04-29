@@ -151,13 +151,14 @@ class UserSubscriptionController extends Controller
         $supportsCategory = Schema::hasColumn('subscription_plans', 'category');
         $supportsDiscount = Schema::hasColumn('subscription_plans', 'discount_twd');
         $supportsDescription = Schema::hasColumn('subscription_plans', 'description');
+        $supportsNavFeatures = Schema::hasColumn('subscription_plans', 'nav_features');
 
         $validated = $request->validate(
             $this->planValidationRules($supportsCategory, $supportsDiscount, $supportsDescription)
         );
 
         $plan = SubscriptionPlan::query()->create(
-            $this->buildPlanPayload($validated, $supportsCategory, $supportsDiscount, $supportsDescription)
+            $this->buildPlanPayload($validated, $supportsCategory, $supportsDiscount, $supportsDescription, $supportsNavFeatures)
         );
 
         return redirect()
@@ -211,13 +212,14 @@ class UserSubscriptionController extends Controller
         $supportsCategory = Schema::hasColumn('subscription_plans', 'category');
         $supportsDiscount = Schema::hasColumn('subscription_plans', 'discount_twd');
         $supportsDescription = Schema::hasColumn('subscription_plans', 'description');
+        $supportsNavFeatures = Schema::hasColumn('subscription_plans', 'nav_features');
 
         $validated = $request->validate(
             $this->planValidationRules($supportsCategory, $supportsDiscount, $supportsDescription, $plan)
         );
 
         $plan->update(
-            $this->buildPlanPayload($validated, $supportsCategory, $supportsDiscount, $supportsDescription, $plan)
+            $this->buildPlanPayload($validated, $supportsCategory, $supportsDiscount, $supportsDescription, $supportsNavFeatures, $plan)
         );
 
         return redirect()
@@ -258,6 +260,8 @@ class UserSubscriptionController extends Controller
             'max_stores' => ['nullable', 'integer', 'min:1', 'max:999'],
             'description' => [$supportsDescription ? 'nullable' : 'prohibited', 'string', 'max:2000'],
             'plan_features' => ['nullable', 'string', 'max:4000'],
+            'nav_features' => ['nullable', 'array'],
+            'nav_features.*' => ['nullable', 'boolean'],
             'is_active' => ['required', 'boolean'],
         ];
     }
@@ -267,6 +271,7 @@ class UserSubscriptionController extends Controller
         bool $supportsCategory,
         bool $supportsDiscount,
         bool $supportsDescription,
+        bool $supportsNavFeatures,
         ?SubscriptionPlan $plan = null
     ): array {
         $payload = [
@@ -298,7 +303,29 @@ class UserSubscriptionController extends Controller
             $payload['features'] = $this->parsePlanFeatures($validated['plan_features']);
         }
 
+        if ($supportsNavFeatures) {
+            $payload['nav_features'] = $this->normalizePlanNavFeatures((array) ($validated['nav_features'] ?? []), $plan);
+        }
+
         return $payload;
+    }
+
+    private function normalizePlanNavFeatures(array $submittedFeatures, ?SubscriptionPlan $plan = null): array
+    {
+        $current = is_array($plan?->nav_features) ? $plan->nav_features : NavFeature::defaults();
+        $resolved = [];
+
+        foreach (array_keys(NavFeature::definitions()) as $featureKey) {
+            $resolved[$featureKey] = (bool) ($submittedFeatures[$featureKey] ?? false);
+        }
+
+        foreach ($current as $featureKey => $enabled) {
+            if (! array_key_exists($featureKey, $resolved) && array_key_exists($featureKey, NavFeature::definitions())) {
+                $resolved[$featureKey] = (bool) $enabled;
+            }
+        }
+
+        return $resolved;
     }
 
     private function parsePlanFeatures(?string $rawFeatures): ?array

@@ -1,12 +1,15 @@
 {
-    "Reset Password Notification": "重設密碼通知",
-    "You are receiving this email because we received a password reset request for your account.": "我們收到您帳戶的重設密碼請求，因此寄送此郵件給您。",
-    "Reset Password": "重設密碼",
-    "This password reset link will expire in :count minutes.": "此重設密碼連結將於 :count 分鐘後失效。",
-    "If you did not request a password reset, no further action is required.": "若您未提出重設密碼請求，請忽略此郵件，無需進一步操作。",
-    "Hello!": "您好！",
-    "Whoops!": "糟糕！",
-    "Regards,": "敬上，",
-    "If you're having trouble clicking the \":actionText\" button, copy and paste the URL below\ninto your web browser:": "如果您無法點擊「:actionText」按鈕，請將下方網址複製並貼到瀏覽器中：",
-    "All rights reserved.": "版權所有。"
+    "Reset Password Notification": "\u91cd\u8a2d\u5bc6\u78bc\u901a\u77e5",
+    "You are receiving this email because we received a password reset request for your account.": "\u6211\u5011\u6536\u5230\u60a8\u5e33\u6236\u7684\u91cd\u8a2d\u5bc6\u78bc\u8acb\u6c42\uff0c\u56e0\u6b64\u5bc4\u9001\u6b64\u90f5\u4ef6\u7d66\u60a8\u3002",
+    "Reset Password": "\u91cd\u8a2d\u5bc6\u78bc",
+    "This password reset link will expire in :count minutes.": "\u6b64\u91cd\u8a2d\u5bc6\u78bc\u9023\u7d50\u5c07\u65bc :count \u5206\u9418\u5f8c\u5931\u6548\u3002",
+    "If you did not request a password reset, no further action is required.": "\u5982\u679c\u60a8\u6c92\u6709\u8981\u6c42\u91cd\u8a2d\u5bc6\u78bc\uff0c\u7121\u9700\u9032\u4e00\u6b65\u64cd\u4f5c\u3002",
+    "Verify Email Address": "\u9a57\u8b49\u96fb\u5b50\u90f5\u4ef6\u5730\u5740",
+    "Please click the button below to verify your email address.": "\u8acb\u9ede\u64ca\u4e0b\u65b9\u6309\u9215\u9a57\u8b49\u60a8\u7684\u96fb\u5b50\u90f5\u4ef6\u5730\u5740\u3002",
+    "If you did not create an account, no further action is required.": "\u5982\u679c\u60a8\u6c92\u6709\u5efa\u7acb\u5e33\u865f\uff0c\u7121\u9700\u9032\u4e00\u6b65\u64cd\u4f5c\u3002",
+    "Hello!": "\u60a8\u597d\uff01",
+    "Whoops!": "\u7cdf\u7cd5\uff01",
+    "Regards,": "\u656c\u4e0a\uff0c",
+    "If you're having trouble clicking the \":actionText\" button, copy and paste the URL below\ninto your web browser:": "\u5982\u679c\u60a8\u7121\u6cd5\u9ede\u64ca\u300c:actionText\u300d\u6309\u9215\uff0c\u8acb\u8907\u88fd\u4e0b\u65b9\u7db2\u5740\u4e26\u8cbc\u5230\u700f\u89bd\u5668\u4e2d\u958b\u555f\uff1a",
+    "All rights reserved.": "\u7248\u6b0a\u6240\u6709\u3002"
 }

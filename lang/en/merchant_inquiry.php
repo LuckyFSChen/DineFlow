@@ -33,6 +33,7 @@ return [
     'email_intro' => 'A visitor submitted the merchant partnership form from the public pricing page.',
     'email_submitted_at' => 'Submitted At',
     'email_source' => 'Source Page',
+    'email_footer_thanks' => 'Thanks',
     'empty_value' => '-',
     'statuses' => [
         'open' => 'Already Open',

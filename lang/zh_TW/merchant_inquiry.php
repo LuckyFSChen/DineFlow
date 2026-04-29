@@ -33,6 +33,7 @@ return [
     'email_intro' => '有訪客透過公開方案頁送出了商家合作表單。',
     'email_submitted_at' => '送出時間',
     'email_source' => '來源頁面',
+    'email_footer_thanks' => '謝謝',
     'empty_value' => '-',
     'statuses' => [
         'open' => '已開店',

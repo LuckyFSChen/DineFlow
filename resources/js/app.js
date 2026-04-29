@@ -827,11 +827,252 @@ const bootMarketingVideos = () => {
     });
 };
 
+const getGlobalRequestAlert = () => {
+    const modal = document.getElementById('global-request-alert');
+    if (!(modal instanceof HTMLElement)) {
+        return null;
+    }
+
+    return {
+        modal,
+        title: modal.querySelector('[data-global-request-alert-title]'),
+        subtitle: modal.querySelector('[data-global-request-alert-subtitle]'),
+        message: modal.querySelector('[data-global-request-alert-message]'),
+        closeButtons: modal.querySelectorAll('[data-global-request-alert-close], [data-global-request-alert-ok]'),
+    };
+};
+
+const getGlobalRequestAlertText = () => getGlobalRequestAlert()?.modal?.dataset || {};
+
+const interpolateTemplate = (template, replacements) => Object.entries(replacements).reduce(
+    (value, [key, replacement]) => value.replaceAll(key, String(replacement)),
+    template,
+);
+
+const showGlobalRequestAlert = (variant, message, subtitle = null) => {
+    const alert = getGlobalRequestAlert();
+    if (!alert) {
+        window.alert(message);
+        return;
+    }
+
+    const isSuccess = variant === 'success';
+    const defaultSubtitle = alert.modal.dataset.subtitle || subtitle;
+    if (alert.title) {
+        alert.title.textContent = isSuccess
+            ? (alert.modal.dataset.titleSuccess || 'Success')
+            : (alert.modal.dataset.titleError || 'Request failed');
+        alert.title.className = `text-base font-bold ${isSuccess ? 'text-emerald-800' : 'text-rose-800'}`;
+    }
+    if (alert.subtitle) {
+        alert.subtitle.textContent = subtitle || defaultSubtitle;
+    }
+    if (alert.message) {
+        alert.message.textContent = message;
+    }
+
+    alert.modal.classList.remove('hidden');
+    alert.modal.classList.add('flex');
+    document.body.classList.add('overflow-y-hidden');
+};
+
+const hideGlobalRequestAlert = () => {
+    const alert = getGlobalRequestAlert();
+    if (!alert) {
+        return;
+    }
+
+    alert.modal.classList.add('hidden');
+    alert.modal.classList.remove('flex');
+    document.body.classList.remove('overflow-y-hidden');
+};
+
+const extractRequestMessage = async (response) => {
+    const contentType = response.headers.get('content-type') || '';
+
+    if (contentType.includes('application/json')) {
+        const payload = await response.json().catch(() => null);
+        if (payload?.message) {
+            return String(payload.message);
+        }
+
+        const errors = payload?.errors;
+        if (errors && typeof errors === 'object') {
+            const flattened = Object.values(errors).flat().filter(Boolean);
+            if (flattened.length > 0) {
+                return flattened.join('\n');
+            }
+        }
+
+        if (payload?.error) {
+            return String(payload.error);
+        }
+    }
+
+    const text = await response.text().catch(() => '');
+    const trimmed = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (trimmed) {
+        return trimmed.slice(0, 700);
+    }
+
+    const template = getGlobalRequestAlertText().httpErrorTemplate || 'HTTP __STATUS__ __STATUS_TEXT__';
+
+    return interpolateTemplate(template, {
+        __STATUS__: response.status,
+        __STATUS_TEXT__: response.statusText || 'Error',
+    });
+};
+
+const shouldInterceptForm = (form) => {
+    if (!(form instanceof HTMLFormElement)) {
+        return false;
+    }
+
+    if (form.dataset.noGlobalErrorModal === 'true' || form.dataset.noGlobalAjax === 'true') {
+        return false;
+    }
+
+    const method = String(form.getAttribute('method') || 'GET').toUpperCase();
+    if (method === 'GET') {
+        return false;
+    }
+
+    const target = String(form.getAttribute('target') || '').trim();
+    if (target && target !== '_self') {
+        return false;
+    }
+
+    const action = form.getAttribute('action') || window.location.href;
+    try {
+        const url = new URL(action, window.location.href);
+        return url.origin === window.location.origin;
+    } catch (_error) {
+        return false;
+    }
+};
+
+const bootGlobalRequestHandling = () => {
+    const alert = getGlobalRequestAlert();
+    alert?.closeButtons.forEach((button) => button.addEventListener('click', hideGlobalRequestAlert));
+    alert?.modal.addEventListener('click', (event) => {
+        if (event.target === alert.modal) {
+            hideGlobalRequestAlert();
+        }
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            hideGlobalRequestAlert();
+        }
+    });
+
+    document.addEventListener('submit', async (event) => {
+        if (event.defaultPrevented || !shouldInterceptForm(event.target)) {
+            return;
+        }
+
+        const form = event.target;
+        event.preventDefault();
+
+        const submitter = event.submitter instanceof HTMLElement
+            ? event.submitter
+            : form.querySelector('button[type="submit"], input[type="submit"]');
+        const originalText = submitter instanceof HTMLButtonElement ? submitter.textContent : null;
+        const alertText = getGlobalRequestAlertText();
+
+        let formData;
+        try {
+            formData = new FormData(form, submitter instanceof HTMLElement ? submitter : undefined);
+        } catch (_error) {
+            formData = new FormData(form);
+        }
+
+        if (
+            submitter instanceof HTMLElement
+            && submitter.getAttribute('name')
+            && !formData.has(submitter.getAttribute('name'))
+        ) {
+            formData.append(
+                submitter.getAttribute('name'),
+                submitter.getAttribute('value') || '',
+            );
+        }
+
+        if (submitter instanceof HTMLButtonElement) {
+            submitter.disabled = true;
+            submitter.textContent = submitter.dataset.loadingText || form.dataset.loadingText || originalText || alertText.working || 'Working...';
+            submitter.classList.add('opacity-70', 'cursor-wait');
+        }
+
+        try {
+            const response = await fetch(form.action || window.location.href, {
+                method: String(form.method || 'POST').toUpperCase(),
+                headers: {
+                    Accept: 'application/json, text/html;q=0.9',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: formData,
+                credentials: 'same-origin',
+                redirect: 'follow',
+            });
+
+            if (!response.ok) {
+                const message = await extractRequestMessage(response);
+                showGlobalRequestAlert('error', message);
+                return;
+            }
+
+            if (response.redirected) {
+                window.location.assign(response.url);
+                return;
+            }
+
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                const payload = await response.json().catch(() => null);
+                if (payload?.ok === false) {
+                    showGlobalRequestAlert('error', payload?.message || alertText.actionFailed || 'Action failed.');
+                    return;
+                }
+
+                if (payload?.message) {
+                    showGlobalRequestAlert('success', String(payload.message));
+                }
+
+                if (payload?.redirect) {
+                    window.location.assign(String(payload.redirect));
+                    return;
+                }
+
+                if (payload?.reload) {
+                    setTimeout(() => window.location.reload(), 700);
+                }
+
+                return;
+            }
+
+            window.location.reload();
+        } catch (error) {
+            showGlobalRequestAlert(
+                'error',
+                error?.message || alertText.networkError || 'Network error. Please try again.',
+                alertText.titleError || 'Network error',
+            );
+        } finally {
+            if (submitter instanceof HTMLButtonElement) {
+                submitter.disabled = false;
+                submitter.textContent = originalText;
+                submitter.classList.remove('opacity-70', 'cursor-wait');
+            }
+        }
+    });
+};
+
 const bootFrontendEnhancements = () => {
     bootPhoneFormatter();
     bootDataTables();
     bootFlatpickr();
     bootMarketingVideos();
+    bootGlobalRequestHandling();
 };
 
 if (document.readyState === 'loading') {

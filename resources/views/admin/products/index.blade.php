@@ -20,6 +20,7 @@
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <a href="{{ route('admin.stores.index') }}" class="inline-flex items-center justify-center rounded-2xl border border-slate-900 bg-slate-800 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700">{{ __('admin.products_back_to_stores') }}</a>
+                    <a href="{{ route('admin.stores.uber-eats-menu.index', $store) }}" class="inline-flex items-center justify-center rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm font-semibold text-cyan-700 transition hover:bg-cyan-100">{{ __('uber_eats.mapping_button') }}</a>
                     @if($store->is_active)
                         <a href="{{ route('admin.stores.workspace', ['store' => $store, 'tab' => 'boards']) }}" class="inline-flex items-center justify-center rounded-2xl border border-orange-300 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100">{{ __('nav.merchant_order_short') }}/{{ __('admin.board_all_title') }}</a>
                     @endif

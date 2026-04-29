@@ -18,7 +18,7 @@ Artisan::command('inspire', function () {
 
 Artisan::command('mail:test {to? : Recipient email address (defaults to MAIL_FROM_ADDRESS)} {--subject= : Custom email subject} {--graph : Send via Microsoft Graph OAuth2 instead of default mailer}', function (?string $to = null) {
     $recipient = $to ?: (string) config('mail.from.address');
-    $subject = (string) ($this->option('subject') ?: 'DineFlow Mail Test');
+    $subject = (string) ($this->option('subject') ?: __('mail_admin.mail_test.subject'));
     $useGraph = (bool) $this->option('graph');
     $mailer = (string) config('mail.default');
 
@@ -41,14 +41,14 @@ Artisan::command('mail:test {to? : Recipient email address (defaults to MAIL_FRO
             $graphMailer->sendText(
                 $recipient,
                 $subject,
-                'This is a Microsoft Graph mail test from DineFlow. Sent at '.now()->toDateTimeString(),
+                __('mail_admin.mail_test.graph_body', ['time' => now()->toDateTimeString()]),
                 true,
                 function (string $message): void {
                     $this->line($message);
                 }
             );
         } else {
-            Mail::raw('This is a test email from DineFlow. Sent at '.now()->toDateTimeString(), function ($message) use ($recipient, $subject): void {
+            Mail::raw(__('mail_admin.mail_test.body', ['time' => now()->toDateTimeString()]), function ($message) use ($recipient, $subject): void {
                 $message->to($recipient)->subject($subject);
             });
         }

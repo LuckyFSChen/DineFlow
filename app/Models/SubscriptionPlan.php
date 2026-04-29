@@ -16,12 +16,14 @@ class SubscriptionPlan extends Model
         'duration_days',
         'max_stores',
         'features',
+        'nav_features',
         'description',
         'is_active',
     ];
 
     protected $casts = [
         'features' => 'array',
+        'nav_features' => 'array',
         'is_active' => 'boolean',
         'price_twd' => 'integer',
         'duration_days' => 'integer',
@@ -52,5 +54,16 @@ class SubscriptionPlan extends Model
     public function newChangeLogs(): HasMany
     {
         return $this->hasMany(SubscriptionChangeLog::class, 'new_plan_id');
+    }
+
+    public function hasNavFeature(string $feature): bool
+    {
+        $features = $this->nav_features;
+
+        if ($features === null) {
+            return true;
+        }
+
+        return (bool) ($features[$feature] ?? false);
     }
 }

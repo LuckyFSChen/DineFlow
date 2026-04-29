@@ -7,6 +7,12 @@ return [
         'heading' => '您的訂單已送出',
         'intro' => '我們已收到您在 **:store** 的訂單。',
     ],
+    'store_new_order' => [
+        'subject' => '[DineFlow] 新店家訂單',
+        'heading' => '新店家訂單',
+        'intro' => '有新的店家訂單建立，請前往後台查看最新訂單內容。',
+        'cta' => '前往後台',
+    ],
     'completed' => [
         'subject' => '[:store] 訂單已完成 #:order_no',
         'heading' => '您的訂單已完成',

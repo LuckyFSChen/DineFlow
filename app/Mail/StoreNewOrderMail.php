@@ -28,7 +28,7 @@ class StoreNewOrderMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Store New Order Mail',
+            subject: __('mail_orders.store_new_order.subject'),
         );
     }
 

@@ -208,8 +208,8 @@
 
     <div class="lg:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
         <div class="flex flex-col gap-1">
-            <h3 class="text-sm font-semibold text-slate-800">Uber Eats Integration</h3>
-            <p class="text-xs text-slate-500">Each store uses its own Uber app credentials. DineFlow will verify webhook signatures and fetch orders with this store's own Client ID / Client Secret.</p>
+            <h3 class="text-sm font-semibold text-slate-800">{{ __('uber_eats.store_form_title') }}</h3>
+            <p class="text-xs text-slate-500">{{ __('uber_eats.store_form_desc') }}</p>
         </div>
 
         <div class="mt-4 grid gap-4 lg:grid-cols-2">
@@ -220,29 +220,42 @@
                            value="1"
                            {{ old('uber_eats_enabled', $store->uber_eats_enabled ?? false) ? 'checked' : '' }}
                            class="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-                    <span class="text-sm font-semibold text-slate-700">Enable Uber Eats auto-sync</span>
+                    <span class="text-sm font-semibold text-slate-700">{{ __('uber_eats.enable_auto_sync') }}</span>
                 </label>
             </div>
 
             <div>
-                <label class="mb-2 block text-sm font-semibold text-slate-700">Uber Eats Store ID</label>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('uber_eats.store_id_label') }}</label>
                 <input type="text"
                        name="uber_eats_store_id"
                        value="{{ old('uber_eats_store_id', $store->uber_eats_store_id) }}"
-                       placeholder="Example: 6f7c1b2a-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                       placeholder="{{ __('uber_eats.store_id_placeholder') }}"
                        class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
-                <p class="mt-2 text-xs text-slate-500">This must exactly match the store id used in the Uber Developer Dashboard for this store app.</p>
+                <p class="mt-2 text-xs text-slate-500">{{ __('uber_eats.store_id_help') }}</p>
                 @error('uber_eats_store_id')
                     <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
                 @enderror
             </div>
 
             <div>
-                <label class="mb-2 block text-sm font-semibold text-slate-700">Client ID</label>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('uber_eats.store_link') }}</label>
+                <input type="url"
+                       name="uber_eats_store_url"
+                       value="{{ old('uber_eats_store_url', $store->uber_eats_store_url) }}"
+                       placeholder="https://www.ubereats.com/store/..."
+                       class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                <p class="mt-2 text-xs text-slate-500">{{ __('uber_eats.store_link_help') }}</p>
+                @error('uber_eats_store_url')
+                    <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('uber_eats.client_id') }}</label>
                 <input type="text"
                        name="uber_eats_client_id"
                        value="{{ old('uber_eats_client_id', $store->uber_eats_client_id) }}"
-                       placeholder="Uber app client id"
+                       placeholder="{{ __('uber_eats.client_id_placeholder') }}"
                        class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
                 @error('uber_eats_client_id')
                     <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
@@ -250,17 +263,17 @@
             </div>
 
             <div>
-                <label class="mb-2 block text-sm font-semibold text-slate-700">Client Secret</label>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('uber_eats.client_secret') }}</label>
                 <input type="password"
                        name="uber_eats_client_secret"
                        value="{{ old('uber_eats_client_secret') }}"
-                       placeholder="{{ ($store->uber_eats_has_client_secret ?? false) ? 'Leave blank to keep current secret' : 'Uber app client secret' }}"
+                       placeholder="{{ ($store->uber_eats_has_client_secret ?? false) ? __('uber_eats.client_secret_keep') : __('uber_eats.client_secret_placeholder') }}"
                        class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
                 <p class="mt-2 text-xs text-slate-500">
                     @if ($store->uber_eats_has_client_secret ?? false)
-                        A client secret is already stored. Leave this blank if you do not want to replace it.
+                        {{ __('uber_eats.client_secret_stored') }}
                     @else
-                        Enter the client secret for this store's Uber app.
+                        {{ __('uber_eats.client_secret_enter') }}
                     @endif
                 </p>
                 @error('uber_eats_client_secret')
@@ -269,17 +282,36 @@
             </div>
 
             <div>
-                <label class="mb-2 block text-sm font-semibold text-slate-700">Webhook URL</label>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('uber_eats.webhook_signing_key') }}</label>
+                <input type="password"
+                       name="uber_eats_webhook_signing_key"
+                       value="{{ old('uber_eats_webhook_signing_key') }}"
+                       placeholder="{{ ($store->uber_eats_has_webhook_signing_key ?? false) ? __('uber_eats.webhook_signing_key_keep') : __('uber_eats.webhook_signing_key_placeholder') }}"
+                       class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                <p class="mt-2 text-xs text-slate-500">
+                    @if ($store->uber_eats_has_webhook_signing_key ?? false)
+                        {{ __('uber_eats.webhook_signing_key_stored') }}
+                    @else
+                        {{ __('uber_eats.webhook_signing_key_enter') }}
+                    @endif
+                </p>
+                @error('uber_eats_webhook_signing_key')
+                    <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('uber_eats.webhook_url') }}</label>
                 <input type="text"
                        value="{{ route('webhooks.uber-eats') }}"
                        readonly
                        class="w-full rounded-2xl border border-slate-300 bg-slate-100 px-4 py-3 text-slate-600 focus:outline-none">
-                <p class="mt-2 text-xs text-slate-500">Point every store app's Primary Webhook URL to this endpoint. DineFlow will map the webhook to the correct store by Uber store id and verify it with that store's own secret.</p>
+                <p class="mt-2 text-xs text-slate-500">{{ __('uber_eats.webhook_url_help') }}</p>
             </div>
 
             <div class="lg:col-span-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                <p class="font-semibold">Server config</p>
-                <p class="mt-1 text-xs text-amber-800">`.env` now only keeps shared Uber endpoint settings such as API base URL, auth URL, scopes, and timeout. Client ID / Client Secret should be saved per store here.</p>
+                <p class="font-semibold">{{ __('uber_eats.server_config') }}</p>
+                <p class="mt-1 text-xs text-amber-800">{{ __('uber_eats.server_config_help') }}</p>
             </div>
         </div>
     </div>

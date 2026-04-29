@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\Webhooks;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProcessUberEatsWebhookEventJob;
 use App\Models\Store;
 use App\Models\UberEatsWebhookEvent;
 use App\Services\UberEatsOrderSyncService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 
 class UberEatsWebhookController extends Controller
 {
@@ -44,40 +43,24 @@ class UberEatsWebhookController extends Controller
             return response('', 200);
         }
 
+        if ($event->exists && in_array($event->status, ['queued', 'processing'], true)) {
+            return response('', 200);
+        }
+
         $event->fill([
             'event_type' => (string) ($this->resolveEventType($payload) ?? 'unknown'),
             'uber_store_id' => $this->resolveStoreId($payload),
             'uber_order_id' => $this->resolveOrderId($payload),
             'local_store_id' => $store->id,
-            'status' => 'received',
+            'status' => 'queued',
             'error_message' => null,
             'payload' => $payload,
         ]);
         $event->save();
 
-        try {
-            $result = $syncService->process($event, $store);
+        ProcessUberEatsWebhookEventJob::dispatch($event->id);
 
-            $event->fill([
-                'status' => (string) ($result['status'] ?? 'processed'),
-                'local_store_id' => $result['local_store_id'] ?? $event->local_store_id,
-                'error_message' => $result['message'] ?? null,
-                'processed_at' => Carbon::now(),
-            ]);
-            $event->save();
-
-            return response('', 200);
-        } catch (\Throwable $e) {
-            $event->fill([
-                'status' => 'failed',
-                'error_message' => Str::limit($e->getMessage(), 1000),
-            ]);
-            $event->save();
-
-            report($e);
-
-            return response('Webhook processing failed.', 500);
-        }
+        return response('', 200);
     }
 
     /**

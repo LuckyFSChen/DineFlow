@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\UberEatsApiException;
 use App\Models\Store;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
@@ -21,14 +22,14 @@ class UberEatsApiClient
 
     public function verifySignature(Store $store, string $rawBody, ?string $signature): bool
     {
-        $clientSecret = $this->clientSecret($store);
+        $signingKey = $this->webhookSigningKey($store);
         $receivedSignature = strtolower(trim((string) $signature));
 
-        if ($clientSecret === '' || $receivedSignature === '') {
+        if ($signingKey === '' || $receivedSignature === '') {
             return false;
         }
 
-        $expectedSignature = hash_hmac('sha256', $rawBody, $clientSecret);
+        $expectedSignature = hash_hmac('sha256', $rawBody, $signingKey);
 
         return hash_equals($expectedSignature, $receivedSignature);
     }
@@ -50,6 +51,17 @@ class UberEatsApiClient
             ->get($this->apiBaseUrl().'/v1/eats/stores/'.rawurlencode($storeId));
 
         return $this->decodeJsonResponse($response, 'fetch Uber Eats store');
+    }
+
+    public function fetchMenu(Store $store, string $storeId): array
+    {
+        $response = $this->authorizedRequest($store)
+            ->withHeaders([
+                'Accept-Encoding' => 'gzip',
+            ])
+            ->get($this->apiBaseUrl().'/v2/eats/stores/'.rawurlencode($storeId).'/menus');
+
+        return $this->decodeJsonResponse($response, 'fetch Uber Eats menu');
     }
 
     public function acceptOrder(Store $store, string $orderId, array $payload): void
@@ -120,13 +132,13 @@ class UberEatsApiClient
             return;
         }
 
-        throw new RuntimeException(
-            sprintf(
-                'Failed to %s: HTTP %d %s',
-                $action,
-                $response->status(),
-                $response->body()
-            )
+        $body = $response->body();
+
+        throw new UberEatsApiException(
+            sprintf('Failed to %s: HTTP %d %s', $action, $response->status(), $body),
+            $action,
+            $response->status(),
+            $body,
         );
     }
 
@@ -179,6 +191,13 @@ class UberEatsApiClient
     private function clientSecret(Store $store): string
     {
         return trim((string) ($store->uber_eats_client_secret ?? ''));
+    }
+
+    private function webhookSigningKey(Store $store): string
+    {
+        $signingKey = trim((string) ($store->uber_eats_webhook_signing_key ?? ''));
+
+        return $signingKey !== '' ? $signingKey : $this->clientSecret($store);
     }
 
     private function apiBaseUrl(): string

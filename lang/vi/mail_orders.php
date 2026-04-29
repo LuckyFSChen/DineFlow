@@ -7,6 +7,12 @@ return [
         'heading' => 'Don Hang Cua Ban Da Duoc Gui',
         'intro' => 'Chung toi da nhan don hang cua ban tai **:store**.',
     ],
+    'store_new_order' => [
+        'subject' => '[DineFlow] Don hang moi cua cua hang',
+        'heading' => 'Don hang moi cua cua hang',
+        'intro' => 'Co don hang moi vua duoc tao. Vui long mo trang quan tri de xem chi tiet moi nhat.',
+        'cta' => 'Mo trang quan tri',
+    ],
     'completed' => [
         'subject' => '[:store] Don hang da hoan thanh #:order_no',
         'heading' => 'Don Hang Cua Ban Da San Sang',

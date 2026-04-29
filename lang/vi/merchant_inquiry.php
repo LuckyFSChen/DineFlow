@@ -33,6 +33,7 @@ return [
     'email_intro' => 'Co khach truy cap vua gui form hop tac merchant tren trang bang gia cong khai.',
     'email_submitted_at' => 'Thoi gian gui',
     'email_source' => 'Trang nguon',
+    'email_footer_thanks' => 'Cam on',
     'empty_value' => '-',
     'statuses' => [
         'open' => 'Da khai truong',

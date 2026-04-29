@@ -3,6 +3,8 @@
 namespace App\Support;
 
 use App\Models\SystemSetting;
+use App\Models\Store;
+use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
@@ -149,6 +151,33 @@ class NavFeature
     public static function enabled(string $feature): bool
     {
         return (bool) (self::all()[$feature] ?? false);
+    }
+
+    public static function enabledForUser(?User $user, string $feature, ?Store $store = null): bool
+    {
+        if (! self::enabled($feature)) {
+            return false;
+        }
+
+        if (! $user instanceof User) {
+            return true;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        if ($user->isMerchant()) {
+            return $user->subscriptionPlan?->hasNavFeature($feature) ?? true;
+        }
+
+        $owner = $store?->owner;
+
+        if ($owner instanceof User && $owner->isMerchant()) {
+            return $owner->subscriptionPlan?->hasNavFeature($feature) ?? true;
+        }
+
+        return true;
     }
 
     public static function labelKey(string $feature): string
