@@ -12,6 +12,10 @@
             <div data-uber-switch-alert class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
                 {{ session('success') }}
             </div>
+        @elseif (session('error'))
+            <div data-uber-switch-alert class="mb-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">
+                {{ session('error') }}
+            </div>
         @else
             <div data-uber-switch-alert class="mb-6 hidden rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800"></div>
         @endif
@@ -176,6 +180,67 @@
                     </button>
                 </div>
             </form>
+        </section>
+
+        <section class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">{{ __('uber_eats.activation_title') }}</h2>
+                    <p class="mt-1 text-sm text-slate-500">{{ __('uber_eats.activation_desc') }}</p>
+                </div>
+                <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">{{ __('uber_eats.activation_scope') }}</span>
+            </div>
+
+            <div class="mt-5">
+                <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('uber_eats.activation_callback_url') }}</label>
+                <input type="text"
+                       value="{{ $activationCallbackUrl }}"
+                       readonly
+                       class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                <p class="mt-1 text-[11px] text-slate-500">{{ __('uber_eats.activation_callback_help') }}</p>
+            </div>
+
+            <form method="POST" action="{{ route('super-admin.integrations.uber-eats.oauth.authorize') }}" class="mt-5 grid gap-3 md:grid-cols-[1fr_auto]">
+                @csrf
+                <select name="store_id"
+                        class="w-full rounded-xl border border-slate-300 px-3 py-3 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                    @foreach ($stores as $store)
+                        <option value="{{ $store->id }}" @selected((int) $selectedStoreId === (int) $store->id)>
+                            {{ $store->name }} | {{ $store->uber_eats_store_id }}
+                        </option>
+                    @endforeach
+                </select>
+                <button type="submit"
+                        class="rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800">
+                    {{ __('uber_eats.activation_start') }}
+                </button>
+            </form>
+
+            @if ($activationResult)
+                <div class="mt-5 rounded-xl border {{ $activationResult['ok'] ? 'border-emerald-200 bg-emerald-50' : 'border-rose-200 bg-rose-50' }} p-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <p class="text-sm font-bold {{ $activationResult['ok'] ? 'text-emerald-900' : 'text-rose-900' }}">
+                                {{ $activationResult['message'] }}
+                            </p>
+                            <p class="mt-1 text-xs text-slate-600">{{ $activationResult['store'] }} | {{ strtoupper($activationResult['mode']) }}</p>
+                        </div>
+                        <p class="text-xs text-slate-500">{{ $activationResult['finished_at'] }}</p>
+                    </div>
+
+                    <div class="mt-4 space-y-3">
+                        @foreach ($activationResult['steps'] as $step)
+                            <div class="rounded-lg bg-white px-3 py-3 shadow-sm">
+                                <div class="flex items-center gap-2">
+                                    <span class="h-2.5 w-2.5 rounded-full {{ $step['ok'] ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
+                                    <p class="text-sm font-bold text-slate-800">{{ $step['name'] }}</p>
+                                </div>
+                                <p class="mt-2 break-words text-xs text-slate-600">{{ $step['message'] }}</p>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
         </section>
 
         <div class="mt-6 grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">

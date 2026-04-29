@@ -216,6 +216,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('super-admin')->na
     Route::patch('/nav-features', [UserSubscriptionController::class, 'updateNavFeatures'])->name('subscriptions.features.update');
     Route::get('/integrations/uber-eats', [UberEatsIntegrationTestController::class, 'index'])->name('integrations.uber-eats.index');
     Route::post('/integrations/uber-eats/credentials', [UberEatsIntegrationTestController::class, 'updateCredentials'])->name('integrations.uber-eats.credentials');
+    Route::post('/integrations/uber-eats/oauth/authorize', [UberEatsIntegrationTestController::class, 'redirectForActivation'])->name('integrations.uber-eats.oauth.authorize');
+    Route::get('/integrations/uber-eats/oauth/callback', [UberEatsIntegrationTestController::class, 'handleActivationCallback'])->name('integrations.uber-eats.oauth.callback');
     Route::post('/integrations/uber-eats/switch', [UberEatsIntegrationTestController::class, 'switchMode'])->name('integrations.uber-eats.switch');
     Route::post('/integrations/uber-eats/test', [UberEatsIntegrationTestController::class, 'test'])->name('integrations.uber-eats.test');
 });

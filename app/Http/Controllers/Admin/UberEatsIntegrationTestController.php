@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class UberEatsIntegrationTestController extends Controller
@@ -22,6 +23,8 @@ class UberEatsIntegrationTestController extends Controller
     private const PRODUCTION_API_BASE_URL = 'https://api.uber.com';
 
     private const PRODUCTION_AUTH_URL = 'https://auth.uber.com/oauth/v2/token';
+
+    private const POS_PROVISIONING_SCOPE = 'eats.pos_provisioning';
 
     public function index(Request $request): View
     {
@@ -39,6 +42,7 @@ class UberEatsIntegrationTestController extends Controller
             'scopes' => (string) config('services.uber_eats.scopes'),
             'timeout' => (int) config('services.uber_eats.timeout', 15),
             'platformCredentials' => $this->platformCredentialsStatus(),
+            'activationCallbackUrl' => route('super-admin.integrations.uber-eats.oauth.callback'),
             'stores' => $stores,
             'selectedStoreId' => $selectedStoreId,
             'latestEvents' => UberEatsWebhookEvent::query()
@@ -49,6 +53,7 @@ class UberEatsIntegrationTestController extends Controller
                 'uber_eats_jobs' => DB::table('jobs')->where('queue', 'uber-eats')->count(),
                 'failed_jobs' => DB::table('failed_jobs')->count(),
             ],
+            'activationResult' => session('uber_eats_activation_result'),
             'testResult' => session('uber_eats_test_result'),
         ]);
     }
@@ -135,6 +140,72 @@ class UberEatsIntegrationTestController extends Controller
             ->with('uber_eats_test_result', $result);
     }
 
+    public function redirectForActivation(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'store_id' => ['required', 'integer', 'exists:stores,id'],
+        ]);
+
+        $store = Store::query()->findOrFail((int) $data['store_id']);
+        if (trim((string) $store->uber_eats_store_id) === '') {
+            return redirect()
+                ->route('super-admin.integrations.uber-eats.index', ['store_id' => $store->id])
+                ->withErrors(['store_id' => __('uber_eats.activation_store_id_required')]);
+        }
+
+        if (! $this->hasPlatformOAuthCredentials()) {
+            return redirect()
+                ->route('super-admin.integrations.uber-eats.index', ['store_id' => $store->id])
+                ->withErrors(['credentials' => __('uber_eats.activation_credentials_required')]);
+        }
+
+        $state = Str::random(48);
+        $request->session()->put('uber_eats_activation_state', [
+            'state' => $state,
+            'store_id' => $store->id,
+        ]);
+
+        $authorizationUrl = $this->authorizationUrl([
+            'client_id' => (string) config('services.uber_eats.client_id'),
+            'response_type' => 'code',
+            'redirect_uri' => route('super-admin.integrations.uber-eats.oauth.callback'),
+            'scope' => self::POS_PROVISIONING_SCOPE,
+            'state' => $state,
+        ]);
+
+        return redirect()->away($authorizationUrl);
+    }
+
+    public function handleActivationCallback(Request $request): RedirectResponse
+    {
+        $sessionState = $request->session()->pull('uber_eats_activation_state');
+        $storeId = (int) ($sessionState['store_id'] ?? 0);
+        $redirect = redirect()->route('super-admin.integrations.uber-eats.index', ['store_id' => $storeId]);
+
+        if (! is_array($sessionState) || ! hash_equals((string) ($sessionState['state'] ?? ''), (string) $request->query('state', ''))) {
+            return $redirect->withErrors(['oauth' => __('uber_eats.activation_state_invalid')]);
+        }
+
+        if ($request->query('error')) {
+            return $redirect->withErrors([
+                'oauth' => trim((string) $request->query('error_description', $request->query('error'))),
+            ]);
+        }
+
+        $code = trim((string) $request->query('code', ''));
+        if ($code === '') {
+            return $redirect->withErrors(['oauth' => __('uber_eats.activation_code_missing')]);
+        }
+
+        $store = Store::query()->findOrFail($storeId);
+        $result = $this->activateStoreIntegration($store, $code);
+
+        return redirect()
+            ->route('super-admin.integrations.uber-eats.index', ['store_id' => $store->id])
+            ->with('uber_eats_activation_result', $result)
+            ->with($result['ok'] ? 'success' : 'error', $result['message']);
+    }
+
     private function runConnectionTest(Store $store): array
     {
         $startedAt = now();
@@ -218,6 +289,126 @@ class UberEatsIntegrationTestController extends Controller
         return $this->testSummary($store, $startedAt, $steps);
     }
 
+    private function activateStoreIntegration(Store $store, string $authorizationCode): array
+    {
+        $steps = [];
+        $token = '';
+
+        try {
+            $response = Http::asForm()
+                ->timeout(max((int) config('services.uber_eats.timeout', 15), 1))
+                ->acceptJson()
+                ->post((string) config('services.uber_eats.auth_url'), [
+                    'client_id' => (string) config('services.uber_eats.client_id'),
+                    'client_secret' => (string) config('services.uber_eats.client_secret'),
+                    'grant_type' => 'authorization_code',
+                    'redirect_uri' => route('super-admin.integrations.uber-eats.oauth.callback'),
+                    'code' => $authorizationCode,
+                ]);
+
+            $token = trim((string) ($response->json('access_token') ?? ''));
+            $steps[] = [
+                'name' => __('uber_eats.activation_exchange_code'),
+                'ok' => $response->successful() && $token !== '',
+                'message' => $response->successful()
+                    ? __('uber_eats.token_received_scope', ['scope' => (string) ($response->json('scope') ?? '')])
+                    : 'HTTP '.$response->status().' '.$response->body(),
+            ];
+        } catch (\Throwable $e) {
+            $steps[] = [
+                'name' => __('uber_eats.activation_exchange_code'),
+                'ok' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+
+        if ($token === '') {
+            return $this->activationSummary($store, false, __('uber_eats.activation_failed'), $steps);
+        }
+
+        $apiBaseUrl = rtrim((string) config('services.uber_eats.api_base_url'), '/');
+        $storeUuid = (string) $store->uber_eats_store_id;
+
+        try {
+            $response = Http::timeout(max((int) config('services.uber_eats.timeout', 15), 1))
+                ->acceptJson()
+                ->withToken($token)
+                ->get($apiBaseUrl.'/v1/eats/stores');
+
+            $steps[] = [
+                'name' => __('uber_eats.activation_fetch_authorized_stores'),
+                'ok' => $response->successful(),
+                'message' => $response->successful()
+                    ? $this->summarizeApiBody($response->body())
+                    : 'HTTP '.$response->status().' '.$response->body(),
+            ];
+        } catch (\Throwable $e) {
+            $steps[] = [
+                'name' => __('uber_eats.activation_fetch_authorized_stores'),
+                'ok' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+
+        try {
+            $payload = [
+                'integration_enabled' => true,
+                'integrator_store_id' => 'dineflow-store-'.$store->id,
+                'store_configuration_data' => json_encode([
+                    'dineflow_store_id' => $store->id,
+                    'environment' => $this->currentMode(),
+                ], JSON_THROW_ON_ERROR),
+            ];
+
+            $response = Http::timeout(max((int) config('services.uber_eats.timeout', 15), 1))
+                ->acceptJson()
+                ->asJson()
+                ->withToken($token)
+                ->post($apiBaseUrl.'/v1/eats/stores/'.rawurlencode($storeUuid).'/pos_data', $payload);
+
+            $ok = $response->successful();
+            $steps[] = [
+                'name' => __('uber_eats.activation_post_pos_data'),
+                'ok' => $ok,
+                'message' => $ok
+                    ? __('uber_eats.activation_post_pos_data_ok')
+                    : 'HTTP '.$response->status().' '.$response->body(),
+            ];
+
+            if ($ok) {
+                $store->forceFill(['uber_eats_enabled' => true])->save();
+            }
+
+            return $this->activationSummary(
+                $store,
+                $ok,
+                $ok ? __('uber_eats.activation_success') : __('uber_eats.activation_failed'),
+                $steps
+            );
+        } catch (\Throwable $e) {
+            $steps[] = [
+                'name' => __('uber_eats.activation_post_pos_data'),
+                'ok' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+
+        return $this->activationSummary($store, false, __('uber_eats.activation_failed'), $steps);
+    }
+
+    private function activationSummary(Store $store, bool $ok, string $message, array $steps): array
+    {
+        return [
+            'ok' => $ok,
+            'message' => $message,
+            'store' => $store->name.' (#'.$store->id.')',
+            'store_uuid' => (string) $store->uber_eats_store_id,
+            'mode' => $this->currentMode(),
+            'finished_at' => now()->toDateTimeString(),
+            'steps' => $steps,
+        ];
+    }
+
     private function testSummary(Store $store, \Illuminate\Support\Carbon $startedAt, array $steps): array
     {
         return [
@@ -249,6 +440,20 @@ class UberEatsIntegrationTestController extends Controller
             'has_client_secret' => trim((string) config('services.uber_eats.client_secret', '')) !== '',
             'has_webhook_signing_key' => trim((string) config('services.uber_eats.webhook_signing_key', '')) !== '',
         ];
+    }
+
+    private function hasPlatformOAuthCredentials(): bool
+    {
+        return trim((string) config('services.uber_eats.client_id', '')) !== ''
+            && trim((string) config('services.uber_eats.client_secret', '')) !== '';
+    }
+
+    private function authorizationUrl(array $query): string
+    {
+        $authUrl = (string) config('services.uber_eats.auth_url');
+        $authorizeUrl = preg_replace('#/token$#', '/authorize', $authUrl) ?: $authUrl;
+
+        return $authorizeUrl.'?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986);
     }
 
     private function summarizeApiBody(string $body): string
