@@ -189,18 +189,14 @@ class StoreManagementController extends Controller
             ->with('success', $this->storeCreatedMessage($user, $data['is_active']));
     }
 
-    public function edit(Request $request, Store $store)
+    public function modalPayload(Request $request, Store $store): JsonResponse
     {
         $this->authorize('update', $store);
 
-        if ($request->expectsJson()) {
-            return response()->json([
-                'ok' => true,
-                'store' => $this->storePayload($store),
-            ]);
-        }
-
-        return view('admin.stores.edit', compact('store'));
+        return response()->json([
+            'ok' => true,
+            'store' => $this->storePayload($store),
+        ]);
     }
 
     public function update(Request $request, Store $store)

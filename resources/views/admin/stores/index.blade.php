@@ -413,6 +413,57 @@
                     </select>
                 </div>
 
+                <div class="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <div class="flex flex-col gap-1">
+                        <h4 class="text-sm font-semibold text-slate-800">{{ __('uber_eats.store_form_title') }}</h4>
+                        <p class="text-xs text-slate-500">{{ __('uber_eats.store_form_desc') }}</p>
+                    </div>
+
+                    <div class="mt-4 grid gap-4 md:grid-cols-2">
+                        <div class="md:col-span-2">
+                            <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                <input type="checkbox" name="uber_eats_enabled" value="1" class="h-4 w-4 rounded border-slate-300 text-indigo-600">
+                                {{ __('uber_eats.enable_auto_sync') }}
+                            </label>
+                        </div>
+
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('uber_eats.store_id_label') }}</label>
+                            <input type="text" name="uber_eats_store_id" placeholder="{{ __('uber_eats.store_id_placeholder') }}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            <p class="mt-1 text-[11px] text-slate-500">{{ __('uber_eats.store_id_help') }}</p>
+                        </div>
+
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('uber_eats.store_link') }}</label>
+                            <input type="url" name="uber_eats_store_url" placeholder="https://www.ubereats.com/store/..." class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            <p class="mt-1 text-[11px] text-slate-500">{{ __('uber_eats.store_link_help') }}</p>
+                        </div>
+
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('uber_eats.client_id') }}</label>
+                            <input type="text" name="uber_eats_client_id" placeholder="{{ __('uber_eats.client_id_placeholder') }}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                        </div>
+
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('uber_eats.client_secret') }}</label>
+                            <input type="password" name="uber_eats_client_secret" data-uber-secret-input placeholder="{{ __('uber_eats.client_secret_placeholder') }}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            <p data-uber-secret-help class="mt-1 text-[11px] text-slate-500">{{ __('uber_eats.client_secret_enter') }}</p>
+                        </div>
+
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('uber_eats.webhook_signing_key') }}</label>
+                            <input type="password" name="uber_eats_webhook_signing_key" data-uber-signing-key-input placeholder="{{ __('uber_eats.webhook_signing_key_placeholder') }}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                            <p data-uber-signing-key-help class="mt-1 text-[11px] text-slate-500">{{ __('uber_eats.webhook_signing_key_enter') }}</p>
+                        </div>
+
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('uber_eats.webhook_url') }}</label>
+                            <input type="text" value="{{ route('webhooks.uber-eats') }}" readonly class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600">
+                            <p class="mt-1 text-[11px] text-slate-500">{{ __('uber_eats.webhook_url_help') }}</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
                     <label class="mb-2 block text-xs font-semibold text-slate-600">{{ __('admin.banner_image') }}</label>
                     <div id="store-banner-dropzone" class="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-white p-5 text-center transition hover:border-indigo-400 hover:bg-indigo-50">
@@ -460,7 +511,7 @@
     const canCreateStore = {{ isset($canCreateStore) && ! $canCreateStore ? 'false' : 'true' }};
 
     const createUrl = '{{ route('admin.stores.store') }}';
-    const editUrlTemplate = '{{ route('admin.stores.edit', '__STORE__') }}';
+    const modalPayloadUrlTemplate = '{{ route('admin.stores.modal-payload', '__STORE__') }}';
     const updateUrlTemplate = '{{ route('admin.stores.update', '__STORE__') }}';
 
     const flash = document.getElementById('product-flash') || (() => {
@@ -527,6 +578,14 @@
         actionsCollapse: @json(__('admin.store_actions_collapse')),
         phoneFormatHint: @json(__('admin.phone_format_hint', ['digits' => '__digits__'])),
         phonePlaceholder: @json(__('admin.phone_placeholder', ['digits' => '__digits__'])),
+        uberClientSecretEnter: @json(__('uber_eats.client_secret_enter')),
+        uberClientSecretStored: @json(__('uber_eats.client_secret_stored')),
+        uberClientSecretPlaceholder: @json(__('uber_eats.client_secret_placeholder')),
+        uberClientSecretKeep: @json(__('uber_eats.client_secret_keep')),
+        uberSigningKeyEnter: @json(__('uber_eats.webhook_signing_key_enter')),
+        uberSigningKeyStored: @json(__('uber_eats.webhook_signing_key_stored')),
+        uberSigningKeyPlaceholder: @json(__('uber_eats.webhook_signing_key_placeholder')),
+        uberSigningKeyKeep: @json(__('uber_eats.webhook_signing_key_keep')),
     };
 
     const showFlash = (message, type = 'success') => {
@@ -932,6 +991,34 @@
         image.src = url;
     };
 
+    const updateUberSecretState = (hasClientSecret, hasSigningKey) => {
+        const clientSecretInput = modalForm.elements['uber_eats_client_secret'];
+        const signingKeyInput = modalForm.elements['uber_eats_webhook_signing_key'];
+        const clientSecretHelp = modalForm.querySelector('[data-uber-secret-help]');
+        const signingKeyHelp = modalForm.querySelector('[data-uber-signing-key-help]');
+
+        if (clientSecretInput) {
+            clientSecretInput.placeholder = hasClientSecret
+                ? i18n.uberClientSecretKeep
+                : i18n.uberClientSecretPlaceholder;
+        }
+        if (clientSecretHelp) {
+            clientSecretHelp.textContent = hasClientSecret
+                ? i18n.uberClientSecretStored
+                : i18n.uberClientSecretEnter;
+        }
+        if (signingKeyInput) {
+            signingKeyInput.placeholder = hasSigningKey
+                ? i18n.uberSigningKeyKeep
+                : i18n.uberSigningKeyPlaceholder;
+        }
+        if (signingKeyHelp) {
+            signingKeyHelp.textContent = hasSigningKey
+                ? i18n.uberSigningKeyStored
+                : i18n.uberSigningKeyEnter;
+        }
+    };
+
     const setFormValues = (store = null) => {
         modalForm.reset();
         modalMethod.value = 'POST';
@@ -942,6 +1029,13 @@
         modalForm.elements['country_code'].value = 'tw';
         modalForm.elements['currency'].value = 'twd';
         modalForm.elements['timezone'].value = 'Asia/Taipei';
+        modalForm.elements['uber_eats_enabled'].checked = false;
+        modalForm.elements['uber_eats_store_id'].value = '';
+        modalForm.elements['uber_eats_store_url'].value = '';
+        modalForm.elements['uber_eats_client_id'].value = '';
+        modalForm.elements['uber_eats_client_secret'].value = '';
+        modalForm.elements['uber_eats_webhook_signing_key'].value = '';
+        updateUberSecretState(false, false);
         Object.keys(businessWeekdayMap).forEach((weekday) => {
             const startField = modalForm.elements[`business_hours[${weekday}][start]`];
             const endField = modalForm.elements[`business_hours[${weekday}][end]`];
@@ -964,6 +1058,13 @@
         modalForm.elements['currency'].value = (store.currency || 'twd').toLowerCase();
         modalForm.elements['timezone'].value = store.timezone || 'Asia/Taipei';
         modalForm.elements['is_active'].checked = !!store.is_active;
+        modalForm.elements['uber_eats_enabled'].checked = !!store.uber_eats_enabled;
+        modalForm.elements['uber_eats_store_id'].value = store.uber_eats_store_id || '';
+        modalForm.elements['uber_eats_store_url'].value = store.uber_eats_store_url || '';
+        modalForm.elements['uber_eats_client_id'].value = store.uber_eats_client_id || '';
+        modalForm.elements['uber_eats_client_secret'].value = '';
+        modalForm.elements['uber_eats_webhook_signing_key'].value = '';
+        updateUberSecretState(!!store.uber_eats_has_client_secret, !!store.uber_eats_has_webhook_signing_key);
         const weeklyBusinessHours = (store.weekly_business_hours && typeof store.weekly_business_hours === 'object')
             ? store.weekly_business_hours
             : {};
@@ -1000,7 +1101,7 @@
         modalSubmit.textContent = i18n.editSubmit;
 
         try {
-            const url = editUrlTemplate.replace('__STORE__', String(storeId));
+            const url = modalPayloadUrlTemplate.replace('__STORE__', String(storeId));
             const res = await fetch(url, {
                 headers: {
                     'Accept': 'application/json',

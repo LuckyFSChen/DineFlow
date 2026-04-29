@@ -116,11 +116,6 @@ class StoreController extends Controller
             ->with('success', '店家建立成功');
     }
 
-    public function edit(Store $store)
-    {
-        return view('admin.stores.edit', compact('store'));
-    }
-
     public function update(Request $request, Store $store)
     {
         $data = $this->validatedData($request, $store->id);

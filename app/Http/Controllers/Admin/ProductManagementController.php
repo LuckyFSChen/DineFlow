@@ -107,7 +107,7 @@ class ProductManagementController extends Controller
             ->with('success', '商品已建立。');
     }
 
-    public function edit(Request $request, Store $store, Product $product)
+    public function modalPayload(Request $request, Store $store, Product $product): JsonResponse
     {
         $this->authorize('update', $store);
         $this->ensureProductBelongsToStore($store, $product);
@@ -118,18 +118,14 @@ class ProductManagementController extends Controller
             ->orderBy('sort')
             ->get();
 
-        if ($request->expectsJson()) {
-            return response()->json([
-                'ok' => true,
-                'product' => $this->productPayload($product->fresh('category')),
-                'categories' => $categories->map(fn ($category) => [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                ])->values(),
-            ]);
-        }
-
-        return view('admin.products.edit', compact('store', 'product', 'categories'));
+        return response()->json([
+            'ok' => true,
+            'product' => $this->productPayload($product->fresh('category')),
+            'categories' => $categories->map(fn ($category) => [
+                'id' => $category->id,
+                'name' => $category->name,
+            ])->values(),
+        ]);
     }
 
     public function update(Request $request, Store $store, Product $product)
@@ -199,7 +195,7 @@ class ProductManagementController extends Controller
         ]);
     }
 
-    public function editCategory(Request $request, Store $store, Category $category): JsonResponse
+    public function categoryModalPayload(Request $request, Store $store, Category $category): JsonResponse
     {
         $this->authorize('update', $store);
         $this->ensureCategoryBelongsToStore($store, $category);

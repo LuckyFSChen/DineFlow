@@ -47,7 +47,8 @@ Route::middleware('guest')->prefix('admin')->name('admin.')->group(function () {
 });
 
 Route::middleware(['auth', 'verified', 'role:merchant,admin', 'merchant.subscription', 'nav.feature:store_backend'])->prefix('admin')->name('admin.')->group(function () {
-    Route::resource('stores', AdminStoreController::class)->except(['show']);
+    Route::resource('stores', AdminStoreController::class)->except(['show', 'edit']);
+    Route::get('stores/{store}/modal-payload', [AdminStoreController::class, 'modalPayload'])->name('stores.modal-payload');
     Route::patch('stores/{store}/activate', [AdminStoreController::class, 'activate'])->name('stores.activate');
     Route::patch('stores/{store}/deactivate', [AdminStoreController::class, 'deactivate'])->name('stores.deactivate');
     Route::get('stores/{store}/orders/create', [MerchantOrderController::class, 'create'])->name('stores.orders.create');
@@ -55,7 +56,7 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin', 'merchant.subscrip
     Route::get('stores/{store}/orders/coupons', [MerchantOrderController::class, 'coupons'])->name('stores.orders.coupons');
     Route::post('stores/{store}/orders', [MerchantOrderController::class, 'store'])->name('stores.orders.store');
     Route::post('stores/{store}/categories', [ProductManagementController::class, 'storeCategory'])->name('stores.categories.store');
-    Route::get('stores/{store}/categories/{category}/edit', [ProductManagementController::class, 'editCategory'])->name('stores.categories.edit');
+    Route::get('stores/{store}/categories/{category}/modal-payload', [ProductManagementController::class, 'categoryModalPayload'])->name('stores.categories.modal-payload');
     Route::put('stores/{store}/categories/{category}', [ProductManagementController::class, 'updateCategory'])->name('stores.categories.update');
     Route::patch('stores/{store}/categories/{category}/disable', [ProductManagementController::class, 'disableCategory'])->name('stores.categories.disable');
     Route::patch('stores/{store}/categories/{category}/enable', [ProductManagementController::class, 'enableCategory'])->name('stores.categories.enable');
@@ -65,7 +66,8 @@ Route::middleware(['auth', 'verified', 'role:merchant,admin', 'merchant.subscrip
     Route::get('stores/{store}/uber-eats-menu', [UberEatsMenuMappingController::class, 'index'])->name('stores.uber-eats-menu.index');
     Route::post('stores/{store}/uber-eats-menu/sync', [UberEatsMenuMappingController::class, 'sync'])->name('stores.uber-eats-menu.sync');
     Route::put('stores/{store}/uber-eats-menu', [UberEatsMenuMappingController::class, 'update'])->name('stores.uber-eats-menu.update');
-    Route::resource('stores.products', ProductManagementController::class)->except(['show']);
+    Route::resource('stores.products', ProductManagementController::class)->except(['show', 'edit']);
+    Route::get('stores/{store}/products/{product}/modal-payload', [ProductManagementController::class, 'modalPayload'])->name('stores.products.modal-payload');
     Route::get('stores/{store}/tables', [DiningTableManagementController::class, 'index'])->name('stores.tables.index');
     Route::get('stores/{store}/tables/print', [DiningTableManagementController::class, 'print'])->name('stores.tables.print');
     Route::post('stores/{store}/tables', [DiningTableManagementController::class, 'store'])->name('stores.tables.store');

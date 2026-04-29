@@ -339,13 +339,13 @@
     const csrfToken = '{{ csrf_token() }}';
 
     const createUrl = '{{ route('admin.stores.products.store', $store) }}';
-    const editUrlTemplate = '{{ route('admin.stores.products.edit', [$store, '__PRODUCT__']) }}';
+    const modalPayloadUrlTemplate = '{{ route('admin.stores.products.modal-payload', [$store, '__PRODUCT__']) }}';
     const updateUrlTemplate = '{{ route('admin.stores.products.update', [$store, '__PRODUCT__']) }}';
     const deleteUrlTemplate = '{{ route('admin.stores.products.destroy', [$store, '__PRODUCT__']) }}';
     const reorderUrl = '{{ route('admin.stores.products.reorder', $store) }}';
     const moveUrl = '{{ route('admin.stores.products.move', $store) }}';
     const createCategoryUrl = '{{ route('admin.stores.categories.store', $store) }}';
-    const editCategoryUrlTemplate = '{{ route('admin.stores.categories.edit', [$store, '__CATEGORY__']) }}';
+    const categoryModalPayloadUrlTemplate = '{{ route('admin.stores.categories.modal-payload', [$store, '__CATEGORY__']) }}';
     const updateCategoryUrlTemplate = '{{ route('admin.stores.categories.update', [$store, '__CATEGORY__']) }}';
     const disableCategoryUrlTemplate = '{{ route('admin.stores.categories.disable', [$store, '__CATEGORY__']) }}';
     const enableCategoryUrlTemplate = '{{ route('admin.stores.categories.enable', [$store, '__CATEGORY__']) }}';
@@ -993,7 +993,7 @@
         categoryModalSubmit.textContent = i18n.modalCategorySubmitEdit;
 
         try {
-            const url = editCategoryUrlTemplate.replace('__CATEGORY__', String(categoryId));
+            const url = categoryModalPayloadUrlTemplate.replace('__CATEGORY__', String(categoryId));
             const res = await fetch(url, {
                 headers: {
                     'Accept': 'application/json',
@@ -1198,7 +1198,7 @@
         modalSubmit.textContent = i18n.modalProductSubmitEdit;
 
         try {
-            const url = editUrlTemplate.replace('__PRODUCT__', String(productId));
+            const url = modalPayloadUrlTemplate.replace('__PRODUCT__', String(productId));
             const res = await fetch(url, {
                 headers: {
                     'Accept': 'application/json',

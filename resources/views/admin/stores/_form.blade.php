@@ -206,7 +206,7 @@
         @enderror
     </div>
 
-    <div class="lg:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+    <div id="uber-eats-integration" class="lg:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
         <div class="flex flex-col gap-1">
             <h3 class="text-sm font-semibold text-slate-800">{{ __('uber_eats.store_form_title') }}</h3>
             <p class="text-xs text-slate-500">{{ __('uber_eats.store_form_desc') }}</p>
