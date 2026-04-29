@@ -12,16 +12,29 @@ class LoginCaptcha
 
     public static function refresh(Request $request): string
     {
-        $left = random_int(1, 9);
-        $right = random_int(1, 9);
-        $operator = random_int(0, 1) === 0 ? '+' : '-';
+        $previousQuestion = (string) $request->session()->get(self::QUESTION_KEY, '');
 
-        if ($operator === '-' && $left < $right) {
-            [$left, $right] = [$right, $left];
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $left = random_int(1, 9);
+            $right = random_int(1, 9);
+            $operator = random_int(0, 1) === 0 ? '+' : '-';
+
+            if ($operator === '-' && $left < $right) {
+                [$left, $right] = [$right, $left];
+            }
+
+            $answer = $operator === '+' ? $left + $right : $left - $right;
+            $question = sprintf('%d %s %d = ?', $left, $operator, $right);
+
+            if ($question !== $previousQuestion) {
+                break;
+            }
         }
 
-        $answer = $operator === '+' ? $left + $right : $left - $right;
-        $question = sprintf('%d %s %d = ?', $left, $operator, $right);
+        if ($question === $previousQuestion) {
+            $question = $previousQuestion === '1 + 1 = ?' ? '1 + 2 = ?' : '1 + 1 = ?';
+            $answer = $previousQuestion === '1 + 1 = ?' ? 3 : 2;
+        }
 
         $request->session()->put(self::QUESTION_KEY, $question);
         $request->session()->put(self::ANSWER_KEY, (string) $answer);

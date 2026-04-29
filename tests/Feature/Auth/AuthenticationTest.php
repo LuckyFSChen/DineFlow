@@ -21,27 +21,58 @@ class AuthenticationTest extends TestCase
 
     public function test_users_can_authenticate_using_the_login_screen(): void
     {
-        $user = User::factory()->create();
-
-        $response = $this->post('/login', [
-            'email' => $user->email,
-            'password' => 'password',
+        $user = User::factory()->create([
+            'phone' => '0912345678',
+            'role' => 'customer',
         ]);
 
-        $this->assertAuthenticated();
+        $this->get('/login');
+        $captchaAnswer = app('session.store')->get('auth_login_captcha_answer');
+
+        $response = $this->post('/login', [
+            'phone' => '0912345678',
+            'password' => 'password',
+            'captcha_answer' => $captchaAnswer,
+        ]);
+
+        $this->assertAuthenticatedAs($user);
         $response->assertRedirect(route('dashboard', absolute: false));
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
-        $user = User::factory()->create();
+        User::factory()->create([
+            'phone' => '0912345678',
+            'role' => 'customer',
+        ]);
+
+        $this->get('/login');
+        $originalQuestion = app('session.store')->get('auth_login_captcha_question');
+        $captchaAnswer = app('session.store')->get('auth_login_captcha_answer');
 
         $this->post('/login', [
-            'email' => $user->email,
+            'phone' => '0912345678',
             'password' => 'wrong-password',
+            'captcha_answer' => $captchaAnswer,
         ]);
 
         $this->assertGuest();
+        $this->assertNotSame($originalQuestion, app('session.store')->get('auth_login_captcha_question'));
+    }
+
+    public function test_login_validation_failure_refreshes_captcha(): void
+    {
+        $this->get('/login');
+        $originalQuestion = app('session.store')->get('auth_login_captcha_question');
+
+        $this->post('/login', [
+            'phone' => '',
+            'password' => '',
+            'captcha_answer' => '',
+        ]);
+
+        $this->assertGuest();
+        $this->assertNotSame($originalQuestion, app('session.store')->get('auth_login_captcha_question'));
     }
 
     public function test_users_can_logout(): void

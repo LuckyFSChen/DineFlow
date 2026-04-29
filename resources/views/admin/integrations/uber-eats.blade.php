@@ -162,6 +162,15 @@
                 </div>
 
                 <div class="lg:col-span-2">
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('uber_eats.webhook_url') }}</label>
+                    <input type="text"
+                           value="{{ route('webhooks.uber-eats') }}"
+                           readonly
+                           class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                    <p class="mt-1 text-[11px] text-slate-500">{{ __('uber_eats.webhook_url_help') }}</p>
+                </div>
+
+                <div class="lg:col-span-2">
                     <button type="submit" class="rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800">
                         {{ __('uber_eats.save_platform_credentials') }}
                     </button>

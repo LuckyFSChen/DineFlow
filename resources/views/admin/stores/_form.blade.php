@@ -250,15 +250,6 @@
                 @enderror
             </div>
 
-            <div class="lg:col-span-2">
-                <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('uber_eats.webhook_url') }}</label>
-                <input type="text"
-                       value="{{ route('webhooks.uber-eats') }}"
-                       readonly
-                       class="w-full rounded-2xl border border-slate-300 bg-slate-100 px-4 py-3 text-slate-600 focus:outline-none">
-                <p class="mt-2 text-xs text-slate-500">{{ __('uber_eats.webhook_url_help') }}</p>
-            </div>
-
             <div class="lg:col-span-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                 <p class="font-semibold">{{ __('uber_eats.server_config') }}</p>
                 <p class="mt-1 text-xs text-amber-800">{{ __('uber_eats.server_config_help') }}</p>

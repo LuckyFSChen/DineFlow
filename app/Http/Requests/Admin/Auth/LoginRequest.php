@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Support\LoginCaptcha;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -102,6 +103,7 @@ class LoginRequest extends FormRequest
         }
 
         event(new Lockout($this));
+        LoginCaptcha::refresh($this);
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
@@ -119,5 +121,15 @@ class LoginRequest extends FormRequest
     public function throttleKey(): string
     {
         return Str::transliterate(Str::lower((string) $this->input('email')).'|'.$this->ip());
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     */
+    protected function failedValidation(Validator $validator): void
+    {
+        LoginCaptcha::refresh($this);
+
+        parent::failedValidation($validator);
     }
 }

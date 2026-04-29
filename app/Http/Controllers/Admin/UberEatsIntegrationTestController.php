@@ -274,7 +274,7 @@ class UberEatsIntegrationTestController extends Controller
         $contents = is_file($path) ? (string) file_get_contents($path) : '';
 
         foreach ($values as $key => $value) {
-            $line = $key.'='.$value;
+            $line = $key.'='.$this->formatEnvValue($value);
 
             if (preg_match('/^'.preg_quote($key, '/').'=.*/m', $contents) === 1) {
                 $contents = preg_replace('/^'.preg_quote($key, '/').'=.*/m', $line, $contents) ?? $contents;
@@ -284,5 +284,20 @@ class UberEatsIntegrationTestController extends Controller
         }
 
         file_put_contents($path, $contents);
+    }
+
+    private function formatEnvValue(string $value): string
+    {
+        if ($value !== '' && preg_match('/^[A-Za-z0-9_.:\/@+-]+$/', $value) === 1) {
+            return $value;
+        }
+
+        $escaped = str_replace(
+            ["\\", '"', '$', "\r", "\n"],
+            ["\\\\", '\"', '\$', '\r', '\n'],
+            $value
+        );
+
+        return '"'.$escaped.'"';
     }
 }

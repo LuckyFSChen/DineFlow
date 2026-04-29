@@ -439,11 +439,6 @@
                             <p class="mt-1 text-[11px] text-slate-500">{{ __('uber_eats.store_link_help') }}</p>
                         </div>
 
-                        <div class="md:col-span-2">
-                            <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('uber_eats.webhook_url') }}</label>
-                            <input type="text" value="{{ route('webhooks.uber-eats') }}" readonly class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600">
-                            <p class="mt-1 text-[11px] text-slate-500">{{ __('uber_eats.webhook_url_help') }}</p>
-                        </div>
                     </div>
                 </div>
 

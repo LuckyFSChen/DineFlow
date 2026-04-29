@@ -94,7 +94,6 @@
                 class="block mt-1 w-full"
                 type="text"
                 name="captcha_answer"
-                :value="old('captcha_answer')"
                 required
                 autocomplete="off"
                 inputmode="numeric"
