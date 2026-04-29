@@ -250,57 +250,7 @@
                 @enderror
             </div>
 
-            <div>
-                <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('uber_eats.client_id') }}</label>
-                <input type="text"
-                       name="uber_eats_client_id"
-                       value="{{ old('uber_eats_client_id', $store->uber_eats_client_id) }}"
-                       placeholder="{{ __('uber_eats.client_id_placeholder') }}"
-                       class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
-                @error('uber_eats_client_id')
-                    <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <div>
-                <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('uber_eats.client_secret') }}</label>
-                <input type="password"
-                       name="uber_eats_client_secret"
-                       value="{{ old('uber_eats_client_secret') }}"
-                       placeholder="{{ ($store->uber_eats_has_client_secret ?? false) ? __('uber_eats.client_secret_keep') : __('uber_eats.client_secret_placeholder') }}"
-                       class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
-                <p class="mt-2 text-xs text-slate-500">
-                    @if ($store->uber_eats_has_client_secret ?? false)
-                        {{ __('uber_eats.client_secret_stored') }}
-                    @else
-                        {{ __('uber_eats.client_secret_enter') }}
-                    @endif
-                </p>
-                @error('uber_eats_client_secret')
-                    <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <div>
-                <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('uber_eats.webhook_signing_key') }}</label>
-                <input type="password"
-                       name="uber_eats_webhook_signing_key"
-                       value="{{ old('uber_eats_webhook_signing_key') }}"
-                       placeholder="{{ ($store->uber_eats_has_webhook_signing_key ?? false) ? __('uber_eats.webhook_signing_key_keep') : __('uber_eats.webhook_signing_key_placeholder') }}"
-                       class="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
-                <p class="mt-2 text-xs text-slate-500">
-                    @if ($store->uber_eats_has_webhook_signing_key ?? false)
-                        {{ __('uber_eats.webhook_signing_key_stored') }}
-                    @else
-                        {{ __('uber_eats.webhook_signing_key_enter') }}
-                    @endif
-                </p>
-                @error('uber_eats_webhook_signing_key')
-                    <p class="mt-2 text-sm text-rose-600">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <div>
+            <div class="lg:col-span-2">
                 <label class="mb-2 block text-sm font-semibold text-slate-700">{{ __('uber_eats.webhook_url') }}</label>
                 <input type="text"
                        value="{{ route('webhooks.uber-eats') }}"

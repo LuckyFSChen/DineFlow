@@ -14,8 +14,8 @@ class UberEatsApiClient
 {
     public function hasCredentials(Store $store): bool
     {
-        return $this->clientId($store) !== ''
-            && $this->clientSecret($store) !== ''
+        return $this->clientId() !== ''
+            && $this->clientSecret() !== ''
             && $this->apiBaseUrl() !== ''
             && $this->authUrl() !== '';
     }
@@ -145,9 +145,8 @@ class UberEatsApiClient
     private function accessToken(Store $store): string
     {
         $cacheKey = 'uber_eats_access_token_'.hash('sha256', implode('|', [
-            (string) $store->getKey(),
-            $this->clientId($store),
-            $this->clientSecret($store),
+            $this->clientId(),
+            $this->clientSecret(),
             $this->scopes(),
             $this->authUrl(),
         ]));
@@ -161,8 +160,8 @@ class UberEatsApiClient
             ->timeout(max($this->timeout(), 1))
             ->acceptJson()
             ->post($this->authUrl(), [
-                'client_id' => $this->clientId($store),
-                'client_secret' => $this->clientSecret($store),
+                'client_id' => $this->clientId(),
+                'client_secret' => $this->clientSecret(),
                 'grant_type' => 'client_credentials',
                 'scope' => $this->scopes(),
             ]);
@@ -183,21 +182,19 @@ class UberEatsApiClient
         return $token;
     }
 
-    private function clientId(Store $store): string
+    private function clientId(): string
     {
-        return trim((string) ($store->uber_eats_client_id ?? ''));
+        return trim((string) config('services.uber_eats.client_id', ''));
     }
 
-    private function clientSecret(Store $store): string
+    private function clientSecret(): string
     {
-        return trim((string) ($store->uber_eats_client_secret ?? ''));
+        return trim((string) config('services.uber_eats.client_secret', ''));
     }
 
     private function webhookSigningKey(Store $store): string
     {
-        $signingKey = trim((string) ($store->uber_eats_webhook_signing_key ?? ''));
-
-        return $signingKey !== '' ? $signingKey : $this->clientSecret($store);
+        return trim((string) config('services.uber_eats.webhook_signing_key', ''));
     }
 
     private function apiBaseUrl(): string

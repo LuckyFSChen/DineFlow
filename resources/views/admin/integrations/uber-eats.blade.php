@@ -115,6 +115,60 @@
             </section>
         </div>
 
+        <section class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div>
+                <h2 class="text-lg font-bold text-slate-900">{{ __('uber_eats.platform_credentials_title') }}</h2>
+                <p class="mt-1 text-sm text-slate-500">{{ __('uber_eats.platform_credentials_desc') }}</p>
+            </div>
+
+            <form method="POST" action="{{ route('super-admin.integrations.uber-eats.credentials') }}" class="mt-5 grid gap-4 lg:grid-cols-2">
+                @csrf
+                <div>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('uber_eats.client_id') }}</label>
+                    <input type="text"
+                           name="client_id"
+                           value="{{ old('client_id', $platformCredentials['client_id'] ?? '') }}"
+                           class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                </div>
+
+                <div>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('uber_eats.scopes') }}</label>
+                    <input type="text"
+                           name="scopes"
+                           value="{{ old('scopes', $scopes) }}"
+                           class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                </div>
+
+                <div>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('uber_eats.client_secret') }}</label>
+                    <input type="password"
+                           name="client_secret"
+                           placeholder="{{ ($platformCredentials['has_client_secret'] ?? false) ? __('uber_eats.client_secret_keep') : __('uber_eats.client_secret_placeholder') }}"
+                           class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                    <p class="mt-1 text-[11px] text-slate-500">
+                        {{ ($platformCredentials['has_client_secret'] ?? false) ? __('uber_eats.client_secret_stored') : __('uber_eats.platform_client_secret_enter') }}
+                    </p>
+                </div>
+
+                <div>
+                    <label class="mb-1 block text-xs font-semibold text-slate-600">{{ __('uber_eats.webhook_signing_key') }}</label>
+                    <input type="password"
+                           name="webhook_signing_key"
+                           placeholder="{{ ($platformCredentials['has_webhook_signing_key'] ?? false) ? __('uber_eats.webhook_signing_key_keep') : __('uber_eats.webhook_signing_key_placeholder') }}"
+                           class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200">
+                    <p class="mt-1 text-[11px] text-slate-500">
+                        {{ ($platformCredentials['has_webhook_signing_key'] ?? false) ? __('uber_eats.webhook_signing_key_stored') : __('uber_eats.platform_webhook_signing_key_enter') }}
+                    </p>
+                </div>
+
+                <div class="lg:col-span-2">
+                    <button type="submit" class="rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800">
+                        {{ __('uber_eats.save_platform_credentials') }}
+                    </button>
+                </div>
+            </form>
+        </section>
+
         <div class="mt-6 grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
             <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 class="text-lg font-bold text-slate-900">{{ __('uber_eats.queue_status') }}</h2>

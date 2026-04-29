@@ -65,6 +65,9 @@ return [
     ],
 
     'uber_eats' => [
+        'client_id' => env('UBER_EATS_CLIENT_ID'),
+        'client_secret' => env('UBER_EATS_CLIENT_SECRET'),
+        'webhook_signing_key' => env('UBER_EATS_WEBHOOK_SIGNING_KEY'),
         'api_base_url' => env('UBER_EATS_API_BASE_URL', 'https://api.uber.com'),
         'auth_url' => env('UBER_EATS_AUTH_URL', 'https://auth.uber.com/oauth/v2/token'),
         'scopes' => env('UBER_EATS_SCOPES', 'eats.store eats.order eats.store.orders.read'),

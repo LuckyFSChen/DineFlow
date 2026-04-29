@@ -22,7 +22,7 @@ class UberEatsWebhookController extends Controller
         }
 
         $store = $this->resolveLocalStore($payload);
-        if (! $store || ! $store->hasUberEatsApiCredentials()) {
+        if (! $store || ! $store->hasUberEatsIntegration()) {
             return response('Invalid Uber Eats signature.', 401);
         }
 

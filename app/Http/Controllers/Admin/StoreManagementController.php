@@ -341,9 +341,6 @@ class StoreManagementController extends Controller
                 Rule::unique('stores', 'uber_eats_store_id')->ignore($storeId),
             ],
             'uber_eats_store_url' => ['nullable', 'url', 'max:2048'],
-            'uber_eats_client_id' => ['nullable', 'string', 'max:255'],
-            'uber_eats_client_secret' => ['nullable', 'string', 'max:2000'],
-            'uber_eats_webhook_signing_key' => ['nullable', 'string', 'max:2000'],
             'foodpanda_enabled' => ['nullable', 'boolean'],
             'foodpanda_chain_id' => [
                 Rule::requiredIf(fn () => $request->boolean('foodpanda_enabled')),
@@ -393,8 +390,6 @@ class StoreManagementController extends Controller
         }
 
         $data = $request->validate($rules);
-        $existingStore = $storeId !== null ? Store::query()->find($storeId) : null;
-
         $countryCode = strtolower((string) ($data['country_code'] ?? 'tw'));
         $data['country_code'] = $countryCode;
         $data['phone'] = $this->normalizePhoneByCountry($data['phone'] ?? null, $countryCode);
@@ -410,19 +405,6 @@ class StoreManagementController extends Controller
         $data['uber_eats_enabled'] = $request->boolean('uber_eats_enabled');
         $data['uber_eats_store_id'] = $this->normalizeNullableString($data['uber_eats_store_id'] ?? null);
         $data['uber_eats_store_url'] = $this->normalizeNullableString($data['uber_eats_store_url'] ?? null);
-        $data['uber_eats_client_id'] = $this->normalizeNullableString($data['uber_eats_client_id'] ?? null);
-        $submittedUberSecret = $this->normalizeNullableString($data['uber_eats_client_secret'] ?? null);
-        if ($submittedUberSecret !== null) {
-            $data['uber_eats_client_secret'] = $submittedUberSecret;
-        } else {
-            unset($data['uber_eats_client_secret']);
-        }
-        $submittedUberSigningKey = $this->normalizeNullableString($data['uber_eats_webhook_signing_key'] ?? null);
-        if ($submittedUberSigningKey !== null) {
-            $data['uber_eats_webhook_signing_key'] = $submittedUberSigningKey;
-        } else {
-            unset($data['uber_eats_webhook_signing_key']);
-        }
         $data['foodpanda_enabled'] = $request->boolean('foodpanda_enabled');
         $data['foodpanda_chain_id'] = $this->normalizeNullableString($data['foodpanda_chain_id'] ?? null);
         $data['foodpanda_store_id'] = $this->normalizeNullableString($data['foodpanda_store_id'] ?? null);
@@ -436,29 +418,22 @@ class StoreManagementController extends Controller
         unset($data['business_hours']);
         unset($data['break_hours']);
 
-        $uberSecretForValidation = array_key_exists('uber_eats_client_secret', $data)
-            ? $data['uber_eats_client_secret']
-            : $this->normalizeNullableString($existingStore?->uber_eats_client_secret);
-        $uberSigningKeyForValidation = array_key_exists('uber_eats_webhook_signing_key', $data)
-            ? $data['uber_eats_webhook_signing_key']
-            : $this->normalizeNullableString($existingStore?->uber_eats_webhook_signing_key);
-
         $uberValidationErrors = [];
         if ($data['uber_eats_enabled']) {
             if ($data['uber_eats_store_id'] === null) {
                 $uberValidationErrors['uber_eats_store_id'] = 'Uber Eats Store ID is required when the integration is enabled.';
             }
 
-            if ($data['uber_eats_client_id'] === null) {
-                $uberValidationErrors['uber_eats_client_id'] = 'Uber Eats Client ID is required when the integration is enabled.';
+            if ($this->uberEatsPlatformClientId() === '') {
+                $uberValidationErrors['uber_eats_enabled'] = 'Uber Eats platform Client ID is not configured.';
             }
 
-            if ($uberSecretForValidation === null) {
-                $uberValidationErrors['uber_eats_client_secret'] = 'Uber Eats Client Secret is required when the integration is enabled.';
+            if ($this->uberEatsPlatformClientSecret() === '') {
+                $uberValidationErrors['uber_eats_enabled'] = 'Uber Eats platform Client Secret is not configured.';
             }
 
-            if ($uberSigningKeyForValidation === null) {
-                $uberValidationErrors['uber_eats_webhook_signing_key'] = 'Uber Eats Webhook Signing Key is required when the integration is enabled.';
+            if ($this->uberEatsPlatformWebhookSigningKey() === '') {
+                $uberValidationErrors['uber_eats_enabled'] = 'Uber Eats platform Webhook Signing Key is not configured.';
             }
         }
 
@@ -556,6 +531,21 @@ class StoreManagementController extends Controller
         $normalized = trim((string) ($value ?? ''));
 
         return $normalized !== '' ? $normalized : null;
+    }
+
+    protected function uberEatsPlatformClientId(): string
+    {
+        return trim((string) config('services.uber_eats.client_id', ''));
+    }
+
+    protected function uberEatsPlatformClientSecret(): string
+    {
+        return trim((string) config('services.uber_eats.client_secret', ''));
+    }
+
+    protected function uberEatsPlatformWebhookSigningKey(): string
+    {
+        return trim((string) config('services.uber_eats.webhook_signing_key', ''));
     }
 
     protected function fillCoordinatesFromAddress(array $data, ?Store $existingStore = null): array
@@ -687,9 +677,6 @@ class StoreManagementController extends Controller
             'uber_eats_enabled' => (bool) $store->uber_eats_enabled,
             'uber_eats_store_id' => $store->uber_eats_store_id,
             'uber_eats_store_url' => $store->uber_eats_store_url,
-            'uber_eats_client_id' => $store->uber_eats_client_id,
-            'uber_eats_has_client_secret' => trim((string) ($store->uber_eats_client_secret ?? '')) !== '',
-            'uber_eats_has_webhook_signing_key' => trim((string) ($store->uber_eats_webhook_signing_key ?? '')) !== '',
             'foodpanda_enabled' => (bool) $store->foodpanda_enabled,
             'foodpanda_chain_id' => $store->foodpanda_chain_id,
             'foodpanda_store_id' => $store->foodpanda_store_id,

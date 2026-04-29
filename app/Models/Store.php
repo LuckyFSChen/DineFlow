@@ -49,9 +49,6 @@ class Store extends Model
         'uber_eats_enabled',
         'uber_eats_store_id',
         'uber_eats_store_url',
-        'uber_eats_client_id',
-        'uber_eats_client_secret',
-        'uber_eats_webhook_signing_key',
         'foodpanda_enabled',
         'foodpanda_chain_id',
         'foodpanda_store_id',
@@ -76,8 +73,6 @@ class Store extends Model
         'is_active' => 'boolean',
         'takeout_qr_enabled' => 'boolean',
         'uber_eats_enabled' => 'boolean',
-        'uber_eats_client_secret' => 'encrypted',
-        'uber_eats_webhook_signing_key' => 'encrypted',
         'foodpanda_enabled' => 'boolean',
         'foodpanda_client_secret' => 'encrypted',
         'foodpanda_webhook_secret' => 'encrypted',
@@ -341,8 +336,9 @@ class Store extends Model
     public function hasUberEatsApiCredentials(): bool
     {
         return trim((string) ($this->uber_eats_store_id ?? '')) !== ''
-            && trim((string) ($this->uber_eats_client_id ?? '')) !== ''
-            && trim((string) ($this->uber_eats_client_secret ?? '')) !== '';
+            && trim((string) config('services.uber_eats.client_id', '')) !== ''
+            && trim((string) config('services.uber_eats.client_secret', '')) !== ''
+            && trim((string) config('services.uber_eats.webhook_signing_key', '')) !== '';
     }
 
     public function hasFoodpandaIntegration(): bool

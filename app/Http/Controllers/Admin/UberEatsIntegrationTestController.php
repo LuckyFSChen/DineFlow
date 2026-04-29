@@ -28,7 +28,7 @@ class UberEatsIntegrationTestController extends Controller
         $stores = Store::query()
             ->whereNotNull('uber_eats_store_id')
             ->orderBy('name')
-            ->get(['id', 'name', 'slug', 'uber_eats_enabled', 'uber_eats_store_id', 'uber_eats_client_id']);
+            ->get(['id', 'name', 'slug', 'uber_eats_enabled', 'uber_eats_store_id']);
 
         $selectedStoreId = (int) $request->query('store_id', (int) optional($stores->first())->id);
 
@@ -38,6 +38,7 @@ class UberEatsIntegrationTestController extends Controller
             'authUrl' => (string) config('services.uber_eats.auth_url'),
             'scopes' => (string) config('services.uber_eats.scopes'),
             'timeout' => (int) config('services.uber_eats.timeout', 15),
+            'platformCredentials' => $this->platformCredentialsStatus(),
             'stores' => $stores,
             'selectedStoreId' => $selectedStoreId,
             'latestEvents' => UberEatsWebhookEvent::query()
@@ -90,6 +91,36 @@ class UberEatsIntegrationTestController extends Controller
             ->with('success', __('uber_eats.env_switched', ['mode' => $mode]));
     }
 
+    public function updateCredentials(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'client_id' => ['required', 'string', 'max:255'],
+            'client_secret' => ['nullable', 'string', 'max:2000'],
+            'webhook_signing_key' => ['nullable', 'string', 'max:2000'],
+            'scopes' => ['required', 'string', 'max:500'],
+        ]);
+
+        $values = [
+            'UBER_EATS_CLIENT_ID' => trim((string) $data['client_id']),
+            'UBER_EATS_SCOPES' => trim((string) $data['scopes']),
+        ];
+
+        if (trim((string) ($data['client_secret'] ?? '')) !== '') {
+            $values['UBER_EATS_CLIENT_SECRET'] = trim((string) $data['client_secret']);
+        }
+
+        if (trim((string) ($data['webhook_signing_key'] ?? '')) !== '') {
+            $values['UBER_EATS_WEBHOOK_SIGNING_KEY'] = trim((string) $data['webhook_signing_key']);
+        }
+
+        $this->writeEnvValues($values);
+        Artisan::call('config:clear');
+
+        return redirect()
+            ->route('super-admin.integrations.uber-eats.index')
+            ->with('success', __('uber_eats.platform_credentials_saved'));
+    }
+
     public function test(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -127,8 +158,8 @@ class UberEatsIntegrationTestController extends Controller
                 ->timeout(max((int) config('services.uber_eats.timeout', 15), 1))
                 ->acceptJson()
                 ->post((string) config('services.uber_eats.auth_url'), [
-                    'client_id' => (string) $store->uber_eats_client_id,
-                    'client_secret' => (string) $store->uber_eats_client_secret,
+                    'client_id' => (string) config('services.uber_eats.client_id'),
+                    'client_secret' => (string) config('services.uber_eats.client_secret'),
                     'grant_type' => 'client_credentials',
                     'scope' => (string) config('services.uber_eats.scopes'),
                 ]);
@@ -209,6 +240,15 @@ class UberEatsIntegrationTestController extends Controller
         return str_contains($apiBaseUrl, 'test-api.uber.com') || str_contains($authUrl, 'sandbox-login.uber.com')
             ? 'sandbox'
             : 'production';
+    }
+
+    private function platformCredentialsStatus(): array
+    {
+        return [
+            'client_id' => (string) config('services.uber_eats.client_id', ''),
+            'has_client_secret' => trim((string) config('services.uber_eats.client_secret', '')) !== '',
+            'has_webhook_signing_key' => trim((string) config('services.uber_eats.webhook_signing_key', '')) !== '',
+        ];
     }
 
     private function summarizeApiBody(string $body): string
