@@ -9,15 +9,15 @@ use App\Support\LoginCaptcha;
 use App\Support\TakeoutCartSession;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
     /**
      * Display the login view.
      */
-    public function create(Request $request): View
+    public function create(Request $request): Response
     {
         LoginCaptcha::refresh($request);
 
@@ -26,9 +26,9 @@ class AuthenticatedSessionController extends Controller
             ? 'merchant'
             : 'customer';
 
-        return view('auth.login', [
+        return response()->view('auth.login', [
             'defaultAccountType' => $defaultAccountType,
-        ]);
+        ])->withHeaders($this->noStoreHeaders());
     }
 
     /**
@@ -66,5 +66,19 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    /**
+     * Prevent the browser from reusing a login page with a stale captcha question.
+     *
+     * @return array<string, string>
+     */
+    private function noStoreHeaders(): array
+    {
+        return [
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ];
     }
 }

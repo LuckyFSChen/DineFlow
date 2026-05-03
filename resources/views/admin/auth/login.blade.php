@@ -1,7 +1,7 @@
 <x-guest-layout>
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
-    <form method="POST" action="{{ route('admin.login.store') }}">
+    <form method="POST" action="{{ route('admin.login.store') }}" data-no-global-ajax="true">
         @csrf
 
         <div>

@@ -36,7 +36,7 @@
         {{ __('auth.first_login_password_hint') }}
     </div>
 
-    <form method="POST" action="{{ $formAction }}" id="login-form">
+    <form method="POST" action="{{ $formAction }}" id="login-form" data-no-global-ajax="true">
         @csrf
 
         <input type="hidden" name="account_type" id="account_type" value="{{ $selectedAccountType }}">

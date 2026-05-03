@@ -17,6 +17,7 @@ class AuthenticationTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertStatus(200);
+        $response->assertHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void
